@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RE Expert</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+:root {
+  --bg-0:#fafafa; --bg-1:#ffffff; --bg-2:#f5f5f5;
+  --bg-sidebar:#09090b; --bg-sidebar-hover:#18181b; --bg-sidebar-active:#27272a;
+  --bg-input:#ffffff; --bg-card:#ffffff; --bg-card-hover:#fafafa; --bg-code:#f4f4f5; --bg-modal:#ffffff;
+  --text-0:#09090b; --text-1:#3f3f46; --text-2:#71717a; --text-3:#a1a1aa;
+  --text-sidebar:#fafafa; --text-sidebar-muted:#71717a;
+  --accent:#18181b; --accent-hover:#09090b; --accent-subtle:#f4f4f5;
+  --accent-brand:#6366f1; --accent-brand-light:#eef2ff;
+  --border-0:#e4e4e7; --border-1:#f4f4f5; --border-sidebar:rgba(255,255,255,0.08);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.02);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,0.05),0 2px 4px -2px rgba(0,0,0,0.03);
+  --shadow-lg:0 10px 25px -3px rgba(0,0,0,0.08),0 4px 6px -4px rgba(0,0,0,0.03);
+  --shadow-xl:0 20px 50px -12px rgba(0,0,0,0.15);
+  --shadow-input:0 1px 2px rgba(0,0,0,0.04),0 0 0 1px var(--border-0);
+  --shadow-input-focus:0 0 0 2px var(--accent-brand),0 0 0 4px rgba(99,102,241,0.12);
+  --radius-sm:8px; --radius-md:10px; --radius-lg:14px; --radius-xl:18px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --ease:cubic-bezier(0.16,1,0.3,1); --ease-out:cubic-bezier(0,0,0.2,1);
+  --sidebar-w:240px;
+}
+[data-theme="dark"] {
+  --bg-0:#09090b; --bg-1:#0f0f12; --bg-2:#18181b;
+  --bg-sidebar:#0a0a0c; --bg-sidebar-hover:#151518; --bg-sidebar-active:#1f1f23;
+  --bg-input:#18181b; --bg-card:#111113; --bg-card-hover:#18181b; --bg-code:#18181b; --bg-modal:#111113;
+  --text-0:#fafafa; --text-1:#d4d4d8; --text-2:#a1a1aa; --text-3:#52525b;
+  --text-sidebar:#e4e4e7; --text-sidebar-muted:#52525b;
+  --accent:#fafafa; --accent-hover:#fff; --accent-subtle:#18181b;
+  --accent-brand:#818cf8; --accent-brand-light:rgba(99,102,241,0.1);
+  --border-0:#27272a; --border-1:#1c1c1f; --border-sidebar:rgba(255,255,255,0.06);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3); --shadow-md:0 4px 8px rgba(0,0,0,0.35);
+  --shadow-lg:0 10px 25px rgba(0,0,0,0.4); --shadow-xl:0 20px 50px rgba(0,0,0,0.5);
+  --shadow-input:0 0 0 1px var(--border-0);
+  --shadow-input-focus:0 0 0 2px var(--accent-brand),0 0 0 4px rgba(99,102,241,0.15);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:flex;height:100dvh;overflow:hidden;font-feature-settings:'cv02','cv03','cv04','cv11'}
+::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--text-3);border-radius:10px}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--bg-sidebar);display:flex;flex-direction:column;height:100dvh;flex-shrink:0;transition:transform .3s var(--ease),width .3s var(--ease);z-index:100;border-right:1px solid var(--border-sidebar);overflow:hidden}
+.sidebar.collapsed{transform:translateX(-100%);width:0;min-width:0}
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 12px;gap:8px;border-bottom:1px solid var(--border-sidebar)}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-icon{width:30px;height:30px;background:var(--accent-brand);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;color:#fff;letter-spacing:.5px}
+.logo-title{font-weight:700;font-size:13px;color:#fff;letter-spacing:-.3px}
+.logo-subtitle{font-size:9.5px;color:var(--text-sidebar-muted);letter-spacing:.1px}
+.btn-new-chat{display:flex;align-items:center;gap:6px;margin:8px 10px;padding:8px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);color:var(--text-sidebar);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);font-family:var(--font)}
+.btn-new-chat:hover{background:rgba(255,255,255,.09)}
+.btn-new-chat:active{transform:scale(.98)}
+
+/* Sidebar Nav Tabs */
+.sidebar-nav{display:flex;flex-direction:column;gap:1px;padding:8px 10px}
+.sidebar-nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:12px;cursor:pointer;transition:all .15s var(--ease-out);border:none;background:transparent;text-align:left;font-family:var(--font);width:100%}
+.sidebar-nav-item:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.85)}
+.sidebar-nav-item.active{background:var(--bg-sidebar-active);color:#fff}
+.sidebar-nav-item svg{flex-shrink:0;opacity:.6}
+.sidebar-nav-item.active svg{opacity:1}
+
+.sidebar-section{padding:4px 10px;flex:1;overflow-y:auto;min-height:0}
+.sidebar-section:last-of-type{flex:none;padding-bottom:4px}
+.sidebar-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-sidebar-muted);padding:10px 6px 4px}
+.chat-history{display:flex;flex-direction:column;gap:1px}
+.history-empty{font-size:11px;color:var(--text-sidebar-muted);padding:4px 6px}
+.history-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:11.5px;cursor:pointer;transition:all .15s var(--ease-out);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.85)}
+.history-item.active{background:var(--bg-sidebar-active);color:#fff}
+
+.sidebar-footer{padding:10px 14px;border-top:1px solid var(--border-sidebar)}
+.model-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-sidebar-muted);font-weight:500}
+.model-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,.4)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;height:100dvh;min-width:0;position:relative;background:var(--bg-0)}
+.topbar{height:48px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg-1);border-bottom:1px solid var(--border-0);flex-shrink:0;z-index:10}
+.topbar-title{flex:1;font-size:12.5px;font-weight:500;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.1px}
+.topbar-actions{display:flex;gap:2px}
+.btn-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-2);cursor:pointer;transition:all .15s var(--ease-out);flex-shrink:0}
+.btn-icon:hover{background:var(--accent-subtle);color:var(--text-0)}
+.btn-icon:active{transform:scale(.92)}
+.sidebar .btn-icon{color:var(--text-sidebar-muted)}
+.sidebar .btn-icon:hover{background:var(--bg-sidebar-hover);color:#fff}
+
+/* API Key */
+.api-key-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--accent-brand-light);border-bottom:1px solid rgba(99,102,241,.12);flex-shrink:0}
+.api-key-banner p{flex:1;font-size:12px;color:var(--accent-brand);font-weight:500}
+.api-key-banner input{padding:6px 10px;border:1px solid rgba(99,102,241,.2);border-radius:6px;font-size:12px;font-family:var(--font-mono);width:260px;background:var(--bg-1);color:var(--text-0);outline:none}
+.api-key-banner input:focus{border-color:var(--accent-brand)}
+.api-key-banner button{padding:6px 14px;background:var(--accent-brand);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600}
+.api-key-banner button:hover{opacity:.9}
+.api-key-saved{display:none;align-items:center;gap:6px;padding:6px 14px;background:rgba(34,197,94,.06);border-bottom:1px solid rgba(34,197,94,.1);font-size:11px;color:#15803d;flex-shrink:0;font-weight:500}
+[data-theme="dark"] .api-key-saved{color:#4ade80}
+.api-key-saved button{background:none;border:none;color:var(--text-2);font-size:10.5px;cursor:pointer;text-decoration:underline;font-family:var(--font)}
+
+/* Page container */
+.page-container{flex:1;overflow-y:auto;scroll-behavior:smooth}
+
+/* ====== CHAT VIEW ====== */
+.view{display:none} .view.active{display:flex;flex-direction:column;min-height:100%}
+
+/* Welcome */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:32px 20px;text-align:center;animation:fadeIn .5s var(--ease) both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.welcome-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px 4px 6px;background:var(--accent-brand-light);border:1px solid rgba(99,102,241,.12);border-radius:100px;font-size:10.5px;font-weight:500;color:var(--accent-brand);margin-bottom:20px}
+.welcome-badge-dot{width:5px;height:5px;background:var(--accent-brand);border-radius:50%}
+.welcome-title{font-size:36px;font-weight:800;letter-spacing:-1.5px;margin-bottom:6px;background:linear-gradient(135deg,var(--text-0),var(--text-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.welcome-subtitle{font-size:14px;color:var(--text-2);max-width:400px;line-height:1.6;margin-bottom:32px}
+.welcome-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:500px;width:100%}
+.welcome-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:16px 14px;text-align:left;cursor:pointer;transition:all .2s var(--ease-out);position:relative;overflow:hidden}
+.welcome-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;background:linear-gradient(135deg,var(--accent-brand-light),transparent 60%)}
+.welcome-card:hover{border-color:var(--accent-brand);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.welcome-card:hover::before{opacity:1}
+.welcome-card:active{transform:scale(.99)}
+.wcard-icon{font-size:18px;margin-bottom:8px;position:relative}
+.wcard-title{font-size:12.5px;font-weight:600;margin-bottom:2px;position:relative}
+.wcard-desc{font-size:11px;color:var(--text-2);line-height:1.4;position:relative}
+
+/* Messages */
+.messages{display:flex;flex-direction:column;padding:16px 0 28px;max-width:720px;margin:0 auto;width:100%}
+.message{padding:16px 24px;animation:msgIn .3s var(--ease) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.message-assistant{background:var(--bg-2);border-top:1px solid var(--border-1);border-bottom:1px solid var(--border-1)}
+[data-theme="dark"] .message-assistant{background:var(--bg-1)}
+.message-inner{display:flex;gap:12px;align-items:flex-start}
+.message-avatar{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.message-user .message-avatar{background:var(--text-0);color:var(--bg-1)}
+[data-theme="dark"] .message-user .message-avatar{color:var(--bg-0)}
+.message-assistant .message-avatar{background:var(--accent-brand);color:#fff}
+.message-content{flex:1;min-width:0}
+.message-sender{font-size:10.5px;font-weight:600;color:var(--text-2);margin-bottom:4px;letter-spacing:.3px}
+.message-text{font-size:13.5px;line-height:1.75;color:var(--text-1);word-wrap:break-word}
+.message-text h1,.message-text h2,.message-text h3{margin-top:16px;margin-bottom:6px;font-weight:600;color:var(--text-0)}
+.message-text h1{font-size:18px} .message-text h2{font-size:15px} .message-text h3{font-size:13.5px}
+.message-text p{margin-bottom:10px} .message-text p:last-child{margin-bottom:0}
+.message-text ul,.message-text ol{margin:6px 0;padding-left:18px}
+.message-text li{margin-bottom:3px}
+.message-text strong{font-weight:600;color:var(--text-0)}
+.message-text code{background:var(--bg-code);padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border-0)}
+.message-text pre{background:var(--bg-code);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:14px 16px;margin:10px 0;overflow-x:auto}
+.message-text pre code{background:none;padding:0;border:none;font-size:12px;line-height:1.6}
+.message-text table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+.message-text th,.message-text td{border:1px solid var(--border-0);padding:7px 12px;text-align:left}
+.message-text th{background:var(--bg-code);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-2)}
+.message-text blockquote{border-left:2px solid var(--accent-brand);padding:8px 14px;margin:10px 0;background:var(--accent-brand-light);border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.message-text hr{border:none;border-top:1px solid var(--border-0);margin:16px 0}
+.code-block-wrapper{position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;padding:3px 8px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:5px;font-size:10px;font-weight:500;color:var(--text-2);cursor:pointer;opacity:0;transition:opacity .15s;font-family:var(--font)}
+.code-block-wrapper:hover .copy-btn{opacity:1}
+.typing-indicator{display:flex;gap:4px;padding:4px 0}
+.typing-dot{width:5px;height:5px;background:var(--accent-brand);border-radius:50%;animation:typAnim 1.4s infinite}
+.typing-dot:nth-child(2){animation-delay:.15s} .typing-dot:nth-child(3){animation-delay:.3s}
+@keyframes typAnim{0%,70%,100%{transform:translateY(0);opacity:.3}35%{transform:translateY(-4px);opacity:1}}
+
+/* Input */
+.input-area{padding:12px 20px 14px;flex-shrink:0;background:var(--bg-0)}
+.input-wrapper{display:flex;align-items:flex-end;gap:6px;max-width:720px;margin:0 auto;background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-xl);padding:5px 5px 5px 16px;box-shadow:var(--shadow-input);transition:box-shadow .2s,border-color .2s}
+.input-wrapper:focus-within{box-shadow:var(--shadow-input-focus);border-color:transparent}
+textarea{flex:1;border:none;outline:none;resize:none;background:transparent;font-family:var(--font);font-size:13.5px;line-height:1.5;color:var(--text-0);padding:7px 0;max-height:140px;min-height:22px}
+textarea::placeholder{color:var(--text-3)}
+.btn-send{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--accent);border:none;border-radius:var(--radius-md);color:var(--bg-0);cursor:pointer;transition:all .15s var(--ease-out);flex-shrink:0}
+[data-theme="dark"] .btn-send{background:var(--accent-brand);color:#fff}
+.btn-send:hover:not(:disabled){opacity:.85;transform:scale(1.04)}
+.btn-send:active:not(:disabled){transform:scale(.96)}
+.btn-send:disabled{opacity:.2;cursor:not-allowed}
+.input-footer{text-align:center;font-size:10px;color:var(--text-3);margin-top:6px}
+
+/* ====== SECTION VIEWS (Planos, Materiales, Pagos) ====== */
+.section-view{padding:28px 24px;max-width:800px;margin:0 auto;width:100%;animation:fadeIn .4s var(--ease) both}
+.section-header{margin-bottom:24px}
+.section-header h2{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.section-header p{font-size:13px;color:var(--text-2);line-height:1.5}
+
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border-0);border-radius:var(--radius-lg);padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-1);margin-bottom:20px}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent-brand);background:var(--accent-brand-light)}
+.upload-zone svg{margin-bottom:10px;color:var(--text-3)}
+.upload-zone p{font-size:13px;color:var(--text-2);margin-bottom:4px}
+.upload-zone small{font-size:11px;color:var(--text-3)}
+.upload-zone input{display:none}
+
+/* Cards grid */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:16px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:16px;transition:all .15s}
+.stat-card:hover{box-shadow:var(--shadow-md)}
+.stat-card-label{font-size:11px;color:var(--text-2);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-card-value{font-size:22px;font-weight:700;letter-spacing:-.5px;color:var(--text-0)}
+.stat-card-sub{font-size:11px;color:var(--text-2);margin-top:4px}
+.stat-card-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px;margin-top:6px}
+.trend-up{background:rgba(239,68,68,.08);color:#ef4444}
+.trend-down{background:rgba(34,197,94,.08);color:#22c55e}
+.trend-stable{background:rgba(99,102,241,.08);color:var(--accent-brand)}
+
+/* Data table */
+.data-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px}
+.data-table th{background:var(--bg-2);padding:8px 12px;text-align:left;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-2);border-bottom:1px solid var(--border-0)}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border-1);color:var(--text-1)}
+.data-table tr:hover td{background:var(--accent-brand-light)}
+.data-table .status-badge{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:600}
+.status-paid{background:rgba(34,197,94,.1);color:#16a34a}
+.status-pending{background:rgba(234,179,8,.1);color:#ca8a04}
+.status-overdue{background:rgba(239,68,68,.1);color:#dc2626}
+.status-alert{background:rgba(239,68,68,.1);color:#dc2626}
+
+/* Empty state */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-3)}
+.empty-state svg{margin-bottom:12px}
+.empty-state p{font-size:13px;margin-bottom:4px}
+.empty-state small{font-size:11px}
+
+/* Section button */
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent-brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-primary:hover{opacity:.9} .btn-primary:active{transform:scale(.97)}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--bg-1);color:var(--text-0);border:1px solid var(--border-0);border-radius:var(--radius-sm);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-secondary:hover{background:var(--bg-2)}
+
+/* Tabs within section */
+.section-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border-0);padding-bottom:0}
+.section-tab{padding:8px 14px;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;border:none;background:transparent;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.section-tab:hover{color:var(--text-0)}
+.section-tab.active{color:var(--accent-brand);border-bottom-color:var(--accent-brand)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:200}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg-modal);border-radius:var(--radius-xl);border:1px solid var(--border-0);box-shadow:var(--shadow-xl);width:380px;max-width:90vw;animation:modalIn .2s var(--ease) both}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px}
+.modal-header h3{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.modal-body{padding:0 20px 20px}
+.modal-body>p{font-size:12px;color:var(--text-2);margin-bottom:14px}
+.export-options{display:flex;flex-direction:column;gap:5px}
+.export-option{display:flex;align-items:center;gap:12px;padding:10px 12px;background:transparent;border:1px solid var(--border-0);border-radius:var(--radius-md);cursor:pointer;transition:all .15s;font-family:var(--font);text-align:left}
+.export-option:hover{border-color:var(--accent-brand);background:var(--accent-brand-light)}
+.export-icon{font-size:16px}
+.export-label{font-size:12.5px;font-weight:600;color:var(--text-0);display:block}
+.export-desc{font-size:10.5px;color:var(--text-2);display:block}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;z-index:200;box-shadow:var(--shadow-xl)}
+  .sidebar.collapsed{transform:translateX(-100%);box-shadow:none}
+  .welcome-cards{grid-template-columns:1fr;max-width:320px}
+  .welcome-title{font-size:28px}
+  .cards-grid{grid-template-columns:1fr}
+}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">RE</div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <span class="logo-title">RE Expert</span>
+          <span class="logo-subtitle">Real Estate Intelligence</span>
+        </div>
+      </div>
+      <button class="btn-icon" id="sidebarClose">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <button class="btn-new-chat" id="newChatBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Nueva conversacion
+    </button>
+
+    <nav class="sidebar-nav">
+      <button class="sidebar-nav-item active" data-view="chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Chat Experto
+      </button>
+      <button class="sidebar-nav-item" data-view="planos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Analisis de Planos
+      </button>
+      <button class="sidebar-nav-item" data-view="materiales">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Cotizacion Materiales
+      </button>
+      <button class="sidebar-nav-item" data-view="pagos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        Gestion de Pagos
+      </button>
+    </nav>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Historial</div>
+      <div class="chat-history" id="chatHistory">
+        <div class="history-empty">Sin conversaciones</div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="model-badge"><span class="model-dot"></span> Claude Sonnet 4.6</div>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="api-key-banner" id="apiKeyBanner">
+      <p>Ingresa tu API Key de Anthropic</p>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+      <button id="apiKeySave">Conectar</button>
+    </div>
+    <div class="api-key-saved" id="apiKeySaved">
+      API Key conectada
+      <button id="apiKeyChange">Cambiar</button>
+    </div>
+
+    <header class="topbar">
+      <button class="btn-icon" id="sidebarToggle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <div class="topbar-title" id="topbarTitle">Chat Experto</div>
+      <div class="topbar-actions">
+        <button class="btn-icon" id="exportBtn" title="Exportar" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        </button>
+        <button class="btn-icon" id="themeToggle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="themeIcon"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-container" id="pageContainer">
+      <!-- CHAT VIEW -->
+      <div class="view active" id="viewChat">
+        <div class="welcome" id="welcomeScreen">
+          <div class="welcome-badge"><span class="welcome-badge-dot"></span> Powered by Claude Sonnet 4.6</div>
+          <h1 class="welcome-title">RE Expert</h1>
+          <p class="welcome-subtitle">IA especializada en desarrollo inmobiliario, analisis financiero y gestion de proyectos.</p>
+          <div class="welcome-cards">
+            <div class="welcome-card" data-prompt="Quiero evaluar la rentabilidad de un proyecto inmobiliario. Que datos necesitas?"><div class="wcard-icon">📈</div><div class="wcard-title">Evaluar rentabilidad</div><div class="wcard-desc">ROI, TIR, VAN y metricas</div></div>
+            <div class="welcome-card" data-prompt="Necesito crear un documento profesional de presentacion de proyecto para inversores"><div class="wcard-icon">📋</div><div class="wcard-title">Crear documentos</div><div class="wcard-desc">Contratos y reportes</div></div>
+            <div class="welcome-card" data-prompt="Cuales son las regulaciones para un desarrollo residencial multifamiliar?"><div class="wcard-icon">⚖️</div><div class="wcard-title">Normativa y legal</div><div class="wcard-desc">FOT, FOS y zonificacion</div></div>
+            <div class="welcome-card" data-prompt="Ayudame a crear un presupuesto de obra y cronograma para un proyecto de construccion"><div class="wcard-icon">🏢</div><div class="wcard-title">Gestion de obra</div><div class="wcard-desc">Presupuestos y plazos</div></div>
+          </div>
+        </div>
+        <div class="messages" id="messages" style="display:none"></div>
+      </div>
+
+      <!-- PLANOS VIEW -->
+      <div class="view" id="viewPlanos">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Analisis de Planos</h2>
+            <p>Carga tus planos y la IA calcula materiales, cantidades y estimaciones para tu obra.</p>
+          </div>
+          <div class="upload-zone" id="uploadZone">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Arrastra tus planos aqui o haz click para seleccionar</p>
+            <small>PDF, JPG, PNG — Planos arquitectonicos, estructurales o de instalaciones</small>
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple>
+          </div>
+          <div id="planosUploaded" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="font-size:14px;font-weight:600">Archivos cargados</h3>
+              <button class="btn-primary" id="analyzePlanosBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Analizar con IA
+              </button>
+            </div>
+            <div id="fileList"></div>
+          </div>
+          <div id="planosResults" style="display:none">
+            <h3 style="font-size:14px;font-weight:600;margin:20px 0 10px">Estimacion de Materiales</h3>
+            <div id="planosResultContent"></div>
+          </div>
+          <div class="empty-state" id="planosEmpty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <p>Aun no se cargaron planos</p>
+            <small>Subi tus archivos para obtener un analisis detallado de materiales</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATERIALES VIEW -->
+      <div class="view" id="viewMateriales">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Cotizacion de Materiales</h2>
+            <p>Precios actualizados, seguimiento de aumentos y pronosticos basados en analisis economico.</p>
+          </div>
+          <div class="section-tabs">
+            <button class="section-tab active" data-mat-tab="precios">Precios actuales</button>
+            <button class="section-tab" data-mat-tab="seguimiento">Seguimiento</button>
+            <button class="section-tab" data-mat-tab="pronosticos">Pronosticos</button>
+          </div>
+          <div id="matTabPrecios" class="mat-tab-content">
+            <div class="cards-grid" id="materialesCards">
+              <div class="stat-card"><div class="stat-card-label">Cemite Portland 50kg</div><div class="stat-card-value">$8.450</div><div class="stat-card-trend trend-up">+5.2% mensual</div></div>
+              <div class="stat-card"><div class="stat-card-label">Hierro 10mm (barra 12m)</div><div class="stat-card-value">$12.800</div><div class="stat-card-trend trend-up">+3.8% mensual</div></div>
+              <div class="stat-card"><div class="stat-card-label">Ladrillo hueco 18x18x33</div><div class="stat-card-value">$185</div><div class="stat-card-trend trend-stable">+0.5% mensual</div></div>
+              <div class="stat-card"><div class="stat-card-label">Arena gruesa (m3)</div><div class="stat-card-value">$28.500</div><div class="stat-card-trend trend-down">-1.2% mensual</div></div>
+              <div class="stat-card"><div class="stat-card-label">Piedra partida (m3)</div><div class="stat-card-value">$32.000</div><div class="stat-card-trend trend-up">+2.1% mensual</div></div>
+              <div class="stat-card"><div class="stat-card-label">Membrana asfaltica 4mm</div><div class="stat-card-value">$18.900</div><div class="stat-card-trend trend-stable">+0.8% mensual</div></div>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn-primary" id="refreshPricesBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Actualizar precios con IA
+              </button>
+              <button class="btn-secondary" id="addMaterialBtn">+ Agregar material</button>
+            </div>
+          </div>
+          <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
+            <table class="data-table">
+              <thead><tr><th>Material</th><th>Ene</th><th>Feb</th><th>Mar</th><th>Variacion</th></tr></thead>
+              <tbody>
+                <tr><td>Cemento Portland</td><td>$7.200</td><td>$7.850</td><td>$8.450</td><td><span class="stat-card-trend trend-up">+17.4%</span></td></tr>
+                <tr><td>Hierro 10mm</td><td>$11.200</td><td>$12.100</td><td>$12.800</td><td><span class="stat-card-trend trend-up">+14.3%</span></td></tr>
+                <tr><td>Ladrillo hueco</td><td>$175</td><td>$180</td><td>$185</td><td><span class="stat-card-trend trend-stable">+5.7%</span></td></tr>
+                <tr><td>Arena gruesa</td><td>$29.000</td><td>$29.200</td><td>$28.500</td><td><span class="stat-card-trend trend-down">-1.7%</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="matTabPronosticos" class="mat-tab-content" style="display:none">
+            <div class="cards-grid">
+              <div class="stat-card"><div class="stat-card-label">Cemento — Pronostico Abr</div><div class="stat-card-value">$8.900</div><div class="stat-card-sub">Tendencia alcista por costos energeticos</div><div class="stat-card-trend trend-up">+5.3% estimado</div></div>
+              <div class="stat-card"><div class="stat-card-label">Hierro — Pronostico Abr</div><div class="stat-card-value">$13.200</div><div class="stat-card-sub">Presion por demanda estacional</div><div class="stat-card-trend trend-up">+3.1% estimado</div></div>
+              <div class="stat-card"><div class="stat-card-label">Arena — Pronostico Abr</div><div class="stat-card-value">$28.200</div><div class="stat-card-sub">Estable, oferta sostenida</div><div class="stat-card-trend trend-down">-1.1% estimado</div></div>
+              <div class="stat-card"><div class="stat-card-label">Ladrillo — Pronostico Abr</div><div class="stat-card-value">$190</div><div class="stat-card-sub">Leve ajuste por inflacion</div><div class="stat-card-trend trend-stable">+2.7% estimado</div></div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn-primary" id="deepAnalysisBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Analisis profundo con IA
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGOS VIEW -->
+      <div class="view" id="viewPagos">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Gestion de Pagos</h2>
+            <p>Controla pagos realizados, pendientes, proyecciones de aumentos y alertas de sobreprecios.</p>
+          </div>
+          <div class="cards-grid" style="margin-bottom:20px">
+            <div class="stat-card"><div class="stat-card-label">Total pagado</div><div class="stat-card-value">$4.250.000</div><div class="stat-card-sub">12 pagos realizados</div></div>
+            <div class="stat-card"><div class="stat-card-label">Pendiente</div><div class="stat-card-value">$2.180.000</div><div class="stat-card-sub">6 pagos restantes</div></div>
+            <div class="stat-card"><div class="stat-card-label">Proyeccion total</div><div class="stat-card-value">$6.720.000</div><div class="stat-card-sub">Con aumentos estimados</div><div class="stat-card-trend trend-up">+4.5% vs presupuesto</div></div>
+          </div>
+
+          <div class="section-tabs">
+            <button class="section-tab active" data-pay-tab="realizados">Pagos realizados</button>
+            <button class="section-tab" data-pay-tab="pendientes">Pendientes</button>
+            <button class="section-tab" data-pay-tab="alertas">Alertas</button>
+          </div>
+
+          <div id="payTabRealizados" class="pay-tab-content">
+            <table class="data-table">
+              <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>15/01/2026</td><td>Cementos S.A.</td><td>Cemento x200 bolsas</td><td>$1.420.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
+                <tr><td>02/02/2026</td><td>Hierros del Sur</td><td>Hierro estructural</td><td>$890.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
+                <tr><td>18/02/2026</td><td>Corralon Norte</td><td>Ladrillos + Arena</td><td>$650.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
+                <tr><td>10/03/2026</td><td>Electro Obras</td><td>Instalacion electrica</td><td>$1.290.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="payTabPendientes" class="pay-tab-content" style="display:none">
+            <table class="data-table">
+              <thead><tr><th>Fecha estimada</th><th>Proveedor</th><th>Concepto</th><th>Monto estimado</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>15/04/2026</td><td>Sanitarios Pro</td><td>Instalacion sanitaria</td><td>$780.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
+                <tr><td>01/05/2026</td><td>Aberturas S.R.L.</td><td>Carpinteria aluminio</td><td>$520.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
+                <tr><td>20/05/2026</td><td>Pisos y Revestimientos</td><td>Ceramicos + colocacion</td><td>$430.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
+                <tr><td>10/06/2026</td><td>Pintureria Central</td><td>Pintura completa</td><td>$250.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
+              </tbody>
+            </table>
+            <p style="font-size:11px;color:var(--text-2);margin-top:10px">* Montos estimados incluyen proyeccion de aumentos segun tendencia actual</p>
+          </div>
+          <div id="payTabAlertas" class="pay-tab-content" style="display:none">
+            <table class="data-table">
+              <thead><tr><th>Proveedor</th><th>Concepto</th><th>Aumento aplicado</th><th>Aumento esperado</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>Hierros del Sur</td><td>Hierro estructural</td><td>+8.5%</td><td>+3.8%</td><td><span class="status-badge status-alert">Sobreprecio</span></td></tr>
+                <tr><td>Electro Obras</td><td>Cables + tableros</td><td>+12.0%</td><td>+4.2%</td><td><span class="status-badge status-alert">Sobreprecio</span></td></tr>
+              </tbody>
+            </table>
+            <p style="font-size:11px;color:var(--text-2);margin-top:10px">Estos proveedores aplicaron aumentos superiores al indice de referencia del sector.</p>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px">
+            <button class="btn-primary" id="addPaymentBtn">+ Registrar pago</button>
+            <button class="btn-secondary" id="aiPayAnalysis">Analisis IA de pagos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input (only visible in chat view) -->
+    <div class="input-area" id="inputArea">
+      <div class="input-wrapper">
+        <textarea id="messageInput" placeholder="Consulta sobre tu proyecto inmobiliario..." rows="1" autofocus></textarea>
+        <button class="btn-send" id="sendBtn" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="input-footer">RE Expert puede cometer errores. Verifica la informacion importante.</div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Exportar conversacion</h3>
+          <button class="btn-icon" id="exportModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p>Formato de exportacion</p>
+          <div class="export-options">
+            <button class="export-option" data-format="md"><span class="export-icon">📝</span><div><span class="export-label">Markdown</span><span class="export-desc">Texto formateado</span></div></button>
+            <button class="export-option" data-format="html"><span class="export-icon">🌐</span><div><span class="export-label">HTML</span><span class="export-desc">Documento con estilos</span></div></button>
+            <button class="export-option" data-format="txt"><span class="export-icon">📄</span><div><span class="export-label">Texto plano</span><span class="export-desc">Sin formato</span></div></button>
+            <button class="export-option" data-format="json"><span class="export-icon">💾</span><div><span class="export-label">JSON</span><span class="export-desc">Datos estructurados</span></div></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+const SYSTEM_PROMPT = `Eres un experto senior en Real Estate (Bienes Raíces) con más de 25 años de experiencia en el sector inmobiliario latinoamericano e internacional. Tu nombre es "RE Expert".
+
+## Tu perfil profesional:
+- Arquitecto, ingeniero civil y desarrollador inmobiliario
+- Especialista en desarrollo de proyectos residenciales, comerciales e industriales
+- Experto en análisis financiero inmobiliario, feasibility studies y pro-formas
+- Conocimiento profundo de normativas urbanísticas, zonificación y regulaciones de construcción
+- Experiencia en project management de obras civiles
+- Especialista en valuación y tasación de propiedades
+- Experto en contratos inmobiliarios y due diligence
+- Conocimiento de mercados inmobiliarios en LATAM, USA y Europa
+
+## Tus capacidades principales:
+1. **Análisis de Factibilidad**: Evaluar viabilidad técnica, legal y financiera de proyectos
+2. **Pro-formas Financieras**: Crear análisis de inversión, ROI, TIR, VAN, cap rates
+3. **Documentos Profesionales**: Redactar contratos, memorandums, reportes de due diligence, fichas técnicas
+4. **Normativas y Regulaciones**: Asesorar sobre FOT, FOS, códigos de edificación, zonificación
+5. **Gestión de Proyectos**: Cronogramas, presupuestos, control de obra
+6. **Valuación**: Métodos comparativos, de capitalización de rentas, de costo de reposición
+7. **Análisis de Mercado**: Estudios de oferta/demanda, benchmarking, tendencias del sector
+8. **Asesoría Legal Inmobiliaria**: Estructura de fideicomisos, SPVs, contratos de compraventa
+
+## Reglas:
+- Responde en español
+- Sé preciso y profesional
+- Usa Markdown con headers, tablas y estructura clara
+- Incluye disclaimers legales cuando corresponda
+- Muestra paso a paso los cálculos financieros
+- Presenta datos en tablas cuando sea posible`;
+
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+
+const state = {
+  conversations: JSON.parse(localStorage.getItem('re_conversations')||'[]'),
+  currentConversation:null, messages:[], isStreaming:false,
+  theme: localStorage.getItem('re_theme')||'light',
+  apiKey: localStorage.getItem('re_api_key')||'',
+  currentView:'chat', uploadedFiles:[]
+};
+
+const els = {
+  sidebar:$('#sidebar'), sidebarToggle:$('#sidebarToggle'), sidebarClose:$('#sidebarClose'),
+  newChatBtn:$('#newChatBtn'), chatHistory:$('#chatHistory'), pageContainer:$('#pageContainer'),
+  welcomeScreen:$('#welcomeScreen'), messagesEl:$('#messages'), messageInput:$('#messageInput'),
+  sendBtn:$('#sendBtn'), exportBtn:$('#exportBtn'), exportModal:$('#exportModal'),
+  exportModalClose:$('#exportModalClose'), themeToggle:$('#themeToggle'),
+  topbarTitle:$('#topbarTitle'), apiKeyBanner:$('#apiKeyBanner'),
+  apiKeySaved:$('#apiKeySaved'), apiKeyInput:$('#apiKeyInput'),
+  apiKeySave:$('#apiKeySave'), apiKeyChange:$('#apiKeyChange'),
+  inputArea:$('#inputArea')
+};
+
+// API Key
+function updateApiKeyUI(){
+  if(state.apiKey){els.apiKeyBanner.style.display='none';els.apiKeySaved.style.display='flex'}
+  else{els.apiKeyBanner.style.display='flex';els.apiKeySaved.style.display='none'}
+}
+function saveApiKey(){const k=els.apiKeyInput.value.trim();if(!k)return;state.apiKey=k;localStorage.setItem('re_api_key',k);els.apiKeyInput.value='';updateApiKeyUI()}
+
+// Theme
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);state.theme=t;localStorage.setItem('re_theme',t);$('#themeIcon').innerHTML=t==='dark'?'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>':'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'}
+
+// Views
+function switchView(v){
+  state.currentView=v;
+  $$('.view').forEach(el=>el.classList.remove('active'));
+  $(`#view${v.charAt(0).toUpperCase()+v.slice(1)}`).classList.add('active');
+  $$('.sidebar-nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
+  els.inputArea.style.display=v==='chat'?'':'none';
+  els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
+  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos'};
+  els.topbarTitle.textContent=titles[v]||'';
+  if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
+}
+
+// Sidebar
+function toggleSidebar(){els.sidebar.classList.toggle('collapsed')}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function saveConversations(){localStorage.setItem('re_conversations',JSON.stringify(state.conversations))}
+
+function newConversation(){
+  const c={id:genId(),title:'Nueva conversacion',messages:[],createdAt:new Date().toISOString()};
+  state.conversations.unshift(c);state.currentConversation=c;state.messages=c.messages;
+  saveConversations();renderHistory();showWelcome();
+  els.exportBtn.style.display='none';els.messageInput.focus();
+  switchView('chat');
+}
+function loadConversation(id){
+  const c=state.conversations.find(x=>x.id===id);if(!c)return;
+  state.currentConversation=c;state.messages=c.messages;
+  renderHistory();renderMessages();switchView('chat');
+}
+function renderHistory(){
+  if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
+  els.chatHistory.innerHTML=state.conversations.map(c=>`<div class="history-item ${state.currentConversation?.id===c.id?'active':''}" data-id="${c.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>${esc(c.title)}</div>`).join('');
+  els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',()=>loadConversation(el.dataset.id)));
+}
+
+function showWelcome(){els.welcomeScreen.style.display='';els.messagesEl.style.display='none'}
+function showMessages(){els.welcomeScreen.style.display='none';els.messagesEl.style.display='flex';els.exportBtn.style.display=''}
+function renderMessages(){if(!state.messages.length){showWelcome();return}showMessages();els.messagesEl.innerHTML=state.messages.map(m=>msgHTML(m.role,m.content)).join('');addCopyBtns();scrollBottom()}
+
+function msgHTML(role,content){const u=role==='user';return`<div class="message message-${u?'user':'assistant'}"><div class="message-inner"><div class="message-avatar">${u?'TU':'RE'}</div><div class="message-content"><div class="message-sender">${u?'Tu':'RE Expert'}</div><div class="message-text">${u?esc(content):parseMd(content)}</div></div></div></div>`}
+function appendMsg(role,content){showMessages();const d=document.createElement('div');d.innerHTML=msgHTML(role,content);els.messagesEl.appendChild(d.firstElementChild);addCopyBtns();scrollBottom()}
+function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
+function updateStreaming(t){const el=$('#streamMsg');if(el){el.querySelector('.message-text').innerHTML=parseMd(t);scrollBottom()}}
+function finalizeStreaming(){const el=$('#streamMsg');if(el){el.removeAttribute('id');addCopyBtns()}}
+
+function parseMd(t){if(typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});return marked.parse(t)}return esc(t).replace(/\n/g,'<br>')}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function addCopyBtns(){els.messagesEl.querySelectorAll('pre').forEach(pre=>{if(pre.parentElement.classList.contains('code-block-wrapper'))return;const w=document.createElement('div');w.className='code-block-wrapper';pre.parentNode.insertBefore(w,pre);w.appendChild(pre);const b=document.createElement('button');b.className='copy-btn';b.textContent='Copiar';b.onclick=()=>{navigator.clipboard.writeText(pre.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar',1500)})};w.appendChild(b)})}
+function scrollBottom(){requestAnimationFrame(()=>{$('#pageContainer').scrollTop=$('#pageContainer').scrollHeight})}
+
+async function sendMessage(text){
+  if(!text.trim()||state.isStreaming)return;
+  if(!state.apiKey){els.apiKeyInput.focus();return}
+  if(!state.currentConversation)newConversation();
+  const userMsg=text.trim();els.messageInput.value='';els.messageInput.style.height='auto';updateSendBtn();
+  state.messages.push({role:'user',content:userMsg});appendMsg('user',userMsg);
+  if(state.messages.length===1){state.currentConversation.title=userMsg.slice(0,50)+(userMsg.length>50?'...':'');els.topbarTitle.textContent=state.currentConversation.title;renderHistory()}
+  state.isStreaming=true;els.sendBtn.disabled=true;appendStreaming();let full='';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6-20250514',max_tokens:8192,system:SYSTEM_PROMPT,stream:true,messages:state.messages.map(m=>({role:m.role,content:m.content}))})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`Error ${r.status}`)}
+    const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
+    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const l of lines){if(!l.startsWith('data: '))continue;const d=l.slice(6).trim();if(d==='[DONE]')continue;try{const ev=JSON.parse(d);if(ev.type==='content_block_delta'&&ev.delta?.text){full+=ev.delta.text;updateStreaming(full)}}catch(e){}}}
+    state.messages.push({role:'assistant',content:full});finalizeStreaming();saveConversations();
+  }catch(e){updateStreaming('Error: '+e.message);finalizeStreaming()}
+  state.isStreaming=false;updateSendBtn();els.messageInput.focus();
+}
+
+function updateSendBtn(){els.sendBtn.disabled=!els.messageInput.value.trim()||state.isStreaming}
+function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px'}
+
+// Planos upload
+function initPlanos(){
+  const zone=$('#uploadZone'),input=$('#fileInput');
+  zone.addEventListener('click',()=>input.click());
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
+  input.addEventListener('change',()=>handleFiles(input.files));
+}
+function handleFiles(files){
+  if(!files.length)return;
+  state.uploadedFiles=[...state.uploadedFiles,...Array.from(files)];
+  $('#planosEmpty').style.display='none';$('#planosUploaded').style.display='';
+  renderFileList();
+}
+function renderFileList(){
+  $('#fileList').innerHTML=state.uploadedFiles.map((f,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-2);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1">${esc(f.name)}</span><span style="color:var(--text-3)">${(f.size/1024).toFixed(0)} KB</span></div>`).join('');
+}
+
+// Materiales tabs
+function initMaterialesTabs(){
+  $$('[data-mat-tab]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      $$('[data-mat-tab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.mat-tab-content').forEach(c=>c.style.display='none');
+      $(`#matTab${tab.dataset.matTab.charAt(0).toUpperCase()+tab.dataset.matTab.slice(1)}`).style.display='';
+    });
+  });
+}
+
+// Pagos tabs
+function initPagosTabs(){
+  $$('[data-pay-tab]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      $$('[data-pay-tab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.pay-tab-content').forEach(c=>c.style.display='none');
+      $(`#payTab${tab.dataset.payTab.charAt(0).toUpperCase()+tab.dataset.payTab.slice(1)}`).style.display='';
+    });
+  });
+}
+
+// AI actions for sections
+function initSectionActions(){
+  $('#analyzePlanosBtn')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    const names=state.uploadedFiles.map(f=>f.name).join(', ');
+    switchView('chat');
+    setTimeout(()=>sendMessage(`Analiza estos planos y estima los materiales necesarios para la obra: ${names}. Dame un desglose detallado con cantidades estimadas de cada material.`),100);
+  });
+  $('#refreshPricesBtn')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Dame una cotizacion actualizada de los principales materiales de construccion en Argentina (cemento, hierro, ladrillos, arena, piedra, membrana). Incluye precios por unidad, tendencia mensual y variacion interanual.'),100);
+  });
+  $('#deepAnalysisBtn')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Haceme un analisis economico profundo del mercado de materiales de construccion. Incluye pronosticos para los proximos 3 meses basado en inflacion, tipo de cambio, demanda del sector y costos energeticos. Presenta en tabla con tendencias.'),100);
+  });
+  $('#aiPayAnalysis')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Analiza mi situacion de pagos de obra: llevo $4.250.000 pagados en 12 cuotas, me faltan 6 pagos por $2.180.000. El presupuesto original era $6.430.000. Detecte sobreprecios en hierro (+8.5% vs +3.8% esperado) y cables (+12% vs +4.2%). Dame recomendaciones para negociar con proveedores y optimizar los pagos restantes.'),100);
+  });
+}
+
+// Export
+function exportConversation(fmt){
+  if(!state.messages.length)return;
+  const t=state.currentConversation?.title||'RE Expert';let c,fn,m;
+  switch(fmt){
+    case'md':c=`# ${t}\n\n`+state.messages.map(x=>`## ${x.role==='user'?'Usuario':'RE Expert'}\n\n${x.content}\n`).join('\n---\n\n');fn=`${t}.md`;m='text/markdown';break;
+    case'txt':c=`${t}\n${'='.repeat(t.length)}\n\n`+state.messages.map(x=>`[${x.role==='user'?'USUARIO':'RE EXPERT'}]\n${x.content}\n`).join('\n'+'-'.repeat(40)+'\n\n');fn=`${t}.txt`;m='text/plain';break;
+    case'html':c=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(t)}</title><style>body{font-family:Inter,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#18181b;line-height:1.75;font-size:14px}h1{font-size:20px;font-weight:700;border-bottom:1px solid #e4e4e7;padding-bottom:12px;margin-bottom:20px}.m{margin:14px 0;padding:14px 16px;border-radius:10px}.u{background:#fafafa;border:1px solid #e4e4e7}.a{background:#fff;border:1px solid #e4e4e7}.r{font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;color:#71717a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e4e4e7;padding:7px 10px;text-align:left;font-size:12px}th{background:#f4f4f5}code{background:#f4f4f5;padding:1px 5px;border-radius:3px;font-size:12px}pre{background:#f4f4f5;padding:12px;border-radius:8px;overflow-x:auto}</style></head><body><h1>${esc(t)}</h1>${state.messages.map(x=>`<div class="m ${x.role==='user'?'u':'a'}"><div class="r">${x.role==='user'?'Usuario':'RE Expert'}</div><div>${x.role==='user'?esc(x.content).replace(/\n/g,'<br>'):parseMd(x.content)}</div></div>`).join('')}</body></html>`;fn=`${t}.html`;m='text/html';break;
+    case'json':c=JSON.stringify({title:t,exportedAt:new Date().toISOString(),model:'claude-sonnet-4-6',messages:state.messages},null,2);fn=`${t}.json`;m='application/json';break;
+    default:return;
+  }
+  const b=new Blob([c],{type:m+';charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);els.exportModal.classList.remove('active');
+}
+
+function init(){
+  applyTheme(state.theme);updateApiKeyUI();
+  els.sidebarToggle.addEventListener('click',toggleSidebar);
+  els.sidebarClose.addEventListener('click',()=>els.sidebar.classList.add('collapsed'));
+  els.newChatBtn.addEventListener('click',newConversation);
+  els.apiKeySave.addEventListener('click',saveApiKey);
+  els.apiKeyInput.addEventListener('keydown',e=>{if(e.key==='Enter')saveApiKey()});
+  els.apiKeyChange.addEventListener('click',()=>{state.apiKey='';localStorage.removeItem('re_api_key');updateApiKeyUI();els.apiKeyInput.focus()});
+  els.messageInput.addEventListener('input',()=>{updateSendBtn();autoResize()});
+  els.messageInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(els.messageInput.value)}});
+  els.sendBtn.addEventListener('click',()=>sendMessage(els.messageInput.value));
+  els.themeToggle.addEventListener('click',()=>applyTheme(state.theme==='dark'?'light':'dark'));
+  els.exportBtn.addEventListener('click',()=>els.exportModal.classList.add('active'));
+  els.exportModalClose.addEventListener('click',()=>els.exportModal.classList.remove('active'));
+  els.exportModal.addEventListener('click',e=>{if(e.target===els.exportModal)els.exportModal.classList.remove('active')});
+  $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
+  $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
+  $$('.sidebar-nav-item').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+  renderHistory();
+  initPlanos();initMaterialesTabs();initPagosTabs();initSectionActions();
+  document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
+  if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
+  els.messageInput.focus();
+}
+
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
