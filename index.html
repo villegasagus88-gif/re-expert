@@ -248,6 +248,237 @@ textarea::placeholder{color:var(--text-3)}
 .export-label{font-size:12.5px;font-weight:600;color:var(--text-0);display:block}
 .export-desc{font-size:10.5px;color:var(--text-2);display:block}
 
+/* ====== PROYECTO VIEW ====== */
+.project-health{display:flex;align-items:center;gap:10px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);margin-bottom:20px}
+.health-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.health-dot.green{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.4)}
+.health-dot.yellow{background:#eab308;box-shadow:0 0 8px rgba(234,179,8,.4)}
+.health-dot.red{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.4)}
+.health-label{font-size:13px;font-weight:600;color:var(--text-0);flex:1}
+.health-sub{font-size:11px;color:var(--text-2)}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:18px 16px;transition:all .15s}
+.kpi-card:hover{box-shadow:var(--shadow-md)}
+.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2);margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--text-0);line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-2);margin-top:6px;line-height:1.4}
+.kpi-bar{height:4px;background:var(--bg-2);border-radius:4px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:4px;transition:width .6s var(--ease)}
+.kpi-bar-fill.green{background:#22c55e}
+.kpi-bar-fill.yellow{background:#eab308}
+.kpi-bar-fill.red{background:#ef4444}
+.kpi-bar-fill.brand{background:var(--accent-brand)}
+
+.pmi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.pmi-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:16px;text-align:center;transition:all .15s}
+.pmi-card:hover{box-shadow:var(--shadow-md)}
+.pmi-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-2);margin-bottom:6px}
+.pmi-value{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1}
+.pmi-value.good{color:#22c55e}
+.pmi-value.warn{color:#eab308}
+.pmi-value.bad{color:#ef4444}
+.pmi-desc{font-size:10.5px;color:var(--text-2);margin-top:6px}
+
+.cost-row{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.cost-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-md);transition:all .15s}
+.cost-item:hover{box-shadow:var(--shadow-sm)}
+.cost-name{font-size:12.5px;font-weight:600;color:var(--text-0);min-width:140px}
+.cost-bar-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.cost-bar{height:6px;background:var(--bg-2);border-radius:6px;overflow:hidden;position:relative}
+.cost-bar-base{position:absolute;height:100%;border-radius:6px;background:var(--accent-brand);opacity:.25}
+.cost-bar-real{position:absolute;height:100%;border-radius:6px;transition:width .6s var(--ease)}
+.cost-bar-real.under{background:var(--accent-brand)}
+.cost-bar-real.over{background:#ef4444}
+.cost-amounts{display:flex;justify-content:space-between;font-size:10px;color:var(--text-2)}
+.cost-variance{font-size:11px;font-weight:600;min-width:70px;text-align:right}
+.cost-variance.pos{color:#ef4444}
+.cost-variance.neg{color:#22c55e}
+.cost-variance.zero{color:var(--text-3)}
+
+.milestone-track{position:relative;padding:8px 0 8px 20px;margin-bottom:20px}
+.milestone-line{position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--border-0)}
+.milestone{position:relative;padding:10px 0 10px 20px;animation:fadeIn .3s var(--ease) both}
+.milestone-dot{position:absolute;left:-20px;top:14px;width:10px;height:10px;border-radius:50%;border:2px solid var(--border-0);background:var(--bg-1)}
+.milestone-dot.done{background:#22c55e;border-color:#22c55e}
+.milestone-dot.active{background:var(--accent-brand);border-color:var(--accent-brand);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.milestone-dot.pending{background:var(--bg-2);border-color:var(--border-0)}
+.milestone-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.milestone-name{font-size:12.5px;font-weight:600;color:var(--text-0)}
+.milestone-date{font-size:10.5px;color:var(--text-2)}
+.milestone-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px}
+.milestone-status.done{background:rgba(34,197,94,.1);color:#16a34a}
+.milestone-status.active{background:rgba(99,102,241,.1);color:var(--accent-brand)}
+.milestone-status.delayed{background:rgba(239,68,68,.1);color:#dc2626}
+.milestone-status.pending{background:var(--bg-2);color:var(--text-3)}
+.milestone-detail{font-size:11px;color:var(--text-2);line-height:1.4}
+
+.alert-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--radius-md);font-size:12px;line-height:1.5}
+.alert-item.high{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.12);color:#dc2626}
+.alert-item.medium{background:rgba(234,179,8,.06);border:1px solid rgba(234,179,8,.12);color:#ca8a04}
+.alert-item.low{background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);color:var(--accent-brand)}
+[data-theme="dark"] .alert-item.high{color:#f87171}
+[data-theme="dark"] .alert-item.medium{color:#facc15}
+[data-theme="dark"] .alert-item.low{color:var(--accent-brand)}
+.alert-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.alert-text{flex:1}
+.alert-text strong{display:block;margin-bottom:2px}
+
+.section-block{margin-bottom:24px}
+.section-block-title{font-size:13px;font-weight:700;color:var(--text-0);margin-bottom:10px;letter-spacing:-.2px;display:flex;align-items:center;gap:6px}
+.section-block-title svg{color:var(--text-3)}
+
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ====== NOTICIAS VIEW ====== */
+.news-hero{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:24px}
+.news-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:20px;cursor:pointer;transition:all .2s var(--ease-out);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.news-card:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.news-card:active{transform:scale(.995)}
+.news-card-featured{grid-row:1/3}
+.news-card-featured .news-card-title{font-size:20px;line-height:1.3}
+.news-card-featured .news-card-excerpt{display:block}
+.news-card-chip{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:10px;width:fit-content}
+.chip-macro{background:rgba(99,102,241,.1);color:var(--accent-brand)}
+.chip-mercado{background:rgba(34,197,94,.1);color:#16a34a}
+.chip-costos{background:rgba(234,179,8,.1);color:#ca8a04}
+.chip-regulacion{background:rgba(239,68,68,.1);color:#dc2626}
+.chip-opinion{background:rgba(168,85,247,.1);color:#a855f7}
+.chip-financiacion{background:rgba(14,165,233,.1);color:#0ea5e9}
+[data-theme="dark"] .chip-mercado{color:#4ade80}
+[data-theme="dark"] .chip-costos{color:#facc15}
+[data-theme="dark"] .chip-regulacion{color:#f87171}
+[data-theme="dark"] .chip-financiacion{color:#38bdf8}
+.news-card-title{font-size:14px;font-weight:700;letter-spacing:-.3px;color:var(--text-0);margin-bottom:6px;line-height:1.35}
+.news-card-excerpt{font-size:12px;color:var(--text-2);line-height:1.55;display:none;margin-bottom:auto}
+.news-card-meta{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--text-3);margin-top:10px}
+.news-card-source{font-weight:600;color:var(--text-2)}
+.news-card-impact{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;margin-top:8px;width:fit-content}
+.impact-high{background:rgba(239,68,68,.08);color:#ef4444}
+.impact-medium{background:rgba(234,179,8,.08);color:#ca8a04}
+.impact-positive{background:rgba(34,197,94,.08);color:#22c55e}
+[data-theme="dark"] .impact-high{color:#f87171}
+[data-theme="dark"] .impact-medium{color:#facc15}
+[data-theme="dark"] .impact-positive{color:#4ade80}
+
+.news-filters{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
+.news-filter{padding:5px 12px;border-radius:100px;font-size:11px;font-weight:500;color:var(--text-2);cursor:pointer;border:1px solid var(--border-0);background:transparent;font-family:var(--font);transition:all .15s}
+.news-filter:hover{border-color:var(--text-3);color:var(--text-0)}
+.news-filter.active{background:var(--text-0);color:var(--bg-1);border-color:var(--text-0)}
+[data-theme="dark"] .news-filter.active{background:var(--accent-brand);color:#fff;border-color:var(--accent-brand)}
+
+.news-feed{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
+.news-feed-item{display:flex;gap:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-md);cursor:pointer;transition:all .15s;align-items:flex-start}
+.news-feed-item:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-sm)}
+.news-feed-num{font-size:22px;font-weight:800;color:var(--text-3);line-height:1;min-width:24px;letter-spacing:-1px}
+.news-feed-body{flex:1;min-width:0}
+.news-feed-title{font-size:13px;font-weight:600;color:var(--text-0);margin-bottom:3px;line-height:1.35}
+.news-feed-sub{font-size:11px;color:var(--text-2);line-height:1.4}
+.news-feed-meta{font-size:10px;color:var(--text-3);margin-top:4px}
+
+.opinion-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+.opinion-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:18px;transition:all .15s;cursor:pointer}
+.opinion-card:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-md)}
+.opinion-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin-bottom:10px;flex-shrink:0}
+.opinion-avatar.av1{background:rgba(99,102,241,.12);color:var(--accent-brand)}
+.opinion-avatar.av2{background:rgba(34,197,94,.12);color:#22c55e}
+.opinion-avatar.av3{background:rgba(234,179,8,.12);color:#ca8a04}
+.opinion-avatar.av4{background:rgba(239,68,68,.12);color:#ef4444}
+.opinion-name{font-size:12px;font-weight:700;color:var(--text-0);margin-bottom:1px}
+.opinion-role{font-size:10px;color:var(--text-3);margin-bottom:8px}
+.opinion-quote{font-size:12.5px;color:var(--text-1);line-height:1.55;font-style:italic;border-left:2px solid var(--accent-brand);padding-left:10px}
+.opinion-date{font-size:10px;color:var(--text-3);margin-top:8px}
+
+.news-takeaway{display:flex;gap:10px;padding:14px 16px;background:var(--accent-brand-light);border:1px solid rgba(99,102,241,.12);border-radius:var(--radius-md);margin-bottom:20px;align-items:flex-start}
+.news-takeaway-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.news-takeaway-text{font-size:12px;color:var(--accent-brand);line-height:1.5}
+.news-takeaway-text strong{display:block;margin-bottom:2px;font-size:12.5px}
+
+/* ====== SOL VIEW ====== */
+.sol-container{display:flex;flex-direction:column;height:100%}
+.sol-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:32px 20px;text-align:center;animation:fadeIn .5s var(--ease) both}
+.sol-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#f97316);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 20px rgba(245,158,11,.3)}
+.sol-avatar svg{color:#fff}
+.sol-name{font-size:24px;font-weight:800;letter-spacing:-.8px;margin-bottom:4px;color:var(--text-0)}
+.sol-desc{font-size:13px;color:var(--text-2);max-width:420px;line-height:1.6;margin-bottom:24px}
+.sol-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:480px;width:100%}
+.sol-action{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:14px 12px;text-align:left;cursor:pointer;transition:all .2s var(--ease-out);font-family:var(--font)}
+.sol-action:hover{border-color:#f59e0b;transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.sol-action:active{transform:scale(.98)}
+.sol-action-icon{font-size:16px;margin-bottom:6px}
+.sol-action-title{font-size:11.5px;font-weight:600;color:var(--text-0);margin-bottom:2px}
+.sol-action-desc{font-size:10px;color:var(--text-3);line-height:1.3}
+
+.sol-messages{display:flex;flex-direction:column;padding:16px 0 28px;max-width:720px;margin:0 auto;width:100%}
+.sol-msg{padding:16px 24px;animation:msgIn .3s var(--ease) both}
+.sol-msg-sol{background:var(--bg-2);border-top:1px solid var(--border-1);border-bottom:1px solid var(--border-1)}
+[data-theme="dark"] .sol-msg-sol{background:var(--bg-1)}
+.sol-msg-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.sol-msg-user .sol-msg-avatar{background:var(--text-0);color:var(--bg-1);border-radius:7px}
+[data-theme="dark"] .sol-msg-user .sol-msg-avatar{color:var(--bg-0)}
+.sol-msg-sol .sol-msg-avatar{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}
+.sol-msg-sender{font-size:10.5px;font-weight:600;color:var(--text-2);margin-bottom:4px;letter-spacing:.3px}
+
+.sol-routed{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);border-radius:var(--radius-sm);font-size:11px;font-weight:600;color:#f59e0b;margin-top:8px}
+[data-theme="dark"] .sol-routed{color:#fbbf24}
+.sol-routed svg{flex-shrink:0}
+
+.sol-input-area{padding:12px 20px 14px;flex-shrink:0;background:var(--bg-0)}
+.sol-input-wrapper{display:flex;align-items:flex-end;gap:6px;max-width:720px;margin:0 auto;background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-xl);padding:5px 5px 5px 16px;box-shadow:var(--shadow-input);transition:box-shadow .2s,border-color .2s}
+.sol-input-wrapper:focus-within{box-shadow:0 0 0 2px #f59e0b,0 0 0 4px rgba(245,158,11,.12);border-color:transparent}
+.sol-send{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;border-radius:var(--radius-md);color:#fff;cursor:pointer;transition:all .15s var(--ease-out);flex-shrink:0}
+.sol-send:hover:not(:disabled){opacity:.85;transform:scale(1.04)}
+.sol-send:active:not(:disabled){transform:scale(.96)}
+.sol-send:disabled{opacity:.2;cursor:not-allowed}
+.sol-input-footer{text-align:center;font-size:10px;color:var(--text-3);margin-top:6px}
+
+/* ====== ACADEMIA VIEW ====== */
+.level-filters{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
+.level-btn{padding:6px 14px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-0);background:transparent;font-family:var(--font);color:var(--text-2);transition:all .15s}
+.level-btn:hover{border-color:var(--text-3);color:var(--text-0)}
+.level-btn.active{background:var(--text-0);color:var(--bg-1);border-color:var(--text-0)}
+[data-theme="dark"] .level-btn.active{background:var(--accent-brand);color:#fff;border-color:var(--accent-brand)}
+
+.course-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+.course-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:20px;cursor:pointer;transition:all .2s var(--ease-out);display:flex;flex-direction:column}
+.course-card:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.course-card:active{transform:scale(.995)}
+.course-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.course-icon{width:40px;height:40px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.course-icon.dev{background:rgba(99,102,241,.1)}
+.course-icon.build{background:rgba(234,179,8,.1)}
+.course-icon.finance{background:rgba(34,197,94,.1)}
+.course-icon.legal{background:rgba(239,68,68,.1)}
+.course-icon.management{background:rgba(14,165,233,.1)}
+.course-icon.design{background:rgba(168,85,247,.1)}
+.course-level{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:3px 8px;border-radius:100px}
+.course-level.beginner{background:rgba(34,197,94,.1);color:#16a34a}
+.course-level.intermediate{background:rgba(234,179,8,.1);color:#ca8a04}
+.course-level.advanced{background:rgba(239,68,68,.1);color:#dc2626}
+[data-theme="dark"] .course-level.beginner{color:#4ade80}
+[data-theme="dark"] .course-level.intermediate{color:#facc15}
+[data-theme="dark"] .course-level.advanced{color:#f87171}
+.course-title{font-size:14px;font-weight:700;color:var(--text-0);letter-spacing:-.2px;margin-bottom:4px;line-height:1.3}
+.course-desc{font-size:11.5px;color:var(--text-2);line-height:1.5;margin-bottom:auto}
+.course-meta-row{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-1)}
+.course-meta{font-size:10px;color:var(--text-3);display:flex;align-items:center;gap:3px}
+.course-meta svg{flex-shrink:0}
+.course-price{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-0)}
+.course-price.free{color:#22c55e}
+.course-provider{font-size:10px;color:var(--text-2);font-weight:500;margin-top:6px}
+.course-link{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--accent-brand);margin-top:8px;text-decoration:none;transition:opacity .15s}
+.course-link:hover{opacity:.7}
+
+.path-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:20px;margin-bottom:12px;transition:all .15s}
+.path-card:hover{box-shadow:var(--shadow-md)}
+.path-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.path-num{width:32px;height:32px;border-radius:50%;background:var(--accent-brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.path-title{font-size:14px;font-weight:700;color:var(--text-0)}
+.path-sub{font-size:11px;color:var(--text-2)}
+.path-steps{display:flex;gap:6px;flex-wrap:wrap}
+.path-step{padding:4px 10px;border-radius:6px;font-size:10.5px;font-weight:500;background:var(--bg-2);color:var(--text-1);border:1px solid var(--border-1)}
+
 /* Responsive */
 @media(max-width:768px){
   .sidebar{position:fixed;left:0;top:0;height:100dvh;z-index:200;box-shadow:var(--shadow-xl)}
@@ -255,6 +486,15 @@ textarea::placeholder{color:var(--text-3)}
   .welcome-cards{grid-template-columns:1fr;max-width:320px}
   .welcome-title{font-size:28px}
   .cards-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .pmi-row{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .cost-name{min-width:100px}
+  .news-hero{grid-template-columns:1fr}
+  .news-card-featured{grid-row:auto}
+  .opinion-grid{grid-template-columns:1fr}
+  .sol-actions{grid-template-columns:1fr;max-width:280px}
+  .course-grid{grid-template-columns:1fr}
 }
   </style>
 </head>
@@ -294,6 +534,22 @@ textarea::placeholder{color:var(--text-3)}
       <button class="sidebar-nav-item" data-view="pagos">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
         Gestion de Pagos
+      </button>
+      <button class="sidebar-nav-item" data-view="proyecto">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Panel de Proyecto
+      </button>
+      <button class="sidebar-nav-item" data-view="noticias">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M18 18h-8M18 10h-8"/></svg>
+        Noticias
+      </button>
+      <button class="sidebar-nav-item" data-view="sol">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        SOL — Asistente
+      </button>
+      <button class="sidebar-nav-item" data-view="academia">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
+        Academia
       </button>
     </nav>
 
@@ -502,6 +758,854 @@ textarea::placeholder{color:var(--text-3)}
           </div>
         </div>
       </div>
+      <!-- ACADEMIA VIEW -->
+      <div class="view" id="viewAcademia">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Academia</h2>
+            <p>Cursos, formación y rutas de aprendizaje para cada nivel — de principiante a experto.</p>
+          </div>
+
+          <div class="section-tabs">
+            <button class="section-tab active" data-acad-tab="cursos">Cursos</button>
+            <button class="section-tab" data-acad-tab="rutas">Rutas de aprendizaje</button>
+          </div>
+
+          <!-- TAB: CURSOS -->
+          <div id="acadTabCursos" class="acad-tab-content">
+            <div class="level-filters">
+              <button class="level-btn active" data-level="todos">Todos</button>
+              <button class="level-btn" data-level="beginner">Principiante</button>
+              <button class="level-btn" data-level="intermediate">Intermedio</button>
+              <button class="level-btn" data-level="advanced">Avanzado</button>
+            </div>
+
+            <div class="section-block">
+              <div class="section-block-title">Desarrollo inmobiliario</div>
+              <div class="course-grid" id="coursesDevGrid">
+                <div class="course-card" data-lvl="beginner">
+                  <div class="course-top">
+                    <div class="course-icon dev">🏗️</div>
+                    <span class="course-level beginner">Principiante</span>
+                  </div>
+                  <div class="course-title">Introducción al desarrollo inmobiliario</div>
+                  <div class="course-desc">Ciclo completo de un proyecto: desde la compra de tierra hasta la venta. Conceptos de factibilidad, estructura de negocio y primeros pasos.</div>
+                  <div class="course-provider">Universidad de Buenos Aires — Extensión</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 24 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 8 semanas</span>
+                    <span class="course-price">$85.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="intermediate">
+                  <div class="course-top">
+                    <div class="course-icon dev">📊</div>
+                    <span class="course-level intermediate">Intermedio</span>
+                  </div>
+                  <div class="course-title">Análisis financiero de proyectos inmobiliarios</div>
+                  <div class="course-desc">Pro-formas, TIR, VAN, cap rates, estructura de capital. Modelado financiero con Excel y análisis de sensibilidad para desarrollos.</div>
+                  <div class="course-provider">UCEMA — Escuela de Negocios</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 36 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 12 semanas</span>
+                    <span class="course-price">$120.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="advanced">
+                  <div class="course-top">
+                    <div class="course-icon dev">🎯</div>
+                    <span class="course-level advanced">Avanzado</span>
+                  </div>
+                  <div class="course-title">Masterclass: Estructuración de fideicomisos inmobiliarios</div>
+                  <div class="course-desc">Fideicomisos al costo, SPVs, estructura legal y fiscal, captación de inversores, due diligence avanzado y casos reales de Argentina.</div>
+                  <div class="course-provider">IAE Business School</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 48 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 16 semanas</span>
+                    <span class="course-price">$280.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="beginner">
+                  <div class="course-top">
+                    <div class="course-icon finance">💰</div>
+                    <span class="course-level beginner">Principiante</span>
+                  </div>
+                  <div class="course-title">Real estate para inversores: primeros pasos</div>
+                  <div class="course-desc">Cómo evaluar una inversión inmobiliaria, tipos de activos, métricas clave, errores comunes y cómo armar tu primer deal.</div>
+                  <div class="course-provider">Coursera — Universidad de los Andes</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 16 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 6 semanas</span>
+                    <span class="course-price free">Gratis</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-block-title">Construcción y obra</div>
+              <div class="course-grid" id="coursesBuildGrid">
+                <div class="course-card" data-lvl="beginner">
+                  <div class="course-top">
+                    <div class="course-icon build">🧱</div>
+                    <span class="course-level beginner">Principiante</span>
+                  </div>
+                  <div class="course-title">Fundamentos de construcción y lectura de planos</div>
+                  <div class="course-desc">Interpretación de planos arquitectónicos y estructurales, procesos constructivos básicos, materiales y rendimientos estándar.</div>
+                  <div class="course-provider">CAC — Cámara Argentina de la Construcción</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 20 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 6 semanas</span>
+                    <span class="course-price">$45.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="intermediate">
+                  <div class="course-top">
+                    <div class="course-icon build">📐</div>
+                    <span class="course-level intermediate">Intermedio</span>
+                  </div>
+                  <div class="course-title">Dirección y control de obra</div>
+                  <div class="course-desc">Planificación de obra, gestión de subcontratistas, control de calidad, presupuestación por rubros y certificaciones de avance.</div>
+                  <div class="course-provider">UTN — Facultad Regional Buenos Aires</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 40 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 10 semanas</span>
+                    <span class="course-price">$95.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="advanced">
+                  <div class="course-top">
+                    <div class="course-icon management">📋</div>
+                    <span class="course-level advanced">Avanzado</span>
+                  </div>
+                  <div class="course-title">Project Management para construcción (PMI/PMP)</div>
+                  <div class="course-desc">Metodología PMI aplicada a obras: earned value, ruta crítica, gestión de riesgos, cronogramas y control de proyecto profesional.</div>
+                  <div class="course-provider">PMI Argentina Chapter</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 60 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 20 semanas</span>
+                    <span class="course-price">$350.000</span>
+                  </div>
+                </div>
+                <div class="course-card" data-lvl="intermediate">
+                  <div class="course-top">
+                    <div class="course-icon legal">⚖️</div>
+                    <span class="course-level intermediate">Intermedio</span>
+                  </div>
+                  <div class="course-title">Marco legal de la construcción en Argentina</div>
+                  <div class="course-desc">Código urbanístico, permisos, habilitaciones, seguros de obra, ART, responsabilidades y marco contractual con subcontratistas.</div>
+                  <div class="course-provider">CPAU — Consejo Profesional de Arquitectura</div>
+                  <div class="course-meta-row">
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 18 hs</span>
+                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 8 semanas</span>
+                    <span class="course-price">$65.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-primary" id="aiCourseRec">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Pedile a la IA que te recomiende cursos según tu perfil
+            </button>
+          </div>
+
+          <!-- TAB: RUTAS -->
+          <div id="acadTabRutas" class="acad-tab-content" style="display:none">
+            <div class="news-takeaway" style="margin-bottom:20px">
+              <span class="news-takeaway-icon">🎓</span>
+              <div class="news-takeaway-text"><strong>Rutas de aprendizaje curadas</strong>Caminos progresivos desde cero hasta nivel profesional. Cada ruta combina cursos en el orden correcto para maximizar tu aprendizaje.</div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-block-title">Ruta: Desarrollador inmobiliario</div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">1</div>
+                  <div><div class="path-title">Bases del negocio inmobiliario</div><div class="path-sub">Entender el mercado, tipos de desarrollos y modelos de negocio</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">📖 Intro al desarrollo inmobiliario</span>
+                  <span class="path-step">📖 Real estate para inversores</span>
+                  <span class="path-step">📊 Lectura de mercado</span>
+                </div>
+              </div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">2</div>
+                  <div><div class="path-title">Análisis y estructuración</div><div class="path-sub">Evaluar viabilidad financiera y armar estructura legal</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">📊 Análisis financiero de proyectos</span>
+                  <span class="path-step">⚖️ Marco legal</span>
+                  <span class="path-step">📐 Factibilidad técnica</span>
+                </div>
+              </div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">3</div>
+                  <div><div class="path-title">Ejecución y escala</div><div class="path-sub">Gestionar obra, inversores y crecimiento del negocio</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">🎯 Fideicomisos inmobiliarios</span>
+                  <span class="path-step">📋 Project management</span>
+                  <span class="path-step">🤝 Captación de inversores</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-block-title">Ruta: Constructor / Director de obra</div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">1</div>
+                  <div><div class="path-title">Fundamentos constructivos</div><div class="path-sub">Materiales, procesos y lectura de documentación técnica</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">🧱 Fundamentos de construcción</span>
+                  <span class="path-step">📐 Lectura de planos</span>
+                  <span class="path-step">📏 Cómputo y presupuesto</span>
+                </div>
+              </div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">2</div>
+                  <div><div class="path-title">Gestión de obra</div><div class="path-sub">Planificación, control y gestión de equipos en campo</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">📋 Dirección y control de obra</span>
+                  <span class="path-step">⚖️ Marco legal de construcción</span>
+                  <span class="path-step">🔧 Instalaciones especiales</span>
+                </div>
+              </div>
+              <div class="path-card">
+                <div class="path-header">
+                  <div class="path-num">3</div>
+                  <div><div class="path-title">Nivel profesional</div><div class="path-sub">Certificaciones, project management y optimización</div></div>
+                </div>
+                <div class="path-steps">
+                  <span class="path-step">📋 PMI/PMP para construcción</span>
+                  <span class="path-step">📊 Control de costos avanzado</span>
+                  <span class="path-step">🏗️ BIM management</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-primary" id="aiPathRec">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Pedile a la IA una ruta personalizada
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SOL VIEW -->
+      <div class="view" id="viewSol">
+        <div class="sol-container">
+          <div class="page-container" id="solPageContainer" style="flex:1;overflow-y:auto">
+            <div class="sol-welcome" id="solWelcome">
+              <div class="sol-avatar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              </div>
+              <h1 class="sol-name">SOL</h1>
+              <p class="sol-desc">Contame qué dato querés cargar y yo lo analizo, te pregunto lo que falte y lo ubico en la sección correcta de tu proyecto.</p>
+              <div class="sol-actions">
+                <div class="sol-action" data-sol-prompt="Registrar un pago que hice">
+                  <div class="sol-action-icon">💰</div>
+                  <div class="sol-action-title">Cargar pago</div>
+                  <div class="sol-action-desc">Pagos realizados o pendientes</div>
+                </div>
+                <div class="sol-action" data-sol-prompt="Actualizar el avance de una etapa de obra">
+                  <div class="sol-action-icon">📐</div>
+                  <div class="sol-action-title">Avance de obra</div>
+                  <div class="sol-action-desc">Etapas, hitos, tiempos</div>
+                </div>
+                <div class="sol-action" data-sol-prompt="Cargar un precio actualizado de material">
+                  <div class="sol-action-icon">🧱</div>
+                  <div class="sol-action-title">Precio material</div>
+                  <div class="sol-action-desc">Cotizaciones y costos</div>
+                </div>
+                <div class="sol-action" data-sol-prompt="Registrar un nuevo proveedor con el que estoy trabajando">
+                  <div class="sol-action-icon">🤝</div>
+                  <div class="sol-action-title">Proveedor</div>
+                  <div class="sol-action-desc">Datos de contacto y rubro</div>
+                </div>
+                <div class="sol-action" data-sol-prompt="Agregar un hito o fecha limite al cronograma">
+                  <div class="sol-action-icon">📅</div>
+                  <div class="sol-action-title">Hito / Fecha</div>
+                  <div class="sol-action-desc">Cronograma y entregas</div>
+                </div>
+                <div class="sol-action" data-sol-prompt="Cargar un gasto o costo no presupuestado">
+                  <div class="sol-action-icon">⚠️</div>
+                  <div class="sol-action-title">Gasto extra</div>
+                  <div class="sol-action-desc">Desvíos y extras</div>
+                </div>
+              </div>
+            </div>
+            <div class="sol-messages" id="solMessages" style="display:none"></div>
+          </div>
+          <div class="sol-input-area">
+            <div class="sol-input-wrapper">
+              <textarea id="solInput" placeholder="Decile a SOL qué dato querés cargar..." rows="1"></textarea>
+              <button class="sol-send" id="solSendBtn" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+            <div class="sol-input-footer">SOL analiza tu dato y lo ubica en la sección correcta del proyecto.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTICIAS VIEW -->
+      <div class="view" id="viewNoticias">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Noticias & Análisis</h2>
+            <p>Lo que está pasando en real estate, construcción y economía — curado para decisiones reales.</p>
+          </div>
+
+          <div class="section-tabs">
+            <button class="section-tab active" data-news-tab="destacadas">Destacadas</button>
+            <button class="section-tab" data-news-tab="ultimas">Últimas</button>
+            <button class="section-tab" data-news-tab="opinion">Opinión</button>
+          </div>
+
+          <!-- TAB: DESTACADAS -->
+          <div id="newsTabDestacadas" class="news-tab-content">
+
+            <!-- Takeaway bar -->
+            <div class="news-takeaway">
+              <span class="news-takeaway-icon">⚡</span>
+              <div class="news-takeaway-text"><strong>Lectura rápida del momento</strong>El BCRA bajó la tasa de referencia 200 puntos. Los créditos hipotecarios UVA se abaratan. Cemento y hierro siguen al alza por presión energética. Se espera aumento de demanda en segundo semestre.</div>
+            </div>
+
+            <!-- Category filters -->
+            <div class="news-filters">
+              <button class="news-filter active" data-category="todas">Todas</button>
+              <button class="news-filter" data-category="macro">Macro</button>
+              <button class="news-filter" data-category="mercado">Mercado</button>
+              <button class="news-filter" data-category="costos">Costos</button>
+              <button class="news-filter" data-category="financiacion">Financiación</button>
+              <button class="news-filter" data-category="regulacion">Regulación</button>
+            </div>
+
+            <!-- Hero cards -->
+            <div class="news-hero">
+              <div class="news-card news-card-featured" data-cat="macro">
+                <div class="news-card-chip chip-macro">Macro</div>
+                <div class="news-card-title">El BCRA reduce la tasa de política monetaria al 29%: impacto directo en créditos hipotecarios y financiación de obra</div>
+                <div class="news-card-excerpt">La decisión del Banco Central de bajar 200 puntos la tasa de referencia genera un efecto cascada en el costo de financiamiento. Los créditos hipotecarios UVA podrían reducir su tasa hasta 2 puntos, reactivando la demanda de vivienda nueva en AMBA y Córdoba.</div>
+                <div class="news-card-impact impact-positive">↑ Impacto positivo en financiación y demanda</div>
+                <div class="news-card-meta"><span class="news-card-source">Ámbito Financiero</span><span>·</span><span>Hoy, 09:45</span></div>
+              </div>
+              <div class="news-card" data-cat="costos">
+                <div class="news-card-chip chip-costos">Costos</div>
+                <div class="news-card-title">Cemento y hierro acumulan +17% en el trimestre: presión por tarifas energéticas</div>
+                <div class="news-card-impact impact-high">↑ Impacto alto en presupuestos de obra</div>
+                <div class="news-card-meta"><span class="news-card-source">Área Tres</span><span>·</span><span>Hoy, 08:20</span></div>
+              </div>
+              <div class="news-card" data-cat="mercado">
+                <div class="news-card-chip chip-mercado">Mercado</div>
+                <div class="news-card-title">Ventas de departamentos en pozo crecen 23% interanual en CABA</div>
+                <div class="news-card-impact impact-positive">↑ Señal positiva para desarrolladores</div>
+                <div class="news-card-meta"><span class="news-card-source">Reporte Inmobiliario</span><span>·</span><span>Ayer</span></div>
+              </div>
+            </div>
+
+            <!-- More cards -->
+            <div class="section-block">
+              <div class="section-block-title">También importante</div>
+              <div class="news-feed">
+                <div class="news-feed-item" data-cat="financiacion">
+                  <div class="news-feed-num">01</div>
+                  <div class="news-feed-body">
+                    <div class="news-card-chip chip-financiacion" style="margin-bottom:4px">Financiación</div>
+                    <div class="news-feed-title">Banco Nación lanza línea de crédito puente para desarrolladores a tasa bonificada</div>
+                    <div class="news-feed-sub">Hasta $150M por proyecto, plazo 24 meses, tasa Badlar +3%. Destinado a obras con avance mínimo de 30%.</div>
+                    <div class="news-feed-meta">Infobae · Hoy, 11:30</div>
+                  </div>
+                </div>
+                <div class="news-feed-item" data-cat="regulacion">
+                  <div class="news-feed-num">02</div>
+                  <div class="news-feed-body">
+                    <div class="news-card-chip chip-regulacion" style="margin-bottom:4px">Regulación</div>
+                    <div class="news-feed-title">CABA modifica código urbanístico: aumenta FOT en corredores de altura</div>
+                    <div class="news-feed-sub">Las avenidas principales de Caballito, Flores y Villa Urquiza pasan de FOT 3.5 a 4.2. Genera oportunidades en parcelas subutilizadas.</div>
+                    <div class="news-feed-meta">Clarín ARQ · Ayer</div>
+                  </div>
+                </div>
+                <div class="news-feed-item" data-cat="costos">
+                  <div class="news-feed-num">03</div>
+                  <div class="news-feed-body">
+                    <div class="news-card-chip chip-costos" style="margin-bottom:4px">Costos</div>
+                    <div class="news-feed-title">Índice CAC de marzo: costo de construcción sube 4.8% mensual</div>
+                    <div class="news-feed-sub">Acumula 18.2% en el primer trimestre. Mano de obra y materiales eléctricos lideran el aumento.</div>
+                    <div class="news-feed-meta">CAC · 02 Abr</div>
+                  </div>
+                </div>
+                <div class="news-feed-item" data-cat="mercado">
+                  <div class="news-feed-num">04</div>
+                  <div class="news-feed-body">
+                    <div class="news-card-chip chip-mercado" style="margin-bottom:4px">Mercado</div>
+                    <div class="news-feed-title">Rosario: se reactiva la demanda de lotes en zona norte tras extensión del Metrobús</div>
+                    <div class="news-feed-sub">Precios de tierra subieron 15% en 6 meses en el corredor noroeste.</div>
+                    <div class="news-feed-meta">La Capital · 01 Abr</div>
+                  </div>
+                </div>
+                <div class="news-feed-item" data-cat="macro">
+                  <div class="news-feed-num">05</div>
+                  <div class="news-feed-body">
+                    <div class="news-card-chip chip-macro" style="margin-bottom:4px">Macro</div>
+                    <div class="news-feed-title">FMI mejora proyección de crecimiento de Argentina a 5.2% para 2026</div>
+                    <div class="news-feed-sub">La revisión al alza impulsa la confianza inversora en real estate.</div>
+                    <div class="news-feed-meta">Reuters · 31 Mar</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-primary" id="aiNewsSummary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Resumen IA de la semana
+            </button>
+          </div>
+
+          <!-- TAB: ÚLTIMAS -->
+          <div id="newsTabUltimas" class="news-tab-content" style="display:none">
+            <div class="news-filters">
+              <button class="news-filter active" data-category="todas">Todas</button>
+              <button class="news-filter" data-category="macro">Macro</button>
+              <button class="news-filter" data-category="mercado">Mercado</button>
+              <button class="news-filter" data-category="costos">Costos</button>
+              <button class="news-filter" data-category="financiacion">Financiación</button>
+              <button class="news-filter" data-category="regulacion">Regulación</button>
+            </div>
+            <div class="news-feed" id="newsFeedUltimas">
+              <div class="news-feed-item" data-cat="macro">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Dólar blue retrocede a $1.180 y achica brecha al 8%</div>
+                  <div class="news-feed-sub">La estabilidad cambiaria refuerza la dolarización de costos de construcción en niveles más predecibles.</div>
+                  <div class="news-feed-meta">Ámbito · Hace 25 min</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="costos">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">YPF sube precio del gas industrial 6.5%: impacto en producción de cemento y cerámicos</div>
+                  <div class="news-feed-sub">Los productores adelantan que trasladarán el aumento al precio final en 30 días.</div>
+                  <div class="news-feed-meta">Cronista · Hace 1h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="mercado">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Córdoba: se lanzaron 12 nuevos proyectos multifamily en el primer trimestre</div>
+                  <div class="news-feed-sub">Récord histórico para la ciudad. La zona sur lidera con 5 emprendimientos.</div>
+                  <div class="news-feed-meta">La Voz · Hace 2h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="financiacion">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Banco Hipotecario relanza créditos para construcción de vivienda individual</div>
+                  <div class="news-feed-sub">Hasta $80M, plazo de 20 años, UVA + 4.5%. Requiere terreno propio y planos aprobados.</div>
+                  <div class="news-feed-meta">Infobae · Hace 3h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="regulacion">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Provincia de Buenos Aires simplifica trámite de final de obra para edificios sub-500m²</div>
+                  <div class="news-feed-sub">El nuevo régimen reduce los plazos de habilitación de 120 a 45 días.</div>
+                  <div class="news-feed-meta">CPAU · Hace 4h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="costos">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Aluminio sube 9% en commodities internacionales: impacto en aberturas y carpintería</div>
+                  <div class="news-feed-sub">Proveedores locales anticipan ajuste del 5-7% en puertas y ventanas de aluminio.</div>
+                  <div class="news-feed-meta">Bloomberg Línea · Hace 5h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="mercado">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Precio del m² en Palermo alcanza USD 3.450: máximo en 3 años</div>
+                  <div class="news-feed-sub">Palermo Hollywood y Soho lideran la suba. Inversores ven señales de recuperación plena.</div>
+                  <div class="news-feed-meta">Zonaprop · Hace 6h</div>
+                </div>
+              </div>
+              <div class="news-feed-item" data-cat="macro">
+                <div class="news-feed-num">·</div>
+                <div class="news-feed-body">
+                  <div class="news-feed-title">Inflación de marzo: 2.1% mensual, la más baja en 4 años</div>
+                  <div class="news-feed-sub">La desaceleración sostiene el atractivo de créditos UVA y da previsibilidad a costos de obra.</div>
+                  <div class="news-feed-meta">INDEC · Hace 8h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: OPINIÓN -->
+          <div id="newsTabOpinion" class="news-tab-content" style="display:none">
+            <div class="news-takeaway">
+              <span class="news-takeaway-icon">🎯</span>
+              <div class="news-takeaway-text"><strong>Consenso de analistas — Abril 2026</strong>Los principales economistas ven un segundo semestre más dinámico para real estate: baja de tasas, estabilidad cambiaria y reactivación del crédito hipotecario como drivers principales.</div>
+            </div>
+
+            <div class="opinion-grid">
+              <div class="opinion-card">
+                <div class="opinion-avatar av1">MC</div>
+                <div class="opinion-name">Martín Castellanos</div>
+                <div class="opinion-role">Economista jefe — Banco Galicia</div>
+                <div class="opinion-quote">"La baja de tasas va a generar un efecto multiplicador en el sector. Esperamos que los créditos hipotecarios crezcan un 40% en volumen en el segundo semestre. Es el mejor momento en 5 años para lanzar proyectos residenciales."</div>
+                <div class="opinion-date">04 Abr 2026 · Entrevista en Ámbito</div>
+              </div>
+              <div class="opinion-card">
+                <div class="opinion-avatar av2">LF</div>
+                <div class="opinion-name">Laura Fernández</div>
+                <div class="opinion-role">Directora de Research — CBRE Argentina</div>
+                <div class="opinion-quote">"El mercado de oficinas premium ya tocó piso. Vemos absorción neta positiva por primera vez en 3 años. Los desarrolladores que compraron tierra en 2024 están en posición privilegiada."</div>
+                <div class="opinion-date">03 Abr 2026 · Reporte trimestral CBRE</div>
+              </div>
+              <div class="opinion-card">
+                <div class="opinion-avatar av3">DR</div>
+                <div class="opinion-name">Diego Ruiz</div>
+                <div class="opinion-role">Presidente — Cámara Argentina de la Construcción</div>
+                <div class="opinion-quote">"El costo de construcción en dólares sigue siendo competitivo, aunque la presión de tarifas energéticas es el principal riesgo. Recomendamos cerrar contratos de materiales con precio fijo para los próximos 90 días."</div>
+                <div class="opinion-date">01 Abr 2026 · Conferencia CAC</div>
+              </div>
+              <div class="opinion-card">
+                <div class="opinion-avatar av4">SP</div>
+                <div class="opinion-name">Soledad Puente</div>
+                <div class="opinion-role">Analista macro — Consultora Ecolatina</div>
+                <div class="opinion-quote">"Con inflación debajo del 3% mensual y brecha cambiaria mínima, el escenario para inversión en ladrillo es el más favorable desde 2017. La clave es la sostenibilidad fiscal del segundo semestre."</div>
+                <div class="opinion-date">31 Mar 2026 · Informe semanal</div>
+              </div>
+            </div>
+
+            <button class="btn-primary" id="aiOpinionSummary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Síntesis IA de opiniones
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PROYECTO VIEW -->
+      <div class="view" id="viewProyecto">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Panel de Proyecto</h2>
+            <p>Vista ejecutiva del estado, costos, cronograma e indicadores de control.</p>
+          </div>
+
+          <div class="section-tabs">
+            <button class="section-tab active" data-proj-tab="resumen">Resumen</button>
+            <button class="section-tab" data-proj-tab="costos">Costos</button>
+            <button class="section-tab" data-proj-tab="cronograma">Cronograma</button>
+          </div>
+
+          <!-- TAB: RESUMEN -->
+          <div id="projTabResumen" class="proj-tab-content">
+
+            <!-- Health -->
+            <div class="project-health">
+              <span class="health-dot yellow"></span>
+              <span class="health-label">Proyecto en curso — con desvíos moderados</span>
+              <span class="health-sub">Actualizado 06/04/2026</span>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <div class="kpi-label">Presupuesto base</div>
+                <div class="kpi-value">$6.43M</div>
+                <div class="kpi-sub">Estimación aprobada</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Costo real</div>
+                <div class="kpi-value">$4.25M</div>
+                <div class="kpi-sub">66% ejecutado</div>
+                <div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:66%"></div></div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Avance de obra</div>
+                <div class="kpi-value">58%</div>
+                <div class="kpi-sub">vs 66% programado</div>
+                <div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:58%"></div></div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Plazo</div>
+                <div class="kpi-value">14 / 18</div>
+                <div class="kpi-sub">meses transcurridos</div>
+                <div class="kpi-bar"><div class="kpi-bar-fill green" style="width:78%"></div></div>
+              </div>
+            </div>
+
+            <!-- PMI Indicators -->
+            <div class="section-block">
+              <div class="section-block-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Indicadores de Control
+              </div>
+              <div class="pmi-row">
+                <div class="pmi-card">
+                  <div class="pmi-title">CPI — Índice de costo</div>
+                  <div class="pmi-value warn">0.94</div>
+                  <div class="pmi-desc">Costo real 6% arriba del plan</div>
+                </div>
+                <div class="pmi-card">
+                  <div class="pmi-title">SPI — Índice de plazo</div>
+                  <div class="pmi-value warn">0.88</div>
+                  <div class="pmi-desc">Avance 12% debajo del plan</div>
+                </div>
+                <div class="pmi-card">
+                  <div class="pmi-title">EAC — Estimación al cierre</div>
+                  <div class="pmi-value bad">$6.84M</div>
+                  <div class="pmi-desc">+$410K vs presupuesto base</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="section-block">
+              <div class="section-block-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Alertas activas
+              </div>
+              <div class="alert-list">
+                <div class="alert-item high">
+                  <span class="alert-icon">⚠️</span>
+                  <div class="alert-text"><strong>Sobrecosto en estructura</strong>Hierro y mano de obra superaron el presupuesto en +12.4%. Evaluar renegociación con proveedor.</div>
+                </div>
+                <div class="alert-item medium">
+                  <span class="alert-icon">⏱️</span>
+                  <div class="alert-text"><strong>Retraso en instalación eléctrica</strong>18 días de atraso acumulado. Impacta fecha de entrega de Etapa 3.</div>
+                </div>
+                <div class="alert-item low">
+                  <span class="alert-icon">📋</span>
+                  <div class="alert-text"><strong>Pendiente aprobación municipal</strong>Permiso de obra ampliación en trámite. Sin impacto inmediato.</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px">
+              <button class="btn-primary" id="aiProjectAnalysis">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Análisis IA del proyecto
+              </button>
+              <button class="btn-secondary" id="aiProjectReport">Generar reporte ejecutivo</button>
+            </div>
+          </div>
+
+          <!-- TAB: COSTOS -->
+          <div id="projTabCostos" class="proj-tab-content" style="display:none">
+            <div class="section-block">
+              <div class="section-block-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                Línea base de costos por rubro
+              </div>
+
+              <div class="cost-row" id="costBreakdown">
+                <div class="cost-item">
+                  <div class="cost-name">Estructura</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real over" style="width:85%"></div></div>
+                    <div class="cost-amounts"><span>Real: $1.82M</span><span>Base: $1.60M</span></div>
+                  </div>
+                  <div class="cost-variance pos">+13.8%</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Albañilería</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:62%"></div></div>
+                    <div class="cost-amounts"><span>Real: $680K</span><span>Base: $1.10M</span></div>
+                  </div>
+                  <div class="cost-variance neg">-38.2%</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Inst. eléctrica</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real over" style="width:108%"></div></div>
+                    <div class="cost-amounts"><span>Real: $1.29M</span><span>Base: $1.20M</span></div>
+                  </div>
+                  <div class="cost-variance pos">+7.5%</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Inst. sanitaria</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
+                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $780K</span></div>
+                  </div>
+                  <div class="cost-variance zero">Pendiente</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Carpintería</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
+                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $520K</span></div>
+                  </div>
+                  <div class="cost-variance zero">Pendiente</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Terminaciones</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
+                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $680K</span></div>
+                  </div>
+                  <div class="cost-variance zero">Pendiente</div>
+                </div>
+                <div class="cost-item">
+                  <div class="cost-name">Pintura</div>
+                  <div class="cost-bar-wrap">
+                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
+                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $250K</span></div>
+                  </div>
+                  <div class="cost-variance zero">Pendiente</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cost summary -->
+            <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+              <div class="kpi-card">
+                <div class="kpi-label">Presupuesto base</div>
+                <div class="kpi-value">$6.43M</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Gastado hasta hoy</div>
+                <div class="kpi-value">$4.25M</div>
+                <div class="kpi-sub">66.1% del presupuesto</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Desvío proyectado</div>
+                <div class="kpi-value" style="color:#ef4444">+$410K</div>
+                <div class="kpi-sub">+6.4% sobre presupuesto base</div>
+              </div>
+            </div>
+
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn-primary" id="aiCostAnalysis">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Análisis IA de costos
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB: CRONOGRAMA -->
+          <div id="projTabCronograma" class="proj-tab-content" style="display:none">
+            <div class="detail-grid">
+              <div>
+                <div class="section-block">
+                  <div class="section-block-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Hitos del proyecto
+                  </div>
+                  <div class="milestone-track">
+                    <div class="milestone-line"></div>
+                    <div class="milestone">
+                      <div class="milestone-dot done"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Inicio de obra</span>
+                        <span class="milestone-status done">Completado</span>
+                      </div>
+                      <div class="milestone-date">Feb 2025 — en fecha</div>
+                    </div>
+                    <div class="milestone">
+                      <div class="milestone-dot done"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Fundaciones</span>
+                        <span class="milestone-status done">Completado</span>
+                      </div>
+                      <div class="milestone-date">May 2025 — 5 días de adelanto</div>
+                    </div>
+                    <div class="milestone">
+                      <div class="milestone-dot done"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Estructura completa</span>
+                        <span class="milestone-status done">Completado</span>
+                      </div>
+                      <div class="milestone-date">Nov 2025 — 8 días de retraso</div>
+                    </div>
+                    <div class="milestone">
+                      <div class="milestone-dot active"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Instalaciones</span>
+                        <span class="milestone-status active">En curso</span>
+                      </div>
+                      <div class="milestone-date">Mar 2026 objetivo — 18 días de retraso</div>
+                      <div class="milestone-detail">Eléctrica completada. Sanitaria en ejecución.</div>
+                    </div>
+                    <div class="milestone">
+                      <div class="milestone-dot pending"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Terminaciones</span>
+                        <span class="milestone-status pending">Pendiente</span>
+                      </div>
+                      <div class="milestone-date">Jun 2026 objetivo</div>
+                    </div>
+                    <div class="milestone">
+                      <div class="milestone-dot pending"></div>
+                      <div class="milestone-head">
+                        <span class="milestone-name">Entrega final</span>
+                        <span class="milestone-status pending">Pendiente</span>
+                      </div>
+                      <div class="milestone-date">Ago 2026 objetivo</div>
+                      <div class="milestone-detail">Riesgo de correrse a Sep 2026 por retrasos acumulados.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="section-block">
+                  <div class="section-block-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Resumen de plazo
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <div class="kpi-card">
+                      <div class="kpi-label">Inicio</div>
+                      <div class="kpi-value" style="font-size:18px">Feb 2025</div>
+                    </div>
+                    <div class="kpi-card">
+                      <div class="kpi-label">Entrega programada</div>
+                      <div class="kpi-value" style="font-size:18px">Ago 2026</div>
+                    </div>
+                    <div class="kpi-card">
+                      <div class="kpi-label">Entrega estimada real</div>
+                      <div class="kpi-value" style="font-size:18px;color:#eab308">Sep 2026</div>
+                      <div class="kpi-sub">+30 días de retraso proyectado</div>
+                    </div>
+                    <div class="kpi-card">
+                      <div class="kpi-label">Avance real vs plan</div>
+                      <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px">
+                        <span style="font-size:22px;font-weight:800;color:var(--text-0)">58%</span>
+                        <span style="font-size:12px;color:var(--text-2)">real</span>
+                        <span style="font-size:12px;color:var(--text-3)">vs</span>
+                        <span style="font-size:18px;font-weight:700;color:var(--text-2)">66%</span>
+                        <span style="font-size:12px;color:var(--text-2)">plan</span>
+                      </div>
+                      <div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:58%"></div></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:16px">
+                  <button class="btn-primary" id="aiScheduleAnalysis">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Análisis IA de cronograma
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
 
     <!-- Input (only visible in chat view) -->
@@ -606,13 +1710,20 @@ function switchView(v){
   $$('.sidebar-nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
-  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos'};
+  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia'};
   els.topbarTitle.textContent=titles[v]||'';
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
 }
 
 // Sidebar
 function toggleSidebar(){els.sidebar.classList.toggle('collapsed')}
+let _lastTitleTap=0;
+function handleTitleTap(){
+  const now=Date.now();
+  if(now-_lastTitleTap<800){location.reload();return}
+  _lastTitleTap=now;
+  $('#pageContainer').scrollTo({top:0,behavior:'smooth'});
+}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 function saveConversations(){localStorage.setItem('re_conversations',JSON.stringify(state.conversations))}
 
@@ -713,6 +1824,160 @@ function initPagosTabs(){
   });
 }
 
+// Academia tabs & level filters
+function initAcademiaTabs(){
+  $$('[data-acad-tab]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      $$('[data-acad-tab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.acad-tab-content').forEach(c=>c.style.display='none');
+      $(`#acadTab${tab.dataset.acadTab.charAt(0).toUpperCase()+tab.dataset.acadTab.slice(1)}`).style.display='';
+    });
+  });
+  $$('.level-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      $$('.level-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const lvl=btn.dataset.level;
+      $$('.course-card').forEach(card=>{
+        card.style.display=(lvl==='todos'||card.dataset.lvl===lvl)?'':'none';
+      });
+    });
+  });
+}
+
+// SOL Assistant
+const SOL_PROMPT = `Eres SOL, asistente de carga de datos del sistema RE Expert. Tu rol es recibir información en lenguaje natural del usuario y:
+
+1. ANALIZAR qué tipo de dato es (pago, avance de obra, precio de material, proveedor, hito, gasto extra, etc.)
+2. Si falta información crítica, hacer MÁXIMO 1-2 preguntas cortas y simples para completar el dato.
+3. Confirmar el dato estructurado y decir en qué sección se cargó.
+
+## Secciones del sistema donde puedes rutear datos:
+- **Pagos** → pagos realizados, pendientes, montos, proveedores, fechas
+- **Cronograma** → hitos, fechas, avances de etapa, retrasos, entregas
+- **Materiales** → precios actualizados, cotizaciones, variaciones
+- **Costos** → gastos presupuestados o extra, desvíos, rubros
+- **Proveedores** → datos de contacto, rubros, condiciones
+
+## Reglas:
+- Responde en español, tono amigable pero profesional
+- Sé MUY concisa: respuestas cortas y claras
+- Cuando confirmes un dato cargado, indica la sección destino con este formato exacto: [CARGADO→Sección]
+- Si el usuario quiere conversar o preguntar algo (no cargar datos), respondé normalmente usando tu conocimiento del proyecto y del sector
+- Usa Markdown simple, sin exceso
+- No hagas preguntas innecesarias si el dato ya está completo
+- Siempre confirma el dato antes de "cargarlo"
+
+## Datos actuales del proyecto (contexto):
+- Presupuesto base: $6.430.000
+- Costo real: $4.250.000 (66% ejecutado)
+- Avance de obra: 58% (vs 66% programado)
+- Plazo: 14/18 meses
+- Etapa actual: Instalaciones (eléctrica completada, sanitaria en ejecución)
+- Alertas: sobrecosto estructura +13.8%, retraso instalaciones 18 días`;
+
+const solState = {messages:[], isStreaming:false};
+
+function solMsgHTML(role,content){
+  const u=role==='user';
+  return`<div class="sol-msg sol-msg-${u?'user':'sol'}"><div class="message-inner"><div class="sol-msg-avatar">${u?'TU':'☀️'}</div><div class="message-content"><div class="sol-msg-sender">${u?'Tu':'SOL'}</div><div class="message-text">${u?esc(content):parseSolMd(content)}</div></div></div></div>`;
+}
+
+function parseSolMd(t){
+  let html=typeof marked!=='undefined'?(marked.setOptions({breaks:true,gfm:true}),marked.parse(t)):esc(t).replace(/\n/g,'<br>');
+  html=html.replace(/\[CARGADO→([^\]]+)\]/g,'<div class="sol-routed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Dato cargado en → $1</div>');
+  return html;
+}
+
+function solAppendMsg(role,content){
+  $('#solWelcome').style.display='none';
+  const m=$('#solMessages');m.style.display='flex';
+  const d=document.createElement('div');d.innerHTML=solMsgHTML(role,content);
+  m.appendChild(d.firstElementChild);
+  $('#solPageContainer').scrollTop=$('#solPageContainer').scrollHeight;
+}
+
+function solAppendStreaming(){
+  $('#solWelcome').style.display='none';
+  const m=$('#solMessages');m.style.display='flex';
+  const d=document.createElement('div');
+  d.innerHTML=`<div class="sol-msg sol-msg-sol" id="solStreamMsg"><div class="message-inner"><div class="sol-msg-avatar">☀️</div><div class="message-content"><div class="sol-msg-sender">SOL</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div></div></div></div></div></div>`;
+  m.appendChild(d.firstElementChild);
+  $('#solPageContainer').scrollTop=$('#solPageContainer').scrollHeight;
+}
+
+function solUpdateStreaming(t){const el=$('#solStreamMsg');if(el)el.querySelector('.message-text').innerHTML=parseSolMd(t)}
+function solFinalizeStreaming(){const el=$('#solStreamMsg');if(el)el.removeAttribute('id')}
+
+async function solSend(text){
+  if(!text.trim()||solState.isStreaming)return;
+  if(!state.apiKey){alert('Configura tu API Key primero');return}
+  const msg=text.trim();
+  $('#solInput').value='';$('#solInput').style.height='auto';solUpdateSendBtn();
+  solState.messages.push({role:'user',content:msg});
+  solAppendMsg('user',msg);
+  solState.isStreaming=true;$('#solSendBtn').disabled=true;
+  solAppendStreaming();let full='';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6-20250514',max_tokens:2048,system:SOL_PROMPT,stream:true,messages:solState.messages.map(m=>({role:m.role,content:m.content}))})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`Error ${r.status}`)}
+    const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
+    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const l of lines){if(!l.startsWith('data: '))continue;const d=l.slice(6).trim();if(d==='[DONE]')continue;try{const ev=JSON.parse(d);if(ev.type==='content_block_delta'&&ev.delta?.text){full+=ev.delta.text;solUpdateStreaming(full)}}catch(e){}}}
+    solState.messages.push({role:'assistant',content:full});solFinalizeStreaming();
+  }catch(e){solUpdateStreaming('Error: '+e.message);solFinalizeStreaming()}
+  solState.isStreaming=false;solUpdateSendBtn();$('#solInput').focus();
+}
+
+function solUpdateSendBtn(){$('#solSendBtn').disabled=!$('#solInput').value.trim()||solState.isStreaming}
+
+function initSol(){
+  const input=$('#solInput'),sendBtn=$('#solSendBtn');
+  input.addEventListener('input',()=>{solUpdateSendBtn();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,140)+'px'});
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();solSend(input.value)}});
+  sendBtn.addEventListener('click',()=>solSend(input.value));
+  $$('.sol-action').forEach(a=>a.addEventListener('click',()=>{input.value=a.dataset.solPrompt;solSend(a.dataset.solPrompt)}));
+}
+
+// Noticias tabs & filters
+function initNoticiasTabs(){
+  $$('[data-news-tab]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      $$('[data-news-tab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.news-tab-content').forEach(c=>c.style.display='none');
+      $(`#newsTab${tab.dataset.newsTab.charAt(0).toUpperCase()+tab.dataset.newsTab.slice(1)}`).style.display='';
+    });
+  });
+  // Category filters
+  $$('.news-filters').forEach(filterGroup=>{
+    filterGroup.querySelectorAll('.news-filter').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        filterGroup.querySelectorAll('.news-filter').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat=btn.dataset.category;
+        const container=filterGroup.parentElement;
+        const items=container.querySelectorAll('[data-cat]');
+        items.forEach(item=>{
+          item.style.display=(cat==='todas'||item.dataset.cat===cat)?'':'none';
+        });
+      });
+    });
+  });
+}
+
+// Proyecto tabs
+function initProyectoTabs(){
+  $$('[data-proj-tab]').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      $$('[data-proj-tab]').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.proj-tab-content').forEach(c=>c.style.display='none');
+      $(`#projTab${tab.dataset.projTab.charAt(0).toUpperCase()+tab.dataset.projTab.slice(1)}`).style.display='';
+    });
+  });
+}
+
 // AI actions for sections
 function initSectionActions(){
   $('#analyzePlanosBtn')?.addEventListener('click',()=>{
@@ -730,6 +1995,46 @@ function initSectionActions(){
     if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Haceme un analisis economico profundo del mercado de materiales de construccion. Incluye pronosticos para los proximos 3 meses basado en inflacion, tipo de cambio, demanda del sector y costos energeticos. Presenta en tabla con tendencias.'),100);
+  });
+  $('#aiCourseRec')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Soy desarrollador inmobiliario en Argentina, nivel intermedio. Ya tengo experiencia en desarrollo de proyectos residenciales chicos (dúplex, PH). Quiero escalar a edificios multifamily y fideicomisos. Recomendame cursos, formaciones o certificaciones en orden de prioridad, incluyendo instituciones argentinas y opciones online. Indicame nivel, duracion, costo estimado y por que me sirve cada uno.'),100);
+  });
+  $('#aiPathRec')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Armame una ruta de aprendizaje personalizada para alguien que quiere dedicarse profesionalmente al desarrollo inmobiliario en Argentina. Quiero un plan desde cero hasta nivel avanzado, con etapas claras, cursos recomendados en cada etapa, habilidades a desarrollar, y estimacion de tiempo y costo total. Incluí opciones presenciales en Buenos Aires y opciones online.'),100);
+  });
+  $('#aiNewsSummary')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Haceme un resumen ejecutivo de la semana en real estate y construccion en Argentina. Incluí: movimientos del BCRA y su impacto en creditos hipotecarios, variacion de costos de materiales (cemento, hierro, aluminio), estado del mercado inmobiliario en CABA y Cordoba, novedades regulatorias relevantes, y una conclusion con recomendaciones para un desarrollador inmobiliario. Formato: resumen por area con bullet points y un bloque final de "Que hacer esta semana".'),100);
+  });
+  $('#aiOpinionSummary')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Sintetiza las opiniones de los principales analistas sobre el mercado inmobiliario argentino en abril 2026. Contexto: baja de tasas del BCRA, inflacion debajo de 3%, brecha cambiaria minima, costos de construccion subiendo por energia. Quiero entender: el consenso general, los puntos de coincidencia, los riesgos que ven, y que oportunidades concretas detectan para desarrolladores y constructores. Dame un analisis critico, no solo un resumen.'),100);
+  });
+  $('#aiProjectAnalysis')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Analiza el estado general de mi proyecto de construccion. Datos: presupuesto base $6.430.000, costo real $4.250.000 (66% ejecutado), avance de obra 58% vs 66% programado, 14 de 18 meses transcurridos. CPI=0.94, SPI=0.88. Hay sobrecosto en estructura (+13.8%) e instalacion electrica (+7.5%). Retraso acumulado de 18 dias en instalaciones. Dame un diagnostico profesional con recomendaciones concretas para corregir desvios.'),100);
+  });
+  $('#aiProjectReport')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Genera un reporte ejecutivo profesional del proyecto con estos datos: Presupuesto $6.43M, gastado $4.25M, avance 58%, plazo 14/18 meses, CPI 0.94, SPI 0.88, EAC $6.84M. Alertas: sobrecosto estructura +13.8%, retraso instalaciones 18 dias, permiso municipal pendiente. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos, recomendaciones y proximos pasos.'),100);
+  });
+  $('#aiCostAnalysis')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Haceme un analisis detallado de costos de mi obra. Rubros: Estructura base $1.60M real $1.82M (+13.8%), Albañileria base $1.10M real $680K (en curso), Inst. electrica base $1.20M real $1.29M (+7.5%), Inst. sanitaria base $780K (pendiente), Carpinteria base $520K (pendiente), Terminaciones base $680K (pendiente), Pintura base $250K (pendiente). Presupuesto total $6.43M. Analiza desvios, identifica causas probables y recomienda acciones para los rubros pendientes.'),100);
+  });
+  $('#aiScheduleAnalysis')?.addEventListener('click',()=>{
+    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    switchView('chat');
+    setTimeout(()=>sendMessage('Analiza el cronograma de mi proyecto: Inicio Feb 2025, entrega programada Ago 2026 (18 meses). Hitos: Fundaciones (completado, 5 dias adelanto), Estructura (completado, 8 dias retraso), Instalaciones (en curso, 18 dias retraso — electrica completa, sanitaria en ejecucion), Terminaciones (pendiente Jun 2026), Entrega final (pendiente Ago 2026, riesgo Sep 2026). SPI=0.88. Dame un analisis de ruta critica, impacto del retraso acumulado y plan de accion para recuperar plazo.'),100);
   });
   $('#aiPayAnalysis')?.addEventListener('click',()=>{
     if(!state.apiKey){alert('Configura tu API Key primero');return}
@@ -756,6 +2061,9 @@ function init(){
   applyTheme(state.theme);updateApiKeyUI();
   els.sidebarToggle.addEventListener('click',toggleSidebar);
   els.sidebarClose.addEventListener('click',()=>els.sidebar.classList.add('collapsed'));
+  els.topbarTitle.style.cursor='pointer';
+  els.topbarTitle.addEventListener('click',handleTitleTap);
+  document.addEventListener('click',e=>{if(!els.sidebar.contains(e.target)&&!els.sidebarToggle.contains(e.target)&&!els.sidebar.classList.contains('collapsed'))els.sidebar.classList.add('collapsed')});
   els.newChatBtn.addEventListener('click',newConversation);
   els.apiKeySave.addEventListener('click',saveApiKey);
   els.apiKeyInput.addEventListener('keydown',e=>{if(e.key==='Enter')saveApiKey()});
@@ -771,7 +2079,7 @@ function init(){
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
   $$('.sidebar-nav-item').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
   renderHistory();
-  initPlanos();initMaterialesTabs();initPagosTabs();initSectionActions();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
   els.messageInput.focus();
