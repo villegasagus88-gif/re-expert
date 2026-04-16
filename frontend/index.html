@@ -9,6 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="supabase-client.js"></script>
   <style>
 :root {
   --bg-0:#fafafa; --bg-1:#ffffff; --bg-2:#f5f5f5;
@@ -499,6 +502,39 @@ textarea::placeholder{color:var(--text-3)}
   </style>
 </head>
 <body>
+  <!-- AUTH MODAL -->
+  <div id="authModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px">
+    <div style="background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-xl);width:100%;max-width:400px;padding:32px;box-shadow:var(--shadow-xl)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <div style="width:40px;height:40px;background:#09090b;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">RE</div>
+        <div>
+          <div style="font-weight:700;font-size:16px;color:var(--text-0)">RE Expert</div>
+          <div style="font-size:12px;color:var(--text-2)" id="authModalSubtitle">Iniciar sesión</div>
+        </div>
+      </div>
+      <form id="authForm" style="display:flex;flex-direction:column;gap:12px">
+        <div id="authFullNameWrap" style="display:none">
+          <label style="font-size:12px;font-weight:500;color:var(--text-1);margin-bottom:6px;display:block">Nombre completo</label>
+          <input type="text" id="authFullName" style="width:100%;padding:10px 12px;border:1px solid var(--border-0);border-radius:var(--radius-md);background:var(--bg-input);color:var(--text-0);font-size:14px;font-family:var(--font)" autocomplete="name">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:500;color:var(--text-1);margin-bottom:6px;display:block">Email</label>
+          <input type="email" id="authEmail" required style="width:100%;padding:10px 12px;border:1px solid var(--border-0);border-radius:var(--radius-md);background:var(--bg-input);color:var(--text-0);font-size:14px;font-family:var(--font)" autocomplete="email">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:500;color:var(--text-1);margin-bottom:6px;display:block">Contraseña</label>
+          <input type="password" id="authPassword" required minlength="6" style="width:100%;padding:10px 12px;border:1px solid var(--border-0);border-radius:var(--radius-md);background:var(--bg-input);color:var(--text-0);font-size:14px;font-family:var(--font)" autocomplete="current-password">
+        </div>
+        <div id="authError" style="display:none;color:#dc2626;font-size:12px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm)"></div>
+        <button type="submit" id="authSubmit" style="padding:10px;background:#18181b;color:#fff;border:none;border-radius:var(--radius-md);font-weight:600;font-size:14px;cursor:pointer;margin-top:4px">Iniciar sesión</button>
+      </form>
+      <div style="margin-top:16px;text-align:center;font-size:13px;color:var(--text-2)">
+        <span id="authToggleText">¿No tenés cuenta?</span>
+        <button type="button" id="authToggle" style="background:none;border:none;color:var(--accent-brand);font-weight:600;cursor:pointer;font-size:13px">Crear cuenta</button>
+      </div>
+    </div>
+  </div>
+
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="logo">
@@ -562,6 +598,12 @@ textarea::placeholder{color:var(--text-3)}
 
     <div class="sidebar-footer">
       <div class="model-badge"><span class="model-dot"></span> Claude Sonnet 4.6</div>
+      <div id="userFooter" style="display:none;padding:8px 12px;margin-top:8px;border-top:1px solid var(--border-sidebar);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sidebar-muted)">
+        <span id="userEmail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <button id="logoutBtn" title="Cerrar sesión" style="background:transparent;border:none;color:var(--text-sidebar-muted);cursor:pointer;padding:4px;border-radius:4px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -1673,11 +1715,12 @@ const SYSTEM_PROMPT = `Eres un experto senior en Real Estate (Bienes Raíces) co
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
 
 const state = {
-  conversations: JSON.parse(localStorage.getItem('re_conversations')||'[]'),
+  conversations: [],
   currentConversation:null, messages:[], isStreaming:false,
   theme: localStorage.getItem('re_theme')||'light',
   apiKey: localStorage.getItem('re_api_key')||'',
-  currentView:'chat', uploadedFiles:[]
+  currentView:'chat', uploadedFiles:[],
+  user: null
 };
 
 const els = {
@@ -1724,20 +1767,31 @@ function handleTitleTap(){
   _lastTitleTap=now;
   $('#pageContainer').scrollTo({top:0,behavior:'smooth'});
 }
-function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function saveConversations(){localStorage.setItem('re_conversations',JSON.stringify(state.conversations))}
-
-function newConversation(){
-  const c={id:genId(),title:'Nueva conversacion',messages:[],createdAt:new Date().toISOString()};
-  state.conversations.unshift(c);state.currentConversation=c;state.messages=c.messages;
-  saveConversations();renderHistory();showWelcome();
-  els.exportBtn.style.display='none';els.messageInput.focus();
-  switchView('chat');
+async function newConversation(){
+  try{
+    const c=await window.SB.createConversation('Nueva conversación');
+    c.messages=[];
+    state.conversations.unshift(c);state.currentConversation=c;state.messages=c.messages;
+    renderHistory();showWelcome();
+    els.exportBtn.style.display='none';els.messageInput.focus();
+    switchView('chat');
+  }catch(e){console.error('Error creando conversación:',e);alert('Error: '+e.message)}
 }
-function loadConversation(id){
+async function loadConversation(id){
   const c=state.conversations.find(x=>x.id===id);if(!c)return;
-  state.currentConversation=c;state.messages=c.messages;
-  renderHistory();renderMessages();switchView('chat');
+  try{
+    const msgs=await window.SB.listMessages(id);
+    c.messages=msgs.map(m=>({role:m.role,content:m.content}));
+    state.currentConversation=c;state.messages=c.messages;
+    renderHistory();renderMessages();switchView('chat');
+  }catch(e){console.error('Error cargando mensajes:',e);alert('Error: '+e.message)}
+}
+async function loadConversationsFromCloud(){
+  try{
+    const list=await window.SB.listConversations();
+    state.conversations=list.map(c=>({id:c.id,title:c.title,messages:[],createdAt:c.created_at}));
+    renderHistory();
+  }catch(e){console.error('Error listando conversaciones:',e)}
 }
 function renderHistory(){
   if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
@@ -1763,17 +1817,27 @@ function scrollBottom(){requestAnimationFrame(()=>{$('#pageContainer').scrollTop
 async function sendMessage(text){
   if(!text.trim()||state.isStreaming)return;
   if(!state.apiKey){els.apiKeyInput.focus();return}
-  if(!state.currentConversation)newConversation();
+  if(!state.currentConversation)await newConversation();
   const userMsg=text.trim();els.messageInput.value='';els.messageInput.style.height='auto';updateSendBtn();
   state.messages.push({role:'user',content:userMsg});appendMsg('user',userMsg);
-  if(state.messages.length===1){state.currentConversation.title=userMsg.slice(0,50)+(userMsg.length>50?'...':'');els.topbarTitle.textContent=state.currentConversation.title;renderHistory()}
+  // Persist user message
+  try{await window.SB.addMessage(state.currentConversation.id,'user',userMsg)}catch(e){console.error('Error guardando mensaje:',e)}
+  if(state.messages.length===1){
+    const newTitle=userMsg.slice(0,50)+(userMsg.length>50?'...':'');
+    state.currentConversation.title=newTitle;
+    els.topbarTitle.textContent=newTitle;
+    try{await window.SB.updateConversationTitle(state.currentConversation.id,newTitle)}catch(e){console.error('Error actualizando título:',e)}
+    renderHistory();
+  }
   state.isStreaming=true;els.sendBtn.disabled=true;appendStreaming();let full='';
   try{
     const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6-20250514',max_tokens:8192,system:SYSTEM_PROMPT,stream:true,messages:state.messages.map(m=>({role:m.role,content:m.content}))})});
     if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`Error ${r.status}`)}
     const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
     while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const l of lines){if(!l.startsWith('data: '))continue;const d=l.slice(6).trim();if(d==='[DONE]')continue;try{const ev=JSON.parse(d);if(ev.type==='content_block_delta'&&ev.delta?.text){full+=ev.delta.text;updateStreaming(full)}}catch(e){}}}
-    state.messages.push({role:'assistant',content:full});finalizeStreaming();saveConversations();
+    state.messages.push({role:'assistant',content:full});finalizeStreaming();
+    // Persist assistant message
+    try{await window.SB.addMessage(state.currentConversation.id,'assistant',full)}catch(e){console.error('Error guardando respuesta:',e)}
   }catch(e){updateStreaming('Error: '+e.message);finalizeStreaming()}
   state.isStreaming=false;updateSendBtn();els.messageInput.focus();
 }
@@ -2057,8 +2121,82 @@ function exportConversation(fmt){
   const b=new Blob([c],{type:m+';charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);els.exportModal.classList.remove('active');
 }
 
+// ===== AUTH =====
+let authMode='signin'; // 'signin' | 'signup'
+
+function showAuthModal(){document.getElementById('authModal').style.display='flex'}
+function hideAuthModal(){document.getElementById('authModal').style.display='none'}
+function showAuthError(msg){const el=document.getElementById('authError');el.textContent=msg;el.style.display='block'}
+function clearAuthError(){document.getElementById('authError').style.display='none'}
+
+function toggleAuthMode(){
+  authMode=authMode==='signin'?'signup':'signin';
+  const isSignup=authMode==='signup';
+  document.getElementById('authModalSubtitle').textContent=isSignup?'Crear cuenta':'Iniciar sesión';
+  document.getElementById('authSubmit').textContent=isSignup?'Crear cuenta':'Iniciar sesión';
+  document.getElementById('authToggleText').textContent=isSignup?'¿Ya tenés cuenta?':'¿No tenés cuenta?';
+  document.getElementById('authToggle').textContent=isSignup?'Iniciar sesión':'Crear cuenta';
+  document.getElementById('authFullNameWrap').style.display=isSignup?'block':'none';
+  clearAuthError();
+}
+
+async function handleAuthSubmit(e){
+  e.preventDefault();clearAuthError();
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const fullName=document.getElementById('authFullName').value.trim();
+  const btn=document.getElementById('authSubmit');btn.disabled=true;btn.textContent='Procesando...';
+  try{
+    if(authMode==='signup'){
+      const {data,error}=await window.SB.signUp(email,password,fullName);
+      if(error)throw error;
+      if(!data.session){showAuthError('Cuenta creada. Revisá tu email para confirmar.');btn.disabled=false;btn.textContent='Crear cuenta';return}
+    }else{
+      const {error}=await window.SB.signIn(email,password);
+      if(error)throw error;
+    }
+    // onAuthChange se dispara y llama a onUserLoggedIn
+  }catch(err){
+    showAuthError(err.message||'Error de autenticación');
+    btn.disabled=false;btn.textContent=authMode==='signup'?'Crear cuenta':'Iniciar sesión';
+  }
+}
+
+async function onUserLoggedIn(user){
+  state.user=user;
+  hideAuthModal();
+  // Mostrar user footer en sidebar
+  const footer=document.getElementById('userFooter');
+  footer.style.display='flex';
+  document.getElementById('userEmail').textContent=user.email;
+  await loadConversationsFromCloud();
+}
+
+async function handleLogout(){
+  await window.SB.signOut();
+  state.user=null;state.conversations=[];state.currentConversation=null;state.messages=[];
+  renderHistory();showWelcome();
+  document.getElementById('userFooter').style.display='none';
+  showAuthModal();
+}
+
 function init(){
   applyTheme(state.theme);updateApiKeyUI();
+  // Auth listener
+  window.SB.onAuthChange((event,session)=>{
+    if(session?.user){onUserLoggedIn(session.user)}
+    else if(event==='SIGNED_OUT'){showAuthModal()}
+  });
+  // Check initial auth state
+  window.SB.getUser().then(user=>{
+    if(user)onUserLoggedIn(user);
+    else showAuthModal();
+  });
+  // Auth form handlers
+  document.getElementById('authForm').addEventListener('submit',handleAuthSubmit);
+  document.getElementById('authToggle').addEventListener('click',toggleAuthMode);
+  document.getElementById('logoutBtn').addEventListener('click',handleLogout);
+
   els.sidebarToggle.addEventListener('click',toggleSidebar);
   els.sidebarClose.addEventListener('click',()=>els.sidebar.classList.add('collapsed'));
   els.topbarTitle.style.cursor='pointer';

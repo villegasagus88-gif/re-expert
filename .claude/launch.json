@@ -4,7 +4,7 @@
     {
       "name": "RE Expert - Chat Real Estate",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080"],
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "frontend"],
       "port": 8080
     }
   ]
