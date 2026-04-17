@@ -1,0 +1,13 @@
+Alembic migrations for RE Expert backend.
+
+Config: ../alembic.ini
+Env:    env.py (uses backend/models/base.py and backend/config/settings.py)
+
+Workflow:
+  cd backend
+  alembic revision --autogenerate -m "describe change"
+  alembic upgrade head
+
+First-time setup (tables already exist in Supabase from scripts/001_schema.sql):
+  cd backend
+  alembic stamp head    # marks current DB as being at the latest revision
