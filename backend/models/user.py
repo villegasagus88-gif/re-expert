@@ -1,9 +1,9 @@
 """
 User model - maps to the public.profiles table.
 
-Note: Supabase manages authentication in auth.users (a protected schema).
+Note: Supabase manages authentication in auth.users (passwords, tokens).
 Our app-level User data lives in public.profiles which references auth.users
-via the id column.
+via the id column. Email is mirrored here for convenience (queries, display).
 """
 from datetime import datetime
 from uuid import UUID
@@ -19,9 +19,20 @@ class User(Base):
     __tablename__ = "profiles"
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
-    full_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    role: Mapped[str] = mapped_column(String, default="user", nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
+    full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    role: Mapped[str] = mapped_column(
+        String(20), default="user", server_default="user", nullable=False
+    )
+    plan: Mapped[str] = mapped_column(
+        String(20), default="free", server_default="free", nullable=False
+    )
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    last_login: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -37,7 +48,7 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<User id={self.id} name={self.full_name!r}>"
+        return f"<User id={self.id} email={self.email!r} plan={self.plan}>"
 
 
 # Avoid circular imports at type-check time

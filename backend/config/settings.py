@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = Field(..., min_length=1)
     DATABASE_URL: str = Field(..., min_length=1)
     JWT_SECRET: str = Field(..., min_length=1)
+    SUPABASE_URL: str = Field(..., min_length=1)
+    SUPABASE_SERVICE_ROLE_KEY: str = Field(..., min_length=1)
 
     # ===== OPTIONAL =====
     STRIPE_KEY: str = ""

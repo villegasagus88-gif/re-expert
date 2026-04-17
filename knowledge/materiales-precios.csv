@@ -1,0 +1,58 @@
+categoria,material,unidad,precio_ars,proveedor_ref,variacion_mensual_pct,fecha_actualizacion
+Cementos,"Cemite Portland CPN40 x 50kg",bolsa,9200,Loma Negra / Avellaneda,4.8,2026-04-01
+Cementos,"Cal hidráulica x 30kg",bolsa,5800,Cacique,3.2,2026-04-01
+Cementos,"Cemento de albañilería x 40kg",bolsa,6100,Holcim,4.1,2026-04-01
+Hierros,"Barra de hierro Ø6mm x 12m",barra,4200,Acindar,3.5,2026-04-01
+Hierros,"Barra de hierro Ø8mm x 12m",barra,7500,Acindar,3.5,2026-04-01
+Hierros,"Barra de hierro Ø10mm x 12m",barra,11800,Acindar,3.8,2026-04-01
+Hierros,"Barra de hierro Ø12mm x 12m",barra,16900,Acindar,3.8,2026-04-01
+Hierros,"Malla electrosoldada Ø4.2 15x15 (2x3m)",hoja,28500,Acindar,3.2,2026-04-01
+Hierros,"Alambre de atar Ø16 x 1kg",kg,3800,Acindar,2.9,2026-04-01
+Ladrillos,"Ladrillo hueco 8x18x33",unidad,95,Fanelli,2.1,2026-04-01
+Ladrillos,"Ladrillo hueco 12x18x33",unidad,130,Fanelli,2.1,2026-04-01
+Ladrillos,"Ladrillo hueco 18x18x33",unidad,195,Fanelli,2.3,2026-04-01
+Ladrillos,"Ladrillo común",unidad,68,Varios,1.8,2026-04-01
+Ladrillos,"Block de cemento 20x20x40",unidad,320,Varios,2.5,2026-04-01
+Áridos,"Arena gruesa lavada",m3,32000,Cantera,2.8,2026-04-01
+Áridos,"Arena fina",m3,28000,Cantera,2.5,2026-04-01
+Áridos,"Piedra partida 6/20",m3,35000,Cantera,2.2,2026-04-01
+Áridos,"Cascote molido",m3,18000,Cantera,1.5,2026-04-01
+Hormigón,"Hormigón elaborado H21 (bombeable)",m3,185000,Lomax / Hormetal,4.2,2026-04-01
+Hormigón,"Hormigón elaborado H25 (bombeable)",m3,198000,Lomax / Hormetal,4.2,2026-04-01
+Hormigón,"Hormigón elaborado H30 (bombeable)",m3,215000,Lomax / Hormetal,4.5,2026-04-01
+Aislaciones,"Membrana asfáltica 4mm c/ aluminio (10m²)",rollo,42000,Megaflex,3.1,2026-04-01
+Aislaciones,"Membrana asfáltica 4mm s/ aluminio (10m²)",rollo,35000,Megaflex,3.1,2026-04-01
+Aislaciones,"Poliestireno expandido (EPS) 25mm 1x1m",placa,3200,Telgopor,2.0,2026-04-01
+Aislaciones,"Lana de vidrio 50mm (1.2x18m)",rollo,38000,Isover,2.5,2026-04-01
+Cañerías,"Caño PVC Ø110 x 4m (desagüe)",unidad,18500,Tigre / Amanco,3.0,2026-04-01
+Cañerías,"Caño termofusión Ø20 x 4m (agua fría/caliente)",unidad,8200,Acqua System,2.8,2026-04-01
+Cañerías,"Caño PPL Ø25 x 4m",unidad,11500,Acqua System,2.8,2026-04-01
+Eléctrica,"Cable unipolar 2.5mm² (rollo 100m)",rollo,42000,IMSA / Prysmian,3.5,2026-04-01
+Eléctrica,"Cable unipolar 4mm² (rollo 100m)",rollo,65000,IMSA / Prysmian,3.5,2026-04-01
+Eléctrica,"Cañería corrugado Ø20 (rollo 25m)",rollo,5500,Tigre,2.0,2026-04-01
+Eléctrica,"Tablero seccional 12 bocas",unidad,48000,Schneider / Legrand,3.8,2026-04-01
+Eléctrica,"Disyuntor diferencial 2x25A 30mA",unidad,52000,Schneider,4.0,2026-04-01
+Eléctrica,"Termomagnética bipolar 2x20A",unidad,18500,Schneider,3.5,2026-04-01
+Pisos,"Cerámico 30x30 (caja 2.5m²)",m2,8500,Cerro Negro / Alberdi,2.5,2026-04-01
+Pisos,"Cerámico 45x45 (caja 2.5m²)",m2,12000,Cerro Negro,2.5,2026-04-01
+Pisos,"Porcelanato 60x60 (caja 1.44m²)",m2,22000,Ilva / San Lorenzo,3.0,2026-04-01
+Pisos,"Piso flotante AC4 8mm",m2,14500,Kronotex / Holztek,2.8,2026-04-01
+Revestimientos,"Azulejo blanco 20x20 (caja 2m²)",m2,6500,Cerro Negro,2.2,2026-04-01
+Pinturas,"Látex interior 20L",unidad,68000,Sherwin Williams / Alba,3.5,2026-04-01
+Pinturas,"Látex exterior 20L",unidad,85000,Sherwin Williams / Alba,3.5,2026-04-01
+Pinturas,"Esmalte sintético 4L",unidad,38000,Colorín,3.0,2026-04-01
+Pinturas,"Fijador sellador 20L",unidad,42000,Alba,2.8,2026-04-01
+Aberturas,"Ventana aluminio A30 corrediza 1.50x1.10",unidad,285000,Modena / Aluar,4.5,2026-04-01
+Aberturas,"Puerta placa interior 0.70x2.00 c/ marco",unidad,125000,Oblak,3.8,2026-04-01
+Aberturas,"Puerta placa exterior 0.80x2.00 c/ marco",unidad,180000,Oblak,3.8,2026-04-01
+Sanitarios,"Inodoro largo depósito de apoyo blanco",juego,165000,Ferrum / Roca,3.2,2026-04-01
+Sanitarios,"Lavatorio de colgar blanco 1 agujero",unidad,58000,Ferrum / Roca,3.0,2026-04-01
+Sanitarios,"Grifería monocomando lavatorio",unidad,85000,FV / Peirano,4.0,2026-04-01
+Sanitarios,"Grifería monocomando ducha c/ transfersor",unidad,120000,FV / Peirano,4.0,2026-04-01
+Techos,"Chapa galvanizada sinusoidal C27 (1.10x3m)",unidad,32000,Siderar,3.5,2026-04-01
+Techos,"Perfil C galvanizado 80x40x15 e=1.6mm x 6m",unidad,28000,Barbieri,3.2,2026-04-01
+Durlock,"Placa STD 9.5mm (1.20x2.40m)",unidad,12500,Knauf / Durlock,2.5,2026-04-01
+Durlock,"Placa RH (resistente humedad) 12.5mm",unidad,18500,Knauf / Durlock,2.5,2026-04-01
+Durlock,"Perfil montante 69mm x 2.60m",unidad,5200,Knauf,2.0,2026-04-01
+Adhesivos,"Pegamento p/ cerámicos (bolsa 30kg)",bolsa,8500,Klaukol / Weber,3.0,2026-04-01
+Adhesivos,"Pastina p/ juntas (bolsa 5kg)",bolsa,6200,Klaukol / Weber,2.5,2026-04-01
