@@ -1,0 +1,28 @@
+{
+  "name": "re-expert",
+  "version": "0.1.0",
+  "description": "Chat experto en Real Estate argentino - Powered by Claude",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "live-server frontend --port=3000 --no-browser",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --port=8000",
+    "start": "npm run dev:frontend",
+    "lint": "echo 'TODO: configurar linter'",
+    "test": "echo 'TODO: configurar tests'",
+    "clean": "rm -rf node_modules"
+  },
+  "keywords": [
+    "real-estate",
+    "chatbot",
+    "claude",
+    "argentina",
+    "inmobiliario"
+  ],
+  "author": "Agustin Villegas & Matias Parola",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "live-server": "^1.2.2"
+  }
+}
