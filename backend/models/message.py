@@ -4,11 +4,10 @@ Message model - maps to the public.messages table.
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from models.base import Base
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from models.base import Base
 
 
 class Message(Base):

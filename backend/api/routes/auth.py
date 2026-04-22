@@ -1,16 +1,21 @@
 """
 Auth routes: register, login, refresh, and me (protected).
 """
-from fastapi import APIRouter, Depends, Request
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from api.schemas.auth import AuthResponse, LoginRequest, RefreshRequest, RegisterRequest, UpdateProfileRequest, UserOut
+from api.schemas.auth import (
+    AuthResponse,
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    UpdateProfileRequest,
+    UserOut,
+)
 from core.auth import get_current_user
 from core.rate_limit import limiter
+from fastapi import APIRouter, Depends, Request
 from models.base import get_db
 from models.user import User
 from services.auth_service import login_user, refresh_session, register_user, update_profile
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

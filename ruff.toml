@@ -1,0 +1,16 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+# Enable: pycodestyle (E), Pyflakes (F), isort (I), bugbear (B), pyupgrade (UP)
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function call in default arg (FastAPI uses Depends() this way)
+    "B904",  # raise ... from: stylistic, fix incrementally
+]
+
+[lint.per-file-ignores]
+"backend/alembic/versions/*" = ["E", "F", "I"]
+"backend/tests/*" = ["B"]
+"backend/models/user.py" = ["F821"]  # forward ref to future Project model

@@ -8,11 +8,11 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy.ext.asyncio import AsyncEngine
 
-from models.base import Base, get_engine  # noqa: E402
 # Import all models so their tables register on Base.metadata
-from models import User, Conversation, Message  # noqa: F401, E402
+from models import Conversation, Message, User  # noqa: F401, E402
+from models.base import Base, get_engine  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 engine = get_engine()
 

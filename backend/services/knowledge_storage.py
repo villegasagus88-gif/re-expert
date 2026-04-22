@@ -9,9 +9,8 @@ import time
 from dataclasses import dataclass, field
 
 import httpx
-from fastapi import HTTPException, UploadFile, status
-
 from config.settings import settings
+from fastapi import HTTPException, UploadFile, status
 
 STORAGE_URL = f"{settings.SUPABASE_URL}/storage/v1"
 HEADERS = {
