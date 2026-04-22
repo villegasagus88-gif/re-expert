@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff==0.7.4
+
+      - name: Run ruff check
+        run: ruff check backend/
+
+  test:
+    name: Tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        working-directory: backend
+        run: pytest -v
+
+  deploy-staging:
+    name: Deploy to staging (Railway auto-deploy)
+    needs: [lint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify deploy
+        run: |
+          echo "Railway auto-deploys from main via GitHub integration."
+          echo "No action needed here - Railway detected this push and is deploying."
+          echo "Watch progress at: https://railway.com"

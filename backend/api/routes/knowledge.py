@@ -1,11 +1,10 @@
 """
 Knowledge base file management routes.
 """
-from fastapi import APIRouter, Depends, UploadFile, File, Query
-from fastapi.responses import Response
-
 from api.schemas.knowledge import CacheClearResponse, FileInfo, FileUploadResponse
 from core.auth import get_current_user
+from fastapi import APIRouter, Depends, File, Query, UploadFile
+from fastapi.responses import Response
 from models.user import User
 from services.knowledge_storage import knowledge_storage
 

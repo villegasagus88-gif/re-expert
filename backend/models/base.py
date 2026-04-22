@@ -5,10 +5,14 @@ Uses asyncpg driver for PostgreSQL (Supabase). The engine and session
 factory are created lazily on first use so that the metadata can be
 inspected without an active DB connection.
 """
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-
 from config.settings import settings
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 
 def _asyncpg_url(url: str) -> str:

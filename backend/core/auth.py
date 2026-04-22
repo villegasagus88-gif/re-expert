@@ -7,14 +7,13 @@ user_id from the token and loads the user profile from the database.
 from uuid import UUID
 
 import jwt
+from config.settings import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from config.settings import settings
 from models.base import get_db
 from models.user import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

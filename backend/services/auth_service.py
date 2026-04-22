@@ -5,9 +5,8 @@ Supabase handles: password hashing (bcrypt), JWT generation, email uniqueness.
 We handle: input validation, rate limiting, error translation, profile enrichment.
 """
 import httpx
-from fastapi import HTTPException, status
-
 from config.settings import settings
+from fastapi import HTTPException, status
 
 SUPABASE_AUTH_URL = f"{settings.SUPABASE_URL}/auth/v1"
 HEADERS = {

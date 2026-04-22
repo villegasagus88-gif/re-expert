@@ -4,11 +4,10 @@ Conversation model - maps to the public.conversations table.
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from models.base import Base
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from models.base import Base
 
 
 class Conversation(Base):
@@ -44,5 +43,5 @@ class Conversation(Base):
         return f"<Conversation id={self.id} title={self.title!r}>"
 
 
-from models.user import User  # noqa: E402
 from models.message import Message  # noqa: E402
+from models.user import User  # noqa: E402

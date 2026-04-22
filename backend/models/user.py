@@ -8,11 +8,10 @@ via the id column. Email is mirrored here for convenience (queries, display).
 from datetime import datetime
 from uuid import UUID
 
+from models.base import Base
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from models.base import Base
 
 
 class User(Base):
