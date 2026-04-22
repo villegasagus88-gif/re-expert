@@ -5,7 +5,25 @@ Receives a user message and (optional) conversation_id, loads history,
 builds system prompt + knowledge context, streams Claude's response
 as Server-Sent Events (SSE), and persists both user and assistant
 messages in the database.
+
+SSE event spec:
+  - start: {"type": "start", "conversation_id": "<uuid>"}
+  - delta: {"type": "delta", "text": "<chunk>"}
+  - done:  {"type": "done",  "tokens_used": <int|null>}
+  - error: {"type": "error", "message": "<human message>"}
+
+Stream hard-caps at 60s; if exceeded an error event is emitted.
+
+Smoke test with curl (replace <JWT>):
+
+    curl -N -X POST https://<host>/api/chat \\
+        -H "Authorization: Bearer <JWT>" \\
+        -H "Content-Type: application/json" \\
+        -d '{"message": "Hola, ¿qué sabés de costos de obra en CABA?"}'
+
+The -N flag disables output buffering so you see tokens in real time.
 """
+import asyncio
 import json
 import logging
 from uuid import UUID
@@ -28,6 +46,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 MAX_HISTORY_MESSAGES = 20
+STREAM_TIMEOUT_SECONDS = 60
 
 
 async def _get_or_create_conversation(
@@ -116,33 +135,58 @@ async def chat(
     conv_id_str = str(conv.id)
 
     async def event_stream():
-        """Yield SSE events and persist the final assistant message."""
-        # First event: echo the conversation id so the client can store it
-        yield _sse({"type": "meta", "conversation_id": conv_id_str})
+        """
+        Yield SSE events per the streaming spec and persist the assistant
+        message when the stream completes successfully.
+
+        Events:
+          - start: { type, conversation_id }
+          - delta: { type, text }
+          - done:  { type, tokens_used }
+          - error: { type, message }
+        """
+        # start
+        yield _sse({"type": "start", "conversation_id": conv_id_str})
 
         full_response = ""
+        tokens_used: int | None = None
+
         try:
-            async for token in stream_chat(api_messages, system_prompt):
-                full_response += token
-                yield _sse({"type": "token", "text": token})
+            async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
+                async for event in stream_chat(api_messages, system_prompt):
+                    if event["type"] == "delta":
+                        full_response += event["text"]
+                        yield _sse({"type": "delta", "text": event["text"]})
+                    elif event["type"] == "end":
+                        tokens_used = event["input_tokens"] + event["output_tokens"]
+        except TimeoutError:
+            logger.warning("Stream timeout after %ss", STREAM_TIMEOUT_SECONDS)
+            yield _sse(
+                {
+                    "type": "error",
+                    "message": f"Timeout: la respuesta tardó más de {STREAM_TIMEOUT_SECONDS}s",
+                }
+            )
+            return
         except Exception as e:
             logger.exception("Error en stream_chat: %s", e)
             yield _sse({"type": "error", "message": "Error generando respuesta"})
             return
 
-        # Persist the assistant response once streaming completes successfully
+        # Persist assistant message (with token count if available)
         try:
             assistant_msg = Message(
                 conversation_id=conv.id,
                 role="assistant",
                 content=full_response,
+                tokens_used=tokens_used,
             )
             db.add(assistant_msg)
             await db.commit()
         except Exception as e:
             logger.exception("Error guardando assistant message: %s", e)
 
-        yield _sse({"type": "done"})
+        yield _sse({"type": "done", "tokens_used": tokens_used})
 
     return StreamingResponse(
         event_stream(),
