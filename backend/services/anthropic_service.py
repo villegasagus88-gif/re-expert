@@ -77,10 +77,14 @@ async def stream_chat(
     messages: list[dict],
     system: str,
     max_tokens: int = 4096,
-) -> AsyncIterator[str]:
+) -> AsyncIterator[dict]:
     """
-    Streams text tokens from Claude. Yields plain strings as they arrive.
-    Raises anthropic exceptions; caller is responsible for handling errors.
+    Streams Claude's response. Yields event dicts:
+      - {"type": "delta", "text": <chunk>}
+      - {"type": "end", "input_tokens": N, "output_tokens": M}
+
+    Raises anthropic exceptions on API errors (caller handles).
+    The final "end" event is emitted once, after the text stream completes.
     """
     client = get_client()
     async with client.messages.stream(
@@ -90,4 +94,11 @@ async def stream_chat(
         messages=messages,
     ) as stream:
         async for text in stream.text_stream:
-            yield text
+            yield {"type": "delta", "text": text}
+
+        final = await stream.get_final_message()
+        yield {
+            "type": "end",
+            "input_tokens": final.usage.input_tokens,
+            "output_tokens": final.usage.output_tokens,
+        }
