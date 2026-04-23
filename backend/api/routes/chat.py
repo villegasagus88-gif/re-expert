@@ -38,6 +38,7 @@ from models.conversation import Conversation
 from models.message import Message
 from models.user import User
 from services.anthropic_service import build_system_prompt, stream_chat
+from services.rate_limit_service import check_user_rate_limit
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -108,13 +109,18 @@ async def chat(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # 1. Get or create conversation (verifies ownership)
+    # 1. Per-user rate limit check (raises 429 with Retry-After if exceeded).
+    #    Must run BEFORE persisting the user message so the current request
+    #    isn't double-counted.
+    rate_limit_headers = await check_user_rate_limit(db, current_user)
+
+    # 2. Get or create conversation (verifies ownership)
     conv = await _get_or_create_conversation(db, current_user.id, body.conversation_id)
 
-    # 2. Load prior history
+    # 3. Load prior history
     history = await _load_history(db, conv.id)
 
-    # 3. Persist the user message up-front (so it survives stream errors)
+    # 4. Persist the user message up-front (so it survives stream errors)
     user_msg = Message(
         conversation_id=conv.id,
         role="user",
@@ -123,13 +129,13 @@ async def chat(
     db.add(user_msg)
     await db.commit()
 
-    # 4. Build messages payload for the Anthropic API
+    # 5. Build messages payload for the Anthropic API
     api_messages: list[dict] = [
         {"role": m.role, "content": m.content} for m in history
     ]
     api_messages.append({"role": "user", "content": body.message})
 
-    # 5. Build system prompt (includes knowledge context if available)
+    # 6. Build system prompt (includes knowledge context if available)
     system_prompt = await build_system_prompt()
 
     conv_id_str = str(conv.id)
@@ -194,5 +200,6 @@ async def chat(
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",  # disable nginx buffering if fronted
+            **rate_limit_headers,
         },
     )
