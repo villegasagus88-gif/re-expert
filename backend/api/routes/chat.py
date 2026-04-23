@@ -29,6 +29,7 @@ import logging
 from uuid import UUID
 
 from api.schemas.chat import ChatRequest
+from config.settings import settings
 from core.auth import get_current_user
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -39,6 +40,7 @@ from models.message import Message
 from models.user import User
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.rate_limit_service import check_user_rate_limit
+from services.token_usage_service import log_token_usage
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -156,6 +158,8 @@ async def chat(
 
         full_response = ""
         tokens_used: int | None = None
+        input_tokens: int | None = None
+        output_tokens: int | None = None
 
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
@@ -164,7 +168,9 @@ async def chat(
                         full_response += event["text"]
                         yield _sse({"type": "delta", "text": event["text"]})
                     elif event["type"] == "end":
-                        tokens_used = event["input_tokens"] + event["output_tokens"]
+                        input_tokens = event["input_tokens"]
+                        output_tokens = event["output_tokens"]
+                        tokens_used = input_tokens + output_tokens
         except TimeoutError:
             logger.warning("Stream timeout after %ss", STREAM_TIMEOUT_SECONDS)
             yield _sse(
@@ -180,6 +186,7 @@ async def chat(
             return
 
         # Persist assistant message (with token count if available)
+        assistant_msg_id = None
         try:
             assistant_msg = Message(
                 conversation_id=conv.id,
@@ -189,8 +196,21 @@ async def chat(
             )
             db.add(assistant_msg)
             await db.commit()
+            assistant_msg_id = assistant_msg.id
         except Exception as e:
             logger.exception("Error guardando assistant message: %s", e)
+
+        # Log token usage for billing/analytics (best-effort; never blocks reply).
+        if input_tokens is not None and output_tokens is not None:
+            await log_token_usage(
+                db,
+                user_id=current_user.id,
+                conversation_id=conv.id,
+                message_id=assistant_msg_id,
+                model=settings.ANTHROPIC_MODEL,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
 
         yield _sse({"type": "done", "tokens_used": tokens_used})
 
