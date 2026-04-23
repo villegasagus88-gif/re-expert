@@ -52,14 +52,45 @@ MAX_HISTORY_MESSAGES = 20
 STREAM_TIMEOUT_SECONDS = 60
 
 
+TITLE_MAX_LEN = 60
+
+
+def _derive_title(message: str, max_len: int = TITLE_MAX_LEN) -> str:
+    """
+    Deriva un título corto a partir del primer mensaje del usuario.
+
+    Colapsa whitespace, trunca a `max_len` chars (respetando palabras cuando
+    se puede) y agrega "…" si quedó truncado. Si el mensaje queda vacío,
+    usa el placeholder por defecto.
+    """
+    text = " ".join(message.split()).strip()
+    if not text:
+        return "Nueva conversación"
+    if len(text) <= max_len:
+        return text
+    truncated = text[:max_len].rstrip()
+    # Intentar cortar en el último espacio para no partir palabras
+    last_space = truncated.rfind(" ")
+    if last_space > max_len // 2:
+        truncated = truncated[:last_space].rstrip()
+    return truncated + "…"
+
+
 async def _get_or_create_conversation(
     db: AsyncSession,
     user_id: UUID,
     conversation_id: UUID | None,
+    first_message: str | None = None,
 ) -> Conversation:
-    """Load an existing conversation (verifying ownership) or create a new one."""
+    """
+    Load an existing conversation (verifying ownership) or create a new one.
+
+    When creating, derive the title from `first_message` so the sidebar
+    shows something meaningful instead of the "Nueva conversación" default.
+    """
     if conversation_id is None:
-        conv = Conversation(user_id=user_id)
+        title = _derive_title(first_message or "")
+        conv = Conversation(user_id=user_id, title=title)
         db.add(conv)
         await db.flush()
         return conv
@@ -116,8 +147,11 @@ async def chat(
     #    isn't double-counted.
     rate_limit_headers = await check_user_rate_limit(db, current_user)
 
-    # 2. Get or create conversation (verifies ownership)
-    conv = await _get_or_create_conversation(db, current_user.id, body.conversation_id)
+    # 2. Get or create conversation (verifies ownership).
+    #    If creating new, derive title from the first user message.
+    conv = await _get_or_create_conversation(
+        db, current_user.id, body.conversation_id, first_message=body.message
+    )
 
     # 3. Load prior history
     history = await _load_history(db, conv.id)
