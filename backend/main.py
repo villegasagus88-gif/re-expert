@@ -1,6 +1,7 @@
 from api.routes.auth import router as auth_router
 from api.routes.chat import router as chat_router
 from api.routes.knowledge import router as knowledge_router
+from api.routes.usage import router as usage_router
 from config.settings import settings
 from core.rate_limit import limiter
 from fastapi import FastAPI
@@ -31,6 +32,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(knowledge_router)
 app.include_router(chat_router)
+app.include_router(usage_router)
 
 
 @app.get("/health")
