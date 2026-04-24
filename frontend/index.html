@@ -13,6 +13,31 @@
   <script src="config.js"></script>
   <script src="supabase-client.js"></script>
   <script src="authService.js"></script>
+  <style id="route-guard-styles">
+    /* Oculta el contenido hasta que requireAuth() resuelva, para evitar
+       flash de UI protegida antes de redirigir a login. */
+    html:not(.re-auth-ready) body > *:not(#app-auth-overlay) { visibility: hidden !important; }
+    #app-auth-overlay {
+      position: fixed; inset: 0; z-index: 999999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px;
+      background: #09090b; color: #fafafa;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: opacity .25s ease;
+    }
+    #app-auth-overlay.hide { opacity: 0; pointer-events: none; }
+    #app-auth-overlay .spinner {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.15);
+      border-top-color: #6366f1;
+      animation: re-spin .8s linear infinite;
+    }
+    #app-auth-overlay .label { font-size: 13px; color: #a1a1aa; letter-spacing: .01em; }
+    @keyframes re-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      #app-auth-overlay .spinner { animation: none; border-top-color: #6366f1; }
+    }
+  </style>
   <style>
 :root {
   --bg-0:#fafafa; --bg-1:#ffffff; --bg-2:#f5f5f5;
@@ -503,6 +528,37 @@ textarea::placeholder{color:var(--text-3)}
   </style>
 </head>
 <body>
+  <!-- ROUTE GUARD: overlay que se muestra hasta que requireAuth() resuelva -->
+  <div id="app-auth-overlay" role="status" aria-live="polite" aria-busy="true">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="label">Verificando sesión…</div>
+  </div>
+  <script>
+    // Gate de ruta protegida. Si no hay sesión, authService.requireAuth()
+    // redirige a login; si la hay, revelamos el contenido quitando la clase
+    // que lo mantiene oculto.
+    (function () {
+      function reveal() {
+        document.documentElement.classList.add('re-auth-ready');
+        var ov = document.getElementById('app-auth-overlay');
+        if (ov) {
+          ov.classList.add('hide');
+          setTimeout(function () { ov.remove(); }, 300);
+        }
+      }
+      function start() {
+        if (!window.REAuthService || !window.REAuthService.requireAuth) {
+          // authService todavía no cargó; reintentar en el próximo tick.
+          return setTimeout(start, 20);
+        }
+        window.REAuthService.requireAuth()
+          .then(reveal)
+          .catch(function () { /* redirect ya en curso; overlay queda visible */ });
+      }
+      start();
+    })();
+  </script>
+
   <!-- AUTH MODAL -->
   <div id="authModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px">
     <div style="background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-xl);width:100%;max-width:400px;padding:32px;box-shadow:var(--shadow-xl)">
