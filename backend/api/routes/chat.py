@@ -171,8 +171,10 @@ async def chat(
     ]
     api_messages.append({"role": "user", "content": body.message})
 
-    # 6. Build system prompt (includes knowledge context if available)
-    system_prompt = await build_system_prompt()
+    # 6. Build system prompt (includes knowledge context if available).
+    #    context_type='sol' selects the data-intake prompt instead of the
+    #    general chat prompt.
+    system_prompt = await build_system_prompt(body.context_type)
 
     conv_id_str = str(conv.id)
 
