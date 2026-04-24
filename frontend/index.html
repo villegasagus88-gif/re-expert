@@ -2031,9 +2031,23 @@ function solAppendStreaming(){
 function solUpdateStreaming(t){const el=$('#solStreamMsg');if(el)el.querySelector('.message-text').innerHTML=parseSolMd(t)}
 function solFinalizeStreaming(){const el=$('#solStreamMsg');if(el)el.removeAttribute('id')}
 
+// SOL llama al backend /api/chat con context_type='sol'. El backend
+// selecciona el system prompt de intake y maneja auth/rate limits/logging.
+// Se conserva solState.conversationId para que SOL mantenga hilo.
+solState.conversationId = solState.conversationId || null;
+
+// Extrae el último bloque ```json ... ``` de una respuesta de SOL y lo
+// parsea. Devuelve {section, fields} o null si no hay / está mal formado.
+function solExtractStructuredData(fullText){
+  const m=fullText.match(/```json\s*([\s\S]*?)\s*```/gi);
+  if(!m||!m.length)return null;
+  const last=m[m.length-1].replace(/^```json\s*/i,'').replace(/\s*```$/,'');
+  try{const d=JSON.parse(last);return (d&&typeof d==='object'&&d.section)?d:null;}
+  catch(_){return null;}
+}
+
 async function solSend(text){
   if(!text.trim()||solState.isStreaming)return;
-  if(!state.apiKey){alert('Configura tu API Key primero');return}
   const msg=text.trim();
   $('#solInput').value='';$('#solInput').style.height='auto';solUpdateSendBtn();
   solState.messages.push({role:'user',content:msg});
@@ -2041,12 +2055,61 @@ async function solSend(text){
   solState.isStreaming=true;$('#solSendBtn').disabled=true;
   solAppendStreaming();let full='';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6-20250514',max_tokens:2048,system:SOL_PROMPT,stream:true,messages:solState.messages.map(m=>({role:m.role,content:m.content}))})});
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`Error ${r.status}`)}
+    if(!window.REAuthService||!window.REAuthService.authFetch){
+      throw new Error('Sesión no inicializada');
+    }
+    const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
+    const payload={message:msg,context_type:'sol'};
+    if(solState.conversationId) payload.conversation_id=solState.conversationId;
+
+    const r=await window.REAuthService.authFetch(apiBase+'/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok){
+      if(r.status===429){
+        const ra=r.headers.get('Retry-After');
+        throw new Error('Alcanzaste el límite de tu plan'+(ra?` (reintenta en ${ra}s)`:''));
+      }
+      const e=await r.json().catch(()=>({}));
+      throw new Error(e.detail||e.error?.message||`Error ${r.status}`);
+    }
     const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
-    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const l of lines){if(!l.startsWith('data: '))continue;const d=l.slice(6).trim();if(d==='[DONE]')continue;try{const ev=JSON.parse(d);if(ev.type==='content_block_delta'&&ev.delta?.text){full+=ev.delta.text;solUpdateStreaming(full)}}catch(e){}}}
-    solState.messages.push({role:'assistant',content:full});solFinalizeStreaming();
-  }catch(e){solUpdateStreaming('Error: '+e.message);solFinalizeStreaming()}
+    outer: while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop()||'';
+      for(const l of lines){
+        if(!l.startsWith('data: '))continue;
+        const d=l.slice(6).trim();
+        if(!d)continue;
+        try{
+          const ev=JSON.parse(d);
+          if(ev.type==='start'&&ev.conversation_id){solState.conversationId=ev.conversation_id;}
+          else if(ev.type==='delta'&&ev.text){full+=ev.text;solUpdateStreaming(full);}
+          else if(ev.type==='error'){throw new Error(ev.message||'Error del backend');}
+          else if(ev.type==='done'){break outer;}
+        }catch(parseErr){
+          // Un delta con JSON inválido no debe romper todo el stream.
+          if(parseErr instanceof SyntaxError)continue;
+          throw parseErr;
+        }
+      }
+    }
+    solState.messages.push({role:'assistant',content:full});
+    solFinalizeStreaming();
+    // Intake estructurado: si SOL devolvió un bloque JSON, lo emitimos como evento
+    // para que otras secciones del frontend puedan reaccionar (wire later).
+    const structured=solExtractStructuredData(full);
+    if(structured){
+      window.dispatchEvent(new CustomEvent('sol:data-intake',{detail:structured}));
+    }
+  }catch(e){
+    solUpdateStreaming('Error: '+(e.message||e));
+    solFinalizeStreaming();
+  }
   solState.isStreaming=false;solUpdateSendBtn();$('#solInput').focus();
 }
 
