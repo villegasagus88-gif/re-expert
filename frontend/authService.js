@@ -21,14 +21,37 @@
   const FLAG_KEY = 're_authed';
   const REFRESH_LEAD_MS = 60_000; // refresh 60s antes de expirar
 
+  // Rutas públicas (no requieren sesión). Cualquier otra es protegida.
+  // Coincide por "endsWith" sobre pathname en minúsculas.
+  const PUBLIC_ROUTES = [
+    '/login.html',
+    '/register.html',
+    '/forgot-password.html', // reservado para futuro
+  ];
+
   let _accessToken = null;
   let _refreshTimer = null;
 
-  // ----- util -----
-  function isAuthPage() {
-    const p = (window.location.pathname || '').toLowerCase();
-    return p.endsWith('/login.html') || p.endsWith('/register.html');
+  // `ready` resuelve con {authenticated, session?} cuando el bootstrap inicial
+  // termina. Permite que páginas protegidas puedan `await requireAuth()` sin
+  // preocuparse por orden de carga.
+  let _readyResolve;
+  const _readyPromise = new Promise((r) => { _readyResolve = r; });
+  let _readyResolved = false;
+
+  function _markReady(value) {
+    if (_readyResolved) return;
+    _readyResolved = true;
+    _readyResolve(value);
   }
+
+  // ----- util -----
+  function isPublicPage() {
+    const p = (window.location.pathname || '').toLowerCase();
+    return PUBLIC_ROUTES.some((r) => p.endsWith(r));
+  }
+  // Alias retrocompat
+  const isAuthPage = isPublicPage;
 
   function redirectToLogin() {
     sessionStorage.removeItem(FLAG_KEY);
@@ -74,16 +97,32 @@
         _accessToken = session.access_token;
         sessionStorage.setItem(FLAG_KEY, '1');
         scheduleRefresh(session.expires_at);
-      } else if (!isAuthPage()) {
-        redirectToLogin();
+        _markReady({ authenticated: true, session });
+      } else {
+        _markReady({ authenticated: false });
+        if (!isPublicPage()) redirectToLogin();
       }
     } catch {
-      if (!isAuthPage()) redirectToLogin();
+      _markReady({ authenticated: false });
+      if (!isPublicPage()) redirectToLogin();
     }
+  }
+
+  // Guardia para rutas protegidas: await hasta que bootstrap termine y devuelve
+  // true si hay sesión; si no, dispara redirect y lanza para que el caller
+  // pueda cortar su propia inicialización.
+  async function requireAuth() {
+    const result = await _readyPromise;
+    if (!result.authenticated) {
+      redirectToLogin();
+      throw new Error('requireAuth: no hay sesión');
+    }
+    return true;
   }
 
   window.SB.client.auth.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_OUT' || !session) {
+      _markReady({ authenticated: false });
       redirectToLogin();
       return;
     }
@@ -91,6 +130,7 @@
     _accessToken = session.access_token;
     sessionStorage.setItem(FLAG_KEY, '1');
     scheduleRefresh(session.expires_at);
+    _markReady({ authenticated: true, session });
   });
 
   // ----- API pública -----
@@ -142,6 +182,10 @@
     authFetch,
     logout,
     isAuthenticatedHint,
+    requireAuth,
+    ready: _readyPromise,
+    isPublicPage,
+    PUBLIC_ROUTES: PUBLIC_ROUTES.slice(),
     // expuesto para testing / debugging
     _bootstrap: bootstrap,
   };
