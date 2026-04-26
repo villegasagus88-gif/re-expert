@@ -2765,6 +2765,15 @@ function escapeHtml(s){
 // acá y disparamos el POST + feedback visual.
 window.addEventListener('sol:data-intake', e => { solIngestData(e.detail); });
 
+// Cuando solIngestData confirma el POST al backend, refrescamos la vista destino
+// para que el dato nuevo aparezca sin que el usuario tenga que navegar.
+window.addEventListener('sol:data-ingested', e => {
+  const view = e.detail && e.detail.view;
+  if (view === 'pagos') { pagosState.loaded = false; if (state.currentView === 'pagos') loadPagos(true); }
+  else if (view === 'materiales') { materialesState.loaded = false; if (state.currentView === 'materiales') loadMateriales(true); }
+  else if (view === 'proyecto') { proyectoState.loaded = false; if (state.currentView === 'proyecto') loadProyecto(true); }
+});
+
 function initSol(){
   const input=$('#solInput'),sendBtn=$('#solSendBtn');
   input.addEventListener('input',()=>{solUpdateSendBtn();input.style.height='auto';input.style.height=Math.min(input.scrollHeight,140)+'px'});

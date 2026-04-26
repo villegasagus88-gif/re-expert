@@ -7,6 +7,7 @@ from api.routes.materials import router as materials_router
 from api.routes.payments import router as payments_router
 from api.routes.project import router as project_router
 from api.routes.stripe_routes import router as stripe_router
+from api.routes.ingest import router as ingest_router
 from api.routes.usage import router as usage_router
 from config.settings import settings
 from core.rate_limit import limiter

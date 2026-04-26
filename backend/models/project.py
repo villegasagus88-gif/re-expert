@@ -52,15 +52,15 @@ class Project(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="projects")
-    milestones: Mapped[list["Milestone"]] = relationship(
-        back_populates="project", cascade="all, delete-orphan", order_by="Milestone.orden"
+    milestones: Mapped[list["ProjectMilestone"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan", order_by="ProjectMilestone.orden"
     )
 
     def __repr__(self) -> str:
         return f"<Project id={self.id} nombre={self.nombre!r}>"
 
 
-class Milestone(Base):
+class ProjectMilestone(Base):
     __tablename__ = "project_milestones"
 
     id: Mapped[UUID] = mapped_column(
@@ -92,6 +92,8 @@ class Milestone(Base):
     )
 
     project: Mapped["Project"] = relationship(back_populates="milestones")
+
+
 
     def __repr__(self) -> str:
         return f"<Milestone id={self.id} nombre={self.nombre!r} estado={self.estado}>"

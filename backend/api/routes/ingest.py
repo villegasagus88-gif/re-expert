@@ -17,6 +17,7 @@ Respuesta 201:
     { "id": "<uuid>", "type": "payment", "message": "Pago registrado" }
 """
 import logging
+from datetime import date
 from uuid import UUID
 
 from api.schemas.ingest import (
@@ -50,12 +51,12 @@ def _build_record(payload: IngestRequest, user_id: UUID):
     if isinstance(payload, PaymentIngest):
         return Payment(
             user_id=user_id,
-            amount=payload.amount,
-            currency=payload.currency,
-            provider=payload.provider,
-            concept=payload.concept,
-            paid_at=payload.paid_at,
-            notes=payload.notes,
+            concepto=payload.concept or "Pago vía SOL",
+            proveedor=payload.provider,
+            monto=payload.amount,
+            fecha=payload.paid_at or date.today(),
+            estado="pagado",
+            notas=payload.notes,
         ), "Pago registrado"
 
     if isinstance(payload, MilestoneIngest):

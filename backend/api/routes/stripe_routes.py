@@ -12,7 +12,7 @@ from uuid import UUID
 import stripe
 from config.settings import settings
 from core.auth import get_current_user
-from core.database import get_db
+from models.base import get_db
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from models.user import User
 from sqlalchemy import select

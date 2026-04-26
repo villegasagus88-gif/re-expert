@@ -17,9 +17,9 @@ from api.schemas.project import (
     UpdateProjectRequest,
 )
 from core.auth import get_current_user
-from core.database import get_db
+from models.base import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.project import Milestone, Project
+from models.project import ProjectMilestone, Project
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -159,7 +159,7 @@ async def update_project(
     )
 
 
-# ── Milestones ──
+# ── ProjectMilestones ──
 
 @router.get(
     "/milestones",
@@ -171,9 +171,9 @@ async def list_milestones(
     user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Milestone)
-        .where(Milestone.user_id == user.id)
-        .order_by(Milestone.orden.asc())
+        select(ProjectMilestone)
+        .where(ProjectMilestone.user_id == user.id)
+        .order_by(ProjectMilestone.orden.asc())
     )
     return [MilestoneOut.model_validate(m) for m in result.scalars().all()]
 
@@ -195,7 +195,7 @@ async def create_milestone(
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
 
-    milestone = Milestone(
+    milestone = ProjectMilestone(
         project_id=project.id,
         user_id=user.id,
         nombre=body.nombre,
@@ -224,7 +224,7 @@ async def update_milestone(
     user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Milestone).where(Milestone.id == milestone_id, Milestone.user_id == user.id)
+        select(ProjectMilestone).where(ProjectMilestone.id == milestone_id, ProjectMilestone.user_id == user.id)
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
@@ -252,7 +252,7 @@ async def delete_milestone(
     user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Milestone).where(Milestone.id == milestone_id, Milestone.user_id == user.id)
+        select(ProjectMilestone).where(ProjectMilestone.id == milestone_id, ProjectMilestone.user_id == user.id)
     )
     milestone = result.scalar_one_or_none()
     if not milestone:

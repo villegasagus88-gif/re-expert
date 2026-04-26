@@ -107,15 +107,21 @@ async def load_knowledge_context() -> str:
     return "\n\n---\n\n".join(chunks)
 
 
-async def build_system_prompt(context_type: str = "chat") -> str:
+async def build_system_prompt(context_type: str = "chat", project_context: str = "") -> str:
     """
     Arma el system prompt para el request actual.
 
     - context_type="chat" (default): prompt general + base de conocimiento.
-    - context_type="sol": prompt de intake de datos (sin knowledge; el prompt
-      ya trae el contexto del proyecto).
+    - context_type="sol": prompt de intake de datos + datos reales del proyecto
+      del usuario (si están disponibles).
     """
     if context_type == "sol":
+        if project_context:
+            return (
+                f"{SOL_SYSTEM_PROMPT}\n\n"
+                f"## Datos actuales del proyecto del usuario\n\n"
+                f"{project_context}"
+            )
         return SOL_SYSTEM_PROMPT
 
     knowledge = await load_knowledge_context()

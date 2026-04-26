@@ -37,6 +37,7 @@ from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
 from models.message import Message
+from models.project import Project
 from models.user import User
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.rate_limit_service import check_user_rate_limit
@@ -126,6 +127,31 @@ def _sse(data: dict) -> str:
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+async def _build_sol_project_context(db: AsyncSession, user_id: UUID) -> str:
+    """Return a short markdown summary of the user's project for SOL's system prompt."""
+    result = await db.execute(select(Project).where(Project.user_id == user_id))
+    proj = result.scalar_one_or_none()
+    if not proj:
+        return ""
+    lines = [
+        f"- Nombre: {proj.nombre}",
+        f"- Estado: {proj.estado} — {proj.estado_texto}",
+        f"- Presupuesto base: ${float(proj.presupuesto_base):,.0f}",
+        f"- Costo real: ${float(proj.costo_real):,.0f}",
+        f"- Avance real: {proj.avance_real_pct:.1f}% (planeado: {proj.avance_plan_pct:.1f}%)",
+        f"- Plazo: {proj.meses_transcurridos}/{proj.meses_total} meses",
+    ]
+    if proj.fecha_inicio:
+        lines.append(f"- Inicio: {proj.fecha_inicio.isoformat()}")
+    if proj.fecha_entrega_programada:
+        lines.append(f"- Entrega programada: {proj.fecha_entrega_programada.isoformat()}")
+    if proj.fecha_entrega_estimada:
+        lines.append(f"- Entrega estimada: {proj.fecha_entrega_estimada.isoformat()}")
+    if proj.notas:
+        lines.append(f"- Notas: {proj.notas}")
+    return "\n".join(lines)
+
+
 @router.post(
     "",
     summary="Enviar mensaje al chat (streaming SSE)",
@@ -183,10 +209,12 @@ async def chat(
     ]
     api_messages.append({"role": "user", "content": body.message})
 
-    # 6. Build system prompt (includes knowledge context if available).
-    #    context_type='sol' selects the data-intake prompt instead of the
-    #    general chat prompt.
-    system_prompt = await build_system_prompt(body.context_type)
+    # 6. Build system prompt. For SOL, inject the user's real project data so
+    #    the assistant knows current budget, progress, and dates.
+    project_context = ""
+    if body.context_type == "sol":
+        project_context = await _build_sol_project_context(db, current_user.id)
+    system_prompt = await build_system_prompt(body.context_type, project_context)
 
     conv_id_str = str(conv.id)
 

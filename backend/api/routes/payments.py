@@ -15,7 +15,7 @@ from api.schemas.payment import (
     UpdatePaymentRequest,
 )
 from core.auth import get_current_user
-from core.database import get_db
+from models.base import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.payment import Payment
 from models.user import User
