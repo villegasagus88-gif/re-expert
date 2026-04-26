@@ -15,11 +15,11 @@ from api.schemas.payment import (
     UpdatePaymentRequest,
 )
 from core.auth import get_current_user
-from models.base import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from models.base import get_db
 from models.payment import Payment
 from models.user import User
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])

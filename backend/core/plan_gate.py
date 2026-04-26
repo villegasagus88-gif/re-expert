@@ -7,9 +7,8 @@ error body when the authenticated user does not have the 'pro' plan.
 The structured detail lets the frontend show a targeted upgrade prompt
 instead of a generic error.
 """
-from fastapi import Depends, HTTPException, status
-
 from core.auth import get_current_user
+from fastapi import Depends, HTTPException, status
 from models.user import User
 
 _PRO_REQUIRED = {

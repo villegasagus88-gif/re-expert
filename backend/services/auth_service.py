@@ -4,7 +4,7 @@ Auth service — standalone authentication with bcrypt + JWT.
 Handles: password hashing, credential validation, token generation,
 user registration, and session refresh. No external auth provider needed.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import bcrypt
@@ -63,7 +63,7 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
             full_name=full_name,
             role="user",
             plan="free",
-            last_login=datetime.now(timezone.utc),
+            last_login=datetime.now(UTC),
         )
         db.add(user)
         await db.commit()
@@ -105,7 +105,7 @@ async def login_user(email: str, password: str) -> dict:
             )
 
         # Update last_login
-        user.last_login = datetime.now(timezone.utc)
+        user.last_login = datetime.now(UTC)
         await db.commit()
         await db.refresh(user)
 

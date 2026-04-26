@@ -86,7 +86,7 @@ for fn in sorted(os.listdir(versions_dir)):
     down_m = re.search(r'down_revision:\s*str\s*\|\s*None\s*=\s*(?:"([^"]+)"|None)', content)
     if rev_m:
         chain[rev_m.group(1)] = down_m.group(1) if down_m and down_m.group(1) else None
-check("9 migrations exist", len(chain) == 9, f"found {len(chain)}")
+check("10 migrations exist", len(chain) == 10, f"found {len(chain)}")
 roots = [r for r, d in chain.items() if d is None]
 check("single root migration", len(roots) == 1)
 if roots:
@@ -281,7 +281,7 @@ check("payments_router registered", "app.include_router(payments_router)" in mai
 check("usage_router registered", "app.include_router(usage_router)" in main)
 check("stripe_router registered", "app.include_router(stripe_router)" in main)
 check("billing_router registered", "app.include_router(billing_router)" in main)
-check("10 routers total", main.count("app.include_router(") == 10, f"found {main.count('app.include_router(')}")
+check("11 routers total", main.count("app.include_router(") == 11, f"found {main.count('app.include_router(')}")
 check("conversations_router imported", "from api.routes.conversations import router as conversations_router" in main)
 check("payments_router imported", "from api.routes.payments import router as payments_router" in main)
 check("stripe_router imported", "from api.routes.stripe_routes import router as stripe_router" in main)

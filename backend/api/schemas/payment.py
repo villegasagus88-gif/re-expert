@@ -8,7 +8,6 @@ from uuid import UUID
 from core.sanitize import SanitizedOptStr, SanitizedStr
 from pydantic import BaseModel, Field
 
-
 # ── Requests ──
 
 class CreatePaymentRequest(BaseModel):

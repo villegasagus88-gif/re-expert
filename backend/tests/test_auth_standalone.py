@@ -298,7 +298,7 @@ class TestIntegration:
         from services.jwt_service import create_token_pair, decode_token
 
         # 1. Simulate registration
-        email = "newuser@test.com"
+        _email = "newuser@test.com"  # noqa: F841
         password = "SecurePass123"
         user_id = uuid4()
         password_hash = _hash_password(password)

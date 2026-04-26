@@ -2,11 +2,9 @@
 Conversation CRUD request/response schemas.
 """
 from datetime import datetime
-from uuid import UUID
 
 from core.sanitize import SanitizedStr
 from pydantic import BaseModel, Field
-
 
 # ── Requests ──
 

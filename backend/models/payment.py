@@ -4,6 +4,7 @@ Payment model - maps to the public.payments table.
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
+
 from models.base import Base
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID

@@ -88,7 +88,7 @@ for fn in sorted(os.listdir(versions_dir)):
     if rev_m:
         chain[rev_m.group(1)] = down_m.group(1) if down_m and down_m.group(1) else None
 
-check("5 migrations exist", len(chain) == 5, f"found {len(chain)}")
+check("10 migrations exist", len(chain) == 10, f"found {len(chain)}")
 roots = [r for r, d in chain.items() if d is None]
 check("single root", len(roots) == 1)
 if roots:
@@ -257,8 +257,8 @@ ccr = CreateConversationRequest()
 check("CreateConversation defaults", ccr.title == "Nueva conversacion" or ccr.title == "Nueva conversación")
 check("CreateConversation section default", ccr.section == "general")
 
-ccr2 = CreateConversationRequest(title="Test", section="compra")
-check("CreateConversation custom values", ccr2.title == "Test" and ccr2.section == "compra")
+ccr2 = CreateConversationRequest(title="Test", section="sol")
+check("CreateConversation custom values", ccr2.title == "Test" and ccr2.section == "sol")
 
 now = datetime.now(timezone.utc)
 co = ConversationOut(
@@ -312,7 +312,7 @@ check("conversations_router", "app.include_router(conversations_router)" in main
 check("chat_router", "app.include_router(chat_router)" in main)
 check("knowledge_router", "app.include_router(knowledge_router)" in main)
 check("usage_router", "app.include_router(usage_router)" in main)
-check("5 routers total", main.count("app.include_router(") == 5)
+check("11 routers total", main.count("app.include_router(") == 11)
 
 
 # ================================================================

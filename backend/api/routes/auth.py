@@ -13,7 +13,13 @@ from core.auth import get_current_user
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, Request
 from models.user import User
-from services.auth_service import complete_onboarding, login_user, refresh_session, register_user, update_profile
+from services.auth_service import (
+    complete_onboarding,
+    login_user,
+    refresh_session,
+    register_user,
+    update_profile,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

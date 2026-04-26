@@ -10,7 +10,7 @@ raising errors.
 """
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
 
 import stripe
@@ -32,7 +32,7 @@ async def _run_stripe(func, *args, **kwargs):
 def _ts(unix_ts: int | None) -> str | None:
     if not unix_ts:
         return None
-    return datetime.fromtimestamp(unix_ts, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(unix_ts, tz=UTC).isoformat()
 
 
 @router.get("/status", summary="Estado de cuenta y suscripción")

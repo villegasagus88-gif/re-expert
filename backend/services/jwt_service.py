@@ -4,7 +4,7 @@ JWT token generation and validation.
 Generates access tokens (short-lived) and refresh tokens (long-lived)
 using HS256 signing with the app's JWT_SECRET.
 """
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import jwt
@@ -15,7 +15,7 @@ ALGORITHM = "HS256"
 
 def create_access_token(user_id: UUID) -> str:
     """Create a short-lived access token (default 15 min)."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user_id),
         "type": "access",
@@ -27,7 +27,7 @@ def create_access_token(user_id: UUID) -> str:
 
 def create_refresh_token(user_id: UUID) -> str:
     """Create a long-lived refresh token (default 7 days)."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user_id),
         "type": "refresh",

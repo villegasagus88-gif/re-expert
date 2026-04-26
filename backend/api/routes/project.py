@@ -2,7 +2,7 @@
 Project dashboard and milestone CRUD endpoints.
 One project per user (enforced via unique constraint on user_id).
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -17,9 +17,9 @@ from api.schemas.project import (
     UpdateProjectRequest,
 )
 from core.auth import get_current_user
-from models.base import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
-from models.project import ProjectMilestone, Project
+from models.base import get_db
+from models.project import Project, ProjectMilestone
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -147,7 +147,7 @@ async def update_project(
             setattr(project, field, [a.model_dump() if hasattr(a, "model_dump") else a for a in value])
         else:
             setattr(project, field, value)
-    project.updated_at = datetime.now(timezone.utc)
+    project.updated_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(project)
@@ -233,7 +233,7 @@ async def update_milestone(
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(milestone, field, value)
-    milestone.updated_at = datetime.now(timezone.utc)
+    milestone.updated_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(milestone)

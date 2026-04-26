@@ -11,6 +11,6 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
-"backend/alembic/versions/*" = ["E", "F", "I"]
-"backend/tests/*" = ["B"]
+"backend/alembic/versions/*" = ["E", "F", "I", "UP"]
+"backend/tests/*" = ["B", "E", "I", "F401", "UP"]  # verification scripts use inline style
 "backend/models/user.py" = ["F821"]  # forward ref to future Project model
