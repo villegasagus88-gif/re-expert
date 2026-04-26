@@ -83,8 +83,9 @@ Media (vivienda estándar):          USD 900-1,200 /m²
 Media-Alta (buenas terminaciones):  USD 1,300-1,700 /m²
 Premium (alta gama):                USD 1,800-2,500 /m²
 Lujo (ultra premium):               USD 2,500-4,000 /m²
+Referencia en ARS (media):          ~$2,000,000 /m²
 
-Fuente: Revista Vivienda / CAMARCO
+Fuente: Revista Vivienda / CAMARCO / relevamiento sectorial abril 2026.
 Nota: incluye materiales + mano de obra, NO incluye terreno ni honorarios profesionales.
 ```
 
@@ -184,14 +185,24 @@ Ganancia (vendedor):          15% sobre ganancia (si aplica ley 27.430)
 Costo total comprador: ~8-9% sobre el valor de compra
 ```
 
-### Alquiler — Ley 27.737 (vigente 2026)
+### Alquiler — Régimen vigente (post DNU 70/2023)
 ```
-Plazo mínimo: 2 años (vivienda)
-Ajuste: índice ICL del BCRA (trimestral o semestral según contrato)
-Garantía: máximo 1 mes de alquiler (propietario individual)
-Depósito: máximo 1 mes (devuelve actualizado al finalizar)
-Comisión: 4.15% + IVA del monto total del contrato (solo locador)
+Marco legal: Código Civil y Comercial (libertad contractual)
+La Ley 27.551 fue DEROGADA por el DNU 70/2023 (vigente desde 30/12/2023).
+
+Contratos nuevos (desde 30/12/2023):
+  Plazo: libre entre las partes (se presume 2 años vivienda si no se pacta)
+  Ajuste: libre (índice IPC es el más usado, periodicidad libre)
+  Moneda: puede pactarse en pesos o USD
+  Garantía y depósito: libre acuerdo entre las partes
+  Comisión: sin regulación específica, el mercado cobra 1-2 meses entre partes
+
+Contratos anteriores vigentes:
+  Antes del 17/10/2023: ajuste anual por ICL (Ley 27.551)
+  18/10 al 29/12/2023: ajuste semestral por CCP (Ley 27.737)
+
 Expensas ordinarias: locatario / Extraordinarias: locador
+Registro en AFIP (RLA): sigue obligatorio
 ```
 
 ## 5. Conversión y Referencia
@@ -208,6 +219,11 @@ Para compraventa de inmuebles se usa dólar billete (blue/MEP según operación)
 El índice CAC mide la variación de costos de construcción.
 Se publica mensualmente en www.camarco.org.ar
 Se usa para actualizar presupuestos en contratos de obra.
+
+Último dato (marzo 2026): +1.64% mensual
+  - Materiales: +0.89%
+  - Mano de obra: +3.16%
+Tendencia a la baja respecto a 2024-2025.
 
 Fórmula de actualización:
   Monto_actualizado = Monto_original x (CAC_actual / CAC_base)

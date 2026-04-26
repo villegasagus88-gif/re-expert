@@ -9,9 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="supabase-client.js"></script>
   <script src="authService.js"></script>
   <style id="route-guard-styles">
     /* Oculta el contenido hasta que requireAuth() resuelva, para evitar
@@ -107,6 +105,21 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .history-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:11.5px;cursor:pointer;transition:all .15s var(--ease-out);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .history-item:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.85)}
 .history-item.active{background:var(--bg-sidebar-active);color:#fff}
+.history-item.is-loading{opacity:.45;pointer-events:none}
+.history-spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.1);border-top-color:rgba(255,255,255,.45);animation:re-spin .7s linear infinite;flex-shrink:0}
+.history-loader{display:none;justify-content:center;align-items:center;padding:10px 0}
+.messages-loading{display:none;flex-direction:column;flex:1}
+.messages-loading-spinner{display:none}
+.mat-filter-row{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.mat-filter-row::-webkit-scrollbar{display:none}
+.mat-chip{padding:4px 12px;border-radius:100px;font-size:11.5px;font-weight:500;border:1px solid var(--border-0);background:var(--bg-1);color:var(--text-2);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.mat-chip:hover{border-color:var(--accent-brand);color:var(--accent-brand)}
+.mat-chip.active{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff}
+.mat-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;min-height:16px}
+.mat-updated{font-size:11px;color:var(--text-3)}
+.mat-count{font-size:11px;color:var(--text-3)}
+.mat-loading{display:none;justify-content:center;align-items:center;padding:36px 0}
+.mat-loading-spinner{width:24px;height:24px;border-radius:50%;border:3px solid var(--border-0);border-top-color:var(--accent-brand);animation:re-spin .7s linear infinite}
 
 .sidebar-footer{padding:10px 14px;border-top:1px solid var(--border-sidebar)}
 .model-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-sidebar-muted);font-weight:500}
@@ -123,17 +136,6 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .sidebar .btn-icon{color:var(--text-sidebar-muted)}
 .sidebar .btn-icon:hover{background:var(--bg-sidebar-hover);color:#fff}
 
-/* API Key */
-.api-key-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--accent-brand-light);border-bottom:1px solid rgba(99,102,241,.12);flex-shrink:0}
-.api-key-banner p{flex:1;font-size:12px;color:var(--accent-brand);font-weight:500}
-.api-key-banner input{padding:6px 10px;border:1px solid rgba(99,102,241,.2);border-radius:6px;font-size:12px;font-family:var(--font-mono);width:260px;background:var(--bg-1);color:var(--text-0);outline:none}
-.api-key-banner input:focus{border-color:var(--accent-brand)}
-.api-key-banner button{padding:6px 14px;background:var(--accent-brand);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:600}
-.api-key-banner button:hover{opacity:.9}
-.api-key-saved{display:none;align-items:center;gap:6px;padding:6px 14px;background:rgba(34,197,94,.06);border-bottom:1px solid rgba(34,197,94,.1);font-size:11px;color:#15803d;flex-shrink:0;font-weight:500}
-[data-theme="dark"] .api-key-saved{color:#4ade80}
-.api-key-saved button{background:none;border:none;color:var(--text-2);font-size:10.5px;cursor:pointer;text-decoration:underline;font-family:var(--font)}
-
 /* Page container */
 .page-container{flex:1;overflow-y:auto;scroll-behavior:smooth}
 
@@ -145,6 +147,13 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .welcome-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px 4px 6px;background:var(--accent-brand-light);border:1px solid rgba(99,102,241,.12);border-radius:100px;font-size:10.5px;font-weight:500;color:var(--accent-brand);margin-bottom:20px}
 .welcome-badge-dot{width:5px;height:5px;background:var(--accent-brand);border-radius:50%}
+/* Plan badge */
+.plan-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:600;letter-spacing:.2px;line-height:1.4}
+.plan-badge-free{background:rgba(255,255,255,.06);color:#71717a;border:1px solid rgba(255,255,255,.08)}
+.plan-badge-pro{background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(168,85,247,.2));color:#a5b4fc;border:1px solid rgba(99,102,241,.3)}
+/* Upgrade CTA */
+.btn-upgrade-modal{display:inline-flex;align-items:center;justify-content:center;padding:11px 28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:600;text-decoration:none;transition:transform .1s,box-shadow .2s;box-shadow:0 6px 16px -4px rgba(99,102,241,.5);margin-top:18px;border:none;cursor:pointer;width:100%}
+.btn-upgrade-modal:hover{transform:translateY(-1px);box-shadow:0 10px 24px -4px rgba(99,102,241,.7)}
 .welcome-title{font-size:36px;font-weight:800;letter-spacing:-1.5px;margin-bottom:6px;background:linear-gradient(135deg,var(--text-0),var(--text-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
 .welcome-subtitle{font-size:14px;color:var(--text-2);max-width:400px;line-height:1.6;margin-bottom:32px}
 .welcome-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:500px;width:100%}
@@ -188,10 +197,37 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .code-block-wrapper{position:relative}
 .copy-btn{position:absolute;top:8px;right:8px;padding:3px 8px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:5px;font-size:10px;font-weight:500;color:var(--text-2);cursor:pointer;opacity:0;transition:opacity .15s;font-family:var(--font)}
 .code-block-wrapper:hover .copy-btn{opacity:1}
-.typing-indicator{display:flex;gap:4px;padding:4px 0}
+.typing-indicator{display:flex;gap:4px;padding:4px 0;align-items:center}
 .typing-dot{width:5px;height:5px;background:var(--accent-brand);border-radius:50%;animation:typAnim 1.4s infinite}
 .typing-dot:nth-child(2){animation-delay:.15s} .typing-dot:nth-child(3){animation-delay:.3s}
 @keyframes typAnim{0%,70%,100%{transform:translateY(0);opacity:.3}35%{transform:translateY(-4px);opacity:1}}
+.typing-label{font-size:11px;color:var(--text-3);margin-left:8px;font-style:italic}
+
+/* ====== SKELETON LOADERS ====== */
+@keyframes shimmer{0%{background-position:-400% center}100%{background-position:400% center}}
+.skeleton{background:linear-gradient(90deg,var(--bg-2) 25%,var(--border-0) 50%,var(--bg-2) 75%);background-size:400% 100%;animation:shimmer 1.6s ease infinite;border-radius:4px}
+.sk-conv{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm)}
+.sk-conv-icon{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+.sk-conv-line{height:9px;flex:1;border-radius:3px}
+.sk-conv-line-short{height:9px;width:55%;border-radius:3px}
+.sk-bubble{padding:16px 24px;display:flex;gap:12px;align-items:flex-start}
+.sk-bubble-ai{background:var(--bg-2);border-top:1px solid var(--border-1);border-bottom:1px solid var(--border-1)}
+[data-theme="dark"] .sk-bubble-ai{background:var(--bg-1)}
+.sk-avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0}
+.sk-content{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.sk-name{height:8px;width:55px;border-radius:3px;margin-bottom:2px}
+.sk-line{height:10px;border-radius:3px}
+.sk-line-full{width:100%} .sk-line-3q{width:75%} .sk-line-half{width:50%} .sk-line-short{width:32%}
+.sk-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:768px){.sk-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.sk-kpi-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:18px 16px}
+.sk-kpi-label{height:8px;width:70px;border-radius:3px;margin-bottom:12px}
+.sk-kpi-value{height:30px;width:90px;border-radius:4px;margin-bottom:10px}
+.sk-kpi-sub{height:8px;width:110px;border-radius:3px}
+.btn-spinner{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:re-spin .5s linear infinite;vertical-align:middle;margin-right:5px}
+.empty-icon{font-size:28px;line-height:1;margin-bottom:8px}
+.empty-title{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:4px}
+.empty-desc{font-size:11.5px;color:var(--text-3);line-height:1.55;max-width:220px;margin:0 auto}
 
 /* Input */
 .input-area{padding:12px 20px 14px;flex-shrink:0;background:var(--bg-0)}
@@ -242,6 +278,21 @@ textarea::placeholder{color:var(--text-3)}
 .status-pending{background:rgba(234,179,8,.1);color:#ca8a04}
 .status-overdue{background:rgba(239,68,68,.1);color:#dc2626}
 .status-alert{background:rgba(239,68,68,.1);color:#dc2626}
+.status-cancelled{background:rgba(107,114,128,.1);color:#6b7280}
+/* Payment modal form */
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:0 20px 20px}
+.pay-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pay-form-group{display:flex;flex-direction:column;gap:4px}
+.pay-form-group.full{grid-column:1/-1}
+.pay-form-label{font-size:11.5px;font-weight:500;color:var(--text-2)}
+.pay-form-input{background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:7px 10px;font-size:13px;color:var(--text-0);font-family:var(--font);width:100%;box-sizing:border-box}
+.pay-form-input:focus{outline:none;border-color:var(--accent-brand)}
+select.pay-form-input{cursor:pointer}
+.pay-loading{display:none;justify-content:center;align-items:center;padding:36px 0}
+.pay-loading-spinner{width:24px;height:24px;border-radius:50%;border:3px solid var(--border-0);border-top-color:var(--accent-brand);animation:re-spin .7s linear infinite}
+.pay-empty{padding:20px;color:var(--text-2);font-size:13px}
+.pay-action-btn{background:none;border:none;cursor:pointer;padding:3px;opacity:.55;transition:opacity .15s;line-height:0}
+.pay-action-btn:hover{opacity:1}
 
 /* Empty state */
 .empty-state{text-align:center;padding:48px 20px;color:var(--text-3)}
@@ -508,6 +559,43 @@ textarea::placeholder{color:var(--text-3)}
 .path-steps{display:flex;gap:6px;flex-wrap:wrap}
 .path-step{padding:4px 10px;border-radius:6px;font-size:10.5px;font-weight:500;background:var(--bg-2);color:var(--text-1);border:1px solid var(--border-1)}
 
+/* ====== ONBOARDING ====== */
+.ob-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
+.ob-overlay.active{display:flex}
+.ob-modal{background:var(--bg-modal);border:1px solid var(--border-0);border-radius:22px;box-shadow:var(--shadow-xl);width:100%;max-width:460px;overflow:hidden;animation:modalIn .28s var(--ease) both}
+.ob-slide{display:none;flex-direction:column;align-items:center;text-align:center;padding:44px 36px 28px}
+.ob-slide.active{display:flex}
+.ob-icon{width:68px;height:68px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:18px;flex-shrink:0}
+.ob-icon-brand{background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.15));border:1px solid rgba(99,102,241,.3)}
+.ob-icon-green{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2)}
+.ob-icon-amber{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)}
+.ob-icon-blue{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.2)}
+.ob-title{font-size:21px;font-weight:800;letter-spacing:-.4px;margin-bottom:8px;color:var(--text-0);line-height:1.25}
+.ob-desc{font-size:13.5px;color:var(--text-2);line-height:1.65;max-width:340px}
+.ob-feature-list{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px;text-align:left}
+.ob-feature{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--bg-2);border-radius:var(--radius-md);border:1px solid var(--border-1)}
+.ob-feature-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.ob-feature-text{font-size:12.5px;color:var(--text-1);line-height:1.45}
+.ob-feature-text strong{display:block;font-weight:600;color:var(--text-0);margin-bottom:1px}
+.ob-prompt-grid{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:16px;text-align:left}
+.ob-prompt-card{background:var(--bg-2);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:10px 14px;cursor:pointer;transition:all .15s;font-family:var(--font);width:100%}
+.ob-prompt-card:hover{border-color:var(--accent-brand);background:var(--accent-brand-light)}
+.ob-prompt-card.ob-selected{border-color:var(--accent-brand);background:var(--accent-brand-light)}
+.ob-prompt-card-title{font-size:12.5px;font-weight:600;color:var(--text-0);margin-bottom:2px}
+.ob-prompt-card-text{font-size:11px;color:var(--text-2);line-height:1.4}
+.ob-dots{display:flex;gap:5px;justify-content:center;margin-top:24px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--border-0);transition:all .25s var(--ease)}
+.ob-dot.active{width:20px;border-radius:3px;background:var(--accent-brand)}
+.ob-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 20px}
+.ob-btn-skip{background:none;border:none;font-size:12px;color:var(--text-3);cursor:pointer;font-family:var(--font);padding:6px 0;transition:color .15s}
+.ob-btn-skip:hover{color:var(--text-1)}
+.ob-btn-prev{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;background:var(--bg-2);color:var(--text-1);border:1px solid var(--border-0);border-radius:var(--radius-sm);font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all .15s}
+.ob-btn-prev:hover{background:var(--bg-1)}
+.ob-btn-next{display:inline-flex;align-items:center;gap:4px;padding:8px 18px;background:var(--accent-brand);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.ob-btn-next:hover{opacity:.9}
+.ob-btn-next.ob-final{background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 14px -2px rgba(99,102,241,.5)}
+.ob-btn-next.ob-final:hover{transform:translateY(-1px);box-shadow:0 8px 20px -2px rgba(99,102,241,.6)}
+
 /* Responsive */
 @media(max-width:768px){
   .sidebar{position:fixed;left:0;top:0;height:100dvh;z-index:200;box-shadow:var(--shadow-xl)}
@@ -669,35 +757,35 @@ textarea::placeholder{color:var(--text-3)}
       </button>
     </nav>
 
-    <div class="sidebar-section">
+    <div class="sidebar-section" id="chatHistorySection">
       <div class="sidebar-label">Historial</div>
       <div class="chat-history" id="chatHistory">
         <div class="history-empty">Sin conversaciones</div>
+      </div>
+      <div class="history-loader" id="historyLoader">
+        <div class="history-spinner"></div>
       </div>
     </div>
 
     <div class="sidebar-footer">
       <div class="model-badge"><span class="model-dot"></span> Claude Sonnet 4.6</div>
-      <div id="userFooter" style="display:none;padding:8px 12px;margin-top:8px;border-top:1px solid var(--border-sidebar);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sidebar-muted)">
-        <span id="userEmail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-        <button id="logoutBtn" title="Cerrar sesión" style="background:transparent;border:none;color:var(--text-sidebar-muted);cursor:pointer;padding:4px;border-radius:4px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-        </button>
+      <div id="userFooter" style="display:none;padding:8px 12px;margin-top:8px;border-top:1px solid var(--border-sidebar);display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-sidebar-muted)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="userEmail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+          <button id="logoutBtn" title="Cerrar sesión" style="background:transparent;border:none;color:var(--text-sidebar-muted);cursor:pointer;padding:4px;border-radius:4px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <a href="account.html" id="planBadge" class="plan-badge plan-badge-free" title="Mi cuenta">Free</a>
+          <span id="dailyMsgsCounter" style="display:none;font-size:10px;color:var(--text-sidebar-muted)"></span>
+          <a href="pricing.html" id="upgradeSidebarLink" style="margin-left:auto;font-size:10px;color:#818cf8;text-decoration:none;font-weight:600;display:none">↑ Pro</a>
+        </div>
       </div>
     </div>
   </aside>
 
   <main class="main" id="main">
-    <div class="api-key-banner" id="apiKeyBanner">
-      <p>Ingresa tu API Key de Anthropic</p>
-      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
-      <button id="apiKeySave">Conectar</button>
-    </div>
-    <div class="api-key-saved" id="apiKeySaved">
-      API Key conectada
-      <button id="apiKeyChange">Cambiar</button>
-    </div>
-
     <header class="topbar">
       <button class="btn-icon" id="sidebarToggle">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -726,6 +814,11 @@ textarea::placeholder{color:var(--text-3)}
             <div class="welcome-card" data-prompt="Cuales son las regulaciones para un desarrollo residencial multifamiliar?"><div class="wcard-icon">⚖️</div><div class="wcard-title">Normativa y legal</div><div class="wcard-desc">FOT, FOS y zonificacion</div></div>
             <div class="welcome-card" data-prompt="Ayudame a crear un presupuesto de obra y cronograma para un proyecto de construccion"><div class="wcard-icon">🏢</div><div class="wcard-title">Gestion de obra</div><div class="wcard-desc">Presupuestos y plazos</div></div>
           </div>
+        </div>
+        <div class="messages-loading" id="messagesLoading">
+          <div class="sk-bubble"><div class="skeleton sk-avatar"></div><div class="sk-content"><div class="skeleton sk-name"></div><div class="skeleton sk-line" style="width:52%"></div><div class="skeleton sk-line sk-line-3q"></div></div></div>
+          <div class="sk-bubble sk-bubble-ai"><div class="skeleton sk-avatar"></div><div class="sk-content"><div class="skeleton sk-name"></div><div class="skeleton sk-line sk-line-3q"></div><div class="skeleton sk-line sk-line-full"></div><div class="skeleton sk-line sk-line-half"></div><div class="skeleton sk-line sk-line-short"></div></div></div>
+          <div class="sk-bubble"><div class="skeleton sk-avatar"></div><div class="sk-content"><div class="skeleton sk-name"></div><div class="skeleton sk-line sk-line-half"></div></div></div>
         </div>
         <div class="messages" id="messages" style="display:none"></div>
       </div>
@@ -778,20 +871,18 @@ textarea::placeholder{color:var(--text-3)}
             <button class="section-tab" data-mat-tab="pronosticos">Pronosticos</button>
           </div>
           <div id="matTabPrecios" class="mat-tab-content">
-            <div class="cards-grid" id="materialesCards">
-              <div class="stat-card"><div class="stat-card-label">Cemite Portland 50kg</div><div class="stat-card-value">$8.450</div><div class="stat-card-trend trend-up">+5.2% mensual</div></div>
-              <div class="stat-card"><div class="stat-card-label">Hierro 10mm (barra 12m)</div><div class="stat-card-value">$12.800</div><div class="stat-card-trend trend-up">+3.8% mensual</div></div>
-              <div class="stat-card"><div class="stat-card-label">Ladrillo hueco 18x18x33</div><div class="stat-card-value">$185</div><div class="stat-card-trend trend-stable">+0.5% mensual</div></div>
-              <div class="stat-card"><div class="stat-card-label">Arena gruesa (m3)</div><div class="stat-card-value">$28.500</div><div class="stat-card-trend trend-down">-1.2% mensual</div></div>
-              <div class="stat-card"><div class="stat-card-label">Piedra partida (m3)</div><div class="stat-card-value">$32.000</div><div class="stat-card-trend trend-up">+2.1% mensual</div></div>
-              <div class="stat-card"><div class="stat-card-label">Membrana asfaltica 4mm</div><div class="stat-card-value">$18.900</div><div class="stat-card-trend trend-stable">+0.8% mensual</div></div>
+            <div class="mat-meta" id="matMeta">
+              <span class="mat-updated" id="matUpdated"></span>
+              <span class="mat-count" id="matCount"></span>
             </div>
-            <div style="margin-top:16px;display:flex;gap:8px">
-              <button class="btn-primary" id="refreshPricesBtn">
+            <div class="mat-filter-row" id="matFilterRow"></div>
+            <div class="mat-loading" id="matLoading"><div class="mat-loading-spinner"></div></div>
+            <div class="cards-grid" id="materialesCards"></div>
+            <div style="margin-top:16px">
+              <button class="btn-secondary" id="refreshPricesBtn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Actualizar precios con IA
+                Recargar precios
               </button>
-              <button class="btn-secondary" id="addMaterialBtn">+ Agregar material</button>
             </div>
           </div>
           <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
@@ -827,53 +918,33 @@ textarea::placeholder{color:var(--text-3)}
         <div class="section-view">
           <div class="section-header">
             <h2>Gestion de Pagos</h2>
-            <p>Controla pagos realizados, pendientes, proyecciones de aumentos y alertas de sobreprecios.</p>
-          </div>
-          <div class="cards-grid" style="margin-bottom:20px">
-            <div class="stat-card"><div class="stat-card-label">Total pagado</div><div class="stat-card-value">$4.250.000</div><div class="stat-card-sub">12 pagos realizados</div></div>
-            <div class="stat-card"><div class="stat-card-label">Pendiente</div><div class="stat-card-value">$2.180.000</div><div class="stat-card-sub">6 pagos restantes</div></div>
-            <div class="stat-card"><div class="stat-card-label">Proyeccion total</div><div class="stat-card-value">$6.720.000</div><div class="stat-card-sub">Con aumentos estimados</div><div class="stat-card-trend trend-up">+4.5% vs presupuesto</div></div>
+            <p>Controla pagos realizados, pendientes y cancelados de tu obra.</p>
           </div>
 
+          <!-- Dynamic stat cards -->
+          <div class="cards-grid" id="pagosStatCards" style="margin-bottom:20px">
+            <div class="stat-card"><div class="stat-card-label">Cargando...</div></div>
+          </div>
+
+          <!-- Filter tabs -->
           <div class="section-tabs">
-            <button class="section-tab active" data-pay-tab="realizados">Pagos realizados</button>
-            <button class="section-tab" data-pay-tab="pendientes">Pendientes</button>
-            <button class="section-tab" data-pay-tab="alertas">Alertas</button>
+            <button class="section-tab active" data-pay-filter="todos">Todos</button>
+            <button class="section-tab" data-pay-filter="pagado">Pagados</button>
+            <button class="section-tab" data-pay-filter="pendiente">Pendientes</button>
+            <button class="section-tab" data-pay-filter="cancelado">Cancelados</button>
           </div>
 
-          <div id="payTabRealizados" class="pay-tab-content">
+          <!-- Loading indicator -->
+          <div class="pay-loading" id="pagosLoading"><div class="pay-loading-spinner"></div></div>
+
+          <!-- Payments table -->
+          <div id="pagosTableWrap">
             <table class="data-table">
-              <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr><td>15/01/2026</td><td>Cementos S.A.</td><td>Cemento x200 bolsas</td><td>$1.420.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
-                <tr><td>02/02/2026</td><td>Hierros del Sur</td><td>Hierro estructural</td><td>$890.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
-                <tr><td>18/02/2026</td><td>Corralon Norte</td><td>Ladrillos + Arena</td><td>$650.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
-                <tr><td>10/03/2026</td><td>Electro Obras</td><td>Instalacion electrica</td><td>$1.290.000</td><td><span class="status-badge status-paid">Pagado</span></td></tr>
-              </tbody>
+              <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="pagosTableBody"></tbody>
             </table>
           </div>
-          <div id="payTabPendientes" class="pay-tab-content" style="display:none">
-            <table class="data-table">
-              <thead><tr><th>Fecha estimada</th><th>Proveedor</th><th>Concepto</th><th>Monto estimado</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr><td>15/04/2026</td><td>Sanitarios Pro</td><td>Instalacion sanitaria</td><td>$780.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
-                <tr><td>01/05/2026</td><td>Aberturas S.R.L.</td><td>Carpinteria aluminio</td><td>$520.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
-                <tr><td>20/05/2026</td><td>Pisos y Revestimientos</td><td>Ceramicos + colocacion</td><td>$430.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
-                <tr><td>10/06/2026</td><td>Pintureria Central</td><td>Pintura completa</td><td>$250.000</td><td><span class="status-badge status-pending">Pendiente</span></td></tr>
-              </tbody>
-            </table>
-            <p style="font-size:11px;color:var(--text-2);margin-top:10px">* Montos estimados incluyen proyeccion de aumentos segun tendencia actual</p>
-          </div>
-          <div id="payTabAlertas" class="pay-tab-content" style="display:none">
-            <table class="data-table">
-              <thead><tr><th>Proveedor</th><th>Concepto</th><th>Aumento aplicado</th><th>Aumento esperado</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr><td>Hierros del Sur</td><td>Hierro estructural</td><td>+8.5%</td><td>+3.8%</td><td><span class="status-badge status-alert">Sobreprecio</span></td></tr>
-                <tr><td>Electro Obras</td><td>Cables + tableros</td><td>+12.0%</td><td>+4.2%</td><td><span class="status-badge status-alert">Sobreprecio</span></td></tr>
-              </tbody>
-            </table>
-            <p style="font-size:11px;color:var(--text-2);margin-top:10px">Estos proveedores aplicaron aumentos superiores al indice de referencia del sector.</p>
-          </div>
+
           <div style="margin-top:16px;display:flex;gap:8px">
             <button class="btn-primary" id="addPaymentBtn">+ Registrar pago</button>
             <button class="btn-secondary" id="aiPayAnalysis">Analisis IA de pagos</button>
@@ -1434,296 +1505,17 @@ textarea::placeholder{color:var(--text-3)}
 
           <!-- TAB: RESUMEN -->
           <div id="projTabResumen" class="proj-tab-content">
-
-            <!-- Health -->
-            <div class="project-health">
-              <span class="health-dot yellow"></span>
-              <span class="health-label">Proyecto en curso — con desvíos moderados</span>
-              <span class="health-sub">Actualizado 06/04/2026</span>
-            </div>
-
-            <!-- KPIs -->
-            <div class="kpi-row">
-              <div class="kpi-card">
-                <div class="kpi-label">Presupuesto base</div>
-                <div class="kpi-value">$6.43M</div>
-                <div class="kpi-sub">Estimación aprobada</div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Costo real</div>
-                <div class="kpi-value">$4.25M</div>
-                <div class="kpi-sub">66% ejecutado</div>
-                <div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:66%"></div></div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Avance de obra</div>
-                <div class="kpi-value">58%</div>
-                <div class="kpi-sub">vs 66% programado</div>
-                <div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:58%"></div></div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Plazo</div>
-                <div class="kpi-value">14 / 18</div>
-                <div class="kpi-sub">meses transcurridos</div>
-                <div class="kpi-bar"><div class="kpi-bar-fill green" style="width:78%"></div></div>
-              </div>
-            </div>
-
-            <!-- PMI Indicators -->
-            <div class="section-block">
-              <div class="section-block-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                Indicadores de Control
-              </div>
-              <div class="pmi-row">
-                <div class="pmi-card">
-                  <div class="pmi-title">CPI — Índice de costo</div>
-                  <div class="pmi-value warn">0.94</div>
-                  <div class="pmi-desc">Costo real 6% arriba del plan</div>
-                </div>
-                <div class="pmi-card">
-                  <div class="pmi-title">SPI — Índice de plazo</div>
-                  <div class="pmi-value warn">0.88</div>
-                  <div class="pmi-desc">Avance 12% debajo del plan</div>
-                </div>
-                <div class="pmi-card">
-                  <div class="pmi-title">EAC — Estimación al cierre</div>
-                  <div class="pmi-value bad">$6.84M</div>
-                  <div class="pmi-desc">+$410K vs presupuesto base</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Alerts -->
-            <div class="section-block">
-              <div class="section-block-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Alertas activas
-              </div>
-              <div class="alert-list">
-                <div class="alert-item high">
-                  <span class="alert-icon">⚠️</span>
-                  <div class="alert-text"><strong>Sobrecosto en estructura</strong>Hierro y mano de obra superaron el presupuesto en +12.4%. Evaluar renegociación con proveedor.</div>
-                </div>
-                <div class="alert-item medium">
-                  <span class="alert-icon">⏱️</span>
-                  <div class="alert-text"><strong>Retraso en instalación eléctrica</strong>18 días de atraso acumulado. Impacta fecha de entrega de Etapa 3.</div>
-                </div>
-                <div class="alert-item low">
-                  <span class="alert-icon">📋</span>
-                  <div class="alert-text"><strong>Pendiente aprobación municipal</strong>Permiso de obra ampliación en trámite. Sin impacto inmediato.</div>
-                </div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:8px">
-              <button class="btn-primary" id="aiProjectAnalysis">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                Análisis IA del proyecto
-              </button>
-              <button class="btn-secondary" id="aiProjectReport">Generar reporte ejecutivo</button>
-            </div>
+            <div id="projResumenContent"></div>
           </div>
 
           <!-- TAB: COSTOS -->
           <div id="projTabCostos" class="proj-tab-content" style="display:none">
-            <div class="section-block">
-              <div class="section-block-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-                Línea base de costos por rubro
-              </div>
-
-              <div class="cost-row" id="costBreakdown">
-                <div class="cost-item">
-                  <div class="cost-name">Estructura</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real over" style="width:85%"></div></div>
-                    <div class="cost-amounts"><span>Real: $1.82M</span><span>Base: $1.60M</span></div>
-                  </div>
-                  <div class="cost-variance pos">+13.8%</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Albañilería</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:62%"></div></div>
-                    <div class="cost-amounts"><span>Real: $680K</span><span>Base: $1.10M</span></div>
-                  </div>
-                  <div class="cost-variance neg">-38.2%</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Inst. eléctrica</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real over" style="width:108%"></div></div>
-                    <div class="cost-amounts"><span>Real: $1.29M</span><span>Base: $1.20M</span></div>
-                  </div>
-                  <div class="cost-variance pos">+7.5%</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Inst. sanitaria</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
-                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $780K</span></div>
-                  </div>
-                  <div class="cost-variance zero">Pendiente</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Carpintería</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
-                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $520K</span></div>
-                  </div>
-                  <div class="cost-variance zero">Pendiente</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Terminaciones</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
-                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $680K</span></div>
-                  </div>
-                  <div class="cost-variance zero">Pendiente</div>
-                </div>
-                <div class="cost-item">
-                  <div class="cost-name">Pintura</div>
-                  <div class="cost-bar-wrap">
-                    <div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real under" style="width:0%"></div></div>
-                    <div class="cost-amounts"><span>Real: $0</span><span>Base: $250K</span></div>
-                  </div>
-                  <div class="cost-variance zero">Pendiente</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Cost summary -->
-            <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
-              <div class="kpi-card">
-                <div class="kpi-label">Presupuesto base</div>
-                <div class="kpi-value">$6.43M</div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Gastado hasta hoy</div>
-                <div class="kpi-value">$4.25M</div>
-                <div class="kpi-sub">66.1% del presupuesto</div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-label">Desvío proyectado</div>
-                <div class="kpi-value" style="color:#ef4444">+$410K</div>
-                <div class="kpi-sub">+6.4% sobre presupuesto base</div>
-              </div>
-            </div>
-
-            <div style="margin-top:16px;display:flex;gap:8px">
-              <button class="btn-primary" id="aiCostAnalysis">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                Análisis IA de costos
-              </button>
-            </div>
+            <div id="projCostosContent"></div>
           </div>
 
           <!-- TAB: CRONOGRAMA -->
           <div id="projTabCronograma" class="proj-tab-content" style="display:none">
-            <div class="detail-grid">
-              <div>
-                <div class="section-block">
-                  <div class="section-block-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    Hitos del proyecto
-                  </div>
-                  <div class="milestone-track">
-                    <div class="milestone-line"></div>
-                    <div class="milestone">
-                      <div class="milestone-dot done"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Inicio de obra</span>
-                        <span class="milestone-status done">Completado</span>
-                      </div>
-                      <div class="milestone-date">Feb 2025 — en fecha</div>
-                    </div>
-                    <div class="milestone">
-                      <div class="milestone-dot done"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Fundaciones</span>
-                        <span class="milestone-status done">Completado</span>
-                      </div>
-                      <div class="milestone-date">May 2025 — 5 días de adelanto</div>
-                    </div>
-                    <div class="milestone">
-                      <div class="milestone-dot done"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Estructura completa</span>
-                        <span class="milestone-status done">Completado</span>
-                      </div>
-                      <div class="milestone-date">Nov 2025 — 8 días de retraso</div>
-                    </div>
-                    <div class="milestone">
-                      <div class="milestone-dot active"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Instalaciones</span>
-                        <span class="milestone-status active">En curso</span>
-                      </div>
-                      <div class="milestone-date">Mar 2026 objetivo — 18 días de retraso</div>
-                      <div class="milestone-detail">Eléctrica completada. Sanitaria en ejecución.</div>
-                    </div>
-                    <div class="milestone">
-                      <div class="milestone-dot pending"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Terminaciones</span>
-                        <span class="milestone-status pending">Pendiente</span>
-                      </div>
-                      <div class="milestone-date">Jun 2026 objetivo</div>
-                    </div>
-                    <div class="milestone">
-                      <div class="milestone-dot pending"></div>
-                      <div class="milestone-head">
-                        <span class="milestone-name">Entrega final</span>
-                        <span class="milestone-status pending">Pendiente</span>
-                      </div>
-                      <div class="milestone-date">Ago 2026 objetivo</div>
-                      <div class="milestone-detail">Riesgo de correrse a Sep 2026 por retrasos acumulados.</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="section-block">
-                  <div class="section-block-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    Resumen de plazo
-                  </div>
-                  <div style="display:flex;flex-direction:column;gap:10px">
-                    <div class="kpi-card">
-                      <div class="kpi-label">Inicio</div>
-                      <div class="kpi-value" style="font-size:18px">Feb 2025</div>
-                    </div>
-                    <div class="kpi-card">
-                      <div class="kpi-label">Entrega programada</div>
-                      <div class="kpi-value" style="font-size:18px">Ago 2026</div>
-                    </div>
-                    <div class="kpi-card">
-                      <div class="kpi-label">Entrega estimada real</div>
-                      <div class="kpi-value" style="font-size:18px;color:#eab308">Sep 2026</div>
-                      <div class="kpi-sub">+30 días de retraso proyectado</div>
-                    </div>
-                    <div class="kpi-card">
-                      <div class="kpi-label">Avance real vs plan</div>
-                      <div style="display:flex;gap:8px;align-items:baseline;margin-top:4px">
-                        <span style="font-size:22px;font-weight:800;color:var(--text-0)">58%</span>
-                        <span style="font-size:12px;color:var(--text-2)">real</span>
-                        <span style="font-size:12px;color:var(--text-3)">vs</span>
-                        <span style="font-size:18px;font-weight:700;color:var(--text-2)">66%</span>
-                        <span style="font-size:12px;color:var(--text-2)">plan</span>
-                      </div>
-                      <div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:58%"></div></div>
-                    </div>
-                  </div>
-                </div>
-                <div style="margin-top:16px">
-                  <button class="btn-primary" id="aiScheduleAnalysis">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    Análisis IA de cronograma
-                  </button>
-                </div>
-              </div>
-            </div>
+            <div id="projCronogramaContent"></div>
           </div>
 
         </div>
@@ -1756,6 +1548,153 @@ textarea::placeholder{color:var(--text-3)}
             <button class="export-option" data-format="txt"><span class="export-icon">📄</span><div><span class="export-label">Texto plano</span><span class="export-desc">Sin formato</span></div></button>
             <button class="export-option" data-format="json"><span class="export-icon">💾</span><div><span class="export-label">JSON</span><span class="export-desc">Datos estructurados</span></div></button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upgrade Modal -->
+    <div class="modal-overlay" id="upgradeModal" style="display:none">
+      <div class="modal" style="max-width:380px;text-align:center">
+        <div class="modal-header" style="border-bottom:none;padding-bottom:0;justify-content:flex-end">
+          <button class="btn-icon" id="upgradeModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body" style="padding-top:4px;padding-bottom:28px">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.15));border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">⭐</div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px">Función exclusiva Pro</h3>
+          <p id="upgradeFeatureDesc" style="font-size:13px;color:var(--text-2);margin-bottom:6px"></p>
+          <p style="font-size:13px;color:var(--text-2);line-height:1.55">Actualizá tu plan para acceder a esta y muchas más funcionalidades avanzadas.</p>
+          <a href="pricing.html" class="btn-upgrade-modal">Ver planes → Pro</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div class="ob-overlay" id="onboardingOverlay">
+      <div class="ob-modal">
+
+        <!-- Slide 1: Bienvenida -->
+        <div class="ob-slide active" id="obSlide0">
+          <div class="ob-icon ob-icon-brand" style="font-size:22px;font-weight:800;color:#818cf8;letter-spacing:-.5px">RE</div>
+          <div class="ob-title">¡Bienvenido/a, <span id="obUserName">RE Expert</span>!</div>
+          <div class="ob-desc">Tu asistente de IA especializado en real estate argentino. Análisis financiero, normativas, gestión de obra y mucho más, todo en un solo lugar.</div>
+          <div class="ob-dots">
+            <div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+          </div>
+        </div>
+
+        <!-- Slide 2: Chat Experto -->
+        <div class="ob-slide" id="obSlide1">
+          <div class="ob-icon ob-icon-brand">💬</div>
+          <div class="ob-title">Chat Experto con IA</div>
+          <div class="ob-desc">Consultá sobre ROI, TIR, normativas, presupuestos y cualquier duda de tu proyecto.</div>
+          <div class="ob-feature-list">
+            <div class="ob-feature"><span class="ob-feature-icon">📈</span><div class="ob-feature-text"><strong>Análisis financiero</strong>Pro-formas, TIR, VAN, cap rates y estructuración de fideicomisos.</div></div>
+            <div class="ob-feature"><span class="ob-feature-icon">⚖️</span><div class="ob-feature-text"><strong>Normativa y legal</strong>FOT, FOS, códigos de edificación, zonificación y contratos.</div></div>
+            <div class="ob-feature"><span class="ob-feature-icon">🏗️</span><div class="ob-feature-text"><strong>Gestión de obra</strong>Presupuestos, cronogramas y control de avance.</div></div>
+          </div>
+          <div class="ob-dots">
+            <div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+          </div>
+        </div>
+
+        <!-- Slide 3: Gestión completa -->
+        <div class="ob-slide" id="obSlide2">
+          <div class="ob-icon ob-icon-green">📊</div>
+          <div class="ob-title">Todo tu proyecto en un lugar</div>
+          <div class="ob-desc">Controlá cada aspecto de tu obra desde el panel lateral.</div>
+          <div class="ob-feature-list">
+            <div class="ob-feature"><span class="ob-feature-icon">💳</span><div class="ob-feature-text"><strong>Gestión de Pagos</strong>Registrá proveedores, montos y estados de cada pago.</div></div>
+            <div class="ob-feature"><span class="ob-feature-icon">📦</span><div class="ob-feature-text"><strong>Cotización de Materiales</strong>Precios actualizados de cemento, hierro, áridos y más.</div></div>
+            <div class="ob-feature"><span class="ob-feature-icon">☀️</span><div class="ob-feature-text"><strong>SOL — Asistente de carga</strong>Cargá datos en lenguaje natural: "Pagué $180.000 a Ferreter&iacute;a López".</div></div>
+          </div>
+          <div class="ob-dots">
+            <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div><div class="ob-dot"></div>
+          </div>
+        </div>
+
+        <!-- Slide 4: Primer prompt -->
+        <div class="ob-slide" id="obSlide3">
+          <div class="ob-icon ob-icon-blue">🚀</div>
+          <div class="ob-title">¿Por dónde empezamos?</div>
+          <div class="ob-desc">Elegí una consulta para empezar o escribí la tuya.</div>
+          <div class="ob-prompt-grid" id="obPromptGrid">
+            <button class="ob-prompt-card" data-prompt="Quiero evaluar la rentabilidad de un proyecto inmobiliario. ¿Por dónde empezamos?">
+              <div class="ob-prompt-card-title">📈 Evaluar rentabilidad</div>
+              <div class="ob-prompt-card-text">Calcular ROI, TIR y VAN de mi proyecto</div>
+            </button>
+            <button class="ob-prompt-card" data-prompt="Ayudame a crear un presupuesto de obra y cronograma para un proyecto de construcción en Argentina.">
+              <div class="ob-prompt-card-title">🏗️ Presupuesto de obra</div>
+              <div class="ob-prompt-card-text">Costos, rubros y cronograma de ejecución</div>
+            </button>
+            <button class="ob-prompt-card" data-prompt="¿Cuáles son las regulaciones de FOT, FOS y zonificación que debo considerar para un desarrollo residencial?">
+              <div class="ob-prompt-card-title">⚖️ Normativa y zonificación</div>
+              <div class="ob-prompt-card-text">FOT, FOS y código de edificación</div>
+            </button>
+          </div>
+          <div class="ob-dots">
+            <div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot active"></div>
+          </div>
+        </div>
+
+        <div class="ob-footer">
+          <button class="ob-btn-skip" id="obSkipBtn">Saltar tour</button>
+          <div style="display:flex;gap:8px">
+            <button class="ob-btn-prev" id="obPrevBtn" style="visibility:hidden">← Anterior</button>
+            <button class="ob-btn-next" id="obNextBtn">Siguiente →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="paymentModal">
+      <div class="modal" style="width:440px">
+        <div class="modal-header">
+          <h3 id="paymentModalTitle">Registrar pago</h3>
+          <button class="btn-icon" id="closePaymentModal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <form id="paymentForm" novalidate>
+            <div class="pay-form-grid">
+              <div class="pay-form-group full">
+                <label class="pay-form-label" for="payConcepto">Concepto *</label>
+                <input id="payConcepto" class="pay-form-input" type="text" placeholder="Ej: Cemento x200 bolsas" required>
+              </div>
+              <div class="pay-form-group">
+                <label class="pay-form-label" for="payMonto">Monto (ARS) *</label>
+                <input id="payMonto" class="pay-form-input" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+              </div>
+              <div class="pay-form-group">
+                <label class="pay-form-label" for="payFecha">Fecha *</label>
+                <input id="payFecha" class="pay-form-input" type="date" required>
+              </div>
+              <div class="pay-form-group">
+                <label class="pay-form-label" for="payEstado">Estado</label>
+                <select id="payEstado" class="pay-form-input">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="pagado">Pagado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+              <div class="pay-form-group">
+                <label class="pay-form-label" for="payProveedor">Proveedor</label>
+                <input id="payProveedor" class="pay-form-input" type="text" placeholder="Ej: Cementos S.A.">
+              </div>
+              <div class="pay-form-group full">
+                <label class="pay-form-label" for="payCategoria">Categoria</label>
+                <input id="payCategoria" class="pay-form-input" type="text" placeholder="Ej: Materiales, Mano de obra...">
+              </div>
+              <div class="pay-form-group full">
+                <label class="pay-form-label" for="payNotas">Notas</label>
+                <textarea id="payNotas" class="pay-form-input" rows="2" placeholder="Opcional..."></textarea>
+              </div>
+            </div>
+            <div id="payFormError" style="font-size:12px;color:#dc2626;margin-top:6px;display:none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancelPaymentBtn">Cancelar</button>
+          <button class="btn-primary" id="savePaymentBtn">Guardar</button>
         </div>
       </div>
     </div>
@@ -1798,10 +1737,11 @@ const state = {
   conversations: [],
   currentConversation:null, messages:[], isStreaming:false,
   theme: localStorage.getItem('re_theme')||'light',
-  apiKey: localStorage.getItem('re_api_key')||'',
   currentView:'chat', uploadedFiles:[],
   user: null
 };
+const historyMeta = {page:0, totalPages:1, loading:false};
+let userPlan = 'free';
 
 const els = {
   sidebar:$('#sidebar'), sidebarToggle:$('#sidebarToggle'), sidebarClose:$('#sidebarClose'),
@@ -1809,18 +1749,12 @@ const els = {
   welcomeScreen:$('#welcomeScreen'), messagesEl:$('#messages'), messageInput:$('#messageInput'),
   sendBtn:$('#sendBtn'), exportBtn:$('#exportBtn'), exportModal:$('#exportModal'),
   exportModalClose:$('#exportModalClose'), themeToggle:$('#themeToggle'),
-  topbarTitle:$('#topbarTitle'), apiKeyBanner:$('#apiKeyBanner'),
-  apiKeySaved:$('#apiKeySaved'), apiKeyInput:$('#apiKeyInput'),
-  apiKeySave:$('#apiKeySave'), apiKeyChange:$('#apiKeyChange'),
+  topbarTitle:$('#topbarTitle'),
   inputArea:$('#inputArea')
 };
 
-// API Key
-function updateApiKeyUI(){
-  if(state.apiKey){els.apiKeyBanner.style.display='none';els.apiKeySaved.style.display='flex'}
-  else{els.apiKeyBanner.style.display='flex';els.apiKeySaved.style.display='none'}
-}
-function saveApiKey(){const k=els.apiKeyInput.value.trim();if(!k)return;state.apiKey=k;localStorage.setItem('re_api_key',k);els.apiKeyInput.value='';updateApiKeyUI()}
+// Helper: get API base URL
+function apiBase(){return (window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||''}
 
 // Theme
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);state.theme=t;localStorage.setItem('re_theme',t);$('#themeIcon').innerHTML=t==='dark'?'<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>':'<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'}
@@ -1836,6 +1770,9 @@ function switchView(v){
   const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia'};
   els.topbarTitle.textContent=titles[v]||'';
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
+  if(v==='materiales')loadMateriales();
+  if(v==='pagos')loadPagos();
+  if(v==='proyecto')loadProyecto();
 }
 
 // Sidebar
@@ -1847,31 +1784,64 @@ function handleTitleTap(){
   _lastTitleTap=now;
   $('#pageContainer').scrollTo({top:0,behavior:'smooth'});
 }
-async function newConversation(){
-  try{
-    const c=await window.SB.createConversation('Nueva conversación');
-    c.messages=[];
-    state.conversations.unshift(c);state.currentConversation=c;state.messages=c.messages;
-    renderHistory();showWelcome();
-    els.exportBtn.style.display='none';els.messageInput.focus();
-    switchView('chat');
-  }catch(e){console.error('Error creando conversación:',e);alert('Error: '+e.message)}
+function newConversation(){
+  state.currentConversation=null;state.messages=[];
+  renderHistory();showWelcome();
+  els.exportBtn.style.display='none';
+  switchView('chat');
+  els.messageInput.focus();
 }
 async function loadConversation(id){
   const c=state.conversations.find(x=>x.id===id);if(!c)return;
+  if(state.currentConversation?.id===id)return;
+  const item=$('.history-item[data-id="'+id+'"]');
+  if(item)item.classList.add('is-loading');
+  switchView('chat');showMessagesLoading();
   try{
-    const msgs=await window.SB.listMessages(id);
-    c.messages=msgs.map(m=>({role:m.role,content:m.content}));
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+id);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error cargando conversacion');
+    const data=await r.json();
+    c.messages=(data.messages||[]).map(m=>({role:m.role,content:m.content}));
     state.currentConversation=c;state.messages=c.messages;
     renderHistory();renderMessages();switchView('chat');
-  }catch(e){console.error('Error cargando mensajes:',e);alert('Error: '+e.message)}
+    els.topbarTitle.textContent=c.title;
+  }catch(e){
+    console.error('Error cargando mensajes:',e);
+    hideMessagesLoading();showWelcome();
+    if(item)item.classList.remove('is-loading');
+  }
 }
-async function loadConversationsFromCloud(){
+async function loadConversationsFromCloud(append=false){
+  if(historyMeta.loading)return;
+  if(append&&historyMeta.page>=historyMeta.totalPages)return;
+  historyMeta.loading=true;
+  const loader=$('#historyLoader');
+  if(append){if(loader)loader.style.display='flex';}
+  else{els.chatHistory.innerHTML='<div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div>';}
+  const page=append?historyMeta.page+1:1;
   try{
-    const list=await window.SB.listConversations();
-    state.conversations=list.map(c=>({id:c.id,title:c.title,messages:[],createdAt:c.created_at}));
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page='+page+'&page_size=20');
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error listando conversaciones');
+    const data=await r.json();
+    const items=(data.items||[]).map(c=>({id:c.id,title:c.title,messages:[],createdAt:c.created_at}));
+    if(append){
+      const seen=new Set(state.conversations.map(c=>c.id));
+      state.conversations=[...state.conversations,...items.filter(c=>!seen.has(c.id))];
+    }else{
+      state.conversations=items;
+    }
+    historyMeta.page=data.page;
+    historyMeta.totalPages=data.total_pages;
     renderHistory();
-  }catch(e){console.error('Error listando conversaciones:',e)}
+  }catch(e){
+    console.error('Error listando conversaciones:',e);
+    if(!append)renderHistory();
+  }finally{
+    historyMeta.loading=false;
+    if(loader)loader.style.display='none';
+  }
 }
 function renderHistory(){
   if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
@@ -1879,13 +1849,15 @@ function renderHistory(){
   els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',()=>loadConversation(el.dataset.id)));
 }
 
-function showWelcome(){els.welcomeScreen.style.display='';els.messagesEl.style.display='none'}
-function showMessages(){els.welcomeScreen.style.display='none';els.messagesEl.style.display='flex';els.exportBtn.style.display=''}
+function showMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='flex';els.welcomeScreen.style.display='none';els.messagesEl.style.display='none'}
+function hideMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='none'}
+function showWelcome(){hideMessagesLoading();els.welcomeScreen.style.display='';els.messagesEl.style.display='none'}
+function showMessages(){hideMessagesLoading();els.welcomeScreen.style.display='none';els.messagesEl.style.display='flex';els.exportBtn.style.display=''}
 function renderMessages(){if(!state.messages.length){showWelcome();return}showMessages();els.messagesEl.innerHTML=state.messages.map(m=>msgHTML(m.role,m.content)).join('');addCopyBtns();scrollBottom()}
 
 function msgHTML(role,content){const u=role==='user';return`<div class="message message-${u?'user':'assistant'}"><div class="message-inner"><div class="message-avatar">${u?'TU':'RE'}</div><div class="message-content"><div class="message-sender">${u?'Tu':'RE Expert'}</div><div class="message-text">${u?esc(content):parseMd(content)}</div></div></div></div>`}
 function appendMsg(role,content){showMessages();const d=document.createElement('div');d.innerHTML=msgHTML(role,content);els.messagesEl.appendChild(d.firstElementChild);addCopyBtns();scrollBottom()}
-function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
+function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-label">Generando respuesta…</span></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
 function updateStreaming(t){const el=$('#streamMsg');if(el){el.querySelector('.message-text').innerHTML=parseMd(t);scrollBottom()}}
 function finalizeStreaming(){const el=$('#streamMsg');if(el){el.removeAttribute('id');addCopyBtns()}}
 
@@ -1894,30 +1866,115 @@ function esc(t){const d=document.createElement('div');d.textContent=t;return d.i
 function addCopyBtns(){els.messagesEl.querySelectorAll('pre').forEach(pre=>{if(pre.parentElement.classList.contains('code-block-wrapper'))return;const w=document.createElement('div');w.className='code-block-wrapper';pre.parentNode.insertBefore(w,pre);w.appendChild(pre);const b=document.createElement('button');b.className='copy-btn';b.textContent='Copiar';b.onclick=()=>{navigator.clipboard.writeText(pre.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar',1500)})};w.appendChild(b)})}
 function scrollBottom(){requestAnimationFrame(()=>{$('#pageContainer').scrollTop=$('#pageContainer').scrollHeight})}
 
+// ===== PLAN GATING =====
+function updatePlanBadge(){
+  const badge=document.getElementById('planBadge');
+  const upgradeLink=document.getElementById('upgradeSidebarLink');
+  const counter=document.getElementById('dailyMsgsCounter');
+  if(!badge)return;
+  if(userPlan==='pro'){
+    badge.textContent='⭐ Pro';badge.className='plan-badge plan-badge-pro';
+    if(upgradeLink)upgradeLink.style.display='none';
+    if(counter)counter.style.display='none';
+  }else{
+    badge.textContent='Free';badge.className='plan-badge plan-badge-free';
+    if(upgradeLink)upgradeLink.style.display='';
+  }
+}
+
+function showUpgradeModal(featureName){
+  const modal=document.getElementById('upgradeModal');
+  const desc=document.getElementById('upgradeFeatureDesc');
+  if(desc)desc.textContent=featureName?`"${featureName}" requiere el plan Pro.`:'';
+  if(modal)modal.style.display='flex';
+}
+function hideUpgradeModal(){
+  const modal=document.getElementById('upgradeModal');
+  if(modal)modal.style.display='none';
+}
+
+function updateDailyCounter(remaining,total){
+  const el=document.getElementById('dailyMsgsCounter');
+  if(!el||userPlan==='pro'){if(el)el.style.display='none';return;}
+  el.style.display='';
+  el.textContent=`${remaining}/${total} msgs hoy`;
+  el.style.color=remaining<=3?'#ef4444':remaining<=7?'#f59e0b':'var(--text-sidebar-muted)';
+}
+
 async function sendMessage(text){
   if(!text.trim()||state.isStreaming)return;
-  if(!state.apiKey){els.apiKeyInput.focus();return}
-  if(!state.currentConversation)await newConversation();
-  const userMsg=text.trim();els.messageInput.value='';els.messageInput.style.height='auto';updateSendBtn();
+  if(!window.REAuthService||!window.REAuthService.authFetch){alert('Sesion no inicializada');return}
+  const userMsg=text.trim();
+  const isNewConv=!state.currentConversation;
+  els.messageInput.value='';els.messageInput.style.height='auto';updateSendBtn();
   state.messages.push({role:'user',content:userMsg});appendMsg('user',userMsg);
-  // Persist user message
-  try{await window.SB.addMessage(state.currentConversation.id,'user',userMsg)}catch(e){console.error('Error guardando mensaje:',e)}
-  if(state.messages.length===1){
-    const newTitle=userMsg.slice(0,50)+(userMsg.length>50?'...':'');
-    state.currentConversation.title=newTitle;
-    els.topbarTitle.textContent=newTitle;
-    try{await window.SB.updateConversationTitle(state.currentConversation.id,newTitle)}catch(e){console.error('Error actualizando título:',e)}
-    renderHistory();
-  }
   state.isStreaming=true;els.sendBtn.disabled=true;appendStreaming();let full='';
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':state.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6-20250514',max_tokens:8192,system:SYSTEM_PROMPT,stream:true,messages:state.messages.map(m=>({role:m.role,content:m.content}))})});
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`Error ${r.status}`)}
+    const payload={message:userMsg,context_type:'chat'};
+    if(state.currentConversation?.id)payload.conversation_id=state.currentConversation.id;
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
+      body:JSON.stringify(payload)
+    });
+    // Update daily counter from rate-limit headers (available on all 2xx/429 responses)
+    const rlRemaining=parseInt(r.headers.get('X-RateLimit-Remaining-Day')||'-1');
+    const rlLimit=parseInt(r.headers.get('X-RateLimit-Limit-Day')||'-1');
+    if(rlRemaining>=0&&rlLimit>0)updateDailyCounter(rlRemaining,rlLimit);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(r.status===403){
+      const e=await r.json().catch(()=>({}));
+      const msg=typeof e.detail==='object'?e.detail.message:(e.detail||'Esta función requiere el plan Pro');
+      updateStreaming('');finalizeStreaming();
+      state.messages.pop();renderMessages();
+      showUpgradeModal(msg);
+      state.isStreaming=false;updateSendBtn();return;
+    }
+    if(r.status===429){
+      const ra=r.headers.get('Retry-After');
+      throw new Error('Limite de mensajes alcanzado'+(ra?' (reintenta en '+ra+'s)':''));
+    }
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      throw new Error(e.detail||'Error del servidor ('+r.status+')');
+    }
     const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
-    while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const l of lines){if(!l.startsWith('data: '))continue;const d=l.slice(6).trim();if(d==='[DONE]')continue;try{const ev=JSON.parse(d);if(ev.type==='content_block_delta'&&ev.delta?.text){full+=ev.delta.text;updateStreaming(full)}}catch(e){}}}
+    outer: while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop()||'';
+      for(const l of lines){
+        if(!l.startsWith('data: '))continue;
+        const d=l.slice(6).trim();
+        if(!d)continue;
+        try{
+          const ev=JSON.parse(d);
+          if(ev.type==='start'&&ev.conversation_id){
+            if(isNewConv){
+              const title=userMsg.slice(0,60)+(userMsg.length>60?'…':'');
+              const newConv={id:ev.conversation_id,title,messages:[],createdAt:new Date().toISOString()};
+              state.currentConversation=newConv;
+              state.conversations.unshift(newConv);
+              els.topbarTitle.textContent=title;
+              renderHistory();
+            }else{
+              state.currentConversation.id=ev.conversation_id;
+            }
+          }else if(ev.type==='delta'&&ev.text){
+            full+=ev.text;updateStreaming(full);
+          }else if(ev.type==='error'){
+            throw new Error(ev.message||'Error del backend');
+          }else if(ev.type==='done'){
+            break outer;
+          }
+        }catch(parseErr){
+          if(parseErr instanceof SyntaxError)continue;
+          throw parseErr;
+        }
+      }
+    }
     state.messages.push({role:'assistant',content:full});finalizeStreaming();
-    // Persist assistant message
-    try{await window.SB.addMessage(state.currentConversation.id,'assistant',full)}catch(e){console.error('Error guardando respuesta:',e)}
   }catch(e){updateStreaming('Error: '+e.message);finalizeStreaming()}
   state.isStreaming=false;updateSendBtn();els.messageInput.focus();
 }
@@ -1944,6 +2001,71 @@ function renderFileList(){
   $('#fileList').innerHTML=state.uploadedFiles.map((f,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-2);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1">${esc(f.name)}</span><span style="color:var(--text-3)">${(f.size/1024).toFixed(0)} KB</span></div>`).join('');
 }
 
+// ===== MATERIALES =====
+const materialesState={items:[],categories:[],updatedAt:'',loaded:false,loading:false,activeCategory:null};
+
+function formatARS(n){return '$'+Number(n).toLocaleString('es-AR',{maximumFractionDigits:0})}
+function matTrendClass(v){return v>2?'trend-up':v<0.5?'trend-down':'trend-stable'}
+
+function matCardHTML(item){
+  const tc=matTrendClass(item.variacion_mensual_pct);
+  const sign=item.variacion_mensual_pct>=0?'+':'';
+  return `<div class="stat-card"><div class="stat-card-label">${esc(item.material)}</div><div class="stat-card-value">${formatARS(item.precio_ars)}</div><div class="stat-card-sub">${esc(item.unidad)} · ${esc(item.proveedor_ref)}</div><div class="stat-card-trend ${tc}">${sign}${item.variacion_mensual_pct.toFixed(1)}% mensual</div></div>`;
+}
+
+function renderMaterialesMeta(){
+  const items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items;
+  const upd=$('#matUpdated'),cnt=$('#matCount');
+  if(upd)upd.textContent=materialesState.updatedAt?'Actualizado: '+materialesState.updatedAt:'';
+  if(cnt)cnt.textContent=items.length+' materiales';
+}
+
+function renderMaterialesChips(){
+  const row=$('#matFilterRow');if(!row)return;
+  const cats=['Todos',...materialesState.categories];
+  row.innerHTML=cats.map(c=>`<button class="mat-chip${(c==='Todos'&&!materialesState.activeCategory)||(c===materialesState.activeCategory)?' active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  row.querySelectorAll('.mat-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const cat=chip.dataset.cat==='Todos'?null:chip.dataset.cat;
+      materialesState.activeCategory=cat;
+      renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
+    });
+  });
+}
+
+function renderMaterialesCards(){
+  const grid=$('#materialesCards');if(!grid)return;
+  const items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items;
+  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:40px 20px;grid-column:1/-1"><div class="empty-icon">📦</div><div class="empty-title">Sin materiales</div><div class="empty-desc">No hay materiales para esta categoría.</div></div>';return}
+  grid.innerHTML=items.map(matCardHTML).join('');
+}
+
+async function loadMateriales(force=false){
+  if(materialesState.loading)return;
+  if(materialesState.loaded&&!force){renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();return}
+  materialesState.loading=true;
+  const l=$('#matLoading'),g=$('#materialesCards');
+  if(l)l.style.display='none';
+  const _skCard='<div class="stat-card"><div class="skeleton" style="height:10px;width:80%;border-radius:3px;margin-bottom:8px"></div><div class="skeleton" style="height:22px;width:55%;border-radius:4px;margin-bottom:8px"></div><div class="skeleton" style="height:8px;width:70%;border-radius:3px"></div></div>';
+  if(g)g.innerHTML=_skCard+_skCard+_skCard+_skCard+_skCard+_skCard;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/materials');
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error cargando precios ('+r.status+')');
+    const data=await r.json();
+    materialesState.items=data.items;
+    materialesState.categories=data.categories;
+    materialesState.updatedAt=data.updated_at;
+    materialesState.loaded=true;
+    renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
+  }catch(e){
+    if(g)g.innerHTML='<div style="padding:20px;color:var(--text-2);font-size:13px">No se pudieron cargar los precios. '+esc(e.message)+'</div>';
+  }finally{
+    materialesState.loading=false;
+    if(l)l.style.display='none';
+  }
+}
+
 // Materiales tabs
 function initMaterialesTabs(){
   $$('[data-mat-tab]').forEach(tab=>{
@@ -1956,16 +2078,348 @@ function initMaterialesTabs(){
   });
 }
 
-// Pagos tabs
+// Pagos
+const pagosState={items:[],summary:null,loaded:false,loading:false,activeFilter:'todos',editingId:null};
+
+function payStatusBadge(estado){
+  const cls={pagado:'status-paid',pendiente:'status-pending',cancelado:'status-cancelled'};
+  const lbl={pagado:'Pagado',pendiente:'Pendiente',cancelado:'Cancelado'};
+  return `<span class="status-badge ${cls[estado]||'status-pending'}">${lbl[estado]||esc(estado)}</span>`;
+}
+function formatDate(iso){
+  if(!iso)return '';
+  const p=iso.split('-');
+  return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso;
+}
+
+function renderPagosStats(){
+  const el=$('#pagosStatCards');if(!el)return;
+  const s=pagosState.summary;
+  if(!s){el.innerHTML='<div class="stat-card"><div class="stat-card-label">Sin datos</div></div>';return}
+  el.innerHTML=
+    `<div class="stat-card"><div class="stat-card-label">Total pagado</div><div class="stat-card-value">${formatARS(s.total_pagado)}</div><div class="stat-card-sub">${s.count_pagado} pago${s.count_pagado!==1?'s':''}</div></div>`+
+    `<div class="stat-card"><div class="stat-card-label">Pendiente</div><div class="stat-card-value">${formatARS(s.total_pendiente)}</div><div class="stat-card-sub">${s.count_pendiente} pago${s.count_pendiente!==1?'s':''} restante${s.count_pendiente!==1?'s':''}</div></div>`+
+    `<div class="stat-card"><div class="stat-card-label">Total activo</div><div class="stat-card-value">${formatARS(s.grand_total)}</div><div class="stat-card-sub">${s.count_total} registros</div></div>`;
+}
+
+function renderPagosTable(){
+  const wrap=$('#pagosTableWrap');if(!wrap)return;
+  let items=pagosState.items;
+  if(pagosState.activeFilter!=='todos')items=items.filter(p=>p.estado===pagosState.activeFilter);
+  if(!items.length){
+    const _filtered=pagosState.activeFilter!=='todos';
+    wrap.innerHTML=`<div class="empty-state" style="padding:44px 20px"><div class="empty-icon">💳</div><div class="empty-title">${_filtered?'Sin resultados':'Sin pagos registrados'}</div><div class="empty-desc">${_filtered?'No hay pagos con ese estado.':'Registrá el primer pago usando el botón "+ Registrar pago".'}</div></div>`;
+    return;
+  }
+  wrap.innerHTML=
+    '<table class="data-table">'+
+    '<thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead>'+
+    '<tbody id="pagosTableBody">'+
+    items.map(p=>
+      `<tr data-pay-id="${p.id}">
+        <td>${formatDate(p.fecha)}</td>
+        <td>${esc(p.proveedor||'—')}</td>
+        <td>${esc(p.concepto)}</td>
+        <td>${esc(p.categoria||'—')}</td>
+        <td>${formatARS(p.monto)}</td>
+        <td>${payStatusBadge(p.estado)}</td>
+        <td style="white-space:nowrap">
+          <button class="pay-action-btn pay-edit-btn" data-id="${p.id}" title="Editar" style="color:var(--text-1)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="pay-action-btn pay-del-btn" data-id="${p.id}" title="Eliminar" style="color:#dc2626"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+        </td>
+      </tr>`
+    ).join('')+
+    '</tbody></table>';
+
+  // Event delegation for edit/delete
+  $('#pagosTableBody')?.addEventListener('click',e=>{
+    const editBtn=e.target.closest('.pay-edit-btn');
+    const delBtn=e.target.closest('.pay-del-btn');
+    if(editBtn)openEditPayment(editBtn.dataset.id);
+    if(delBtn)deletePayment(delBtn.dataset.id);
+  });
+}
+
+async function loadPagos(force=false){
+  if(pagosState.loading)return;
+  if(pagosState.loaded&&!force){renderPagosStats();renderPagosTable();return}
+  pagosState.loading=true;
+  const l=$('#pagosLoading'),w=$('#pagosTableWrap');
+  if(l)l.style.display='none';
+  const _skRow='<tr>'+['','','','','','',''].map(()=>'<td><div class="skeleton" style="height:10px;border-radius:3px"></div></td>').join('')+'</tr>';
+  if(w)w.innerHTML='<table class="data-table"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead><tbody>'+_skRow+_skRow+_skRow+_skRow+'</tbody></table>';
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/payments');
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error cargando pagos ('+r.status+')');
+    const data=await r.json();
+    pagosState.items=data.items;
+    pagosState.summary=data.summary;
+    pagosState.loaded=true;
+    renderPagosStats();renderPagosTable();
+  }catch(e){
+    if(w)w.innerHTML='<div class="pay-empty">No se pudieron cargar los pagos. '+esc(e.message)+'</div>';
+  }finally{
+    pagosState.loading=false;
+    if(l)l.style.display='none';
+  }
+}
+
+function openAddPayment(){
+  pagosState.editingId=null;
+  $('#paymentModalTitle').textContent='Registrar pago';
+  $('#payConcepto').value='';$('#payMonto').value='';
+  $('#payFecha').value=new Date().toISOString().slice(0,10);
+  $('#payEstado').value='pendiente';
+  $('#payProveedor').value='';$('#payCategoria').value='';$('#payNotas').value='';
+  $('#payFormError').style.display='none';
+  $('#paymentModal').classList.add('active');
+  setTimeout(()=>$('#payConcepto').focus(),50);
+}
+
+function openEditPayment(id){
+  const p=pagosState.items.find(x=>x.id===id);if(!p)return;
+  pagosState.editingId=id;
+  $('#paymentModalTitle').textContent='Editar pago';
+  $('#payConcepto').value=p.concepto||'';
+  $('#payMonto').value=p.monto||'';
+  $('#payFecha').value=p.fecha||'';
+  $('#payEstado').value=p.estado||'pendiente';
+  $('#payProveedor').value=p.proveedor||'';
+  $('#payCategoria').value=p.categoria||'';
+  $('#payNotas').value=p.notas||'';
+  $('#payFormError').style.display='none';
+  $('#paymentModal').classList.add('active');
+  setTimeout(()=>$('#payConcepto').focus(),50);
+}
+
+function closePaymentModal(){
+  $('#paymentModal').classList.remove('active');
+  pagosState.editingId=null;
+}
+
+async function savePayment(){
+  const concepto=$('#payConcepto').value.trim();
+  const monto=parseFloat($('#payMonto').value);
+  const fecha=$('#payFecha').value;
+  const errEl=$('#payFormError');
+  if(!concepto||!monto||!fecha){
+    errEl.textContent='Concepto, monto y fecha son obligatorios.';
+    errEl.style.display='';
+    return;
+  }
+  const btn=$('#savePaymentBtn');
+  btn.disabled=true;btn.innerHTML='<span class="btn-spinner"></span>Guardando…';
+  errEl.style.display='none';
+  const body={
+    concepto,monto,fecha,
+    estado:$('#payEstado').value,
+    proveedor:$('#payProveedor').value.trim()||null,
+    categoria:$('#payCategoria').value.trim()||null,
+    notas:$('#payNotas').value.trim()||null,
+  };
+  try{
+    const isEdit=!!pagosState.editingId;
+    const url=apiBase()+'/api/payments'+(isEdit?'/'+pagosState.editingId:'');
+    const r=await window.REAuthService.authFetch(url,{
+      method:isEdit?'PUT':'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+    });
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Error al guardar')}
+    closePaymentModal();
+    pagosState.loaded=false;
+    await loadPagos(true);
+  }catch(e){
+    errEl.textContent=e.message;errEl.style.display='';
+  }finally{
+    btn.disabled=false;btn.innerHTML='Guardar';
+  }
+}
+
+async function deletePayment(id){
+  if(!confirm('¿Eliminar este pago?'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/payments/'+id,{method:'DELETE'});
+    if(r.status===401){window.REAuthService.logout();return}
+    if(r.status!==204&&!r.ok)throw new Error('Error al eliminar');
+    pagosState.items=pagosState.items.filter(p=>p.id!==id);
+    // Rebuild summary locally
+    const paid=pagosState.items.filter(p=>p.estado==='pagado');
+    const pend=pagosState.items.filter(p=>p.estado==='pendiente');
+    const canc=pagosState.items.filter(p=>p.estado==='cancelado');
+    const sum=(arr)=>arr.reduce((a,p)=>a+Number(p.monto),0);
+    pagosState.summary={
+      total_pagado:sum(paid),total_pendiente:sum(pend),total_cancelado:sum(canc),
+      grand_total:sum(paid)+sum(pend),
+      count_pagado:paid.length,count_pendiente:pend.length,count_cancelado:canc.length,count_total:pagosState.items.length
+    };
+    renderPagosStats();renderPagosTable();
+  }catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+
 function initPagosTabs(){
-  $$('[data-pay-tab]').forEach(tab=>{
+  $$('[data-pay-filter]').forEach(tab=>{
     tab.addEventListener('click',()=>{
-      $$('[data-pay-tab]').forEach(t=>t.classList.remove('active'));
+      $$('[data-pay-filter]').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
-      $$('.pay-tab-content').forEach(c=>c.style.display='none');
-      $(`#payTab${tab.dataset.payTab.charAt(0).toUpperCase()+tab.dataset.payTab.slice(1)}`).style.display='';
+      pagosState.activeFilter=tab.dataset.payFilter;
+      renderPagosTable();
     });
   });
+}
+
+// ===== PROYECTO =====
+const proyectoState={data:null,loaded:false,loading:false};
+
+function fmtM(n){
+  const v=Number(n);if(isNaN(v))return '$0';
+  if(Math.abs(v)>=1e6)return '$'+(v/1e6).toFixed(2).replace(/\.?0+$/,'')+'M';
+  if(Math.abs(v)>=1e3)return '$'+Math.round(v/1e3)+'K';
+  return formatARS(v);
+}
+
+function fmtMonth(iso){
+  if(!iso)return '';
+  const p=String(iso).split('-');if(p.length<2)return iso;
+  const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${months[parseInt(p[1],10)-1]||'?'} ${p[0]}`;
+}
+
+function proyectoEmptyHTML(){
+  return `<div class="empty-state" style="padding:56px 20px"><div class="empty-icon">🏗️</div><div class="empty-title">Sin proyecto configurado</div><div class="empty-desc">Usá SOL para cargar los datos de tu proyecto y ver el dashboard en tiempo real.</div></div>`;
+}
+
+function renderProyectoResumen(data){
+  const el=$('#projResumenContent');if(!el)return;
+  if(!data){el.innerHTML=proyectoEmptyHTML();return;}
+  const p=data.project,ind=data.indicators;
+  const hCls={verde:'green',amarillo:'yellow',rojo:'red'}[p.estado]||'yellow';
+  const updDate=p.updated_at?formatDate(p.updated_at.slice(0,10)):'—';
+  const plazoW=p.meses_total>0?Math.min(100,Math.round(p.meses_transcurridos/p.meses_total*100)):0;
+  const cpiCls=ind.cpi==null?'':ind.cpi>=1?'good':ind.cpi>=0.9?'warn':'bad';
+  const spiCls=ind.spi==null?'':ind.spi>=1?'good':ind.spi>=0.85?'warn':'bad';
+  const eacCls=ind.desvio_proyectado==null?'':Number(ind.desvio_proyectado)<=0?'good':'bad';
+  const alertas=Array.isArray(p.alertas)?p.alertas:[];
+  el.innerHTML=`
+    <div class="project-health">
+      <span class="health-dot ${hCls}"></span>
+      <span class="health-label">${esc(p.estado_texto)}</span>
+      <span class="health-sub">Actualizado ${updDate}</span>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Presupuesto base</div><div class="kpi-value">${fmtM(p.presupuesto_base)}</div><div class="kpi-sub">Estimación aprobada</div></div>
+      <div class="kpi-card"><div class="kpi-label">Costo real</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${ind.pct_ejecutado.toFixed(1)}% ejecutado</div><div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:${Math.min(100,ind.pct_ejecutado)}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Avance de obra</div><div class="kpi-value">${p.avance_real_pct.toFixed(1)}%</div><div class="kpi-sub">vs ${p.avance_plan_pct.toFixed(1)}% programado</div><div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Plazo</div><div class="kpi-value">${p.meses_transcurridos} / ${p.meses_total}</div><div class="kpi-sub">meses transcurridos</div><div class="kpi-bar"><div class="kpi-bar-fill green" style="width:${plazoW}%"></div></div></div>
+    </div>
+    <div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Indicadores de Control</div>
+      <div class="pmi-row">
+        <div class="pmi-card"><div class="pmi-title">CPI — Índice de costo</div><div class="pmi-value ${cpiCls}">${ind.cpi!=null?ind.cpi.toFixed(2):'—'}</div><div class="pmi-desc">${ind.cpi!=null?(ind.cpi>=1?'Dentro del presupuesto':'Costo real '+((1-ind.cpi)*100).toFixed(1)+'% arriba del plan'):'Sin datos suficientes'}</div></div>
+        <div class="pmi-card"><div class="pmi-title">SPI — Índice de plazo</div><div class="pmi-value ${spiCls}">${ind.spi!=null?ind.spi.toFixed(2):'—'}</div><div class="pmi-desc">${ind.spi!=null?(ind.spi>=1?'En o adelante del plan':'Avance '+((1-ind.spi)*100).toFixed(1)+'% debajo del plan'):'Sin datos suficientes'}</div></div>
+        <div class="pmi-card"><div class="pmi-title">EAC — Estimación al cierre</div><div class="pmi-value ${eacCls}">${ind.eac?fmtM(ind.eac):'—'}</div><div class="pmi-desc">${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado)+' vs presupuesto base':'Sin datos suficientes'}</div></div>
+      </div>
+    </div>
+    ${alertas.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Alertas activas</div><div class="alert-list">${alertas.map(a=>`<div class="alert-item ${a.severidad}"><span class="alert-icon">${a.severidad==='high'?'⚠️':a.severidad==='medium'?'⏱️':'📋'}</span><div class="alert-text"><strong>${esc(a.titulo)}</strong>${esc(a.descripcion)}</div></div>`).join('')}</div></div>`:''}
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" id="aiProjectAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Análisis IA del proyecto</button>
+      <button class="btn-secondary" id="aiProjectReport">Generar reporte ejecutivo</button>
+    </div>`;
+}
+
+function renderProyectoCostos(data){
+  const el=$('#projCostosContent');if(!el)return;
+  if(!data){el.innerHTML=proyectoEmptyHTML();return;}
+  const p=data.project,ind=data.indicators;
+  const rubros=Array.isArray(p.costos_rubros)?p.costos_rubros:[];
+  el.innerHTML=`
+    <div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Línea base de costos por rubro</div>
+      <div class="cost-row">${rubros.length?rubros.map(r=>{
+        const base=Number(r.base)||0,real=Number(r.real)||0;
+        const realPct=base>0?Math.round(real/base*100):0;
+        const over=real>base,pending=real===0&&base>0;
+        const vPct=base>0?(real-base)/base*100:0;
+        return `<div class="cost-item"><div class="cost-name">${esc(r.nombre)}</div><div class="cost-bar-wrap"><div class="cost-bar"><div class="cost-bar-base" style="width:100%"></div><div class="cost-bar-real ${over?'over':'under'}" style="width:${Math.min(130,realPct)}%"></div></div><div class="cost-amounts"><span>Real: ${fmtM(real)}</span><span>Base: ${fmtM(base)}</span></div></div><div class="cost-variance ${pending?'zero':over?'pos':'neg'}">${pending?'Pendiente':(vPct>0?'+':'')+vPct.toFixed(1)+'%'}</div></div>`;
+      }).join(''):'<div class="pay-empty">Sin rubros de costo definidos.</div>'}</div>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi-card"><div class="kpi-label">Presupuesto base</div><div class="kpi-value">${fmtM(p.presupuesto_base)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gastado hasta hoy</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${ind.pct_ejecutado.toFixed(1)}% del presupuesto</div></div>
+      <div class="kpi-card"><div class="kpi-label">Desvío proyectado</div><div class="kpi-value" ${ind.desvio_proyectado!=null&&Number(ind.desvio_proyectado)>0?'style="color:#ef4444"':''}>${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado):'—'}</div><div class="kpi-sub">${ind.desvio_proyectado!=null&&Number(p.presupuesto_base)>0?((Number(ind.desvio_proyectado)/Number(p.presupuesto_base))*100).toFixed(1)+'% sobre presupuesto base':''}</div></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn-primary" id="aiCostAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Análisis IA de costos</button>
+    </div>`;
+}
+
+function renderProyectoCronograma(data){
+  const el=$('#projCronogramaContent');if(!el)return;
+  if(!data){el.innerHTML=proyectoEmptyHTML();return;}
+  const p=data.project,ms=data.milestones||[];
+  const lbl={done:'Completado',active:'En curso',pending:'Pendiente',delayed:'Retrasado'};
+  el.innerHTML=`
+    <div class="detail-grid">
+      <div>
+        <div class="section-block">
+          <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Hitos del proyecto</div>
+          <div class="milestone-track">
+            <div class="milestone-line"></div>
+            ${ms.length?ms.map(m=>`
+              <div class="milestone">
+                <div class="milestone-dot ${m.estado}"></div>
+                <div class="milestone-head"><span class="milestone-name">${esc(m.nombre)}</span><span class="milestone-status ${m.estado}">${esc(lbl[m.estado]||m.estado)}</span></div>
+                <div class="milestone-date">${fmtMonth(m.fecha_objetivo)}${m.fecha_real?' — completado '+fmtMonth(m.fecha_real):''}</div>
+                ${m.detalle?`<div class="milestone-detail">${esc(m.detalle)}</div>`:''}
+              </div>`).join(''):'<div class="pay-empty" style="padding:16px 0">Sin hitos definidos.</div>'}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-block">
+          <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Resumen de plazo</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="kpi-card"><div class="kpi-label">Inicio</div><div class="kpi-value" style="font-size:18px">${p.fecha_inicio?fmtMonth(p.fecha_inicio):'—'}</div></div>
+            <div class="kpi-card"><div class="kpi-label">Entrega programada</div><div class="kpi-value" style="font-size:18px">${p.fecha_entrega_programada?fmtMonth(p.fecha_entrega_programada):'—'}</div></div>
+            ${p.fecha_entrega_estimada?`<div class="kpi-card"><div class="kpi-label">Entrega estimada real</div><div class="kpi-value" style="font-size:18px;color:#eab308">${fmtMonth(p.fecha_entrega_estimada)}</div></div>`:''}
+            <div class="kpi-card"><div class="kpi-label">Avance real vs plan</div><div style="display:flex;gap:8px;align-items:baseline;margin-top:4px"><span style="font-size:22px;font-weight:800;color:var(--text-0)">${p.avance_real_pct.toFixed(1)}%</span><span style="font-size:12px;color:var(--text-2)">real</span><span style="font-size:12px;color:var(--text-3)">vs</span><span style="font-size:18px;font-weight:700;color:var(--text-2)">${p.avance_plan_pct.toFixed(1)}%</span><span style="font-size:12px;color:var(--text-2)">plan</span></div><div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn-primary" id="aiScheduleAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Análisis IA de cronograma</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function loadProyecto(force=false){
+  if(proyectoState.loading)return;
+  if(proyectoState.loaded&&!force){
+    renderProyectoResumen(proyectoState.data);renderProyectoCostos(proyectoState.data);renderProyectoCronograma(proyectoState.data);return;
+  }
+  proyectoState.loading=true;
+  const _skKpi='<div class="sk-kpi-card"><div class="skeleton sk-kpi-label"></div><div class="skeleton sk-kpi-value"></div><div class="skeleton sk-kpi-sub"></div></div>';
+  const _projSkeleton='<div class="sk-kpi-grid">'+_skKpi+_skKpi+_skKpi+_skKpi+'</div>';
+  ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=_projSkeleton;});
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/project/dashboard');
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(r.status===404){
+      proyectoState.data=null;proyectoState.loaded=true;
+      ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=proyectoEmptyHTML();});
+      return;
+    }
+    if(!r.ok)throw new Error('Error cargando proyecto ('+r.status+')');
+    const data=await r.json();
+    proyectoState.data=data;proyectoState.loaded=true;
+    renderProyectoResumen(data);renderProyectoCostos(data);renderProyectoCronograma(data);
+  }catch(e){
+    ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML='<div class="pay-empty">Error: '+esc(e.message)+'</div>';});
+  }finally{
+    proyectoState.loading=false;
+  }
 }
 
 // Academia tabs & level filters
@@ -2046,7 +2500,7 @@ function solAppendStreaming(){
   $('#solWelcome').style.display='none';
   const m=$('#solMessages');m.style.display='flex';
   const d=document.createElement('div');
-  d.innerHTML=`<div class="sol-msg sol-msg-sol" id="solStreamMsg"><div class="message-inner"><div class="sol-msg-avatar">☀️</div><div class="message-content"><div class="sol-msg-sender">SOL</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div></div></div></div></div></div>`;
+  d.innerHTML=`<div class="sol-msg sol-msg-sol" id="solStreamMsg"><div class="message-inner"><div class="sol-msg-avatar">☀️</div><div class="message-content"><div class="sol-msg-sender">SOL</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div><div class="typing-dot" style="background:#f59e0b"></div><span class="typing-label">Procesando…</span></div></div></div></div></div></div>`;
   m.appendChild(d.firstElementChild);
   $('#solPageContainer').scrollTop=$('#solPageContainer').scrollHeight;
 }
@@ -2071,6 +2525,7 @@ function solExtractStructuredData(fullText){
 
 async function solSend(text){
   if(!text.trim()||solState.isStreaming)return;
+  if(userPlan!=='pro'){showUpgradeModal('Asistente SOL');return;}
   const msg=text.trim();
   $('#solInput').value='';$('#solInput').style.height='auto';solUpdateSendBtn();
   solState.messages.push({role:'user',content:msg});
@@ -2091,6 +2546,14 @@ async function solSend(text){
       body:JSON.stringify(payload)
     });
     if(!r.ok){
+      if(r.status===403){
+        const e=await r.json().catch(()=>({}));
+        const msg=typeof e.detail==='object'?e.detail.message:(e.detail||'Asistente SOL requiere el plan Pro');
+        solUpdateStreaming('');solFinalizeStreaming();
+        solState.messages.pop();
+        showUpgradeModal(msg);
+        solState.isStreaming=false;solUpdateSendBtn();return;
+      }
       if(r.status===429){
         const ra=r.headers.get('Retry-After');
         throw new Error('Alcanzaste el límite de tu plan'+(ra?` (reintenta en ${ra}s)`:''));
@@ -2347,71 +2810,93 @@ function initProyectoTabs(){
       $(`#projTab${tab.dataset.projTab.charAt(0).toUpperCase()+tab.dataset.projTab.slice(1)}`).style.display='';
     });
   });
+  // Event delegation for AI buttons (rendered dynamically inside containers)
+  $('#projResumenContent')?.addEventListener('click',e=>{
+    const d=proyectoState.data?.project,ind=proyectoState.data?.indicators;
+    if(e.target.closest('#aiProjectAnalysis')){
+      switchView('chat');
+      setTimeout(()=>sendMessage(d
+        ?`Analiza el estado de mi proyecto "${d.nombre}". Presupuesto base ${fmtM(d.presupuesto_base)}, costo real ${fmtM(d.costo_real)} (${ind?.pct_ejecutado??0}% ejecutado), avance ${d.avance_real_pct}% vs ${d.avance_plan_pct}% programado, ${d.meses_transcurridos} de ${d.meses_total} meses. CPI=${ind?.cpi??'N/A'}, SPI=${ind?.spi??'N/A'}, EAC=${ind?.eac?fmtM(ind.eac):'N/A'}. Diagnóstico profesional con recomendaciones concretas.`
+        :'Analiza el estado general de mi proyecto de construccion. Dame un diagnostico profesional con recomendaciones concretas para corregir desvios.'
+      ),100);
+    }
+    if(e.target.closest('#aiProjectReport')){
+      switchView('chat');
+      setTimeout(()=>sendMessage(d
+        ?`Genera un reporte ejecutivo del proyecto "${d.nombre}": Presupuesto ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}, avance ${d.avance_real_pct}%, plazo ${d.meses_transcurridos}/${d.meses_total} meses, CPI ${ind?.cpi??'N/A'}, SPI ${ind?.spi??'N/A'}, EAC ${ind?.eac?fmtM(ind.eac):'N/A'}. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos y recomendaciones.`
+        :'Genera un reporte ejecutivo profesional del proyecto. Formato: resumen ejecutivo, estado financiero, cronograma, riesgos, recomendaciones y proximos pasos.'
+      ),100);
+    }
+  });
+  $('#projCostosContent')?.addEventListener('click',e=>{
+    if(e.target.closest('#aiCostAnalysis')){
+      const d=proyectoState.data?.project;
+      const rubros=d?.costos_rubros?.map(r=>`${r.nombre} base ${fmtM(r.base)} real ${fmtM(r.real)}`).join(', ')||'sin detalle';
+      switchView('chat');
+      setTimeout(()=>sendMessage(d
+        ?`Analiza los costos de mi proyecto "${d.nombre}": presupuesto total ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}. Rubros: ${rubros}. Analiza desvíos, identifica causas probables y recomendá acciones.`
+        :'Haceme un analisis detallado de costos de mi obra. Analiza desvios, identifica causas probables y recomienda acciones.'
+      ),100);
+    }
+  });
+  $('#projCronogramaContent')?.addEventListener('click',e=>{
+    if(e.target.closest('#aiScheduleAnalysis')){
+      const d=proyectoState.data?.project,ms=proyectoState.data?.milestones||[];
+      const hitos=ms.map(m=>`${m.nombre} (${m.estado})`).join(', ')||'sin hitos definidos';
+      switchView('chat');
+      setTimeout(()=>sendMessage(d
+        ?`Analiza el cronograma de mi proyecto "${d.nombre}": inicio ${d.fecha_inicio||'N/A'}, entrega programada ${d.fecha_entrega_programada||'N/A'}. Hitos: ${hitos}. SPI=${proyectoState.data?.indicators?.spi??'N/A'}. Dame analisis de ruta critica y plan para recuperar plazo.`
+        :'Analiza el cronograma de mi proyecto de construccion. Dame un analisis de ruta critica, impacto del retraso acumulado y plan de accion para recuperar plazo.'
+      ),100);
+    }
+  });
 }
 
 // AI actions for sections
 function initSectionActions(){
   $('#analyzePlanosBtn')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     const names=state.uploadedFiles.map(f=>f.name).join(', ');
     switchView('chat');
     setTimeout(()=>sendMessage(`Analiza estos planos y estima los materiales necesarios para la obra: ${names}. Dame un desglose detallado con cantidades estimadas de cada material.`),100);
   });
-  $('#refreshPricesBtn')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
-    switchView('chat');
-    setTimeout(()=>sendMessage('Dame una cotizacion actualizada de los principales materiales de construccion en Argentina (cemento, hierro, ladrillos, arena, piedra, membrana). Incluye precios por unidad, tendencia mensual y variacion interanual.'),100);
-  });
+  $('#refreshPricesBtn')?.addEventListener('click',()=>loadMateriales(true));
   $('#deepAnalysisBtn')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Haceme un analisis economico profundo del mercado de materiales de construccion. Incluye pronosticos para los proximos 3 meses basado en inflacion, tipo de cambio, demanda del sector y costos energeticos. Presenta en tabla con tendencias.'),100);
   });
   $('#aiCourseRec')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Soy desarrollador inmobiliario en Argentina, nivel intermedio. Ya tengo experiencia en desarrollo de proyectos residenciales chicos (dúplex, PH). Quiero escalar a edificios multifamily y fideicomisos. Recomendame cursos, formaciones o certificaciones en orden de prioridad, incluyendo instituciones argentinas y opciones online. Indicame nivel, duracion, costo estimado y por que me sirve cada uno.'),100);
   });
   $('#aiPathRec')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Armame una ruta de aprendizaje personalizada para alguien que quiere dedicarse profesionalmente al desarrollo inmobiliario en Argentina. Quiero un plan desde cero hasta nivel avanzado, con etapas claras, cursos recomendados en cada etapa, habilidades a desarrollar, y estimacion de tiempo y costo total. Incluí opciones presenciales en Buenos Aires y opciones online.'),100);
   });
   $('#aiNewsSummary')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Haceme un resumen ejecutivo de la semana en real estate y construccion en Argentina. Incluí: movimientos del BCRA y su impacto en creditos hipotecarios, variacion de costos de materiales (cemento, hierro, aluminio), estado del mercado inmobiliario en CABA y Cordoba, novedades regulatorias relevantes, y una conclusion con recomendaciones para un desarrollador inmobiliario. Formato: resumen por area con bullet points y un bloque final de "Que hacer esta semana".'),100);
   });
   $('#aiOpinionSummary')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
     switchView('chat');
     setTimeout(()=>sendMessage('Sintetiza las opiniones de los principales analistas sobre el mercado inmobiliario argentino en abril 2026. Contexto: baja de tasas del BCRA, inflacion debajo de 3%, brecha cambiaria minima, costos de construccion subiendo por energia. Quiero entender: el consenso general, los puntos de coincidencia, los riesgos que ven, y que oportunidades concretas detectan para desarrolladores y constructores. Dame un analisis critico, no solo un resumen.'),100);
   });
-  $('#aiProjectAnalysis')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
-    switchView('chat');
-    setTimeout(()=>sendMessage('Analiza el estado general de mi proyecto de construccion. Datos: presupuesto base $6.430.000, costo real $4.250.000 (66% ejecutado), avance de obra 58% vs 66% programado, 14 de 18 meses transcurridos. CPI=0.94, SPI=0.88. Hay sobrecosto en estructura (+13.8%) e instalacion electrica (+7.5%). Retraso acumulado de 18 dias en instalaciones. Dame un diagnostico profesional con recomendaciones concretas para corregir desvios.'),100);
-  });
-  $('#aiProjectReport')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
-    switchView('chat');
-    setTimeout(()=>sendMessage('Genera un reporte ejecutivo profesional del proyecto con estos datos: Presupuesto $6.43M, gastado $4.25M, avance 58%, plazo 14/18 meses, CPI 0.94, SPI 0.88, EAC $6.84M. Alertas: sobrecosto estructura +13.8%, retraso instalaciones 18 dias, permiso municipal pendiente. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos, recomendaciones y proximos pasos.'),100);
-  });
-  $('#aiCostAnalysis')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
-    switchView('chat');
-    setTimeout(()=>sendMessage('Haceme un analisis detallado de costos de mi obra. Rubros: Estructura base $1.60M real $1.82M (+13.8%), Albañileria base $1.10M real $680K (en curso), Inst. electrica base $1.20M real $1.29M (+7.5%), Inst. sanitaria base $780K (pendiente), Carpinteria base $520K (pendiente), Terminaciones base $680K (pendiente), Pintura base $250K (pendiente). Presupuesto total $6.43M. Analiza desvios, identifica causas probables y recomienda acciones para los rubros pendientes.'),100);
-  });
-  $('#aiScheduleAnalysis')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
-    switchView('chat');
-    setTimeout(()=>sendMessage('Analiza el cronograma de mi proyecto: Inicio Feb 2025, entrega programada Ago 2026 (18 meses). Hitos: Fundaciones (completado, 5 dias adelanto), Estructura (completado, 8 dias retraso), Instalaciones (en curso, 18 dias retraso — electrica completa, sanitaria en ejecucion), Terminaciones (pendiente Jun 2026), Entrega final (pendiente Ago 2026, riesgo Sep 2026). SPI=0.88. Dame un analisis de ruta critica, impacto del retraso acumulado y plan de accion para recuperar plazo.'),100);
-  });
+  // Project AI buttons are wired via event delegation in initProyectoTabs()
   $('#aiPayAnalysis')?.addEventListener('click',()=>{
-    if(!state.apiKey){alert('Configura tu API Key primero');return}
+    const s=pagosState.summary;
+    const prompt=s
+      ?`Analiza mi situacion de pagos de obra: llevo ${formatARS(s.total_pagado)} pagados (${s.count_pagado} pago${s.count_pagado!==1?'s':''}), tengo ${formatARS(s.total_pendiente)} pendiente (${s.count_pendiente} pago${s.count_pendiente!==1?'s':''}). Total activo: ${formatARS(s.grand_total)}. Dame recomendaciones para optimizar los pagos restantes y negociar con proveedores.`
+      :'Analiza mi situacion de pagos de obra y dame recomendaciones para optimizar los pagos restantes y negociar con proveedores.';
     switchView('chat');
-    setTimeout(()=>sendMessage('Analiza mi situacion de pagos de obra: llevo $4.250.000 pagados en 12 cuotas, me faltan 6 pagos por $2.180.000. El presupuesto original era $6.430.000. Detecte sobreprecios en hierro (+8.5% vs +3.8% esperado) y cables (+12% vs +4.2%). Dame recomendaciones para negociar con proveedores y optimizar los pagos restantes.'),100);
+    setTimeout(()=>sendMessage(prompt),100);
   });
+
+  // Payment modal wiring
+  $('#addPaymentBtn')?.addEventListener('click',openAddPayment);
+  $('#closePaymentModal')?.addEventListener('click',closePaymentModal);
+  $('#cancelPaymentBtn')?.addEventListener('click',closePaymentModal);
+  $('#paymentModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePaymentModal()});
+  $('#savePaymentBtn')?.addEventListener('click',savePayment);
+  $('#paymentForm')?.addEventListener('submit',e=>{e.preventDefault();savePayment()});
 }
 
 // Export
@@ -2426,6 +2911,80 @@ function exportConversation(fmt){
     default:return;
   }
   const b=new Blob([c],{type:m+';charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);els.exportModal.classList.remove('active');
+}
+
+// ===== ONBOARDING =====
+const OB_SLIDES = 4;
+let obCurrent = 0;
+let obSelectedPrompt = null;
+
+function showOnboarding(userName) {
+  const overlay = document.getElementById('onboardingOverlay');
+  const nameEl = document.getElementById('obUserName');
+  if (nameEl) nameEl.textContent = userName || 'allí';
+  obCurrent = 0;
+  obSelectedPrompt = null;
+  _obRenderSlide();
+  overlay.classList.add('active');
+}
+
+function _obRenderSlide() {
+  // Activate slide
+  document.querySelectorAll('.ob-slide').forEach((s, i) => s.classList.toggle('active', i === obCurrent));
+  // Prev button
+  const prev = document.getElementById('obPrevBtn');
+  if (prev) prev.style.visibility = obCurrent === 0 ? 'hidden' : '';
+  // Next button
+  const next = document.getElementById('obNextBtn');
+  if (next) {
+    const isLast = obCurrent === OB_SLIDES - 1;
+    next.textContent = isLast ? '¡Empezar!' : 'Siguiente →';
+    next.className = 'ob-btn-next' + (isLast ? ' ob-final' : '');
+  }
+}
+
+function _obNext() {
+  if (obCurrent < OB_SLIDES - 1) {
+    obCurrent++;
+    _obRenderSlide();
+  } else {
+    _obComplete();
+  }
+}
+
+function _obPrev() {
+  if (obCurrent > 0) { obCurrent--; _obRenderSlide(); }
+}
+
+async function _obComplete() {
+  document.getElementById('onboardingOverlay').classList.remove('active');
+  localStorage.setItem('re_onboarding_done', '1');
+  try {
+    await window.REAuthService.authFetch(apiBase() + '/api/auth/onboarding/complete', { method: 'POST' });
+  } catch (_) { /* not critical */ }
+  if (obSelectedPrompt) {
+    els.messageInput.value = obSelectedPrompt;
+    updateSendBtn(); autoResize();
+    sendMessage(obSelectedPrompt);
+  } else {
+    els.messageInput.focus();
+  }
+}
+
+function initOnboarding() {
+  document.getElementById('obNextBtn')?.addEventListener('click', _obNext);
+  document.getElementById('obPrevBtn')?.addEventListener('click', _obPrev);
+  document.getElementById('obSkipBtn')?.addEventListener('click', _obComplete);
+  document.getElementById('onboardingOverlay')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) _obComplete();
+  });
+  document.getElementById('obPromptGrid')?.querySelectorAll('.ob-prompt-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.ob-prompt-card').forEach(c => c.classList.remove('ob-selected'));
+      card.classList.add('ob-selected');
+      obSelectedPrompt = card.dataset.prompt;
+    });
+  });
 }
 
 // ===== AUTH =====
@@ -2454,52 +3013,60 @@ async function handleAuthSubmit(e){
   const fullName=document.getElementById('authFullName').value.trim();
   const btn=document.getElementById('authSubmit');btn.disabled=true;btn.textContent='Procesando...';
   try{
-    if(authMode==='signup'){
-      const {data,error}=await window.SB.signUp(email,password,fullName);
-      if(error)throw error;
-      if(!data.session){showAuthError('Cuenta creada. Revisá tu email para confirmar.');btn.disabled=false;btn.textContent='Crear cuenta';return}
-    }else{
-      const {error}=await window.SB.signIn(email,password);
-      if(error)throw error;
+    const endpoint=authMode==='signup'?'/api/auth/register':'/api/auth/login';
+    const body=authMode==='signup'?{email,password,full_name:fullName}:{email,password};
+    const resp=await fetch(apiBase()+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok){
+      const d=await resp.json().catch(()=>({}));
+      throw new Error(d.detail||'Error de autenticación ('+resp.status+')');
     }
-    // onAuthChange se dispara y llama a onUserLoggedIn
+    const data=await resp.json();
+    window.REAuthService._storeSession(data.access_token,data.refresh_token,data.user||null);
+    await onUserLoggedIn(data.user||{email});
   }catch(err){
     showAuthError(err.message||'Error de autenticación');
     btn.disabled=false;btn.textContent=authMode==='signup'?'Crear cuenta':'Iniciar sesión';
   }
 }
 
+function initHistoryScroll(){
+  const section=$('#chatHistorySection');
+  if(!section)return;
+  section.addEventListener('scroll',()=>{
+    if(section.scrollHeight-section.scrollTop-section.clientHeight<80){
+      loadConversationsFromCloud(true);
+    }
+  });
+}
+
 async function onUserLoggedIn(user){
   state.user=user;
+  userPlan=user?.plan||'free';
   hideAuthModal();
   // Mostrar user footer en sidebar
   const footer=document.getElementById('userFooter');
   footer.style.display='flex';
-  document.getElementById('userEmail').textContent=user.email;
+  document.getElementById('userEmail').textContent=user.email||'';
+  updatePlanBadge();
   await loadConversationsFromCloud();
+  // Mostrar onboarding si es primer uso
+  if(user&&!user.onboarding_completed&&!localStorage.getItem('re_onboarding_done')){
+    const displayName=user.full_name?user.full_name.split(' ')[0]:(user.email?.split('@')[0]||'');
+    setTimeout(()=>showOnboarding(displayName),700);
+  }
 }
 
 async function handleLogout(){
-  await window.SB.signOut();
   state.user=null;state.conversations=[];state.currentConversation=null;state.messages=[];
-  renderHistory();showWelcome();
-  document.getElementById('userFooter').style.display='none';
-  showAuthModal();
+  await window.REAuthService.logout();
 }
 
 function init(){
-  applyTheme(state.theme);updateApiKeyUI();
-  // Auth listener
-  window.SB.onAuthChange((event,session)=>{
-    if(session?.user){onUserLoggedIn(session.user)}
-    else if(event==='SIGNED_OUT'){showAuthModal()}
-  });
-  // Check initial auth state
-  window.SB.getUser().then(user=>{
-    if(user)onUserLoggedIn(user);
-    else showAuthModal();
-  });
-  // Auth form handlers
+  applyTheme(state.theme);
+  // Cargar usuario desde sesión ya validada por el route guard
+  const _storedUser=window.REAuthService&&window.REAuthService.getStoredUser?window.REAuthService.getStoredUser():null;
+  onUserLoggedIn(_storedUser||{email:''});
+  // Auth form handlers (modal fallback)
   document.getElementById('authForm').addEventListener('submit',handleAuthSubmit);
   document.getElementById('authToggle').addEventListener('click',toggleAuthMode);
   document.getElementById('logoutBtn').addEventListener('click',handleLogout);
@@ -2510,21 +3077,24 @@ function init(){
   els.topbarTitle.addEventListener('click',handleTitleTap);
   document.addEventListener('click',e=>{if(!els.sidebar.contains(e.target)&&!els.sidebarToggle.contains(e.target)&&!els.sidebar.classList.contains('collapsed'))els.sidebar.classList.add('collapsed')});
   els.newChatBtn.addEventListener('click',newConversation);
-  els.apiKeySave.addEventListener('click',saveApiKey);
-  els.apiKeyInput.addEventListener('keydown',e=>{if(e.key==='Enter')saveApiKey()});
-  els.apiKeyChange.addEventListener('click',()=>{state.apiKey='';localStorage.removeItem('re_api_key');updateApiKeyUI();els.apiKeyInput.focus()});
   els.messageInput.addEventListener('input',()=>{updateSendBtn();autoResize()});
   els.messageInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage(els.messageInput.value)}});
   els.sendBtn.addEventListener('click',()=>sendMessage(els.messageInput.value));
   els.themeToggle.addEventListener('click',()=>applyTheme(state.theme==='dark'?'light':'dark'));
-  els.exportBtn.addEventListener('click',()=>els.exportModal.classList.add('active'));
+  els.exportBtn.addEventListener('click',()=>{
+    if(userPlan!=='pro'){showUpgradeModal('Exportar conversación');return;}
+    els.exportModal.classList.add('active');
+  });
   els.exportModalClose.addEventListener('click',()=>els.exportModal.classList.remove('active'));
   els.exportModal.addEventListener('click',e=>{if(e.target===els.exportModal)els.exportModal.classList.remove('active')});
+  document.getElementById('upgradeModalClose').addEventListener('click',hideUpgradeModal);
+  document.getElementById('upgradeModal').addEventListener('click',e=>{if(e.target===e.currentTarget)hideUpgradeModal()});
   $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
   $$('.sidebar-nav-item').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
   renderHistory();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();
+  initHistoryScroll();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();initOnboarding();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
   els.messageInput.focus();

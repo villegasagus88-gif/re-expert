@@ -131,6 +131,7 @@ def _sse(data: dict) -> str:
     summary="Enviar mensaje al chat (streaming SSE)",
     responses={
         401: {"description": "Token inválido o ausente"},
+        403: {"description": "Feature requiere plan Pro"},
         404: {"description": "Conversación no encontrada"},
         429: {"description": "Demasiados mensajes, esperá un rato"},
     },
@@ -142,6 +143,17 @@ async def chat(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # Gate: SOL context requires Pro plan
+    if body.context_type == "sol" and current_user.plan != "pro":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": "El Asistente SOL requiere el plan Pro.",
+                "plan_required": "pro",
+                "upgrade_url": "/pricing.html",
+            },
+        )
+
     # 1. Per-user rate limit check (raises 429 with Retry-After if exceeded).
     #    Must run BEFORE persisting the user message so the current request
     #    isn't double-counted.

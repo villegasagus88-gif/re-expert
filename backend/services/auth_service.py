@@ -1,127 +1,192 @@
 """
-Auth service - proxies to Supabase Auth with business logic.
+Auth service — standalone authentication with bcrypt + JWT.
 
-Supabase handles: password hashing (bcrypt), JWT generation, email uniqueness.
-We handle: input validation, rate limiting, error translation, profile enrichment.
+Handles: password hashing, credential validation, token generation,
+user registration, and session refresh. No external auth provider needed.
 """
-import httpx
-from config.settings import settings
-from fastapi import HTTPException, status
+from datetime import datetime, timezone
+from uuid import uuid4
 
-SUPABASE_AUTH_URL = f"{settings.SUPABASE_URL}/auth/v1"
-HEADERS = {
-    "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
-    "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
-    "Content-Type": "application/json",
-}
+import bcrypt
+from fastapi import HTTPException, status
+from models.base import get_session_factory
+from models.user import User
+from services.jwt_service import create_token_pair, decode_token
+from sqlalchemy import select
+
+
+def _hash_password(password: str) -> str:
+    """Hash a plaintext password with bcrypt."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def _verify_password(password: str, password_hash: str) -> bool:
+    """Check a plaintext password against a bcrypt hash."""
+    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+
+
+def _user_to_dict(user: User) -> dict:
+    """Convert a User ORM instance to the API response dict."""
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "plan": user.plan,
+        "onboarding_completed": user.onboarding_completed,
+    }
 
 
 async def register_user(email: str, password: str, full_name: str) -> dict:
     """
-    Register a new user via Supabase Auth Admin API.
+    Register a new user with bcrypt-hashed password.
 
     Returns dict with access_token, refresh_token, and user data.
-    Raises HTTPException on failure (409 for duplicate email, etc.).
+    Raises 409 if email already exists.
     """
-    async with httpx.AsyncClient(timeout=10) as client:
-        # Create user via Supabase Admin API
-        resp = await client.post(
-            f"{SUPABASE_AUTH_URL}/admin/users",
-            headers=HEADERS,
-            json={
-                "email": email,
-                "password": password,
-                "email_confirm": True,  # Auto-confirm since we validate on our end
-                "user_metadata": {"full_name": full_name},
-            },
+    async with get_session_factory()() as db:
+        # Check if email already exists
+        result = await db.execute(select(User).where(User.email == email))
+        existing = result.scalar_one_or_none()
+
+        if existing is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una cuenta con este email",
+            )
+
+        # Create user
+        user = User(
+            id=uuid4(),
+            email=email,
+            password_hash=_hash_password(password),
+            full_name=full_name,
+            role="user",
+            plan="free",
+            last_login=datetime.now(timezone.utc),
         )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-        if resp.status_code == 422:
-            body = resp.json()
-            msg = body.get("msg", body.get("message", ""))
-            if "already" in msg.lower() or "duplicate" in msg.lower():
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Ya existe una cuenta con este email",
-                )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=msg or "Error de validación",
-            )
-
-        if resp.status_code not in (200, 201):
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Error al comunicarse con el servicio de autenticación",
-            )
-
-        user_data = resp.json()
-
-        # Now sign in to get JWT tokens
-        sign_in_resp = await client.post(
-            f"{SUPABASE_AUTH_URL}/token?grant_type=password",
-            headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json"},
-            json={"email": email, "password": password},
-        )
-
-        if sign_in_resp.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Usuario creado pero error al generar sesión",
-            )
-
-        session = sign_in_resp.json()
+        # Generate tokens
+        access_token, refresh_token = create_token_pair(user.id)
 
         return {
-            "access_token": session["access_token"],
-            "refresh_token": session["refresh_token"],
-            "user": {
-                "id": user_data["id"],
-                "email": user_data["email"],
-                "full_name": user_data.get("user_metadata", {}).get("full_name"),
-                "role": "user",
-                "plan": "free",
-            },
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user": _user_to_dict(user),
         }
 
 
 async def login_user(email: str, password: str) -> dict:
     """
-    Login via Supabase Auth. Returns tokens + user data.
-    """
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(
-            f"{SUPABASE_AUTH_URL}/token?grant_type=password",
-            headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json"},
-            json={"email": email, "password": password},
-        )
+    Authenticate user by email + password.
 
-        if resp.status_code == 400:
+    Returns dict with access_token, refresh_token, and user data.
+    Raises 401 if credentials are invalid.
+    """
+    async with get_session_factory()() as db:
+        # Find user by email
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        # Validate credentials
+        if user is None or user.password_hash is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email o contraseña incorrectos",
             )
 
-        if resp.status_code != 200:
+        if not _verify_password(password, user.password_hash):
             raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Error al comunicarse con el servicio de autenticación",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email o contraseña incorrectos",
             )
 
-        session = resp.json()
-        user = session.get("user", {})
+        # Update last_login
+        user.last_login = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(user)
+
+        # Generate tokens
+        access_token, refresh_token = create_token_pair(user.id)
 
         return {
-            "access_token": session["access_token"],
-            "refresh_token": session["refresh_token"],
-            "user": {
-                "id": user["id"],
-                "email": user["email"],
-                "full_name": user.get("user_metadata", {}).get("full_name"),
-                "role": user.get("app_metadata", {}).get("role", "user"),
-                "plan": "free",
-            },
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user": _user_to_dict(user),
         }
+
+
+async def refresh_session(refresh_token: str) -> dict:
+    """
+    Exchange a valid refresh token for a new token pair.
+
+    Raises 401 if the token is invalid, expired, or not a refresh token.
+    """
+    import jwt as pyjwt
+
+    try:
+        payload = decode_token(refresh_token)
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expirado",
+        )
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido",
+        )
+
+    # Verify it's actually a refresh token
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token no es de tipo refresh",
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token sin identificador de usuario",
+        )
+
+    # Load user from DB
+    async with get_session_factory()() as db:
+        from uuid import UUID
+
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuario no encontrado",
+            )
+
+        # Generate new token pair
+        new_access, new_refresh = create_token_pair(user.id)
+
+        return {
+            "access_token": new_access,
+            "refresh_token": new_refresh,
+            "user": _user_to_dict(user),
+        }
+
+
+async def complete_onboarding(user_id: str) -> None:
+    """Mark the user's onboarding as completed."""
+    async with get_session_factory()() as db:
+        from uuid import UUID
+
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        user = result.scalar_one_or_none()
+        if user and not user.onboarding_completed:
+            user.onboarding_completed = True
+            await db.commit()
 
 
 async def update_profile(
@@ -132,71 +197,37 @@ async def update_profile(
     new_password: str | None = None,
 ) -> None:
     """
-    Update user profile. If changing password, validates current password
-    first by attempting a sign-in with Supabase.
+    Update user profile (name and/or password).
+
+    If changing password, validates current password first.
     """
-    async with httpx.AsyncClient(timeout=10) as client:
-        # If changing password, verify current password via sign-in
-        if new_password and current_password:
-            verify_resp = await client.post(
-                f"{SUPABASE_AUTH_URL}/token?grant_type=password",
-                headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json"},
-                json={"email": email, "password": current_password},
-            )
-            if verify_resp.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Contrasena actual incorrecta",
-                )
+    async with get_session_factory()() as db:
+        from uuid import UUID
 
-        # Build the update payload for Supabase Admin API
-        update_data: dict = {}
-        if new_password:
-            update_data["password"] = new_password
-        if full_name is not None:
-            update_data["user_metadata"] = {"full_name": full_name}
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        user = result.scalar_one_or_none()
 
-        if update_data:
-            resp = await client.put(
-                f"{SUPABASE_AUTH_URL}/admin/users/{user_id}",
-                headers=HEADERS,
-                json=update_data,
-            )
-            if resp.status_code not in (200, 201):
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail="Error al actualizar perfil en el servicio de autenticacion",
-                )
-
-
-async def refresh_session(refresh_token: str) -> dict:
-    """
-    Exchange a refresh_token for a new access_token + refresh_token.
-    """
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(
-            f"{SUPABASE_AUTH_URL}/token?grant_type=refresh_token",
-            headers={"apikey": settings.SUPABASE_SERVICE_ROLE_KEY, "Content-Type": "application/json"},
-            json={"refresh_token": refresh_token},
-        )
-
-        if resp.status_code != 200:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token inválido o expirado",
+                detail="Usuario no encontrado",
             )
 
-        session = resp.json()
-        user = session.get("user", {})
+        # Validate current password if changing password
+        if new_password:
+            if not current_password:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="current_password es requerido para cambiar la contraseña",
+                )
+            if not user.password_hash or not _verify_password(current_password, user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Contraseña actual incorrecta",
+                )
+            user.password_hash = _hash_password(new_password)
 
-        return {
-            "access_token": session["access_token"],
-            "refresh_token": session["refresh_token"],
-            "user": {
-                "id": user["id"],
-                "email": user["email"],
-                "full_name": user.get("user_metadata", {}).get("full_name"),
-                "role": user.get("app_metadata", {}).get("role", "user"),
-                "plan": "free",
-            },
-        }
+        if full_name is not None:
+            user.full_name = full_name
+
+        await db.commit()

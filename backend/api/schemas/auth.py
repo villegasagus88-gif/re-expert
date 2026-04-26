@@ -3,13 +3,14 @@ Auth request/response schemas with validation.
 """
 import re
 
+from core.sanitize import SanitizedOptStr, SanitizedStr
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
-    full_name: str = Field(..., min_length=1, max_length=255)
+    full_name: SanitizedStr = Field(..., min_length=1, max_length=255)
 
     @field_validator("password")
     @classmethod
@@ -38,6 +39,7 @@ class UserOut(BaseModel):
     full_name: str | None = None
     role: str = "user"
     plan: str = "free"
+    onboarding_completed: bool = False
 
 
 class RefreshRequest(BaseModel):
@@ -45,7 +47,7 @@ class RefreshRequest(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    full_name: str | None = Field(None, min_length=1, max_length=255)
+    full_name: SanitizedOptStr = Field(None, min_length=1, max_length=255)
     new_password: str | None = Field(None, min_length=8, max_length=128)
     current_password: str | None = Field(None, min_length=1)
 

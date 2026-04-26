@@ -1,5 +1,5 @@
 // Auth pages shared helpers (login + register)
-// Asume que supabase-client.js ya cargó window.SB
+// Usa los endpoints del backend (/api/auth/login, /api/auth/register).
 
 (function () {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,19 +64,40 @@
     return null;
   }
 
+  function validatePasswordStrength(password) {
+    const basic = validatePassword(password);
+    if (basic) return basic;
+    if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
+    if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
+    return null;
+  }
+
   function validateName(name) {
     if (!name || !name.trim()) return 'Ingresá tu nombre';
     if (name.trim().length < 2) return 'El nombre es muy corto';
     return null;
   }
 
+  function _apiBase() {
+    return (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+  }
+
+  function _parseJwtPayload(token) {
+    try {
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(atob(base64));
+    } catch {
+      return null;
+    }
+  }
+
   // ===== Redirect post-login =====
   async function redirectIfAuthenticated() {
-    try {
-      const user = await window.SB.getUser();
-      if (user) window.location.replace('index.html');
-    } catch {
-      // No autenticado — seguimos en la página
+    const stored = localStorage.getItem('re_access_token');
+    if (!stored) return;
+    const payload = _parseJwtPayload(stored);
+    if (payload && payload.exp && Date.now() < payload.exp * 1000) {
+      window.location.replace('index.html');
     }
   }
 
@@ -96,14 +117,38 @@
 
     setLoading('submit-btn', true);
     try {
-      const { error } = await window.SB.signIn(email, password);
-      if (error) {
-        showAlert(translateSupabaseError(error.message));
+      const resp = await fetch(_apiBase() + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (resp.status === 401) {
+        showAlert('Email o contraseña incorrectos.');
         return;
       }
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
+      }
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'Error al iniciar sesión. Intentá de nuevo.');
+        return;
+      }
+
+      const data = await resp.json();
+      if (window.REAuthService && window.REAuthService._storeSession) {
+        window.REAuthService._storeSession(data.access_token, data.refresh_token, data.user || null);
+      } else {
+        localStorage.setItem('re_access_token', data.access_token);
+        localStorage.setItem('re_refresh_token', data.refresh_token);
+        if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
+        sessionStorage.setItem('re_authed', '1');
+      }
       window.location.replace('index.html');
-    } catch (e) {
-      showAlert('No pudimos conectarnos. Intentá de nuevo en un momento.');
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
       setLoading('submit-btn', false);
     }
@@ -120,7 +165,7 @@
 
     const nameErr = validateName(fullName);
     const emailErr = validateEmail(email);
-    const passErr = validatePassword(password);
+    const passErr = validatePasswordStrength(password);
     if (nameErr) setInputError('fullName', nameErr);
     if (emailErr) setInputError('email', emailErr);
     if (passErr) setInputError('password', passErr);
@@ -128,24 +173,38 @@
 
     setLoading('submit-btn', true);
     try {
-      const { data, error } = await window.SB.signUp(email, password, fullName.trim());
-      if (error) {
-        showAlert(translateSupabaseError(error.message));
+      const resp = await fetch(_apiBase() + '/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, full_name: fullName.trim() }),
+      });
+
+      if (resp.status === 409) {
+        showAlert('Ya existe una cuenta con ese email. Probá iniciar sesión.');
         return;
       }
-      // Si Supabase devuelve session directamente → logueado: redirect.
-      // Si no (email confirmation obligatoria), mostramos success + dejamos que el usuario vaya a login.
-      if (data && data.session) {
-        window.location.replace('index.html');
-      } else {
-        showAlert(
-          'Cuenta creada. Revisá tu email para confirmar y después iniciá sesión.',
-          'success'
-        );
-        byId('register-form').reset();
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
       }
-    } catch (e) {
-      showAlert('No pudimos conectarnos. Intentá de nuevo en un momento.');
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'Error al registrarse. Intentá de nuevo.');
+        return;
+      }
+
+      const data = await resp.json();
+      if (window.REAuthService && window.REAuthService._storeSession) {
+        window.REAuthService._storeSession(data.access_token, data.refresh_token, data.user || null);
+      } else {
+        localStorage.setItem('re_access_token', data.access_token);
+        localStorage.setItem('re_refresh_token', data.refresh_token);
+        if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
+        sessionStorage.setItem('re_authed', '1');
+      }
+      window.location.replace('index.html');
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
       setLoading('submit-btn', false);
     }
@@ -153,47 +212,10 @@
 
   // ===== FORGOT PASSWORD =====
   async function handleForgotPassword() {
-    const email = (byId('email') && byId('email').value || '').trim();
-    const target = email || window.prompt('Ingresá tu email para recuperar la contraseña:');
-    if (!target) return;
-    if (!EMAIL_RE.test(target)) {
-      showAlert('Formato de email inválido');
-      return;
-    }
-    try {
-      const { error } = await window.SB.client.auth.resetPasswordForEmail(target, {
-        redirectTo: window.location.origin + '/index.html',
-      });
-      if (error) {
-        showAlert(translateSupabaseError(error.message));
-        return;
-      }
-      showAlert(
-        'Si esa cuenta existe, te enviamos un email con instrucciones para restablecer la contraseña.',
-        'success'
-      );
-    } catch {
-      showAlert('No pudimos enviar el email. Intentá de nuevo en un momento.');
-    }
-  }
-
-  // Traduce los mensajes más comunes de Supabase al castellano.
-  function translateSupabaseError(msg) {
-    if (!msg) return 'Error desconocido. Intentá de nuevo.';
-    const m = msg.toLowerCase();
-    if (m.includes('invalid login credentials')) return 'Email o contraseña incorrectos.';
-    if (m.includes('email not confirmed')) return 'Tu email aún no está confirmado. Revisá tu bandeja.';
-    if (m.includes('user already registered') || m.includes('already registered')) {
-      return 'Ya existe una cuenta con ese email. Probá iniciar sesión.';
-    }
-    if (m.includes('password should be at least')) return 'La contraseña es muy corta.';
-    if (m.includes('rate limit') || m.includes('too many')) {
-      return 'Demasiados intentos. Esperá unos minutos antes de volver a probar.';
-    }
-    if (m.includes('network') || m.includes('failed to fetch')) {
-      return 'Problema de red. Verificá tu conexión y reintentá.';
-    }
-    return msg; // Fallback: mostrar el mensaje original
+    showAlert(
+      'La recuperación de contraseña estará disponible próximamente. Contactá al soporte si necesitás acceso urgente.',
+      'success'
+    );
   }
 
   // Exports

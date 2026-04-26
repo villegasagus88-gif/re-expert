@@ -25,6 +25,9 @@ class Conversation(Base):
     title: Mapped[str] = mapped_column(
         String, nullable=False, server_default="Nueva conversación"
     )
+    section: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default="general", index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

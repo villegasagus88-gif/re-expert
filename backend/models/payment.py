@@ -1,16 +1,13 @@
 """
-Payment model - maps to public.payments.
-
-Pago realizado o pendiente cargado por el usuario (típicamente vía SOL).
+Payment model - maps to the public.payments table.
 """
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
-
 from models.base import Base
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class Payment(Base):
@@ -25,16 +22,26 @@ class Payment(Base):
         nullable=False,
         index=True,
     )
-    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-    currency: Mapped[str] = mapped_column(String(8), nullable=False, server_default="ARS")
-    provider: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    concept: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    paid_at: Mapped[date | None] = mapped_column(Date, nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    source: Mapped[str] = mapped_column(String(32), nullable=False, server_default="sol")
+    concepto: Mapped[str] = mapped_column(Text, nullable=False)
+    proveedor: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    monto: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    fecha: Mapped[date] = mapped_column(Date, nullable=False)
+    estado: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="pendiente"
+    )
+    categoria: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    notas: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    user: Mapped["User"] = relationship(back_populates="payments")
+
     def __repr__(self) -> str:
-        return f"<Payment id={self.id} amount={self.amount} {self.currency} provider={self.provider!r}>"
+        return f"<Payment id={self.id} concepto={self.concepto!r} estado={self.estado}>"
+
+
+from models.user import User  # noqa: E402

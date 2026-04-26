@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi cuenta · RE Expert</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --bg-0: #09090b; --bg-1: #0f0f12; --bg-card: #111114; --bg-input: #18181b;
+      --text-0: #fafafa; --text-1: #d4d4d8; --text-2: #a1a1aa; --text-3: #52525b;
+      --border-0: #27272a; --accent: #6366f1; --accent-hover: #818cf8;
+      --accent-soft: rgba(99,102,241,0.12); --success: #22c55e;
+      --success-soft: rgba(34,197,94,0.12); --danger: #ef4444;
+      --danger-soft: rgba(239,68,68,0.1); --gold: #f59e0b;
+      --radius-sm: 8px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 18px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font); background: var(--bg-0); color: var(--text-0);
+      min-height: 100dvh; padding: 24px 24px 60px;
+      font-feature-settings: 'cv02','cv03','cv04','cv11';
+      position: relative; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.12), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.08), transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+    .page-wrap { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; }
+
+    /* ── NAV ── */
+    .top-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-0); }
+    .brand-logo { width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg,var(--accent),#a855f7); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; box-shadow: 0 8px 20px -4px rgba(99,102,241,0.5); }
+    .brand-text { font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
+    .brand-sub { font-size: 11px; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; margin-top: 2px; }
+    .nav-back { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); text-decoration: none; transition: color 0.15s; }
+    .nav-back:hover { color: var(--text-0); }
+
+    /* ── HERO ── */
+    .page-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .page-subtitle { font-size: 14px; color: var(--text-2); margin-bottom: 32px; }
+
+    /* ── LOADING ── */
+    .loading-wrap { display: flex; align-items: center; justify-content: center; padding: 80px 0; gap: 12px; }
+    .spinner { width: 22px; height: 22px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-label { font-size: 13px; color: var(--text-2); }
+
+    /* ── ALERT ── */
+    .alert { display: none; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.5; margin-bottom: 20px; border: 1px solid transparent; }
+    .alert.visible { display: block; }
+    .alert-error { background: var(--danger-soft); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+
+    /* ── CARDS ── */
+    .account-card {
+      background: var(--bg-card); border: 1px solid var(--border-0);
+      border-radius: var(--radius-xl); padding: 24px 28px; margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; }
+
+    /* ── PLAN BADGE ── */
+    .plan-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    }
+    .plan-pill-free { background: rgba(255,255,255,0.06); color: #a1a1aa; border: 1px solid rgba(255,255,255,0.08); }
+    .plan-pill-pro { background: linear-gradient(135deg,rgba(99,102,241,0.25),rgba(168,85,247,0.2)); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+    /* ── DETAIL ROWS ── */
+    .detail-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 0; border-bottom: 1px solid var(--border-0); font-size: 13.5px;
+    }
+    .detail-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+    .detail-label { color: var(--text-2); }
+    .detail-value { color: var(--text-0); font-weight: 500; }
+    .detail-value.success { color: var(--success); }
+    .detail-value.warning { color: var(--gold); }
+    .detail-value.danger { color: var(--danger); }
+    .detail-value.muted { color: var(--text-3); }
+
+    /* ── SUB STATUS BADGE ── */
+    .sub-status {
+      display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+      border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+    }
+    .sub-active { background: var(--success-soft); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
+    .sub-canceled, .sub-incomplete_expired { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239,68,68,0.25); }
+    .sub-past_due, .sub-unpaid { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.25); }
+
+    /* ── BUTTONS ── */
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .btn-primary-sm {
+      flex: 1; min-width: 140px; height: 40px; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg,var(--accent),#8b5cf6); color: #fff;
+      font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 14px -4px rgba(99,102,241,0.5);
+      display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+    }
+    .btn-primary-sm:hover:not(:disabled) { box-shadow: 0 8px 22px -4px rgba(99,102,241,0.7); transform: translateY(-1px); }
+    .btn-primary-sm:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary-sm:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-secondary-sm {
+      flex: 1; min-width: 140px; height: 40px; border-radius: var(--radius-sm);
+      background: var(--bg-input); border: 1px solid var(--border-0); color: var(--text-1);
+      font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+    }
+    .btn-secondary-sm:hover:not(:disabled) { background: #1e1e22; border-color: #3f3f46; }
+    .btn-secondary-sm:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    .is-loading .btn-spinner { display: inline-block; }
+    .is-loading .btn-label { opacity: 0.7; }
+
+    /* ── UPGRADE SECTION (free users) ── */
+    .upgrade-wrap {
+      background: linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.06));
+      border: 1px solid rgba(99,102,241,0.2); border-radius: var(--radius-xl);
+      padding: 28px; text-align: center; margin-bottom: 16px;
+    }
+    .upgrade-icon { font-size: 32px; margin-bottom: 12px; }
+    .upgrade-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; }
+    .upgrade-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin-bottom: 20px; }
+
+    /* ── INVOICES TABLE ── */
+    .invoice-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .invoice-table th { font-size: 11px; font-weight: 600; color: var(--text-3); letter-spacing: 0.4px; text-transform: uppercase; padding: 0 0 10px; text-align: left; border-bottom: 1px solid var(--border-0); }
+    .invoice-table td { padding: 11px 0; border-bottom: 1px solid rgba(39,39,42,0.6); vertical-align: middle; }
+    .invoice-table tr:last-child td { border-bottom: none; }
+    .invoice-status { display: inline-flex; padding: 2px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; }
+    .inv-paid { background: var(--success-soft); color: var(--success); }
+    .inv-open { background: rgba(245,158,11,0.12); color: var(--gold); }
+    .inv-void, .inv-draft { background: rgba(255,255,255,0.04); color: var(--text-3); }
+    .invoice-pdf-link { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-hover); text-decoration: none; font-size: 12px; font-weight: 500; }
+    .invoice-pdf-link:hover { text-decoration: underline; }
+    .empty-invoices { text-align: center; padding: 24px 0; color: var(--text-3); font-size: 13px; }
+
+    /* ── CANCEL WARNING ── */
+    .cancel-warn {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12.5px;
+      color: var(--gold); line-height: 1.5; margin-top: 12px; display: none;
+    }
+    .cancel-warn.visible { display: block; }
+
+    /* ── FOOTER ── */
+    .page-footer { text-align: center; font-size: 11px; color: var(--text-3); margin-top: 48px; }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- NAV -->
+    <nav class="top-nav">
+      <a href="index.html" class="brand">
+        <div class="brand-logo">RE</div>
+        <div>
+          <div class="brand-text">RE Expert</div>
+          <div class="brand-sub">Real Estate AI</div>
+        </div>
+      </a>
+      <a href="index.html" class="nav-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        Volver a la app
+      </a>
+    </nav>
+
+    <h1 class="page-title">Mi cuenta</h1>
+    <p class="page-subtitle">Plan actual, suscripción y historial de pagos</p>
+
+    <!-- ALERT -->
+    <div id="alertBox" class="alert"></div>
+
+    <!-- LOADING -->
+    <div id="loadingState" class="loading-wrap">
+      <div class="spinner"></div>
+      <span class="loading-label">Cargando información de cuenta…</span>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="accountContent" style="display:none">
+
+      <!-- FREE: upgrade CTA -->
+      <div id="upgradeSection" class="upgrade-wrap" style="display:none">
+        <div class="upgrade-icon">⭐</div>
+        <div class="upgrade-title">Desbloqueá el plan Pro</div>
+        <p class="upgrade-desc">Accedé a consultas ilimitadas, Asistente SOL, exportaciones, dashboard de proyecto con indicadores CPI/SPI, y más.</p>
+        <a href="pricing.html" class="btn-primary-sm" style="max-width:220px;margin:0 auto">
+          <span class="btn-label">Ver planes →</span>
+        </a>
+      </div>
+
+      <!-- PLAN CARD -->
+      <div class="account-card" id="planCard">
+        <div class="card-header">
+          <span class="card-title">Plan actual</span>
+          <span id="planPillCard"></span>
+        </div>
+        <div id="planRows"></div>
+        <div class="btn-row" id="planBtnRow"></div>
+      </div>
+
+      <!-- SUBSCRIPTION CARD (Pro only) -->
+      <div class="account-card" id="subscriptionCard" style="display:none">
+        <div class="card-header">
+          <span class="card-title">Suscripción</span>
+          <span id="subStatusBadge"></span>
+        </div>
+        <div id="subRows"></div>
+        <div id="cancelWarn" class="cancel-warn"></div>
+        <div class="btn-row" id="subBtnRow"></div>
+      </div>
+
+      <!-- INVOICES CARD -->
+      <div class="account-card" id="invoicesCard" style="display:none">
+        <div class="card-header">
+          <span class="card-title">Historial de pagos</span>
+        </div>
+        <div id="invoicesContent"></div>
+      </div>
+
+    </div><!-- /accountContent -->
+
+    <div class="page-footer">© 2026 RE Expert · Real Estate AI para Argentina</div>
+  </div>
+
+  <script src="authService.js"></script>
+  <script>
+    const API = (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+
+    function showAlert(msg) {
+      const el = document.getElementById('alertBox');
+      el.textContent = msg;
+      el.className = 'alert alert-error visible';
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+    }
+
+    function fmtCurrency(amount, currency) {
+      return (currency || 'USD') + ' ' + parseFloat(amount || 0).toFixed(2);
+    }
+
+    function subStatusLabel(status) {
+      const map = {
+        active: 'Activa', canceled: 'Cancelada', past_due: 'Pago vencido',
+        unpaid: 'Sin pagar', incomplete: 'Incompleta', incomplete_expired: 'Expirada',
+        trialing: 'Prueba',
+      };
+      return map[status] || status || '—';
+    }
+
+    function subStatusClass(status) {
+      if (status === 'active' || status === 'trialing') return 'sub-active';
+      if (status === 'past_due' || status === 'unpaid') return 'sub-past_due';
+      return 'sub-canceled';
+    }
+
+    function invStatusClass(status) {
+      const map = { paid: 'inv-paid', open: 'inv-open', void: 'inv-void', draft: 'inv-draft' };
+      return map[status] || 'inv-void';
+    }
+
+    function invStatusLabel(status) {
+      const map = { paid: 'Pagada', open: 'Pendiente', void: 'Anulada', draft: 'Borrador' };
+      return map[status] || status || '—';
+    }
+
+    // ── RENDER ──────────────────────────────────────────────
+
+    function renderBilling(data) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('accountContent').style.display = '';
+
+      const isPro = data.is_pro;
+
+      // Upgrade CTA for free users
+      if (!isPro) document.getElementById('upgradeSection').style.display = '';
+
+      // Plan card
+      const pill = document.getElementById('planPillCard');
+      pill.className = 'plan-pill ' + (isPro ? 'plan-pill-pro' : 'plan-pill-free');
+      pill.innerHTML = isPro ? '⭐ Pro' : 'Free';
+
+      const planRows = document.getElementById('planRows');
+      planRows.innerHTML = `
+        <div class="detail-row">
+          <span class="detail-label">Email</span>
+          <span class="detail-value">${esc(data.email || '—')}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Nombre</span>
+          <span class="detail-value">${esc(data.full_name || '—')}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Plan</span>
+          <span class="detail-value">${isPro ? 'RE Expert Pro' : 'RE Expert Free'}</span>
+        </div>
+      `;
+
+      const planBtnRow = document.getElementById('planBtnRow');
+      if (isPro) {
+        planBtnRow.innerHTML = `
+          <button id="portalBtnPlan" class="btn-secondary-sm" onclick="openPortal('portalBtnPlan')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="btn-label">Portal de facturación</span>
+            <span class="btn-spinner"></span>
+          </button>`;
+      } else {
+        planBtnRow.innerHTML = `
+          <a href="pricing.html" class="btn-primary-sm">
+            <span class="btn-label">⭐ Upgrade a Pro</span>
+          </a>`;
+      }
+
+      // Subscription card (Pro only)
+      if (isPro) {
+        const subCard = document.getElementById('subscriptionCard');
+        subCard.style.display = '';
+
+        const sub = data.subscription;
+        const subBadge = document.getElementById('subStatusBadge');
+
+        if (sub) {
+          subBadge.className = 'sub-status ' + subStatusClass(sub.status);
+          subBadge.textContent = subStatusLabel(sub.status);
+
+          const renewalLabel = sub.cancel_at_period_end ? 'Acceso hasta' : 'Próxima renovación';
+          document.getElementById('subRows').innerHTML = `
+            <div class="detail-row">
+              <span class="detail-label">${renewalLabel}</span>
+              <span class="detail-value ${sub.cancel_at_period_end ? 'warning' : ''}">${fmtDate(sub.current_period_end)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Período actual</span>
+              <span class="detail-value">${fmtDate(sub.current_period_start)} – ${fmtDate(sub.current_period_end)}</span>
+            </div>
+          `;
+
+          if (sub.cancel_at_period_end) {
+            const warn = document.getElementById('cancelWarn');
+            warn.textContent = `Tu suscripción está cancelada y finalizará el ${fmtDate(sub.current_period_end)}. Seguís teniendo acceso Pro hasta esa fecha.`;
+            warn.classList.add('visible');
+          }
+        } else {
+          subBadge.className = 'sub-status sub-active';
+          subBadge.textContent = 'Activa';
+          document.getElementById('subRows').innerHTML = `
+            <div class="detail-row">
+              <span class="detail-label">Detalles</span>
+              <span class="detail-value muted">Sin información disponible desde Stripe</span>
+            </div>`;
+        }
+
+        document.getElementById('subBtnRow').innerHTML = `
+          <button id="portalBtnSub" class="btn-secondary-sm" onclick="openPortal('portalBtnSub')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span class="btn-label">Gestionar / Cancelar</span>
+            <span class="btn-spinner"></span>
+          </button>`;
+      }
+
+      // Invoices card (Pro only)
+      if (isPro) {
+        const invCard = document.getElementById('invoicesCard');
+        invCard.style.display = '';
+
+        if (!data.invoices || !data.invoices.length) {
+          document.getElementById('invoicesContent').innerHTML =
+            '<div class="empty-invoices">Sin historial de pagos disponible</div>';
+        } else {
+          const rows = data.invoices.map(inv => `
+            <tr>
+              <td style="color:var(--text-2)">${fmtDate(inv.created)}</td>
+              <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-1)">${esc(inv.description)}</td>
+              <td style="font-weight:600">${fmtCurrency(inv.amount_paid, inv.currency)}</td>
+              <td><span class="invoice-status ${invStatusClass(inv.status)}">${invStatusLabel(inv.status)}</span></td>
+              <td>${inv.invoice_pdf
+                ? `<a href="${esc(inv.invoice_pdf)}" target="_blank" rel="noopener" class="invoice-pdf-link">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF</a>`
+                : '<span style="color:var(--text-3);font-size:12px">—</span>'}
+              </td>
+            </tr>`).join('');
+
+          document.getElementById('invoicesContent').innerHTML = `
+            <table class="invoice-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th><th>Descripción</th><th>Monto</th><th>Estado</th><th>PDF</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>`;
+        }
+      }
+    }
+
+    // ── HELPERS ─────────────────────────────────────────────
+
+    function esc(t) {
+      const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
+    }
+
+    async function openPortal(btnId) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.classList.add('is-loading');
+      btn.disabled = true;
+      try {
+        const resp = await window.REAuthService.authFetch(
+          API + '/api/stripe/portal',
+          { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+        );
+        const data = await resp.json();
+        if (resp.ok && data.url) {
+          window.location.href = data.url;
+        } else {
+          showAlert(data.detail || 'No se pudo abrir el portal de Stripe. Verificá que tengas el plan Pro activo.');
+          btn.classList.remove('is-loading');
+          btn.disabled = false;
+        }
+      } catch {
+        showAlert('Error de conexión al intentar abrir el portal.');
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+      }
+    }
+
+    async function loadBillingStatus() {
+      try {
+        const resp = await window.REAuthService.authFetch(API + '/api/billing/status');
+        if (resp.status === 401) {
+          window.location.href = 'login.html?redirect=account.html';
+          return;
+        }
+        if (!resp.ok) {
+          throw new Error('Error ' + resp.status);
+        }
+        const data = await resp.json();
+        renderBilling(data);
+      } catch (e) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('accountContent').style.display = '';
+        showAlert('Error al cargar la información de cuenta: ' + (e.message || 'Error desconocido'));
+      }
+    }
+
+    // Bootstrap
+    window.REAuthService.ready.then(result => {
+      if (!result.authenticated) {
+        window.location.href = 'login.html?redirect=account.html';
+        return;
+      }
+      loadBillingStatus();
+    });
+  </script>
+</body>
+</html>

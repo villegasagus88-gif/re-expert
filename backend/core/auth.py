@@ -1,7 +1,7 @@
 """
 JWT validation dependency for protected routes.
 
-Verifies Supabase-issued JWTs using the project's JWT_SECRET. Extracts
+Verifies locally-generated JWTs using the app's JWT_SECRET. Extracts
 user_id from the token and loads the user profile from the database.
 """
 from uuid import UUID
@@ -17,9 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-# Supabase uses HS256 with the JWT_SECRET
 ALGORITHM = "HS256"
-AUDIENCE = "authenticated"
 
 
 async def get_current_user(
@@ -35,7 +33,7 @@ async def get_current_user(
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token de autenticación requerido",
+            detail="Token de autenticacion requerido",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -46,7 +44,6 @@ async def get_current_user(
             token,
             settings.JWT_SECRET,
             algorithms=[ALGORITHM],
-            audience=AUDIENCE,
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -57,11 +54,19 @@ async def get_current_user(
     except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido",
+            detail="Token invalido",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Extract user_id from the "sub" claim (Supabase standard)
+    # Only accept access tokens (not refresh tokens)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token no es de tipo access",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Extract user_id from the "sub" claim
     user_id_str = payload.get("sub")
     if not user_id_str:
         raise HTTPException(
@@ -74,7 +79,7 @@ async def get_current_user(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Identificador de usuario inválido en token",
+            detail="Identificador de usuario invalido en token",
         )
 
     # Load user from DB

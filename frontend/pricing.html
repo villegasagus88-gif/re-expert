@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planes · RE Expert</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --bg-0: #09090b;
+      --bg-1: #0f0f12;
+      --bg-card: #111114;
+      --bg-input: #18181b;
+      --text-0: #fafafa;
+      --text-1: #d4d4d8;
+      --text-2: #a1a1aa;
+      --text-3: #52525b;
+      --border-0: #27272a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-soft: rgba(99, 102, 241, 0.12);
+      --success: #22c55e;
+      --success-soft: rgba(34, 197, 94, 0.12);
+      --gold: #f59e0b;
+      --gold-soft: rgba(245, 158, 11, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-0);
+      color: var(--text-0);
+      min-height: 100dvh;
+      padding: 24px 24px 60px;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.15), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.1), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ── */
+    .top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-0);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
+    }
+
+    .brand-text { font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
+    .brand-sub { font-size: 11px; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; margin-top: 2px; }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-back:hover { color: var(--text-0); }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-hover);
+      margin-bottom: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-2);
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── PLAN CARDS ── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    @media (max-width: 640px) {
+      .plans-grid { grid-template-columns: 1fr; }
+    }
+
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-0);
+      border-radius: var(--radius-xl);
+      padding: 32px 28px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .plan-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .plan-card.featured {
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2), 0 24px 60px -12px rgba(99, 102, 241, 0.2);
+      background: linear-gradient(160deg, #0f0f18 0%, #111114 100%);
+    }
+
+    .featured-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-2);
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .plan-price {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .plan-price-amount {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+
+    .plan-price-currency {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-2);
+      padding-bottom: 4px;
+    }
+
+    .plan-price-period {
+      font-size: 13px;
+      color: var(--text-2);
+      padding-bottom: 6px;
+    }
+
+    .plan-desc {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .plan-features {
+      list-style: none;
+      margin-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text-1);
+      line-height: 1.4;
+    }
+
+    .feat-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .feat-icon.check {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .feat-icon.check-accent {
+      background: var(--accent-soft);
+      color: var(--accent-hover);
+    }
+
+    .feat-icon.cross {
+      background: rgba(255,255,255,0.04);
+      color: var(--text-3);
+    }
+
+    .feat-icon svg { width: 11px; height: 11px; }
+
+    .plan-cta {
+      width: 100%;
+      height: 46px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.1px;
+    }
+
+    .plan-cta.free-cta {
+      background: var(--bg-input);
+      color: var(--text-1);
+      border: 1px solid var(--border-0);
+    }
+    .plan-cta.free-cta:hover:not(:disabled) {
+      background: #1e1e22;
+      border-color: #3f3f46;
+    }
+
+    .plan-cta.pro-cta {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      box-shadow: 0 6px 20px -4px rgba(99, 102, 241, 0.55);
+    }
+    .plan-cta.pro-cta:hover:not(:disabled) {
+      box-shadow: 0 10px 28px -4px rgba(99, 102, 241, 0.75);
+      transform: translateY(-1px);
+    }
+    .plan-cta.pro-cta:active:not(:disabled) { transform: translateY(0); }
+    .plan-cta:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .plan-cta.is-loading .btn-spinner { display: inline-block; }
+    .plan-cta.is-loading .btn-label { opacity: 0.7; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── CURRENT PLAN BADGE ── */
+    .current-plan-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 46px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--success);
+      background: var(--success-soft);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    /* ── ALERT ── */
+    .alert-box {
+      display: none;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+    }
+    .alert-box.visible { display: block; }
+    .alert-box.error {
+      background: rgba(239,68,68,0.1);
+      border-color: rgba(239,68,68,0.3);
+      color: #fca5a5;
+    }
+    .alert-box.info {
+      background: var(--accent-soft);
+      border-color: rgba(99,102,241,0.3);
+      color: #a5b4fc;
+    }
+
+    /* ── FAQ ── */
+    .faq-section {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .faq-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border-0);
+      padding: 16px 0;
+    }
+
+    .faq-question {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-1);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      user-select: none;
+    }
+
+    .faq-question:hover { color: var(--text-0); }
+
+    .faq-chevron {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      color: var(--text-3);
+      transition: transform 0.2s;
+    }
+
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+
+    .faq-answer {
+      display: none;
+      font-size: 13.5px;
+      color: var(--text-2);
+      line-height: 1.65;
+      padding-top: 10px;
+    }
+    .faq-item.open .faq-answer { display: block; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 48px;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── MANAGE PRO SECTION ── */
+    .manage-section {
+      display: none;
+      text-align: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-0);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+    .manage-section.visible { display: block; }
+    .manage-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .manage-desc { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+    .btn-portal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      border: 1px solid var(--border-0);
+      color: var(--text-1);
+      font-family: var(--font);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-portal:hover { background: #1e1e22; border-color: #3f3f46; }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- NAV -->
+    <nav class="top-nav">
+      <a href="index.html" class="brand">
+        <div class="brand-logo">RE</div>
+        <div>
+          <div class="brand-text">RE Expert</div>
+          <div class="brand-sub">Real Estate AI</div>
+        </div>
+      </a>
+      <a href="index.html" class="nav-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+        </svg>
+        Volver a la app
+      </a>
+    </nav>
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Elegí el plan que mejor se adapta a vos
+      </div>
+      <h1>Potenciá tu gestión<br>inmobiliaria con <span>IA</span></h1>
+      <p>Consultas ilimitadas, presupuestos automatizados y seguimiento de obra — todo en un solo lugar.</p>
+    </div>
+
+    <!-- ALERT -->
+    <div id="alertBox" class="alert-box"></div>
+
+    <!-- MANAGE PRO (visible only for Pro users) -->
+    <div id="manageSection" class="manage-section">
+      <div class="manage-title">Tenés el plan Pro activo</div>
+      <div class="manage-desc">Gestioná tu suscripción, cambiá el método de pago o cancelá desde el portal de facturación.</div>
+      <button id="portalBtn" class="btn-portal">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Portal de facturación
+      </button>
+    </div>
+
+    <!-- PLANS -->
+    <div class="plans-grid">
+
+      <!-- FREE CARD -->
+      <div class="plan-card" id="freeCard">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">
+          <span class="plan-price-amount">$0</span>
+          <span class="plan-price-period">/ mes</span>
+        </div>
+        <p class="plan-desc">Para explorar y consultas puntuales sobre el mercado inmobiliario.</p>
+        <ul class="plan-features">
+          <li>
+            <span class="feat-icon check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            10 consultas al asistente IA / mes
+          </li>
+          <li>
+            <span class="feat-icon check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Historial de últimas 3 conversaciones
+          </li>
+          <li>
+            <span class="feat-icon check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Consultas básicas de normativa y CABA
+          </li>
+          <li>
+            <span class="feat-icon cross">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </span>
+            <span style="color: var(--text-3)">Presupuestos automáticos</span>
+          </li>
+          <li>
+            <span class="feat-icon cross">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </span>
+            <span style="color: var(--text-3)">Dashboard de proyecto y obra</span>
+          </li>
+          <li>
+            <span class="feat-icon cross">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </span>
+            <span style="color: var(--text-3)">Cálculo de indicadores CPI / SPI</span>
+          </li>
+        </ul>
+        <div id="freeCta">
+          <button class="plan-cta free-cta" onclick="window.location.href='index.html'">
+            <span class="btn-label">Empezar gratis</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- PRO CARD -->
+      <div class="plan-card featured" id="proCard">
+        <div class="featured-badge">Más popular</div>
+        <div class="plan-name" style="color: var(--accent-hover)">Pro</div>
+        <div class="plan-price">
+          <span class="plan-price-currency">USD</span>
+          <span class="plan-price-amount">29</span>
+          <span class="plan-price-period">/ mes</span>
+        </div>
+        <p class="plan-desc">Para constructoras, arquitectos y desarrolladores que necesitan todo el potencial.</p>
+        <ul class="plan-features">
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Consultas <strong>ilimitadas</strong> al asistente IA
+          </li>
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Historial completo de todas las conversaciones
+          </li>
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Normativa actualizada y extendida
+          </li>
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Presupuestos automáticos con IA
+          </li>
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Dashboard de proyecto, obra e hitos
+          </li>
+          <li>
+            <span class="feat-icon check-accent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            Indicadores CPI / SPI / EAC en tiempo real
+          </li>
+        </ul>
+        <div id="proCta">
+          <button id="subscribBtn" class="plan-cta pro-cta" onclick="handleSubscribe()">
+            <span class="btn-spinner"></span>
+            <span class="btn-label">Suscribirse — USD 29/mes</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq-section">
+      <div class="faq-title">Preguntas frecuentes</div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          ¿Puedo cancelar en cualquier momento?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="faq-answer">Sí. Podés cancelar tu suscripción desde el portal de facturación en cualquier momento. Al cancelar, mantenés el acceso Pro hasta el final del período abonado. No hay cargos adicionales ni permanencia mínima.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          ¿Qué métodos de pago aceptan?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="faq-answer">Aceptamos todas las tarjetas de crédito y débito principales (Visa, Mastercard, Amex) a través de Stripe, la plataforma de pagos más segura del mundo. El cobro se realiza en USD.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          ¿La información es específica de Argentina?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="faq-answer">Sí. La base de conocimiento de RE Expert incluye normativa local (Código de Edificación de CABA, Ley 13.512, etc.), índices de materiales del mercado argentino y rendimientos típicos de la construcción en Argentina.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question" onclick="toggleFaq(this)">
+          ¿Cómo funcionan los presupuestos automáticos?
+          <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+        <div class="faq-answer">Describís tu proyecto al asistente (m², tipo de obra, materiales preferidos) y el sistema genera un presupuesto estimado usando precios actualizados de materiales y rendimientos de mano de obra. Podés ajustar cualquier rubro manualmente.</div>
+      </div>
+
+    </div>
+
+    <div class="page-footer">© 2026 RE Expert · Real Estate AI para Argentina · Pagos procesados por Stripe</div>
+  </div>
+
+  <script src="authService.js"></script>
+  <script>
+    const API = (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+
+    function showAlert(msg, type = 'error') {
+      const el = document.getElementById('alertBox');
+      el.textContent = msg;
+      el.className = 'alert-box visible ' + type;
+    }
+
+    function hideAlert() {
+      const el = document.getElementById('alertBox');
+      el.className = 'alert-box';
+    }
+
+    function toggleFaq(el) {
+      el.parentElement.classList.toggle('open');
+    }
+
+    async function loadPlanStatus() {
+      try {
+        const resp = await window.REAuthService.authFetch(API + '/api/stripe/status');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        renderPlanState(data.plan);
+      } catch {
+        // Not authenticated — pricing page is public, just show default
+      }
+    }
+
+    function renderPlanState(plan) {
+      const freeCta = document.getElementById('freeCta');
+      const proCta = document.getElementById('proCta');
+      const manageSection = document.getElementById('manageSection');
+
+      if (plan === 'pro') {
+        // Free card: show "Plan actual" pill
+        freeCta.innerHTML = '';
+
+        // Pro card: show "Plan actual" pill
+        proCta.innerHTML = `
+          <div class="current-plan-pill">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Plan Pro activo
+          </div>`;
+
+        manageSection.classList.add('visible');
+
+        document.getElementById('portalBtn').addEventListener('click', openPortal);
+      }
+    }
+
+    async function handleSubscribe() {
+      const btn = document.getElementById('subscribBtn');
+      btn.classList.add('is-loading');
+      btn.disabled = true;
+      hideAlert();
+
+      try {
+        const token = await window.REAuthService.getAccessToken();
+        if (!token) {
+          window.location.href = 'login.html?redirect=pricing.html';
+          return;
+        }
+
+        const resp = await window.REAuthService.authFetch(
+          API + '/api/stripe/create-checkout-session',
+          { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+        );
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          showAlert(data.detail || 'Error al iniciar el pago. Intentá de nuevo.');
+          return;
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          showAlert('No se pudo obtener la URL de pago.');
+        }
+      } catch (e) {
+        showAlert('Error de conexión. Verificá tu internet e intentá de nuevo.');
+      } finally {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+      }
+    }
+
+    async function openPortal() {
+      const btn = document.getElementById('portalBtn');
+      btn.disabled = true;
+      btn.textContent = 'Cargando portal…';
+
+      try {
+        const resp = await window.REAuthService.authFetch(
+          API + '/api/stripe/portal',
+          { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+        );
+        const data = await resp.json();
+        if (resp.ok && data.url) {
+          window.location.href = data.url;
+        } else {
+          showAlert(data.detail || 'No se pudo abrir el portal de facturación.');
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Portal de facturación`;
+        }
+      } catch {
+        showAlert('Error de conexión.');
+        btn.disabled = false;
+      }
+    }
+
+    // Load plan status if authenticated (non-blocking)
+    loadPlanStatus();
+  </script>
+</body>
+</html>

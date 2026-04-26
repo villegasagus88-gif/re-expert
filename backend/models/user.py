@@ -9,7 +9,7 @@ from datetime import datetime
 from uuid import UUID
 
 from models.base import Base
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,11 @@ class User(Base):
         String(20), default="free", server_default="free", nullable=False
     )
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
     last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -45,6 +50,9 @@ class User(Base):
     projects: Mapped[list["Project"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    payments: Mapped[list["Payment"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} plan={self.plan}>"
@@ -52,3 +60,5 @@ class User(Base):
 
 # Avoid circular imports at type-check time
 from models.conversation import Conversation  # noqa: E402
+from models.payment import Payment  # noqa: E402
+from models.project import Project  # noqa: E402

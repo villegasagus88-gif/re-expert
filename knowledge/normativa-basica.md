@@ -14,7 +14,7 @@
 
 ### Superficies Mínimas de Ambientes (CABA)
 | Ambiente | Superficie mín. | Lado mín. |
-|----------|-----------------|-----------|
+|----------|----------------|-----------|
 | Dormitorio principal | 9.00 m² | 2.50 m |
 | Dormitorio secundario | 6.00 m² | 2.00 m |
 | Estar / Living | 12.00 m² | 2.80 m |
@@ -99,17 +99,31 @@
 - Escala A (más eficiente) a G (menos eficiente)
 - Evalúa: aislación, carpinterías, orientación, sistemas de climatización
 
-## 6. Regulaciones de Alquiler
+## 6. Regulaciones de Alquiler (Vigente Abril 2026)
 
-### Ley de Alquileres vigente (2026)
-- Plazo mínimo vivienda: 2 años
-- Plazo mínimo comercial: 3 años
-- Ajuste: índice ICL (BCRA) — combinación 50% IPC + 50% RIPTE
-- Frecuencia de ajuste: semestral (vivienda), según contrato (comercial)
-- Garantía: seguro de caución, aval bancario, o garantía personal
-- Depósito: máximo equivalente a 1 mes de alquiler
-- Resolución anticipada: multo de 1.5 meses (primer año) o 1 mes (segundo año)
-- Registro obligatorio en AFIP (RLA - Régimen de Locaciones)
+### Marco Legal — Libertad Contractual (post DNU 70/2023)
+
+La Ley 27.551 (Ley de Alquileres) fue **derogada** por el DNU 70/2023. Los contratos firmados desde el 30/12/2023 se rigen por el **Código Civil y Comercial** bajo un esquema de **libertad de contratación entre las partes**.
+
+### Contratos nuevos (desde 30/12/2023)
+- **Plazo:** libre entre las partes. Si no se pacta, se presume 2 años para vivienda
+- **Ajuste de precio:** libre. Las partes eligen índice (IPC es el más usado), periodicidad (mensual, trimestral, cuatrimestral) y moneda
+- **Moneda:** se puede pactar en pesos o dólares. El inquilino debe pagar en la moneda acordada
+- **Garantía:** libre acuerdo entre las partes
+- **Depósito:** libre acuerdo entre las partes
+- **Comisión inmobiliaria:** no hay regulación específica post-derogación. El mercado tiende a cobrar entre 1 y 2 meses de alquiler entre ambas partes
+
+### Contratos vigentes firmados bajo leyes anteriores
+| Período de firma | Ley aplicable | Ajuste |
+|-----------------|---------------|--------|
+| Antes del 17/10/2023 | Ley 27.551 | Anual por ICL (BCRA) |
+| 18/10/2023 al 29/12/2023 | Ley 27.737 | Semestral por Coeficiente Casa Propia (CCP) |
+| Desde 30/12/2023 | Código Civil y Comercial | Según lo pactado libremente |
+
+### Obligaciones vigentes
+- **Registro en AFIP (RLA):** sigue siendo obligatorio declarar los contratos
+- **Expensas ordinarias:** a cargo del locatario
+- **Expensas extraordinarias:** a cargo del locador
 
 ## 7. Fideicomisos de Construcción
 

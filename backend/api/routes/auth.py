@@ -12,10 +12,8 @@ from api.schemas.auth import (
 from core.auth import get_current_user
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, Request
-from models.base import get_db
 from models.user import User
-from services.auth_service import login_user, refresh_session, register_user, update_profile
-from sqlalchemy.ext.asyncio import AsyncSession
+from services.auth_service import complete_onboarding, login_user, refresh_session, register_user, update_profile
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -82,6 +80,7 @@ async def me(current_user: User = Depends(get_current_user)):
         full_name=current_user.full_name,
         role=current_user.role,
         plan=current_user.plan,
+        onboarding_completed=current_user.onboarding_completed,
     )
 
 
@@ -97,9 +96,7 @@ async def me(current_user: User = Depends(get_current_user)):
 async def update_me(
     body: UpdateProfileRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
 ):
-    # Update in Supabase Auth
     await update_profile(
         user_id=str(current_user.id),
         email=current_user.email,
@@ -108,16 +105,23 @@ async def update_me(
         new_password=body.new_password,
     )
 
-    # Update local profile in DB
-    if body.full_name is not None:
-        current_user.full_name = body.full_name
-        await db.commit()
-        await db.refresh(current_user)
-
+    # Reload user data for response
     return UserOut(
         id=str(current_user.id),
         email=current_user.email,
-        full_name=current_user.full_name,
+        full_name=body.full_name if body.full_name is not None else current_user.full_name,
         role=current_user.role,
         plan=current_user.plan,
+        onboarding_completed=current_user.onboarding_completed,
     )
+
+
+@router.post(
+    "/onboarding/complete",
+    summary="Marcar onboarding como completado",
+    status_code=200,
+)
+async def mark_onboarding_complete(current_user: User = Depends(get_current_user)):
+    await complete_onboarding(str(current_user.id))
+    return {"ok": True}
+
