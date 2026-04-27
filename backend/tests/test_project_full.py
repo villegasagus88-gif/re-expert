@@ -135,7 +135,8 @@ exp_r = datetime.fromtimestamp(rp["exp"], tz=timezone.utc) - datetime.fromtimest
 check("refresh ~7d", timedelta(days=6, hours=23) < exp_r <= timedelta(days=7, hours=1))
 
 import jwt as pyjwt
-expired = pyjwt.encode({"sub":"x","type":"access","exp":datetime.now(timezone.utc)-timedelta(hours=1)}, mock_settings.JWT_SECRET, algorithm="HS256")
+# Sign with the SAME secret decode_token uses (env-driven via conftest).
+expired = pyjwt.encode({"sub":"x","type":"access","exp":datetime.now(timezone.utc)-timedelta(hours=1)}, os.environ["JWT_SECRET"], algorithm="HS256")
 try:
     decode_token(expired); fail("expired raises")
 except pyjwt.ExpiredSignatureError:
