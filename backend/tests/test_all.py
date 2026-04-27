@@ -162,11 +162,11 @@ exp_r = datetime.fromtimestamp(rp["exp"], tz=timezone.utc)
 iat_r = datetime.fromtimestamp(rp["iat"], tz=timezone.utc)
 check("refresh expires ~7 days", timedelta(days=6, hours=23) < (exp_r - iat_r) <= timedelta(days=7, hours=1))
 
-# Expired token
+# Expired token — sign with the SAME secret decode_token uses (env-driven).
 import jwt as pyjwt
 expired = pyjwt.encode(
     {"sub": str(uid), "type": "access", "exp": datetime.now(timezone.utc) - timedelta(hours=1)},
-    mock_settings.JWT_SECRET, algorithm="HS256"
+    os.environ["JWT_SECRET"], algorithm="HS256"
 )
 try:
     decode_token(expired)
