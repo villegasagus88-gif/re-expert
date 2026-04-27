@@ -5,6 +5,7 @@ from api.routes.conversations import router as conversations_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
 from api.routes.materials import router as materials_router
+from api.routes.news import router as news_router
 from api.routes.payments import router as payments_router
 from api.routes.project import router as project_router
 from api.routes.stripe_routes import router as stripe_router
@@ -66,6 +67,7 @@ app.include_router(project_router)
 app.include_router(stripe_router)
 app.include_router(usage_router)
 app.include_router(ingest_router)
+app.include_router(news_router)
 
 
 @app.get("/health")
