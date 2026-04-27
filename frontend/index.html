@@ -1440,6 +1440,9 @@ select.pay-form-input{cursor:pointer}
                 </div>
               </div>
             </div>
+            <div id="newsFeedFooter" style="margin-top:16px;display:flex;justify-content:center">
+              <button id="newsLoadMore" class="btn-secondary" style="display:none">Cargar más</button>
+            </div>
           </div>
 
           <!-- TAB: OPINIÓN -->
@@ -2807,6 +2810,92 @@ function initNoticiasTabs(){
       });
     });
   });
+  // Hook "Cargar más" y dispara la primera carga.
+  const loadMoreBtn=$('#newsLoadMore');
+  if(loadMoreBtn){
+    loadMoreBtn.addEventListener('click',()=>loadNews({append:true}));
+  }
+  loadNews({append:false}).catch(()=>{ /* mantiene mock si falla */ });
+}
+
+// Estado de paginación de Noticias.
+const _newsState={page:0,perPage:10,hasMore:false,loading:false};
+
+const NEWS_KNOWN_CATS=['macro','mercado','costos','financiacion','regulacion'];
+
+function _newsFmtDate(iso){
+  if(!iso)return '';
+  const d=new Date(iso+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  const today=new Date();today.setHours(0,0,0,0);
+  const diff=Math.round((today-d)/86400000);
+  if(diff===0)return 'Hoy';
+  if(diff===1)return 'Ayer';
+  const meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${String(d.getDate()).padStart(2,'0')} ${meses[d.getMonth()]}`;
+}
+
+function _newsRenderItem(item){
+  const cat=NEWS_KNOWN_CATS.includes((item.category||'').toLowerCase())?item.category.toLowerCase():'';
+  const chip=cat?`<div class="news-card-chip chip-${cat}" style="margin-bottom:4px">${cat.charAt(0).toUpperCase()+cat.slice(1)}</div>`:'';
+  const fecha=_newsFmtDate(item.date);
+  const meta=[item.source,fecha].filter(Boolean).join(' · ');
+  const sub=item.summary?`<div class="news-feed-sub">${_escape(item.summary)}</div>`:'';
+  const metaDiv=meta?`<div class="news-feed-meta">${_escape(meta)}</div>`:'';
+  return `<div class="news-feed-item" data-cat="${cat||'todas'}">
+    <div class="news-feed-num">·</div>
+    <div class="news-feed-body">
+      ${chip}
+      <div class="news-feed-title">${_escape(item.title||'')}</div>
+      ${sub}
+      ${metaDiv}
+    </div>
+  </div>`;
+}
+
+function _escape(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadNews({append=false}={}){
+  if(_newsState.loading)return;
+  if(!window.REAuthService||!window.REAuthService.authFetch)return; // sin auth listo, no rompemos UX
+  const feed=$('#newsFeedUltimas');
+  const btn=$('#newsLoadMore');
+  if(!feed)return;
+  _newsState.loading=true;
+  if(btn)btn.disabled=true;
+  try{
+    const nextPage=append?_newsState.page+1:1;
+    const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
+    const r=await window.REAuthService.authFetch(`${apiBase}/api/news?page=${nextPage}&per_page=${_newsState.perPage}`);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    if(!append){
+      // Solo reemplazamos el mock si el backend devolvió contenido real.
+      if(data.items&&data.items.length>0){
+        feed.innerHTML=data.items.map(_newsRenderItem).join('');
+      }
+    }else if(data.items&&data.items.length>0){
+      feed.insertAdjacentHTML('beforeend',data.items.map(_newsRenderItem).join(''));
+    }
+    _newsState.page=data.page;
+    _newsState.hasMore=!!data.has_more;
+    if(btn)btn.style.display=_newsState.hasMore?'':'none';
+    // Reaplicar filtro activo (las cards nuevas también deben respetarlo).
+    const activeFilter=document.querySelector('#newsTabUltimas .news-filter.active');
+    if(activeFilter&&activeFilter.dataset.category!=='todas'){
+      const cat=activeFilter.dataset.category;
+      feed.querySelectorAll('[data-cat]').forEach(it=>{
+        it.style.display=(it.dataset.cat===cat)?'':'none';
+      });
+    }
+  }catch(e){
+    console.warn('No se pudieron cargar noticias del backend:',e);
+  }finally{
+    _newsState.loading=false;
+    if(btn)btn.disabled=false;
+  }
 }
 
 // Proyecto tabs
