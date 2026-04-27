@@ -22,8 +22,10 @@ mock_settings = MagicMock()
 mock_settings.JWT_SECRET = "test-secret-key-for-unit-tests-only-32chars!"
 mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 15
 mock_settings.REFRESH_TOKEN_EXPIRE_DAYS = 7
-sys.modules["config"] = MagicMock()
-sys.modules["config.settings"] = MagicMock(settings=mock_settings)
+import os
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-dummy-key")
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://user:pass@localhost/test")
+os.environ.setdefault("JWT_SECRET", "test-secret-key-for-unit-tests-only-32chars!")
 
 passed = 0
 failed = 0
