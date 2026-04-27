@@ -6,7 +6,7 @@ Cada archivo puede llevar frontmatter YAML con metadata (title/date/summary/
 category/source/impact). Lo que no esté en frontmatter se intenta deducir
 del filename y del primer header del cuerpo.
 """
-from datetime import date
+from datetime import date as _date
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +16,7 @@ class NewsItem(BaseModel):
 
     slug: str  # filename sin extensión (estable, sirve como id)
     title: str
-    date: date | None = None
+    date: _date | None = None
     summary: str = ""
     category: str | None = None  # macro | mercado | costos | financiacion | regulacion | ...
     source: str | None = None
