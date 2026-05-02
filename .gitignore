@@ -6,7 +6,18 @@ dist/
 build/
 venv/
 .venv/
+
+# Secrets / env files (NEVER commit)
 .env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+secrets.json
+.secrets/
 
 # IDE
 .vscode/
@@ -17,7 +28,7 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Docker
+# Docker / runtime
 *.log
 
 # Node
