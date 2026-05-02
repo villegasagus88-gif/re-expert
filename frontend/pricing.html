@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Planes · RE Expert</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="config.js"></script>
+  <script src="sentry.js"></script>
   <style>
     :root {
       --bg-0: #09090b;
@@ -163,7 +165,19 @@
     }
 
     @media (max-width: 640px) {
-      .plans-grid { grid-template-columns: 1fr; }
+      body { padding: 16px 14px 48px; }
+      .top-nav { margin-bottom: 32px; }
+      .hero { margin-bottom: 32px; }
+      .hero p { font-size: 14px; }
+      .plans-grid { grid-template-columns: 1fr; gap: 14px; margin-bottom: 32px; }
+      .plan-card { padding: 24px 18px; }
+      .nav-back { font-size: 12px; }
+      .brand-text { font-size: 16px; }
+    }
+    @media (max-width: 390px) {
+      body { padding: 12px 10px 40px; }
+      .plan-card { padding: 20px 14px; }
+      .hero h1 { font-size: 24px; }
     }
 
     .plan-card {
@@ -483,7 +497,7 @@
           <div class="brand-sub">Real Estate AI</div>
         </div>
       </a>
-      <a href="index.html" class="nav-back">
+      <a href="app.html" class="nav-back">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
         </svg>
@@ -498,7 +512,7 @@
         Elegí el plan que mejor se adapta a vos
       </div>
       <h1>Potenciá tu gestión<br>inmobiliaria con <span>IA</span></h1>
-      <p>Consultas ilimitadas, presupuestos automatizados y seguimiento de obra — todo en un solo lugar.</p>
+      <p>Hasta 200 mensajes/día, presupuestos automatizados y seguimiento de obra — todo en un solo lugar.</p>
     </div>
 
     <!-- ALERT -->
@@ -530,7 +544,7 @@
             <span class="feat-icon check">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </span>
-            10 consultas al asistente IA / mes
+            20 mensajes / día al asistente IA
           </li>
           <li>
             <span class="feat-icon check">
@@ -564,7 +578,7 @@
           </li>
         </ul>
         <div id="freeCta">
-          <button class="plan-cta free-cta" onclick="window.location.href='index.html'">
+          <button class="plan-cta free-cta" onclick="window.location.href = localStorage.getItem('re_access_token') ? 'app.html' : 'register.html'">
             <span class="btn-label">Empezar gratis</span>
           </button>
         </div>
@@ -576,7 +590,7 @@
         <div class="plan-name" style="color: var(--accent-hover)">Pro</div>
         <div class="plan-price">
           <span class="plan-price-currency">USD</span>
-          <span class="plan-price-amount">29</span>
+          <span class="plan-price-amount">19</span>
           <span class="plan-price-period">/ mes</span>
         </div>
         <p class="plan-desc">Para constructoras, arquitectos y desarrolladores que necesitan todo el potencial.</p>
@@ -585,7 +599,7 @@
             <span class="feat-icon check-accent">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </span>
-            Consultas <strong>ilimitadas</strong> al asistente IA
+            <strong>200 mensajes / día</strong> al asistente IA
           </li>
           <li>
             <span class="feat-icon check-accent">
@@ -621,7 +635,7 @@
         <div id="proCta">
           <button id="subscribBtn" class="plan-cta pro-cta" onclick="handleSubscribe()">
             <span class="btn-spinner"></span>
-            <span class="btn-label">Suscribirse — USD 29/mes</span>
+            <span class="btn-label">Suscribirse — USD 19/mes</span>
           </button>
         </div>
       </div>
@@ -735,7 +749,7 @@
         }
 
         const resp = await window.REAuthService.authFetch(
-          API + '/api/stripe/create-checkout-session',
+          API + '/api/billing/checkout',
           { method: 'POST', headers: { 'Content-Type': 'application/json' } }
         );
 
@@ -766,7 +780,7 @@
 
       try {
         const resp = await window.REAuthService.authFetch(
-          API + '/api/stripe/portal',
+          API + '/api/billing/portal',
           { method: 'POST', headers: { 'Content-Type': 'application/json' } }
         );
         const data = await resp.json();

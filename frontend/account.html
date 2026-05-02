@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi cuenta · RE Expert</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="config.js"></script>
+  <script src="sentry.js"></script>
   <style>
     :root {
       --bg-0: #09090b; --bg-1: #0f0f12; --bg-card: #111114; --bg-input: #18181b;
@@ -160,6 +162,24 @@
 
     /* ── FOOTER ── */
     .page-footer { text-align: center; font-size: 11px; color: var(--text-3); margin-top: 48px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      body { padding: 16px 14px 48px; }
+      .top-nav { margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+      .card { padding: 18px 16px; }
+      .upgrade-card { padding: 22px 18px; }
+      .invoice-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+      .btn-primary-sm,
+      .btn-secondary-sm { min-height: 44px; height: auto; padding: 8px 14px; }
+      .detail-row { flex-wrap: wrap; gap: 4px; }
+    }
+    @media (max-width: 390px) {
+      body { padding: 12px 10px 40px; }
+      .card { padding: 16px 14px; }
+      .page-title { font-size: 22px; }
+      .brand-text { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -167,14 +187,14 @@
 
     <!-- NAV -->
     <nav class="top-nav">
-      <a href="index.html" class="brand">
+      <a href="app.html" class="brand">
         <div class="brand-logo">RE</div>
         <div>
           <div class="brand-text">RE Expert</div>
           <div class="brand-sub">Real Estate AI</div>
         </div>
       </a>
-      <a href="index.html" class="nav-back">
+      <a href="app.html" class="nav-back">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
         Volver a la app
       </a>
@@ -199,7 +219,7 @@
       <div id="upgradeSection" class="upgrade-wrap" style="display:none">
         <div class="upgrade-icon">⭐</div>
         <div class="upgrade-title">Desbloqueá el plan Pro</div>
-        <p class="upgrade-desc">Accedé a consultas ilimitadas, Asistente SOL, exportaciones, dashboard de proyecto con indicadores CPI/SPI, y más.</p>
+        <p class="upgrade-desc">Accedé a 200 mensajes/día, Asistente SOL, exportaciones, dashboard de proyecto con indicadores CPI/SPI, y más.</p>
         <a href="pricing.html" class="btn-primary-sm" style="max-width:220px;margin:0 auto">
           <span class="btn-label">Ver planes →</span>
         </a>
@@ -426,7 +446,7 @@
       btn.disabled = true;
       try {
         const resp = await window.REAuthService.authFetch(
-          API + '/api/stripe/portal',
+          API + '/api/billing/portal',
           { method: 'POST', headers: { 'Content-Type': 'application/json' } }
         );
         const data = await resp.json();
