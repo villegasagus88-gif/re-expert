@@ -69,6 +69,16 @@ class Settings(BaseSettings):
             extra_origins=self.CORS_ORIGINS,
         )
 
+    # ===== MONITORING (Sentry) =====
+    # Sentry DSN — leave empty to disable Sentry entirely.
+    # Get it from: https://sentry.io/settings/<org>/projects/<project>/keys/
+    SENTRY_DSN: str = ""
+    # Environment tag attached to every event (production / staging / dev).
+    SENTRY_ENVIRONMENT: str = "production"
+    # Performance traces sampling [0.0–1.0]. 0.0 disables performance, only errors.
+    # Free tier of Sentry has 10k transactions/month; keep low and ramp up.
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
 
 try:
     settings = Settings()
