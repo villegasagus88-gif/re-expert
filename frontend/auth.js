@@ -97,7 +97,7 @@
     if (!stored) return;
     const payload = _parseJwtPayload(stored);
     if (payload && payload.exp && Date.now() < payload.exp * 1000) {
-      window.location.replace('index.html');
+      window.location.replace('app.html');
     }
   }
 
@@ -146,7 +146,7 @@
         if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
         sessionStorage.setItem('re_authed', '1');
       }
-      window.location.replace('index.html');
+      window.location.replace('app.html');
     } catch {
       showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
@@ -202,7 +202,7 @@
         if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
         sessionStorage.setItem('re_authed', '1');
       }
-      window.location.replace('index.html');
+      window.location.replace('app.html');
     } catch {
       showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
