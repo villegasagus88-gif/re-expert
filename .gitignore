@@ -19,3 +19,9 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Node
+node_modules/
+
+# Local data/temp
+*.tmp

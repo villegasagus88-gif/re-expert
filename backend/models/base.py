@@ -39,10 +39,17 @@ def get_engine() -> AsyncEngine:
     """Lazily create and return the shared async engine."""
     global _engine
     if _engine is None:
+        # statement_cache_size=0 + prepared_statement_cache_size=0 are required when
+        # connecting through Supabase's pgbouncer pooler (port 6543, transaction mode),
+        # which does not support prepared statements. Safe to keep on direct (5432) too.
         _engine = create_async_engine(
             _asyncpg_url(settings.DATABASE_URL),
             echo=settings.DEBUG,
             pool_pre_ping=True,
+            connect_args={
+                "statement_cache_size": 0,
+                "prepared_statement_cache_size": 0,
+            },
         )
     return _engine
 

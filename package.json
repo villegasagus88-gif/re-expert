@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "live-server frontend --port=3000 --no-browser",
+    "dev:frontend": "http-server frontend -p 5173 -c-1 --silent",
     "dev:backend": "cd backend && python -m uvicorn main:app --reload --port=8000",
     "start": "npm run dev:frontend",
     "lint": "ruff check backend/",
@@ -24,6 +24,7 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "http-server": "^14.1.1",
     "live-server": "^1.2.2"
   }
 }
