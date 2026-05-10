@@ -17,12 +17,14 @@
   const STORAGE_USER = 're_user';
   const REFRESH_LEAD_MS = 60_000;
 
+  // Solo nombres base. isPublicPage() acepta tanto "/login" como "/login.html"
+  // (Netlify Pretty URLs rewrites internal links a la forma sin extensión).
   const PUBLIC_ROUTES = [
-    '/login.html',
-    '/register.html',
-    '/forgot-password.html',
-    '/pricing.html',
-    '/success.html',
+    'login',
+    'register',
+    'forgot-password',
+    'pricing',
+    'success',
   ];
 
   let _accessToken = null;
@@ -40,7 +42,13 @@
 
   function isPublicPage() {
     const p = (window.location.pathname || '').toLowerCase();
-    return PUBLIC_ROUTES.some((r) => p.endsWith(r));
+    return PUBLIC_ROUTES.some((name) => {
+      return (
+        p.endsWith('/' + name) ||
+        p.endsWith('/' + name + '.html') ||
+        p.endsWith('/' + name + '/')
+      );
+    });
   }
   const isAuthPage = isPublicPage;
 
