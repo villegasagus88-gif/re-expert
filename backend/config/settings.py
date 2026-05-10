@@ -51,7 +51,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ===== ANTHROPIC =====
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-6-20250514"
+    # Usamos el alias (sin fecha) que siempre apunta al último snapshot
+    # estable. Override con env var ANTHROPIC_MODEL si querés pinear.
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
 
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).
