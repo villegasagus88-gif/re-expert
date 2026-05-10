@@ -1,8 +1,9 @@
 """
 Materials pricing endpoint.
 
-Reads knowledge/materiales-precios.csv from local filesystem (tracked in
-the repo alongside the backend) and returns structured pricing data.
+Reads backend/data/materiales-precios.csv from local filesystem (tracked
+inside the backend so it ships in the Docker image) and returns
+structured pricing data.
 
 CSV columns: categoria, material, unidad, precio_ars, proveedor_ref,
              variacion_mensual_pct, fecha_actualizacion
@@ -18,9 +19,9 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/api/materials", tags=["materials"])
 
 # This file lives at backend/api/routes/materials.py
-# Project root is 4 levels up → knowledge/materiales-precios.csv
-_KNOWLEDGE_DIR = Path(__file__).resolve().parent.parent.parent.parent / "knowledge"
-_CSV_PATH = _KNOWLEDGE_DIR / "materiales-precios.csv"
+# Backend root is 3 levels up → backend/data/materiales-precios.csv
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
+_CSV_PATH = _BACKEND_ROOT / "data" / "materiales-precios.csv"
 
 
 class MaterialItem(BaseModel):
