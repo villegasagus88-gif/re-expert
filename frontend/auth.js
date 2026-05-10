@@ -92,12 +92,42 @@
   }
 
   // ===== Redirect post-login =====
+  // Solo redirige a app.html si el backend confirma que la sesión es válida.
+  // No alcanza con que el JWT no esté vencido localmente: la firma puede haber
+  // dejado de ser válida (rotación de JWT_SECRET, deploy nuevo, etc.). Si ese
+  // es el caso, limpiamos los tokens viejos y dejamos al usuario usar la
+  // página de login/register normalmente.
+  function _clearStaleSession() {
+    localStorage.removeItem('re_access_token');
+    localStorage.removeItem('re_refresh_token');
+    localStorage.removeItem('re_user');
+    sessionStorage.removeItem('re_authed');
+  }
+
   async function redirectIfAuthenticated() {
     const stored = localStorage.getItem('re_access_token');
     if (!stored) return;
     const payload = _parseJwtPayload(stored);
-    if (payload && payload.exp && Date.now() < payload.exp * 1000) {
-      window.location.replace('app.html');
+    if (!payload || !payload.exp || Date.now() >= payload.exp * 1000) {
+      _clearStaleSession();
+      return;
+    }
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + stored },
+      });
+      if (resp.ok) {
+        window.location.replace('app.html');
+        return;
+      }
+      if (resp.status === 401 || resp.status === 403) {
+        _clearStaleSession();
+        return;
+      }
+      // Cualquier otra respuesta (5xx, red, etc.) — nos quedamos en la página
+      // actual sin tocar la sesión, así el usuario puede reintentar.
+    } catch {
+      // Backend inalcanzable: nos quedamos en la página, no redirigimos.
     }
   }
 
