@@ -30,8 +30,7 @@ def upgrade() -> None:
             postgresql.UUID(as_uuid=True),
             sa.ForeignKey("profiles.id", ondelete="CASCADE"),
             nullable=False,
-            index=True,
-        ),
+        ),  # index se crea explícitamente abajo (ix_payments_user_id)
         sa.Column("concepto", sa.Text, nullable=False),
         sa.Column("proveedor", sa.String(255), nullable=True),
         sa.Column("monto", sa.Numeric(12, 2), nullable=False),

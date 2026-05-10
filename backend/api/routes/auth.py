@@ -87,6 +87,8 @@ async def me(current_user: User = Depends(get_current_user)):
         role=current_user.role,
         plan=current_user.plan,
         onboarding_completed=current_user.onboarding_completed,
+        phone=current_user.phone,
+        automation_prefs=current_user.automation_prefs,
     )
 
 

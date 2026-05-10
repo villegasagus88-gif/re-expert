@@ -40,6 +40,9 @@ class UserOut(BaseModel):
     role: str = "user"
     plan: str = "free"
     onboarding_completed: bool = False
+    # Campos del agente SOL: SOL los lee/escribe vía tools.
+    phone: str | None = None
+    automation_prefs: dict | None = None
 
 
 class RefreshRequest(BaseModel):

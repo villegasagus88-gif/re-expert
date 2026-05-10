@@ -23,9 +23,11 @@ class Settings(BaseSettings):
     )
 
     # ===== REQUIRED (min_length=1 enforces non-empty values) =====
-    ANTHROPIC_API_KEY: str = Field(..., min_length=1)
     DATABASE_URL: str = Field(..., min_length=1)
     JWT_SECRET: str = Field(..., min_length=1)
+    # ANTHROPIC_API_KEY es opcional: si está vacía, el agente cae a Gemini
+    # (siempre que GEMINI_API_KEY esté seteada).
+    ANTHROPIC_API_KEY: str = ""
 
     # ===== SUPABASE (optional — only needed for storage/realtime, not auth) =====
     SUPABASE_URL: str = ""
@@ -54,6 +56,53 @@ class Settings(BaseSettings):
     # Usamos el alias (sin fecha) que siempre apunta al último snapshot
     # estable. Override con env var ANTHROPIC_MODEL si querés pinear.
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+
+    # ===== LLM PROVIDER (selector) =====
+    # auto = usa Gemini si hay GEMINI_API_KEY, sino Anthropic.
+    # gemini | anthropic = forzar uno específico.
+    LLM_PROVIDER: str = "auto"
+
+    # ===== GEMINI (free tier) =====
+    # Crear key en https://aistudio.google.com/apikey
+    GEMINI_API_KEY: str = ""
+    # Modelos free disponibles: gemini-2.5-flash | gemini-2.0-flash | gemini-2.5-pro (con quota más chica)
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
+    # ===== AGENT / SCHEDULER =====
+    # URL pública del backend — usada para construir links absolutos a PDFs
+    # generados (los que se mandan por WhatsApp/Telegram tienen que ser
+    # alcanzables desde el celular del destinatario). En prod, Railway URL;
+    # en dev local, localhost:8000 (solo accesible desde la PC del user).
+    BACKEND_PUBLIC_URL: str = "http://localhost:8000"
+
+    # Habilita el poller que dispara recordatorios. Ponelo en False en tests.
+    SCHEDULER_ENABLED: bool = True
+    # Intervalo (segundos) entre polls. 30s = baja latencia y carga ínfima.
+    SCHEDULER_POLL_INTERVAL_SECONDS: int = 30
+    # Máximo de recordatorios procesados por tick (evita lock-and-flood).
+    SCHEDULER_BATCH_SIZE: int = 50
+
+    # ===== TELEGRAM (opcional) =====
+    # Token del bot creado vía @BotFather. Si está vacío, el canal queda deshabilitado.
+    TELEGRAM_BOT_TOKEN: str = ""
+    # Username del bot SIN el @ (usado para construir deep links t.me/<username>?start=<token>)
+    TELEGRAM_BOT_USERNAME: str = ""
+    # URL pública del backend para registrar webhook del bot (ej. https://re-expert-production.up.railway.app)
+    TELEGRAM_WEBHOOK_BASE_URL: str = ""
+    # Secret arbitrario para validar requests del webhook (header X-Telegram-Bot-Api-Secret-Token)
+    TELEGRAM_WEBHOOK_SECRET: str = ""
+
+    # ===== TWILIO / WHATSAPP (opcional) =====
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_WHATSAPP_FROM: str = ""  # ej. "whatsapp:+14155238886"
+
+    # ===== EMAIL (opcional, vía Resend) =====
+    RESEND_API_KEY: str = ""
+    RESEND_FROM: str = "RE Expert <hola@re-expert.app>"
+
+    # ===== MAPS (opcional) =====
+    GOOGLE_MAPS_API_KEY: str = ""
 
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).

@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────────
+# RE Expert — stack local (Postgres + Backend + Frontend)
+# ─────────────────────────────────────────────────────────────────
+# Levantar:    docker compose up --build
+# Parar:       docker compose down
+# Limpiar DB:  docker compose down -v   (borra el volumen pgdata)
+# ─────────────────────────────────────────────────────────────────
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: re-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: re_expert
+      POSTGRES_USER: re_expert
+      POSTGRES_PASSWORD: re_expert_local
+    ports:
+      - "5433:5432"   # 5433 fuera para no chocar con instalaciones locales de Postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U re_expert -d re_expert"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: re-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Cargamos secretos directamente del archivo .env (raíz del repo).
+    # Lo hacemos vía env_file y NO `environment:` con substitution, así no hay
+    # interferencia con env vars del shell host (Claude Code, por ejemplo,
+    # inyecta ANTHROPIC_API_KEY="" que con substitution pisaría al .env).
+    env_file:
+      - .env
+    environment:
+      # Conexión al postgres del compose (hostname = nombre del servicio)
+      DATABASE_URL: postgresql://re_expert:re_expert_local@postgres:5432/re_expert
+      DEBUG: "true"
+      FRONTEND_URL: http://localhost:5173
+      # Supabase opcional — vacío en local (usamos disco para reports)
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      # Stripe deshabilitado en local
+      STRIPE_SECRET_KEY: ""
+      STRIPE_WEBHOOK_SECRET: ""
+      STRIPE_PRICE_ID_PRO: ""
+      STRIPE_SUCCESS_URL: http://localhost:5173/success.html
+      STRIPE_CANCEL_URL: http://localhost:5173/pricing.html
+      # Scheduler
+      SCHEDULER_ENABLED: "true"
+      SCHEDULER_POLL_INTERVAL_SECONDS: "30"
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot reload: editar código sin rebuildear
+      - ./backend:/app
+      # Anonymous volumes para tapar el .venv y __pycache__ del host
+      # (no queremos que el venv local del Windows se pise el del container)
+      - /app/.venv
+      - /app/__pycache__
+      # Reports persistentes (PDFs/DOCXs generados)
+      - report_data:/app/data/reports
+    command: >
+      sh -c "
+        echo '🛠  Aplicando migraciones...' &&
+        alembic upgrade head &&
+        echo '🚀 Arrancando uvicorn (reload=on)...' &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    image: nginx:alpine
+    container_name: re-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    volumes:
+      # Hot reload: editar HTML/JS sin rebuildear
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./scripts/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  pgdata:
+  report_data:

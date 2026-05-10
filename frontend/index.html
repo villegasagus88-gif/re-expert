@@ -513,6 +513,42 @@ select.pay-form-input{cursor:pointer}
 .sol-send:disabled{opacity:.2;cursor:not-allowed}
 .sol-input-footer{text-align:center;font-size:10px;color:var(--text-3);margin-top:6px}
 
+/* ====== SOL Agent — toolbar + chips + modales ====== */
+.sol-agent-toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:10px 20px 0;max-width:720px;margin:0 auto;width:100%;box-sizing:border-box}
+.sol-agent-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px;font-weight:600;border-radius:100px;border:1px solid var(--border-0);background:var(--bg-card);color:var(--text-1);cursor:pointer;transition:all .15s var(--ease-out);font-family:var(--font)}
+.sol-agent-btn:hover{border-color:#f59e0b;color:#f59e0b;background:rgba(245,158,11,.06)}
+.sol-agent-btn .badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;margin-left:2px}
+
+.sol-tool-chip-wrap{padding:4px 0;max-width:720px;margin:0 auto;width:100%}
+.sol-tool-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:100px;font-size:11.5px;font-weight:500;background:var(--bg-card);border:1px solid var(--border-0);color:var(--text-1)}
+.sol-tool-chip.running{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:#f59e0b}
+.sol-tool-chip.done{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.18);color:#16a34a}
+[data-theme="dark"] .sol-tool-chip.done{color:#4ade80}
+.sol-tool-link{color:#3b82f6;font-weight:600;margin-left:4px;text-decoration:none}
+.sol-tool-link:hover{text-decoration:underline}
+.sol-tool-err{color:#ef4444;font-weight:500}
+
+/* Modal de Recordatorios / Telegram (reusa el patrón de upgrade modal) */
+.sol-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.sol-modal-overlay.active{display:flex}
+.sol-modal{background:var(--bg-1);border:1px solid var(--border-0);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.sol-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border-0)}
+.sol-modal-title{font-size:16px;font-weight:700;color:var(--text-0)}
+.sol-modal-close{background:none;border:none;font-size:22px;color:var(--text-2);cursor:pointer;line-height:1}
+.sol-modal-body{padding:18px 22px;overflow-y:auto;flex:1}
+.sol-modal-footer{padding:14px 22px;border-top:1px solid var(--border-0);display:flex;gap:8px;justify-content:flex-end}
+.sol-reminder-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-md);margin-bottom:8px}
+.sol-reminder-item:last-child{margin-bottom:0}
+.sol-reminder-info{flex:1;min-width:0}
+.sol-reminder-title{font-size:13px;font-weight:600;color:var(--text-0);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sol-reminder-meta{font-size:11px;color:var(--text-2)}
+.sol-reminder-cancel{background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px}
+.sol-reminder-cancel:hover{background:rgba(239,68,68,.08)}
+.sol-empty{padding:30px 0;text-align:center;color:var(--text-2);font-size:13px}
+.sol-tg-deeplink{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#229ED9;color:#fff;border-radius:var(--radius-md);text-decoration:none;font-weight:600;font-size:13px;margin-top:14px}
+.sol-tg-deeplink:hover{opacity:.92}
+.sol-tg-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(34,197,94,.1);color:#16a34a;border-radius:100px;font-size:11px;font-weight:600}
+
 /* ====== ACADEMIA VIEW ====== */
 .level-filters{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
 .level-btn{padding:6px 14px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-0);background:transparent;font-family:var(--font);color:var(--text-2);transition:all .15s}
@@ -1196,6 +1232,21 @@ select.pay-form-input{cursor:pointer}
       <!-- SOL VIEW -->
       <div class="view" id="viewSol">
         <div class="sol-container">
+          <!-- Agent toolbar: recordatorios, telegram, exportar -->
+          <div class="sol-agent-toolbar" id="solAgentToolbar">
+            <button class="sol-agent-btn" id="solBtnReminders" title="Ver recordatorios">
+              <span>⏰</span><span>Recordatorios</span><span class="badge" id="solRemBadge" style="display:none">0</span>
+            </button>
+            <button class="sol-agent-btn" id="solBtnTelegram" title="Conectar Telegram para recibir avisos al celular">
+              <span>📲</span><span>Telegram</span>
+            </button>
+            <button class="sol-agent-btn" id="solBtnExportPdf" title="Exportar resumen del proyecto en PDF">
+              <span>📄</span><span>Exportar PDF</span>
+            </button>
+            <button class="sol-agent-btn" id="solBtnExportDocx" title="Exportar resumen del proyecto en DOCX (Word)">
+              <span>📝</span><span>Exportar DOCX</span>
+            </button>
+          </div>
           <div class="page-container" id="solPageContainer" style="flex:1;overflow-y:auto">
             <div class="sol-welcome" id="solWelcome">
               <div class="sol-avatar">
@@ -2545,24 +2596,111 @@ function solExtractStructuredData(fullText){
   catch(_){return null;}
 }
 
+// ────────────────────────────────────────────────────────────────────
+// SOL Agent (tool-use) — POST /api/sol/agent
+// Eventos SSE: start | thinking | tool_use | tool_result | delta | done | error
+// ────────────────────────────────────────────────────────────────────
+
+// Etiquetas humanas para los tools (se muestran en chips)
+const SOL_TOOL_LABELS = {
+  query_project_status:        {label:'Consultando estado del proyecto', icon:'📊'},
+  query_payments:              {label:'Buscando pagos',                  icon:'💸'},
+  query_milestones:            {label:'Buscando hitos',                  icon:'📅'},
+  query_materials:             {label:'Buscando materiales',             icon:'🧱'},
+  register_payment:            {label:'Registrando pago',                icon:'💸', refresh:'pagos'},
+  register_milestone:          {label:'Registrando hito',                icon:'📅', refresh:'proyecto'},
+  register_material_price:     {label:'Registrando material',            icon:'🧱', refresh:'materiales'},
+  schedule_reminder:           {label:'Programando recordatorio',        icon:'⏰', emit:'sol:reminders-changed'},
+  list_reminders:              {label:'Listando recordatorios',          icon:'📋'},
+  cancel_reminder:             {label:'Cancelando recordatorio',         icon:'🗑️', emit:'sol:reminders-changed'},
+  generate_pdf_report:         {label:'Generando PDF',                   icon:'📄'},
+  generate_docx_report:        {label:'Generando DOCX',                  icon:'📝'},
+  send_message_now:            {label:'Enviando mensaje',                icon:'📨'},
+  get_user_channels:           {label:'Consultando canales',             icon:'🔌'},
+  plan_route:                  {label:'Armando ruta',                    icon:'🗺️'},
+  // Identidad / preferencias
+  get_my_profile:              {label:'Leyendo tu perfil',               icon:'👤'},
+  set_my_phone:                {label:'Guardando tu teléfono',           icon:'📱'},
+  set_automation_prefs:        {label:'Guardando preferencias',          icon:'⚙️'},
+  // Contactos
+  add_contact:                 {label:'Agregando contacto',              icon:'👥'},
+  list_contacts:               {label:'Buscando en agenda',              icon:'👥'},
+  find_contact:                {label:'Buscando contacto',               icon:'🔍'},
+  update_contact:              {label:'Actualizando contacto',           icon:'✏️'},
+  // Compartir
+  share_pdf_with_contact:      {label:'Preparando PDF para enviar',      icon:'📤'},
+  compose_message_to_contact:  {label:'Componiendo mensaje',             icon:'💬'},
+};
+
+function solAppendToolChip(toolName, status, result){
+  const cfg = SOL_TOOL_LABELS[toolName] || {label:toolName, icon:'⚙️'};
+  const m = $('#solMessages');
+  const wrap = document.createElement('div');
+  wrap.className = 'sol-tool-chip-wrap';
+  let tail = '';
+  const escAttr = u => String(u).replace(/"/g,'&quot;');
+  if (status === 'done' && result && !result.error){
+    // share_pdf_with_contact / compose_message_to_contact: WhatsApp + Telegram links
+    if (result.whatsapp_link || result.telegram_link){
+      const links = [];
+      if (result.whatsapp_link){
+        links.push(`<a href="${escAttr(result.whatsapp_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#25D366">📱 WhatsApp a ${result.contact && result.contact.name || 'contacto'}</a>`);
+      }
+      if (result.telegram_link){
+        links.push(`<a href="${escAttr(result.telegram_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#229ED9">✈️ Telegram</a>`);
+      }
+      if (result.pdf_url){
+        links.unshift(`<a href="${escAttr(result.pdf_url)}" target="_blank" rel="noopener" class="sol-tool-link">📥 Ver PDF</a>`);
+      }
+      tail = ' ' + links.join(' · ');
+    }
+    else if (result.url){
+      const fname = result.filename || 'archivo';
+      tail = ` <a href="${escAttr(result.url)}" target="_blank" rel="noopener" class="sol-tool-link">📥 ${fname}</a>`;
+    } else if (result.deep_link){
+      tail = ` <a href="${escAttr(result.deep_link)}" target="_blank" rel="noopener" class="sol-tool-link">Abrir Telegram</a>`;
+    } else if (result.found === true && result.name){
+      tail = ` · ${result.name}${result.phone?' '+result.phone:''}`;
+    } else if (result.already_exists){
+      tail = ` · ya existía`;
+    } else if (result.ok && result.id){
+      tail = ' ✓';
+    } else if (Array.isArray(result.items)){
+      tail = ` · ${result.items.length} resultado(s)`;
+    }
+  } else if (status === 'done' && result && result.error){
+    tail = ` <span class="sol-tool-err">❌ ${String(result.error).slice(0,80)}</span>`;
+  }
+  wrap.innerHTML = `<span class="sol-tool-chip ${status}">${cfg.icon} ${cfg.label}${status==='running'?'…':''}${tail}</span>`;
+  m.appendChild(wrap);
+  $('#solPageContainer').scrollTop = $('#solPageContainer').scrollHeight;
+  return wrap;
+}
+
 async function solSend(text){
   if(!text.trim()||solState.isStreaming)return;
-  if(userPlan!=='pro'){showUpgradeModal('Asistente SOL');return;}
+  // Nota: el gate de plan Pro lo aplica el backend (devuelve 403 con detail.upgrade_url
+  // que el handler de abajo intercepta y dispara showUpgradeModal). En DEBUG=true
+  // (dev local) el backend deja pasar a todos para no friccionar el testing.
   const msg=text.trim();
   $('#solInput').value='';$('#solInput').style.height='auto';solUpdateSendBtn();
   solState.messages.push({role:'user',content:msg});
   solAppendMsg('user',msg);
   solState.isStreaming=true;$('#solSendBtn').disabled=true;
   solAppendStreaming();let full='';
+  // Map tool_use_id → chip element para actualizar status al recibir tool_result.
+  // Como el backend no devuelve id en estos eventos, indexamos por orden.
+  const toolChips = [];
+  let pendingToolName = null;
   try{
     if(!window.REAuthService||!window.REAuthService.authFetch){
       throw new Error('Sesión no inicializada');
     }
     const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
-    const payload={message:msg,context_type:'sol'};
+    const payload={message:msg};
     if(solState.conversationId) payload.conversation_id=solState.conversationId;
 
-    const r=await window.REAuthService.authFetch(apiBase+'/api/chat',{
+    const r=await window.REAuthService.authFetch(apiBase+'/api/sol/agent',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
       body:JSON.stringify(payload)
@@ -2595,28 +2733,59 @@ async function solSend(text){
         if(!d)continue;
         try{
           const ev=JSON.parse(d);
-          if(ev.type==='start'&&ev.conversation_id){solState.conversationId=ev.conversation_id;}
-          else if(ev.type==='delta'&&ev.text){full+=ev.text;solUpdateStreaming(full);}
-          else if(ev.type==='error'){throw new Error(ev.message||'Error del backend');}
-          else if(ev.type==='done'){break outer;}
+          if(ev.type==='start'&&ev.conversation_id){
+            solState.conversationId=ev.conversation_id;
+          } else if (ev.type==='thinking'){
+            // No-op visual; el typing-indicator ya está visible.
+          } else if (ev.type==='tool_use'){
+            // Antes del primer tool_use de esta vuelta, finalizamos el streaming
+            // bubble actual para que las chips no queden adentro.
+            if(!solState._toolModeBubbleClosed){
+              solFinalizeStreaming(); solState._toolModeBubbleClosed = true;
+            }
+            const chip = solAppendToolChip(ev.name, 'running', null);
+            toolChips.push({name: ev.name, el: chip});
+            pendingToolName = ev.name;
+          } else if (ev.type==='tool_result'){
+            const last = toolChips[toolChips.length-1];
+            if(last && last.name === ev.name){
+              last.el.remove();
+              toolChips.pop();
+            }
+            solAppendToolChip(ev.name, 'done', ev.result);
+            // Side effects post-tool
+            const cfg = SOL_TOOL_LABELS[ev.name];
+            if(cfg && cfg.refresh && ev.result && !ev.result.error){
+              window.dispatchEvent(new CustomEvent('sol:data-ingested',{detail:{view:cfg.refresh}}));
+            }
+            if(cfg && cfg.emit){
+              window.dispatchEvent(new CustomEvent(cfg.emit,{detail:ev.result||{}}));
+            }
+            pendingToolName = null;
+          } else if (ev.type==='delta'&&ev.text){
+            // Si veníamos de tool_use, abrimos un nuevo bubble para el texto post-tool.
+            if(solState._toolModeBubbleClosed){
+              solAppendStreaming(); solState._toolModeBubbleClosed = false; full = '';
+            }
+            full+=ev.text; solUpdateStreaming(full);
+          } else if (ev.type==='error'){
+            throw new Error(ev.message||'Error del backend');
+          } else if (ev.type==='done'){
+            break outer;
+          }
         }catch(parseErr){
-          // Un delta con JSON inválido no debe romper todo el stream.
           if(parseErr instanceof SyntaxError)continue;
           throw parseErr;
         }
       }
     }
-    solState.messages.push({role:'assistant',content:full});
+    if(full) solState.messages.push({role:'assistant',content:full});
     solFinalizeStreaming();
-    // Intake estructurado: si SOL devolvió un bloque JSON, lo emitimos como evento
-    // para que otras secciones del frontend puedan reaccionar (wire later).
-    const structured=solExtractStructuredData(full);
-    if(structured){
-      window.dispatchEvent(new CustomEvent('sol:data-intake',{detail:structured}));
-    }
+    solState._toolModeBubbleClosed = false;
   }catch(e){
     solUpdateStreaming('Error: '+(e.message||e));
     solFinalizeStreaming();
+    solState._toolModeBubbleClosed = false;
   }
   solState.isStreaming=false;solUpdateSendBtn();$('#solInput').focus();
 }
@@ -3247,6 +3416,186 @@ document.addEventListener('DOMContentLoaded',init);
 
 <!-- Container donde se renderizan los toasts de feedback de SOL ingest -->
 <div id="solToastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Modal: Recordatorios de SOL -->
+<div class="sol-modal-overlay" id="solRemindersModal">
+  <div class="sol-modal" role="dialog" aria-labelledby="solRemTitle">
+    <div class="sol-modal-header">
+      <div class="sol-modal-title" id="solRemTitle">⏰ Tus recordatorios</div>
+      <button class="sol-modal-close" data-close="solRemindersModal">×</button>
+    </div>
+    <div class="sol-modal-body" id="solRemBody">
+      <div class="sol-empty">Cargando…</div>
+    </div>
+    <div class="sol-modal-footer">
+      <button class="sol-agent-btn" data-close="solRemindersModal">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Conectar Telegram -->
+<div class="sol-modal-overlay" id="solTelegramModal">
+  <div class="sol-modal" role="dialog" aria-labelledby="solTgTitle">
+    <div class="sol-modal-header">
+      <div class="sol-modal-title" id="solTgTitle">📲 Recibir avisos en Telegram</div>
+      <button class="sol-modal-close" data-close="solTelegramModal">×</button>
+    </div>
+    <div class="sol-modal-body" id="solTgBody">
+      <div class="sol-empty">Cargando…</div>
+    </div>
+    <div class="sol-modal-footer">
+      <button class="sol-agent-btn" data-close="solTelegramModal">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────
+// SOL Agent UI helpers (recordatorios, telegram, exportar)
+// ──────────────────────────────────────────────────────────────────
+function _solApi(){return (window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';}
+
+function solOpenModal(id){const m=document.getElementById(id);if(m)m.classList.add('active');}
+function solCloseModal(id){const m=document.getElementById(id);if(m)m.classList.remove('active');}
+
+async function solLoadReminders(){
+  const body=document.getElementById('solRemBody');
+  body.innerHTML='<div class="sol-empty">Cargando…</div>';
+  try{
+    const r=await window.REAuthService.authFetch(_solApi()+'/api/reminders?status=pending');
+    if(!r.ok) throw new Error('Error '+r.status);
+    const data=await r.json();
+    const items=data.items||[];
+    if(!items.length){
+      body.innerHTML='<div class="sol-empty">No tenés recordatorios pendientes.<br><small>Decile a SOL "recordame mañana 10am llamar al proveedor".</small></div>';
+    } else {
+      body.innerHTML=items.map(r=>{
+        const d=new Date(r.due_at);
+        const fmt=d.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
+        return `<div class="sol-reminder-item" data-rid="${r.id}">
+          <div class="sol-reminder-info">
+            <div class="sol-reminder-title">${r.title.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+            <div class="sol-reminder-meta">📅 ${fmt} · 📡 ${r.channel}</div>
+          </div>
+          <button class="sol-reminder-cancel" data-cancel="${r.id}">Cancelar</button>
+        </div>`;
+      }).join('');
+      body.querySelectorAll('[data-cancel]').forEach(btn=>{
+        btn.addEventListener('click',async()=>{
+          if(!confirm('¿Cancelar este recordatorio?'))return;
+          btn.disabled=true;
+          try{
+            const id=btn.dataset.cancel;
+            const rr=await window.REAuthService.authFetch(_solApi()+'/api/reminders/'+id,{method:'DELETE'});
+            if(rr.ok || rr.status===204){await solLoadReminders();solUpdateRemindersBadge();}
+          }catch(e){btn.disabled=false;}
+        });
+      });
+    }
+  }catch(e){
+    body.innerHTML=`<div class="sol-empty">Error cargando recordatorios.<br><small>${(e.message||e)}</small></div>`;
+  }
+}
+
+async function solUpdateRemindersBadge(){
+  try{
+    const r=await window.REAuthService.authFetch(_solApi()+'/api/reminders?status=pending');
+    if(!r.ok)return;
+    const data=await r.json();
+    const n=(data.items||[]).length;
+    const b=document.getElementById('solRemBadge');
+    if(!b)return;
+    if(n>0){b.textContent=n;b.style.display='inline-flex';} else {b.style.display='none';}
+  }catch(_){}
+}
+
+async function solOpenTelegramFlow(){
+  const body=document.getElementById('solTgBody');
+  body.innerHTML='<div class="sol-empty">Generando link…</div>';
+  solOpenModal('solTelegramModal');
+  try{
+    // Listar canales primero para saber si ya está conectado
+    const list=await window.REAuthService.authFetch(_solApi()+'/api/channels');
+    let connected=null;
+    if(list.ok){
+      const j=await list.json();
+      connected=(j.items||[]).find(c=>c.channel==='telegram'&&c.verified);
+    }
+    if(connected){
+      body.innerHTML=`
+        <p>Ya tenés Telegram conectado <span class="sol-tg-status">✓ verificado</span></p>
+        <p style="margin-top:14px;color:var(--text-2);font-size:13px">SOL te enviará los recordatorios y avisos por Telegram.</p>
+        <p style="margin-top:18px"><button class="sol-agent-btn" id="solTgDisconnect" data-id="${connected.id}">Desconectar Telegram</button></p>
+      `;
+      const dbtn=document.getElementById('solTgDisconnect');
+      if(dbtn) dbtn.addEventListener('click',async()=>{
+        if(!confirm('¿Desconectar Telegram?'))return;
+        dbtn.disabled=true;
+        const rr=await window.REAuthService.authFetch(_solApi()+'/api/channels/'+dbtn.dataset.id,{method:'DELETE'});
+        if(rr.ok||rr.status===204) solOpenTelegramFlow();
+      });
+      return;
+    }
+    const r=await window.REAuthService.authFetch(_solApi()+'/api/channels/telegram/connect',{method:'POST'});
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      const detail=typeof e.detail==='object'?(e.detail.hint||JSON.stringify(e.detail)):(e.detail||'No disponible');
+      body.innerHTML=`<div class="sol-empty">⚠️ Telegram no está habilitado todavía.<br><small>${detail}</small></div>`;
+      return;
+    }
+    const data=await r.json();
+    body.innerHTML=`
+      <p>Para recibir tus recordatorios y avisos en el celular:</p>
+      <ol style="margin:12px 0 0;padding-left:20px;color:var(--text-1);font-size:13px;line-height:1.7">
+        <li>Tocá el botón de abajo. Se abre Telegram.</li>
+        <li>Pulsá <b>INICIAR</b> dentro de Telegram.</li>
+        <li>Listo: vas a quedar verificado y SOL ya puede escribirte.</li>
+      </ol>
+      <a class="sol-tg-deeplink" href="${data.deep_link}" target="_blank" rel="noopener">
+        📲 Abrir Telegram para vincular
+      </a>
+      <p style="margin-top:14px;font-size:11px;color:var(--text-3)">El link expira en 1 hora.</p>
+    `;
+  }catch(e){
+    body.innerHTML=`<div class="sol-empty">Error: ${(e.message||e)}</div>`;
+  }
+}
+
+async function solExportReport(fmt){
+  // Triggea generate_*_report vía agente, mandando un mensaje en el input.
+  const verb = fmt==='pdf' ? 'PDF' : 'DOCX';
+  const msg = `Generá un ${verb} con el resumen completo del proyecto (estado, pagos y cronograma) y devolvémelo como link compartible.`;
+  // Si el usuario está en otra view, no lo cambiamos; solo mandamos el msg.
+  const input=document.getElementById('solInput');
+  if(input){input.value=msg;}
+  if(typeof solSend==='function'){
+    solSend(msg);
+  }
+}
+
+// Event wiring para los botones del toolbar y modales
+document.addEventListener('DOMContentLoaded',()=>{
+  // Cerrar modales con [data-close]
+  document.querySelectorAll('[data-close]').forEach(b=>{
+    b.addEventListener('click',()=>solCloseModal(b.dataset.close));
+  });
+  document.querySelectorAll('.sol-modal-overlay').forEach(ov=>{
+    ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('active');});
+  });
+  const r=document.getElementById('solBtnReminders');
+  if(r) r.addEventListener('click',()=>{solOpenModal('solRemindersModal');solLoadReminders();});
+  const t=document.getElementById('solBtnTelegram');
+  if(t) t.addEventListener('click',solOpenTelegramFlow);
+  const ep=document.getElementById('solBtnExportPdf');
+  if(ep) ep.addEventListener('click',()=>solExportReport('pdf'));
+  const ed=document.getElementById('solBtnExportDocx');
+  if(ed) ed.addEventListener('click',()=>solExportReport('docx'));
+  // Refrescar badge cuando se programa/cancela un reminder
+  window.addEventListener('sol:reminders-changed',solUpdateRemindersBadge);
+  // Initial badge update (only after auth is ready)
+  setTimeout(solUpdateRemindersBadge, 1500);
+});
+</script>
 
 </body>
 </html>

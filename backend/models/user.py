@@ -10,6 +10,7 @@ from uuid import UUID
 
 from models.base import Base
 from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +35,10 @@ class User(Base):
     onboarding_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false", nullable=False
     )
+    # Teléfono del usuario en formato internacional (lo pide SOL en onboarding).
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Preferencias de automatización que SOL aprende: qué avisar, por qué canal, etc.
+    automation_prefs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

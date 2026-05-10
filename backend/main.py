@@ -1,6 +1,11 @@
+from contextlib import asynccontextmanager
+
+from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
+from api.routes.channels import router as channels_router
 from api.routes.chat import router as chat_router
+from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
@@ -8,22 +13,38 @@ from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
 from api.routes.payments import router as payments_router
 from api.routes.project import router as project_router
+from api.routes.reminders import router as reminders_router
 from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
 from config.settings import settings
 from core.rate_limit import limiter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from services.scheduler_service import start_scheduler, stop_scheduler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as _Request
 from starlette.responses import JSONResponse as _JSONResponse
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # Startup: arrancar el scheduler de recordatorios
+    start_scheduler()
+    try:
+        yield
+    finally:
+        # Shutdown
+        await stop_scheduler()
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     description="API backend for RE Expert - Real Estate AI Assistant",
+    lifespan=lifespan,
 )
 
 # Rate limiter
@@ -68,6 +89,24 @@ app.include_router(stripe_router)
 app.include_router(usage_router)
 app.include_router(ingest_router)
 app.include_router(news_router)
+# SOL agent + reminders + channels
+app.include_router(agent_router)
+app.include_router(reminders_router)
+app.include_router(channels_router)
+app.include_router(contacts_router)
+
+# Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
+# La carpeta se crea on-demand en services/document_service.py.
+import os as _os
+from pathlib import Path as _Path
+
+_reports_dir = _Path(__file__).resolve().parent / "data" / "reports"
+_reports_dir.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/static/reports",
+    StaticFiles(directory=str(_reports_dir)),
+    name="reports",
+)
 
 
 @app.get("/health")
