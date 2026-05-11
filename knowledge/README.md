@@ -175,4 +175,9 @@ Archivos productivos: ver `_meta/indice-rapido.md`.
 | 4B | `09-triple-impacto/` | Marco, certificaciones, huella carbono, eficiencia, accesibilidad, ESG |
 | **Fase 1 (2026-05-11)** | `01-mercado-argentino/`, `04-impuestos/municipal/`, `11-tasacion/`, `12-suelo-y-dominio/`, `16-uif-blanqueo/` | Mercado AR + municipal + tasación + suelo/dominio + UIF/blanqueo |
 | **Fase 2 (2026-05-11)** | `13-arquitectura-ingenieria/`, `14-costos-presupuesto/`, profundización `06-financiero/` + `07-comercial/` | Arquitectura/ingeniería (CIRSOC, suelos, sismo, BIM, instalaciones) + costos/presupuesto (APU, curva S, EVM, contingencias) + waterfall/capital stack/UVA/FCI + CRM stack + marketing digital |
+| **Fase 3 (2026-05-11)** | `15-tecnologia-proptech/` | Panorama PropTech AR, IA en RE (AVM, lead scoring, chatbots, generativa), automatización (Zapier/Make/n8n), datos y fuentes (INDEC/BCRA/AFIP/BI), tokenización/blockchain, tendencias frontier (gemelo digital, IoT, VR/AR, drones) |
+| **Fase 4 (2026-05-11)** | `17-cnv-bcra/` | Marco CNV (Ley 26.831, 27.440), vehículos CNV RE (FF, FCI cerrado, ON, CEDEAR), oferta pública, cepo cambiario, MEP/CCL/cripto, PSAV (Res 1010/2024 + Ley 27.739) |
+| **Fase 5 (2026-05-11)** | `18-seguros/` | Marco SSN (Ley 20.091, 17.418, 22.400), TRC, RC obra/cruzada/profesional, ART + Decreto 911/96, caución y garantías, hogar + copropiedad |
+| **Fase 6 (2026-05-11)** | `19-casos-de-estudio/` | Edificio residencial AMBA, oficinas Puerto Madero, BTR multifamily, logística zona este, hotel boutique Recoleta, barrio cerrado PBA |
+| **Fase 7 (2026-05-11)** | `_meta/` extendido | FAQ base (Q&A), personas (10 perfiles de usuario), templates (15 plantillas de respuesta) |
 

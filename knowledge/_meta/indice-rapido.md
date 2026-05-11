@@ -163,6 +163,33 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | UVA, hipoteca, indexación, IPC | `06-financiero/hipoteca-uva.md` + `14-costos-presupuesto/indices-costo.md` |
 | waterfall, GP, LP, pref, catch-up, carried, promote | `06-financiero/waterfall-inversores.md` |
 | WhatsApp Business API, lead, comunicación | `07-comercial/crm-stack-tecnologico.md` |
+| PropTech, panorama AR, ZonaProp, Tokko, Crowdium | `15-tecnologia-proptech/panorama-proptech-ar.md` |
+| IA real estate, AVM, lead scoring, chatbot, generativa | `15-tecnologia-proptech/ia-en-real-estate.md` |
+| automatización, Zapier, Make, n8n, webhooks AFIP | `15-tecnologia-proptech/automatizacion-procesos.md` |
+| datos, INDEC, BCRA, AFIP, scraping, BI, dashboards | `15-tecnologia-proptech/datos-y-fuentes.md` |
+| tokenización, blockchain, smart contracts, security token | `15-tecnologia-proptech/tokenizacion-blockchain.md` |
+| gemelo digital, IoT, VR, AR, metaverso, drones, robótica | `15-tecnologia-proptech/tendencias-frontier.md` |
+| CNV, Ley 26.831, Ley 27.440, normas T.O. 2013 | `17-cnv-bcra/marco-cnv.md` |
+| vehículos CNV RE, FF, FCI cerrado, ON, CEDEAR REITs | `17-cnv-bcra/vehiculos-cnv-re.md` |
+| oferta pública, prospecto, road show, IPO, securitización | `17-cnv-bcra/oferta-publica.md` |
+| cepo cambiario, MULC, BCRA, Decreto 609/2019 | `17-cnv-bcra/cepo-cambiario.md` |
+| MEP, CCL, contado con liquidación, AL30, GD30, stablecoin | `17-cnv-bcra/mep-ccl-cripto.md` |
+| PSAV, cripto, USDT, USDC, Res CNV 1010/2024, Ley 27.739 | `17-cnv-bcra/psav-cripto.md` |
+| SSN, Ley 20.091, Ley 17.418, Ley 22.400, productor seguros | `18-seguros/marco-ssn.md` |
+| TRC, todo riesgo construcción, CAR, EAR, LEG 2, LEG 3 | `18-seguros/trc-construccion.md` |
+| RC, responsabilidad civil, RC obra, RC cruzada, RC profesional, E&O | `18-seguros/responsabilidad-civil.md` |
+| ART, Ley 24.557, Decreto 911/96, aviso obra, programa seguridad | `18-seguros/art-decreto-911.md` |
+| seguro caución, garantía cumplimiento, anticipo, fondo reparo | `18-seguros/caucion-y-garantias.md` |
+| seguro hogar, consorcio, copropiedad, integral, edificio | `18-seguros/hogar-copropiedad.md` |
+| caso edificio residencial pozo AMBA | `19-casos-de-estudio/edificio-residencial-amba.md` |
+| caso oficinas A+ Puerto Madero | `19-casos-de-estudio/oficinas-puerto-madero.md` |
+| caso BTR multifamily AMBA | `19-casos-de-estudio/btr-multifamily-amba.md` |
+| caso logística galpón clase A zona este | `19-casos-de-estudio/logistica-zona-este.md` |
+| caso hotel boutique Recoleta | `19-casos-de-estudio/hotel-boutique-recoleta.md` |
+| caso barrio cerrado PBA, club de campo | `19-casos-de-estudio/suburban-pozo-pba.md` |
+| FAQ preguntas frecuentes chat | `_meta/faq-base.md` |
+| personas usuarios perfiles chat | `_meta/personas.md` |
+| templates plantillas respuesta chat | `_meta/templates.md` |
 
 ---
 
@@ -196,6 +223,11 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | "¿Cuánto vale?" / "¿Cómo se tasa?" | `11-tasacion/` |
 | "¿Cómo verifico el terreno?" / "¿Boleto, escritura?" | `12-suelo-y-dominio/` |
 | "¿Qué papeles me piden?" / "UIF / origen fondos / PEP / blanqueo" | `16-uif-blanqueo/` |
+| "¿Qué tech / IA / blockchain / datos para mi inmobiliaria?" | `15-tecnologia-proptech/` |
+| "¿CNV, BCRA, cepo, MEP, CCL, cripto?" | `17-cnv-bcra/` |
+| "¿Qué seguros necesito? TRC, RC, ART, caución?" | `18-seguros/` |
+| "Dame un caso de estudio" / "Modelo de proyecto" | `19-casos-de-estudio/` |
+| "¿Cómo respondo este tipo de pregunta?" (meta) | `_meta/faq-base.md` + `_meta/templates.md` + `_meta/personas.md` |
 
 ---
 
@@ -204,8 +236,8 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 - ✅ Estructura completa
 - ✅ Frontmatter YAML en todos los archivos productivos
 - ✅ Routing por keyword + jurisdicción + tipo de pregunta
-- ✅ 13 bloques temáticos completos (incluye 13-arquitectura-ingenieria + 14-costos-presupuesto)
-- ✅ Profundización 06-financiero (waterfall, capital stack, UVA, FCI) y 07-comercial (CRM, marketing digital)
-- ✅ Última actualización: 2026-05-11 (Fase 2)
+- ✅ 17 bloques temáticos productivos + `_meta/` extendido
+- ✅ Profundización 06-financiero, 07-comercial, 14-costos, 15-tecnologia, 17-cnv-bcra, 18-seguros, 19-casos
+- ✅ Última actualización: 2026-05-11 (Fases 3-7)
 
 > Cuando agregues un archivo nuevo, ACTUALIZÁ este índice. Es la primera fuente de routing del chat — si no está acá, el chat va a tardar más en encontrarlo (más tokens, más latencia).
