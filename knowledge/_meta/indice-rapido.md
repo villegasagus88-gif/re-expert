@@ -190,6 +190,18 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | FAQ preguntas frecuentes chat | `_meta/faq-base.md` |
 | personas usuarios perfiles chat | `_meta/personas.md` |
 | templates plantillas respuesta chat | `_meta/templates.md` |
+| benchmarks USD/m² barrios, cap rate, vacancia, costos construcción | `_meta/benchmarks-mercado.yaml` |
+| indicadores FX, BCRA, INDEC, inflación, UVA, tasas, hipoteca | `_meta/indicadores.yaml` |
+| comparables internacionales, México, Brasil, Chile, España, USA | `_meta/comparables-internacionales.md` |
+| tasación previa lanzamiento, pricing pozo, ladder, comparables | `07-comercial/tasacion-previa-lanzamiento.md` |
+| customer journey postcompra, lead a escritura, boleto, posesión | `07-comercial/customer-journey-postcompra.md` |
+| modelos producto AR, BTS, BTR, coliving, alquiler temporario, senior, student, logística, oficinas, industrial, hotel, retail | `10-estrategia/modelos-producto-ar.md` |
+| fondeo institucional, FF, ON PYME, FCI cerrado, family office, club deal, crowdfunding | `10-estrategia/estructuras-fondeo-institucional.md` |
+| PPP urbanos, Ley 27328, Distritos CABA, Tecnológico, Audiovisual, Diseño, Artes, Deportivo | `10-estrategia/ppp-urbanos-distritos.md` |
+| net zero, embodied carbon, whole life carbon, LCA, EN 15978 | `09-triple-impacto/net-zero-embodied-carbon.md` |
+| construcción circular, DfD, materials passport, RCD, urban mining | `09-triple-impacto/circular-construction.md` |
+| NDC argentino, Acuerdo París, Ley 27.520, etiquetado eficiencia, Ley 27.424 | `09-triple-impacto/ndc-argentino.md` |
+| casos LEED EDGE Argentina, Catalinas, Puerto Madero, oficinas A+, EDGE Advanced | `09-triple-impacto/casos-leed-edge-ar.md` |
 
 ---
 
@@ -237,7 +249,8 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 - ✅ Frontmatter YAML en todos los archivos productivos
 - ✅ Routing por keyword + jurisdicción + tipo de pregunta
 - ✅ 17 bloques temáticos productivos + `_meta/` extendido
-- ✅ Profundización 06-financiero, 07-comercial, 14-costos, 15-tecnologia, 17-cnv-bcra, 18-seguros, 19-casos
-- ✅ Última actualización: 2026-05-11 (Fases 3-7)
+- ✅ Profundización 06-financiero, 07-comercial, 09-triple-impacto, 10-estrategia, 14-costos, 15-tecnologia, 17-cnv-bcra, 18-seguros, 19-casos
+- ✅ Benchmarks vivos + indicadores macro + comparables internacionales (Fase 8 / Frontera)
+- ✅ Última actualización: 2026-05-11 (Fases 3-8)
 
 > Cuando agregues un archivo nuevo, ACTUALIZÁ este índice. Es la primera fuente de routing del chat — si no está acá, el chat va a tardar más en encontrarlo (más tokens, más latencia).

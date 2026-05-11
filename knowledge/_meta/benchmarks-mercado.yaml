@@ -1,0 +1,248 @@
+# ---------------------------------------------------------------------------
+# benchmarks-mercado.yaml
+# ---------------------------------------------------------------------------
+# Snapshot SEMIVOLATIL del mercado AR para que el chat tenga base mínima.
+# REGLA OPERATIVA del chat:
+#   - Si el dato consultado tiene last_verified < 90 días: úsalo + cita fecha.
+#   - Si tiene >= 90 días: úsalo SOLO como referencia + redirige a fuente.
+#   - Si no está acá: NO inventes, redirige a fuente.
+# Fuentes de re-validación: ZonaProp Indice, Reporte Inmobiliario, Mercado Libre Inmuebles,
+# Properati, Indec, AEV CABA, CEDU, Toribio Achaval, Tizado, LJ Ramos.
+# ---------------------------------------------------------------------------
+
+schema_version: "1.0"
+last_verified: "2026-05-11"
+moneda: "USD"
+metodologia: "valores promedio publicados de usado y pozo, ponderados por mix típico de unidades. Banda 25-75 percentil. Rango aproximado, no auditoría."
+
+# ---------------------------------------------------------------------------
+# RESIDENCIAL — CABA
+# ---------------------------------------------------------------------------
+residencial:
+  caba:
+    palermo:
+      usd_m2_usado: { min: 2400, mid: 2800, max: 3400 }
+      usd_m2_pozo:  { min: 2800, mid: 3300, max: 4000 }
+      renta_bruta_anual_pct: { min: 4.5, mid: 5.5, max: 6.5 }
+      vacancia_pct: { min: 5, max: 12 }
+      notas: "Soho, Hollywood, Chico premium. Variación intra-barrio alta."
+    recoleta:
+      usd_m2_usado: { min: 2400, mid: 2900, max: 3600 }
+      usd_m2_pozo:  { min: 3000, mid: 3500, max: 4200 }
+      renta_bruta_anual_pct: { min: 4.0, mid: 5.0, max: 6.0 }
+      vacancia_pct: { min: 5, max: 10 }
+      notas: "Premium estable, demanda extranjera + alquiler temporario."
+    belgrano:
+      usd_m2_usado: { min: 2200, mid: 2600, max: 3200 }
+      usd_m2_pozo:  { min: 2700, mid: 3100, max: 3700 }
+      renta_bruta_anual_pct: { min: 4.5, mid: 5.5, max: 6.5 }
+      vacancia_pct: { min: 6, max: 12 }
+      notas: "Belgrano R / C diferenciados. Familiar."
+    nunez:
+      usd_m2_usado: { min: 2100, mid: 2500, max: 3000 }
+      usd_m2_pozo:  { min: 2500, mid: 3000, max: 3500 }
+      renta_bruta_anual_pct: { min: 4.5, mid: 5.5, max: 6.5 }
+      vacancia_pct: { min: 6, max: 12 }
+    caballito:
+      usd_m2_usado: { min: 1800, mid: 2200, max: 2600 }
+      usd_m2_pozo:  { min: 2200, mid: 2600, max: 3100 }
+      renta_bruta_anual_pct: { min: 5.5, mid: 6.5, max: 7.5 }
+      vacancia_pct: { min: 6, max: 12 }
+      notas: "Buen yield, demanda media."
+    villa_urquiza:
+      usd_m2_usado: { min: 1700, mid: 2100, max: 2500 }
+      usd_m2_pozo:  { min: 2100, mid: 2500, max: 3000 }
+      renta_bruta_anual_pct: { min: 6.0, mid: 7.0, max: 8.0 }
+      vacancia_pct: { min: 7, max: 14 }
+    nueva_pompeya_barracas:
+      usd_m2_usado: { min: 1200, mid: 1600, max: 2000 }
+      usd_m2_pozo:  { min: 1500, mid: 1900, max: 2400 }
+      renta_bruta_anual_pct: { min: 7.0, mid: 8.0, max: 9.5 }
+      vacancia_pct: { min: 10, max: 18 }
+      notas: "Barracas en gentrificación. Pompeya yield alto pero menor liquidez."
+    puerto_madero:
+      usd_m2_usado: { min: 4000, mid: 5000, max: 6500 }
+      usd_m2_pozo:  { min: 4800, mid: 5800, max: 7500 }
+      renta_bruta_anual_pct: { min: 4.0, mid: 5.0, max: 6.0 }
+      vacancia_pct: { min: 8, max: 15 }
+      notas: "Premium absoluto CABA. Demanda corporate + extranjeros."
+
+# ---------------------------------------------------------------------------
+# RESIDENCIAL — AMBA Zona Norte
+# ---------------------------------------------------------------------------
+  amba_norte:
+    vicente_lopez:
+      usd_m2_usado: { min: 2400, mid: 2900, max: 3500 }
+      usd_m2_pozo:  { min: 2900, mid: 3400, max: 4000 }
+      renta_bruta_anual_pct: { min: 4.5, mid: 5.5, max: 6.5 }
+    san_isidro:
+      usd_m2_usado: { min: 2500, mid: 3000, max: 3700 }
+      usd_m2_pozo:  { min: 3000, mid: 3500, max: 4200 }
+      renta_bruta_anual_pct: { min: 4.0, mid: 5.0, max: 6.0 }
+    tigre_nordelta:
+      usd_m2_usado: { min: 2500, mid: 3000, max: 3800 }
+      usd_m2_pozo:  { min: 2800, mid: 3300, max: 4000 }
+      renta_bruta_anual_pct: { min: 3.5, mid: 4.5, max: 5.5 }
+      notas: "Premium con costo de vida country."
+    pilar:
+      usd_m2_usado: { min: 1500, mid: 2000, max: 2500 }
+      usd_m2_pozo:  { min: 1800, mid: 2300, max: 2800 }
+      renta_bruta_anual_pct: { min: 4.0, mid: 5.0, max: 6.0 }
+
+# ---------------------------------------------------------------------------
+# RESIDENCIAL — AMBA Zona Oeste / Sur
+# ---------------------------------------------------------------------------
+  amba_oeste_sur:
+    ramos_mejia:
+      usd_m2_usado: { min: 1300, mid: 1700, max: 2100 }
+      usd_m2_pozo:  { min: 1600, mid: 2000, max: 2400 }
+      renta_bruta_anual_pct: { min: 6.0, mid: 7.0, max: 8.5 }
+    moron:
+      usd_m2_usado: { min: 1100, mid: 1500, max: 1900 }
+      renta_bruta_anual_pct: { min: 6.5, mid: 7.5, max: 9.0 }
+    quilmes_avellaneda:
+      usd_m2_usado: { min: 1000, mid: 1400, max: 1800 }
+      renta_bruta_anual_pct: { min: 7.0, mid: 8.0, max: 9.5 }
+
+# ---------------------------------------------------------------------------
+# RESIDENCIAL — Interior principales ciudades
+# ---------------------------------------------------------------------------
+  interior:
+    cordoba_capital:
+      usd_m2_usado: { min: 1300, mid: 1700, max: 2200 }
+      usd_m2_pozo:  { min: 1600, mid: 2000, max: 2500 }
+      renta_bruta_anual_pct: { min: 5.5, mid: 7.0, max: 8.5 }
+      notas: "Nueva Córdoba premium estudiantil."
+    rosario:
+      usd_m2_usado: { min: 1300, mid: 1700, max: 2100 }
+      usd_m2_pozo:  { min: 1700, mid: 2100, max: 2500 }
+      renta_bruta_anual_pct: { min: 5.5, mid: 7.0, max: 8.0 }
+    mendoza_capital:
+      usd_m2_usado: { min: 1200, mid: 1600, max: 2000 }
+      usd_m2_pozo:  { min: 1500, mid: 1900, max: 2300 }
+      renta_bruta_anual_pct: { min: 5.0, mid: 6.5, max: 8.0 }
+    mar_del_plata:
+      usd_m2_usado: { min: 1300, mid: 1700, max: 2200 }
+      usd_m2_pozo:  { min: 1700, mid: 2100, max: 2600 }
+      renta_bruta_anual_pct: { min: 4.5, mid: 6.0, max: 7.5 }
+      notas: "Estacionalidad turística marcada."
+    bariloche:
+      usd_m2_usado: { min: 1800, mid: 2400, max: 3200 }
+      renta_bruta_anual_pct: { min: 4.0, mid: 5.5, max: 7.0 }
+      notas: "Premium turismo + Ley 26.737 (zona frontera)."
+    san_carlos_de_bariloche_centro:
+      ver: "bariloche"
+    salta_capital:
+      usd_m2_usado: { min: 1000, mid: 1400, max: 1800 }
+    tucuman_capital:
+      usd_m2_usado: { min: 1000, mid: 1400, max: 1800 }
+    neuquen_capital:
+      usd_m2_usado: { min: 1400, mid: 1800, max: 2300 }
+      notas: "Boom Vaca Muerta."
+
+# ---------------------------------------------------------------------------
+# OFICINAS
+# ---------------------------------------------------------------------------
+oficinas:
+  caba:
+    catalinas_norte:
+      clase: "A+"
+      usd_m2_venta: { min: 4000, mid: 5000, max: 6500 }
+      usd_m2_mes_alquiler_triple_net: { min: 28, mid: 32, max: 38 }
+      vacancia_pct: { min: 10, max: 18 }
+      cap_rate_pct: { min: 8, mid: 9, max: 11 }
+    puerto_madero:
+      clase: "A+"
+      usd_m2_venta: { min: 4000, mid: 5000, max: 6000 }
+      usd_m2_mes_alquiler_triple_net: { min: 28, mid: 32, max: 38 }
+      vacancia_pct: { min: 12, max: 20 }
+      cap_rate_pct: { min: 8, mid: 9.5, max: 11 }
+    microcentro:
+      clase: "B"
+      usd_m2_venta: { min: 1500, mid: 2200, max: 3000 }
+      usd_m2_mes_alquiler_triple_net: { min: 12, mid: 16, max: 22 }
+      vacancia_pct: { min: 25, max: 40 }
+      notas: "Sobreoferta post-pandemia + híbrido. Reuso adaptativo a vivienda en evaluación."
+    palermo_corporativo:
+      clase: "A"
+      usd_m2_venta: { min: 3000, mid: 3800, max: 4800 }
+      usd_m2_mes_alquiler_triple_net: { min: 22, mid: 26, max: 32 }
+      vacancia_pct: { min: 8, max: 15 }
+
+# ---------------------------------------------------------------------------
+# LOGISTICA / INDUSTRIAL
+# ---------------------------------------------------------------------------
+logistica:
+  amba:
+    zona_sur_avellaneda_lanus:
+      clase: "A"
+      usd_m2_mes_alquiler_triple_net: { min: 6.5, mid: 8.0, max: 10.0 }
+      cap_rate_pct: { min: 9, mid: 10, max: 11.5 }
+    zona_oeste_moron_la_matanza:
+      clase: "A"
+      usd_m2_mes_alquiler_triple_net: { min: 6.0, mid: 7.5, max: 9.5 }
+    zona_norte_garin_pilar:
+      clase: "A"
+      usd_m2_mes_alquiler_triple_net: { min: 7.0, mid: 8.5, max: 10.5 }
+      notas: "Mayor demanda ecommerce."
+    zona_este_ezeiza_canuelas:
+      clase: "A"
+      usd_m2_mes_alquiler_triple_net: { min: 7.0, mid: 8.5, max: 10.5 }
+      notas: "Cercanía aeropuerto + Mercado Central."
+
+# ---------------------------------------------------------------------------
+# HOTELERIA — orientativo
+# ---------------------------------------------------------------------------
+hoteleria:
+  caba:
+    luxury_5e:
+      adr_usd: { min: 350, mid: 500, max: 900 }
+      occupancy_pct: { min: 55, mid: 65, max: 75 }
+      revpar_usd: { min: 200, mid: 320, max: 670 }
+    upscale_4_5e_boutique:
+      adr_usd: { min: 180, mid: 260, max: 380 }
+      occupancy_pct: { min: 55, mid: 65, max: 75 }
+    upscale_4e:
+      adr_usd: { min: 120, mid: 170, max: 230 }
+      occupancy_pct: { min: 55, mid: 65, max: 72 }
+    midscale_3e:
+      adr_usd: { min: 70, mid: 100, max: 140 }
+      occupancy_pct: { min: 55, mid: 62, max: 70 }
+
+# ---------------------------------------------------------------------------
+# CONSTRUCCION — COSTOS USD/m² CONSTRUIDO (referencia)
+# ---------------------------------------------------------------------------
+costos_construccion_usd_m2:
+  residencial_estandar: { min: 900, mid: 1100, max: 1400 }
+  residencial_premium:  { min: 1300, mid: 1600, max: 2200 }
+  oficinas_a:           { min: 1600, mid: 2100, max: 2800 }
+  oficinas_a_plus_leed: { min: 2200, mid: 2600, max: 3300 }
+  logistica_clase_a:    { min: 500, mid: 650, max: 850 }
+  hotel_4e:             { min: 1700, mid: 2200, max: 2800 }
+  hotel_5e_lujo:        { min: 2500, mid: 3200, max: 4500 }
+  retail_strip:         { min: 800, mid: 1100, max: 1500 }
+  refaccion_integral:   { min: 500, mid: 800, max: 1200 }
+  notas: "Costos directos de obra (hard cost). Suma soft cost + honorarios + contingencia = +25-40%."
+
+# ---------------------------------------------------------------------------
+# RATIOS DE PROYECTO RESIDENCIAL TIPICOS AR
+# ---------------------------------------------------------------------------
+ratios_proyecto_residencial:
+  tierra_sobre_total_pct: { min: 15, mid: 22, max: 30 }
+  hard_cost_sobre_total_pct: { min: 45, mid: 55, max: 65 }
+  soft_cost_sobre_total_pct: { min: 8, mid: 12, max: 18 }
+  comercializacion_sobre_total_pct: { min: 3, mid: 5, max: 7 }
+  contingencia_sobre_total_pct: { min: 5, mid: 10, max: 15 }
+  margen_bruto_developer_objetivo_pct: { min: 18, mid: 25, max: 35 }
+  factor_k_planta_eficiencia: { min: 0.72, mid: 0.78, max: 0.85 }
+  pct_balcones_amenities_sobre_propio: { min: 15, mid: 25, max: 35 }
+
+# ---------------------------------------------------------------------------
+# REGLAS PARA EL CHAT
+# ---------------------------------------------------------------------------
+reglas_chat:
+  - "Citar SIEMPRE el last_verified del archivo al usar un valor."
+  - "Si la pregunta es de un barrio NO listado: usa el más cercano y avisalo."
+  - "Si la pregunta exige precisión >5%: redirigi a Reporte Inmobiliario / ZonaProp Index."
+  - "Estos valores son orientativos. Decisiones de inversión exigen tasación profesional matriculada."
+  - "Para datos volátiles macro (FX, tasas, inflación): ver indicadores.yaml."

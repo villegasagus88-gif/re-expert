@@ -1,0 +1,180 @@
+# ---------------------------------------------------------------------------
+# indicadores.yaml
+# ---------------------------------------------------------------------------
+# Indicadores macro AR relevantes para RE.
+# Esta tabla es ALTAMENTE VOLATIL. La estructura es estable, los valores no.
+#
+# REGLA OPERATIVA del chat:
+#   - last_verified > 30 días para FX/tasa/inflación: redirigir a fuente oficial.
+#   - last_verified > 90 días para UVA/ICC/CAC: usar como referencia + redirigir.
+#   - SIEMPRE acompañar el valor con la fecha de verificación.
+#   - Si el usuario pregunta "¿cuánto está hoy X?" y last_verified > 7 días para
+#     FX o inflación: NO responder con el número, redirigir a fuente.
+# ---------------------------------------------------------------------------
+
+schema_version: "1.0"
+last_verified: "2026-05-11"
+notas_generales:
+  - "Valores referenciales. Fuente oficial siempre prevalece."
+  - "AR es mercado de alta volatilidad: planificar con escenarios, no con punto fijo."
+
+# ---------------------------------------------------------------------------
+# TIPO DE CAMBIO (USD)
+# ---------------------------------------------------------------------------
+fx:
+  oficial_minorista_ars_por_usd:
+    valor_referencial: null   # NO inventar — redirigir a BCRA
+    fuente: "https://www.bcra.gob.ar/PublicacionesEstadisticas/Cotizaciones_por_fecha_2.asp"
+    frecuencia: "diaria"
+    regla_chat: "Si el usuario pide cotización del día: redirigir a BCRA. Nunca inventar."
+  mep_dolar_bolsa_ars_por_usd:
+    valor_referencial: null
+    fuente: "ámbito, Rava Bursátil, broker propio del usuario"
+    frecuencia: "diaria"
+    como_se_calcula: "AL30 ARS / AL30 USD (especies T+1 o T+2)"
+  ccl_contado_con_liqui_ars_por_usd:
+    valor_referencial: null
+    fuente: "ámbito, Rava Bursátil, broker"
+    frecuencia: "diaria"
+  blue_informal_ars_por_usd:
+    valor_referencial: null
+    fuente: "ámbito (informativo)"
+    notas: "Mercado informal. No operar. Solo referencia."
+  brecha_oficial_vs_mep_pct:
+    valor_referencial: null
+    formula: "(MEP / oficial - 1) * 100"
+    interpretacion: "Banda histórica 0-150%. >40% indica estrés cambiario."
+
+# ---------------------------------------------------------------------------
+# TASAS BCRA
+# ---------------------------------------------------------------------------
+tasas:
+  tasa_politica_monetaria_anual_pct:
+    valor_referencial: null
+    fuente: "BCRA — Comunicaciones A"
+  badlar_bancos_privados_anual_pct:
+    valor_referencial: null
+    fuente: "BCRA"
+  tasa_plazo_fijo_minorista_anual_pct:
+    valor_referencial: null
+  riesgo_pais_embi_bps:
+    valor_referencial: null
+    fuente: "JP Morgan EMBI+ / ámbito"
+    interpretacion: "<400 bps = saludable; >1500 bps = estrés; >2000 bps = casi default."
+
+# ---------------------------------------------------------------------------
+# INFLACIÓN
+# ---------------------------------------------------------------------------
+inflacion:
+  ipc_mensual_indec_pct:
+    valor_referencial: null
+    fuente: "INDEC — Índice de Precios al Consumidor"
+    frecuencia: "mensual (publicación ~día 13 del mes siguiente)"
+  ipc_acumulado_12m_pct:
+    valor_referencial: null
+    fuente: "INDEC"
+  ipc_caba_dgec_pct:
+    valor_referencial: null
+    fuente: "DGEC CABA"
+    notas: "Suele diverger ligeramente del INDEC."
+
+# ---------------------------------------------------------------------------
+# INDICES DE CONSTRUCCION (RE específicos)
+# ---------------------------------------------------------------------------
+indices_construccion:
+  icc_indec_mensual_pct:
+    valor_referencial: null
+    fuente: "INDEC — Índice del Costo de la Construcción"
+    notas: "Base 1993=100. Subcapítulos: materiales, mano de obra, gastos generales."
+  cac_camara_argentina_construccion:
+    fuente: "Cámara Argentina de la Construcción (CAC)"
+    notas: "Índice CAC propio + costo por m² publicado mensualmente."
+  uva_unidad_valor_adquisitivo_ars:
+    valor_referencial: null
+    fuente: "BCRA — UVA"
+    base: "1 UVA = USD 0.025 (mar 2016)"
+    actualizacion: "diaria por CER (IPC con rezago 1 mes y medio)"
+  cer_coeficiente_estabilizacion_referencia:
+    fuente: "BCRA"
+    notas: "Sigue IPC. Usado en deuda indexada y UVA."
+
+# ---------------------------------------------------------------------------
+# SUELDOS Y MANO DE OBRA OBRA
+# ---------------------------------------------------------------------------
+salario_obra:
+  uocra_categoria_inicial_mensual_ars:
+    valor_referencial: null
+    fuente: "UOCRA — CCT 76/75 + acuerdos paritarios vigentes"
+    notas: "Verificar paritaria al mes."
+  uocra_jornal_oficial_ars:
+    valor_referencial: null
+  carga_social_pct_sobre_basico: { min: 80, mid: 100, max: 120 }
+  notas: "Cargas sociales + aguinaldo + ART + cuotas sindicales + indemnización futura."
+
+# ---------------------------------------------------------------------------
+# IMPUESTOS — ALICUOTAS CLAVE (semivolátiles)
+# ---------------------------------------------------------------------------
+impuestos:
+  iva_general_pct: 21
+  iva_vivienda_obra_propia_pct: 10.5
+  iva_alquiler_vivienda_pct: 0    # exento
+  iva_alquiler_comercial_pct: 21
+  ganancias_persona_humana_tabla:
+    fuente: "AFIP — Ley 27.430 / actualizaciones"
+    notas: "Escala progresiva 5-35%. Verificar mínimo no imponible al año."
+  cedular_inmuebles_pct: 15
+    # Sobre ganancia de capital de adquiridos post 2018-01-01
+  iti_transferencia_inmueble_pct: 1.5
+    # Sobre operación, vendedor persona humana de inmueble pre-2018-01-01
+  bienes_personales_tabla:
+    fuente: "AFIP — Ley 23.966 + Régimen Simplificado RECI"
+    notas: "Alícuota progresiva con escalas + mínimo no imponible variable."
+  iibb_caba_actividades_inmobiliarias_pct:
+    valor_referencial: "1.5-5%"
+    fuente: "Código Fiscal CABA"
+  sellos_caba_compraventa_inmueble_pct:
+    base: "Vendedor 1.8%, comprador 1.8% típico (varía con reducciones por vivienda única)"
+    fuente: "AGIP"
+  sellos_pba_compraventa_inmueble_pct:
+    base: "3.6% típico (con reducciones)"
+    fuente: "ARBA"
+
+# ---------------------------------------------------------------------------
+# CREDITOS HIPOTECARIOS
+# ---------------------------------------------------------------------------
+hipoteca:
+  uva_banco_hipotecario_tnm_referencial_pct:
+    valor_referencial: null
+    fuente: "Banco Hipotecario + bancos comerciales"
+  uva_otros_bancos_tnm_referencial_pct:
+    valor_referencial: null
+  ltv_max_pct: { min: 70, mid: 75, max: 80 }
+  plazo_max_anios: { min: 15, mid: 20, max: 30 }
+  cuota_ingreso_max_pct: { min: 25, mid: 30, max: 35 }
+
+# ---------------------------------------------------------------------------
+# MULC / IMPORTACIONES
+# ---------------------------------------------------------------------------
+mulc:
+  fuente: "BCRA — Comunicaciones A"
+  notas: "Régimen de acceso al mercado oficial. Reglas cambian con frecuencia. Siempre consultar broker / asesor cambiario antes de operar."
+
+# ---------------------------------------------------------------------------
+# REGLAS PARA EL CHAT
+# ---------------------------------------------------------------------------
+reglas_chat:
+  - "Para FX / tasa / inflación del día: redirigir a fuente oficial."
+  - "Si el usuario pide 'al día de hoy': aclarar que el valor del archivo puede estar desactualizado y dar fuente."
+  - "Para impuestos: las alícuotas legales son estables; los mínimos no imponibles y tablas se actualizan. Verificar año fiscal vigente."
+  - "Nunca usar el valor referencial 'null' como número — siempre derivar a fuente."
+  - "Si el usuario pregunta '¿cuánto va a estar X en 6 meses?': eso es proyección, no chat. Sugerir consultor / mercado de futuros."
+
+fuentes_master:
+  bcra: "https://www.bcra.gob.ar"
+  indec: "https://www.indec.gob.ar"
+  afip_arca: "https://www.afip.gob.ar"
+  cnv: "https://www.cnv.gov.ar"
+  cac: "https://www.camarco.org.ar"
+  agip_caba: "https://www.agip.gob.ar"
+  arba_pba: "https://www.arba.gob.ar"
+  ssn: "https://www.argentina.gob.ar/ssn"

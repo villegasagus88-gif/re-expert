@@ -180,4 +180,5 @@ Archivos productivos: ver `_meta/indice-rapido.md`.
 | **Fase 5 (2026-05-11)** | `18-seguros/` | Marco SSN (Ley 20.091, 17.418, 22.400), TRC, RC obra/cruzada/profesional, ART + Decreto 911/96, caución y garantías, hogar + copropiedad |
 | **Fase 6 (2026-05-11)** | `19-casos-de-estudio/` | Edificio residencial AMBA, oficinas Puerto Madero, BTR multifamily, logística zona este, hotel boutique Recoleta, barrio cerrado PBA |
 | **Fase 7 (2026-05-11)** | `_meta/` extendido | FAQ base (Q&A), personas (10 perfiles de usuario), templates (15 plantillas de respuesta) |
+| **Fase 8 / Frontera (2026-05-11)** | `_meta/` benchmarks, profundización `07-comercial/`, `10-estrategia/`, `09-triple-impacto/` | Benchmarks vivos (USD/m² barrios, cap rates, costos construcción) + indicadores macro (FX, BCRA, INDEC, UVA) + comparables internacionales (MX, BR, CL, ES, US) + tasación previa lanzamiento + customer journey postcompra + modelos de producto AR (11 modelos) + estructuras de fondeo institucional + PPP urbanos y Distritos CABA + Net Zero / embodied carbon + construcción circular + NDC argentino + casos LEED/EDGE AR |
 
