@@ -24,16 +24,22 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 |---|---|
 | ABL, alumbrado barrido limpieza, TSG | `04-impuestos/municipal/abl-tsg.md` |
 | accesibilidad universal, ley 24314 | `09-triple-impacto/accesibilidad.md` |
+| AEA 90364, instalación eléctrica, PAT, disyuntor | `13-arquitectura-ingenieria/instalaciones.md` |
 | ajuste alzado, costo + honorarios, llave en mano | `05-construccion/modalidades-contratacion.md` |
 | alquiler temporario, Airbnb, Ley 6255 CABA | `01-mercado-argentino/segmentos-y-productos.md` |
 | alquileres, Ley 27.551, DNU 70/2023 | `02-normativa/regimen-alquileres.md` |
 | ambiental, Ley 25.675, impacto ambiental | `02-normativa/ambiental.md` |
 | análisis de factibilidad, viabilidad | `00-fundamentos/analisis-factibilidad.md` |
+| análisis de precios unitarios, APU, cómputo métrico | `14-costos-presupuesto/analisis-precios-unitarios.md` |
+| anteproyecto, proyecto ejecutivo, programa | `13-arquitectura-ingenieria/programa-arquitectonico.md` |
 | apalancamiento, leverage, deuda | `06-financiero/apalancamiento.md` |
+| arquitectura, ingeniería, dirección de obra | `13-arquitectura-ingenieria/programa-arquitectonico.md` |
 | ART, riesgos del trabajo, SRT | `03-laboral/art-srt.md` |
+| AySA, sanitaria, ABSA, agua, cloaca | `13-arquitectura-ingenieria/instalaciones.md` |
 | beneficiario final, control efectivo | `16-uif-blanqueo/kyc-y-origen-de-fondos.md` |
 | benchmarks, cap rate, valor m², vacancia | `01-mercado-argentino/benchmarks.md` |
 | Bienes Personales, BP | `04-impuestos/nacional/bienes-personales.md` |
+| BIM, building information modeling, Revit, IFC, LOD | `13-arquitectura-ingenieria/bim-tecnologia.md` |
 | blanqueo, sinceramiento, Ley 27260, Ley 27743 | `16-uif-blanqueo/blanqueos.md` |
 | boleto compraventa, seña, oponibilidad CCyCN 1170 | `12-suelo-y-dominio/boleto-compraventa.md` |
 | CABA, AGIP, Código Urbanístico, Ley 6099 | `02-normativa/codigo-urbanistico-caba.md` + `04-impuestos/provincial/caba.md` |
@@ -46,13 +52,18 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | cesión boleto, cesión derechos | `12-suelo-y-dominio/cesion-de-boleto.md` |
 | ciclo desarrollo inmobiliario | `00-fundamentos/ciclo-desarrollo-inmobiliario.md` |
 | ciclos mercado AR, fases | `08-macro-argentina/ciclos-mercado.md` |
+| CIRSOC, hormigón armado, acero, mampostería, cargas | `13-arquitectura-ingenieria/cirsoc.md` |
 | Código Edificación CABA, Ley 6100 | `02-normativa/codigo-edificacion-caba.md` |
 | comercialización, ventas, marketing inmobiliario | `07-comercial/*` + `01-mercado-argentino/portales-y-canales.md` |
 | condominio, CCyCN 1983 | `04-impuestos/estructuras-fiscales/condominio.md` |
+| contingencias, imprevistos, change order, buffer | `14-costos-presupuesto/contingencias-imprevistos.md` |
 | contribución por mejoras, plusvalía urbanística | `04-impuestos/municipal/contribuciones-y-plusvalia.md` |
+| control presupuestario, earned value, CPI, SPI, desvíos | `14-costos-presupuesto/control-presupuestario.md` |
 | Córdoba, DGR Córdoba | `04-impuestos/provincial/cordoba.md` |
 | corredor inmobiliario, Ley 25.028, CUCICBA | `11-tasacion/normas-profesionales.md` + `16-uif-blanqueo/sujeto-obligado-inmobiliarias.md` |
-| costos obra, hard cost, indirectos, gerenciamiento | `05-construccion/modalidades-contratacion.md` + `06-financiero/cashflow-real-estate.md` |
+| costos obra, hard cost, indirectos, gerenciamiento | `14-costos-presupuesto/estructura-costos.md` + `05-construccion/modalidades-contratacion.md` |
+| CRM inmobiliario, Tokko, HubSpot, WhatsApp Business | `07-comercial/crm-stack-tecnologico.md` |
+| curva S, cronograma, gantt, certificación, avance | `14-costos-presupuesto/curva-s.md` |
 | decision frameworks, NPV vs IRR, comparación | `10-estrategia/decision-frameworks.md` |
 | defensa del consumidor, Ley 24.240 | `02-normativa/defensa-consumidor.md` |
 | derechos construcción, delineación, demolición, visado | `04-impuestos/municipal/derechos-construccion.md` |
@@ -60,31 +71,45 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | documentación obra, libros, planos AS-BUILT | `05-construccion/documentacion-obra.md` |
 | due diligence dominial, informe dominio, certificados | `12-suelo-y-dominio/due-diligence-dominial.md` |
 | eficiencia energética, IRAM 11900, etiquetado | `09-triple-impacto/eficiencia-energetica.md` |
+| eficiencia de planta, factor K, m² útiles | `13-arquitectura-ingenieria/eficiencia-planta.md` |
 | embudo comercial, lead, conversión | `07-comercial/embudo-comercial.md` |
+| ENARGAS, gas, gasista, Metrogas | `13-arquitectura-ingenieria/instalaciones.md` |
 | ESG inversores, B Corp, IRIS+ | `09-triple-impacto/esg-inversores.md` |
 | escenarios macro, planificación, monte carlo | `08-macro-argentina/escenarios.md` + `06-financiero/sensibilidad.md` |
 | escribano sujeto obligado, Res UIF 21/2018 | `16-uif-blanqueo/sujeto-obligado-escribanos.md` |
 | escritura pública, RPI, Ley 17.801 | `12-suelo-y-dominio/escritura-y-rpi.md` |
+| estructura de capital, capital stack, LTV, LTC, DSCR | `06-financiero/estructura-capital.md` |
+| estructura de costos, hard cost, soft cost, suelo | `14-costos-presupuesto/estructura-costos.md` |
 | estructuras fiscales, comparativa vehículos | `04-impuestos/estructuras-fiscales/comparativa-vehiculos.md` |
+| estudio de suelos, SPT, CPT, geotecnia, fundaciones | `13-arquitectura-ingenieria/estudio-suelos.md` |
 | expropiación, Ley 21.499, indemnización | `12-suelo-y-dominio/expropiacion.md` |
+| FCI cerrado, fondo común inversión inmobiliario, CNV | `06-financiero/fci-inmobiliarios.md` |
 | fideicomiso ordinario, CCyCN 1666 | `04-impuestos/estructuras-fiscales/fideicomiso-ordinario.md` |
 | fideicomiso al costo, transparencia fiscal | `04-impuestos/estructuras-fiscales/fideicomiso-al-costo.md` |
 | fideicomiso financiero, CNV, oferta pública | `04-impuestos/estructuras-fiscales/fideicomiso-financiero.md` |
 | financiamiento, créditos, UVA, deuda, capital | `06-financiero/financiamiento.md` |
 | Final de Obra, FO, certificado | `05-construccion/final-obra.md` |
 | FOT, FOS, indicadores urbanísticos | `02-normativa/codigo-urbanistico-caba.md` + `_meta/glosario.md` |
+| fundaciones, pilotes, plateas, bases, CIRSOC 501 | `13-arquitectura-ingenieria/estudio-suelos.md` |
 | FX, dólar, MEP, CCL, oficial, brecha | `08-macro-argentina/fx-cambiario.md` |
 | Ganancias, impuesto a las ganancias, escala | `04-impuestos/nacional/ganancias.md` |
 | garantías construcción, vicios, ruina CCyCN 1273 | `05-construccion/garantias-vicios-ruina.md` |
 | gestión de riesgos, matriz, mitigación | `10-estrategia/gestion-riesgos.md` |
 | habilitación comercial, inspección, ocupación vía pública | `04-impuestos/municipal/tasas-municipales.md` |
 | higiene y seguridad obra, Decreto 911/96, EPP | `05-construccion/higiene-seguridad.md` |
+| hipoteca UVA, crédito hipotecario, Banco Hipotecario, Procrear | `06-financiero/hipoteca-uva.md` |
 | huella de carbono, embodied carbon, GEI | `09-triple-impacto/huella-carbono.md` |
+| HVAC, climatización, splits, VRV, chillers | `13-arquitectura-ingenieria/instalaciones.md` |
 | IBB, Ingresos Brutos provincial | `04-impuestos/provincial/_overview.md` + `04-impuestos/provincial/{provincia}.md` |
+| ICC INDEC, índice costo construcción, CAC, redeterminación | `14-costos-presupuesto/indices-costo.md` |
 | IERIC, libreta digital, aviso de obra | `03-laboral/ieric.md` |
+| incendios, hidrantes, sprinklers, detección | `13-arquitectura-ingenieria/instalaciones.md` |
+| índices de costo, ICC, CAC, IPC, UVA, USD | `14-costos-presupuesto/indices-costo.md` |
 | Inflación, IPC, ICC, UVA, CER | `08-macro-argentina/inflacion.md` |
 | Inmobiliarias sujeto obligado, Res UIF 28/2018 | `16-uif-blanqueo/sujeto-obligado-inmobiliarias.md` |
 | Inmobiliario provincial, impuesto inmobiliario | `04-impuestos/provincial/{provincia}.md` |
+| INPRES, CIRSOC 103, sismicidad, zonas sísmicas | `13-arquitectura-ingenieria/sismicidad-inpres.md` |
+| instalaciones, eléctrica, sanitaria, gas, HVAC | `13-arquitectura-ingenieria/instalaciones.md` |
 | IVA, Ley 23.349, obra inmueble propio | `04-impuestos/nacional/iva.md` |
 | Joint Venture, alianzas estratégicas | `10-estrategia/joint-venture.md` |
 | jurisdicción, mapa provincial AR | `04-impuestos/provincial/_overview.md` |
@@ -93,6 +118,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | Ley 26.737, tierras rurales, extranjeros, RNTR | `12-suelo-y-dominio/ley-26737-tierras-rurales.md` |
 | Ley 8912 PBA, ordenamiento territorial | `02-normativa/ley-8912-pba.md` |
 | marco UIF, Ley 25.246, sujeto obligado, ROS | `16-uif-blanqueo/marco-uif.md` |
+| marketing digital, Meta Ads, Google Ads, SEO, redes | `07-comercial/marketing-digital.md` |
 | mercado AR, panorama, segmentos | `01-mercado-argentino/panorama.md` + `01-mercado-argentino/segmentos-y-productos.md` |
 | métodos de valuación, comparativo, costo, capitalización | `11-tasacion/metodos-valuacion.md` |
 | método residual, valor suelo, factibilidad | `11-tasacion/metodo-residual-suelo.md` |
@@ -112,8 +138,10 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | portales, ZonaProp, Argenprop, ML Inmuebles | `01-mercado-argentino/portales-y-canales.md` |
 | posventa, gestión de defectos, retención | `07-comercial/posventa.md` |
 | prehorizontalidad, CCyCN 2070-2072 | `12-suelo-y-dominio/prehorizontalidad.md` |
+| presupuesto, módulo costos | `14-costos-presupuesto/README.md` |
 | preventa, pozo, fideicomiso al costo comercial | `07-comercial/preventa.md` |
 | pricing, valor m², ladder | `07-comercial/pricing.md` |
+| programa arquitectónico, etapas proyecto, honorarios | `13-arquitectura-ingenieria/programa-arquitectonico.md` |
 | propiedad horizontal, PH, CCyCN 2037 | `02-normativa/propiedad-horizontal.md` |
 | reservas, boletos, posiciones | `07-comercial/preventa.md` + `12-suelo-y-dominio/boleto-compraventa.md` |
 | SAS, sociedad por acciones simplificada | `04-impuestos/estructuras-fiscales/sas.md` |
@@ -121,7 +149,10 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | segmentos producto, residencial, oficinas, logística | `01-mercado-argentino/segmentos-y-productos.md` |
 | sellos provincial, impuesto sellos | `04-impuestos/provincial/_overview.md` |
 | sensibilidad, monte carlo, escenarios financieros | `06-financiero/sensibilidad.md` |
+| sismicidad, INPRES-CIRSOC 103, zonas sísmicas | `13-arquitectura-ingenieria/sismicidad-inpres.md` |
 | solidaridad art. 30 LCT, jurisprudencia | `03-laboral/solidaridad-art-30.md` |
+| stack tecnológico, CRM, WhatsApp, portales, integración | `07-comercial/crm-stack-tecnologico.md` |
+| suelo, geotecnia, fundaciones, SPT | `13-arquitectura-ingenieria/estudio-suelos.md` |
 | tasación, valuación, tasador | `11-tasacion/metodos-valuacion.md` + `11-tasacion/normas-profesionales.md` |
 | tasación vs valuación fiscal | `11-tasacion/tasacion-vs-valuacion-fiscal.md` |
 | TIR, VAN, payback, flujo descontado | `06-financiero/tir-van.md` |
@@ -129,6 +160,9 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | TTN, Tribunal Tasaciones Nación | `11-tasacion/tribunal-tasaciones-nacion.md` |
 | UOCRA, CCT 76/75, jornales | `03-laboral/uocra-cct.md` |
 | usucapión, prescripción adquisitiva, CCyCN 1897 | `12-suelo-y-dominio/usucapion.md` |
+| UVA, hipoteca, indexación, IPC | `06-financiero/hipoteca-uva.md` + `14-costos-presupuesto/indices-costo.md` |
+| waterfall, GP, LP, pref, catch-up, carried, promote | `06-financiero/waterfall-inversores.md` |
+| WhatsApp Business API, lead, comunicación | `07-comercial/crm-stack-tecnologico.md` |
 
 ---
 
@@ -152,8 +186,10 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | "¿Qué impuesto pago?" | `04-impuestos/` (nacional / provincial / municipal) |
 | "¿Cómo estructuro la empresa / vehículo?" | `04-impuestos/estructuras-fiscales/` |
 | "¿Qué pasa con la obra / contratación?" | `05-construccion/` + `03-laboral/` |
-| "¿Cuánto rinde el proyecto? ¿TIR / VAN?" | `06-financiero/` |
-| "¿A qué precio vendo? ¿Cómo lanzo?" | `07-comercial/` |
+| "¿Cuánto cuesta? ¿Cómo presupuesto? ¿APU?" | `14-costos-presupuesto/` |
+| "¿Quién diseña? ¿BIM? ¿CIRSOC? ¿Suelos? ¿Sismo?" | `13-arquitectura-ingenieria/` |
+| "¿Cuánto rinde el proyecto? ¿TIR / VAN? ¿Waterfall?" | `06-financiero/` |
+| "¿A qué precio vendo? ¿Cómo lanzo? ¿CRM? ¿Ads?" | `07-comercial/` |
 | "¿Cómo es el contexto macro?" | `08-macro-argentina/` |
 | "¿Cómo certifico LEED / EDGE?" | `09-triple-impacto/` |
 | "¿Qué modelo de negocio uso?" / "JV / permuta" | `10-estrategia/` |
@@ -168,7 +204,8 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 - ✅ Estructura completa
 - ✅ Frontmatter YAML en todos los archivos productivos
 - ✅ Routing por keyword + jurisdicción + tipo de pregunta
-- ✅ 11 bloques temáticos completos
-- ✅ Última actualización: 2026-05-11
+- ✅ 13 bloques temáticos completos (incluye 13-arquitectura-ingenieria + 14-costos-presupuesto)
+- ✅ Profundización 06-financiero (waterfall, capital stack, UVA, FCI) y 07-comercial (CRM, marketing digital)
+- ✅ Última actualización: 2026-05-11 (Fase 2)
 
 > Cuando agregues un archivo nuevo, ACTUALIZÁ este índice. Es la primera fuente de routing del chat — si no está acá, el chat va a tardar más en encontrarlo (más tokens, más latencia).

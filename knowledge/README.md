@@ -56,6 +56,8 @@ knowledge/
 ├─ 10-estrategia/                # Frameworks de decisión, modelos de negocio
 ├─ 11-tasacion/                  # Métodos de valuación, residual, TTN, normas profesionales
 ├─ 12-suelo-y-dominio/           # DD dominial, boleto, escritura, prehorizontalidad, usucapión, expropiación
+├─ 13-arquitectura-ingenieria/   # Programa, CIRSOC, suelos, sismicidad, instalaciones, BIM
+├─ 14-costos-presupuesto/        # APU, estructura costos, curva S, índices, contingencias, control
 └─ 16-uif-blanqueo/              # UIF, sujetos obligados, KYC, PEP, blanqueos
 ```
 
@@ -172,4 +174,5 @@ Archivos productivos: ver `_meta/indice-rapido.md`.
 | 4A | `08-macro-argentina/` | Inflación, FX, política monetaria/fiscal, ciclos, escenarios |
 | 4B | `09-triple-impacto/` | Marco, certificaciones, huella carbono, eficiencia, accesibilidad, ESG |
 | **Fase 1 (2026-05-11)** | `01-mercado-argentino/`, `04-impuestos/municipal/`, `11-tasacion/`, `12-suelo-y-dominio/`, `16-uif-blanqueo/` | Mercado AR + municipal + tasación + suelo/dominio + UIF/blanqueo |
+| **Fase 2 (2026-05-11)** | `13-arquitectura-ingenieria/`, `14-costos-presupuesto/`, profundización `06-financiero/` + `07-comercial/` | Arquitectura/ingeniería (CIRSOC, suelos, sismo, BIM, instalaciones) + costos/presupuesto (APU, curva S, EVM, contingencias) + waterfall/capital stack/UVA/FCI + CRM stack + marketing digital |
 
