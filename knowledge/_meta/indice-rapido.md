@@ -3,67 +3,172 @@ title: "Índice rápido por keyword"
 topic: "meta"
 subtopic: "indice"
 jurisdiction: "N/A"
-last_verified: "2026-05-10"
+last_verified: "2026-05-11"
 sources: []
-keywords: [indice, mapa, navegacion]
-audience: ["desarrollador", "estudiante"]
+keywords: [indice, mapa, navegacion, routing, busqueda]
+audience: ["chat"]
 confidence: "alta"
+priority: "obligatorio"
 ---
 
 # Índice rápido — Keyword → archivo
 
 Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
-Mantener actualizado al sumar archivos.
+**Lectura obligatoria** del chat al inicio de toda respuesta.
 
-## Por keyword
+---
+
+## Por keyword (orden alfabético)
 
 | Keyword | Archivo |
 |---|---|
-| desarrollador, rol developer, qué hace un desarrollador | `00-fundamentos/teoria-desarrollador.md` |
-| ciclo de desarrollo, etapas de un proyecto, fases | `00-fundamentos/ciclo-desarrollo-inmobiliario.md` |
-| factibilidad, viabilidad, due diligence | `00-fundamentos/analisis-factibilidad.md` |
-| triple impacto, esg, b corp, sostenibilidad | `00-fundamentos/triple-impacto.md` y `09-triple-impacto/*` |
-| PH, propiedad horizontal, reglamento copropiedad | `02-normativa/propiedad-horizontal.md` (TBD) + `normativa-basica.md` (legacy) |
-| FOT, FOS, indicadores urbanísticos, código urbanístico | `02-normativa/codigo-urbanistico-caba.md` (TBD) |
-| fideicomiso, ordinario, al costo, financiero | `04-impuestos/estructuras-fiscales/fideicomiso.md` (TBD) |
-| SAS, sociedad anónima simplificada | `04-impuestos/estructuras-fiscales/sas.md` (TBD) |
-| IVA, débito fiscal, crédito fiscal | `04-impuestos/nacional/iva.md` (TBD) |
-| Ganancias, impuesto a las ganancias | `04-impuestos/nacional/ganancias.md` (TBD) |
-| Bs Personales, bienes personales | `04-impuestos/nacional/bienes-personales.md` (TBD) |
-| IIBB, ingresos brutos | `04-impuestos/provincial/iibb-{caba,pba}.md` (TBD) |
-| sellos, impuesto de sellos | `04-impuestos/provincial/sellos.md` (TBD) |
-| ABL, TSG, alumbrado barrido | `04-impuestos/municipal/abl.md` (TBD) |
-| LCT, ley contrato de trabajo | `03-laboral/lct-marco-general.md` (TBD) |
-| UOCRA, CCT 76/75, convenio construcción | `03-laboral/uocra-cct.md` (TBD) |
-| ART, riesgos del trabajo, accidentes | `03-laboral/art-srt.md` (TBD) |
-| rubros de obra | `rubros-obra.md` (legacy) → migrar a `05-construccion/rubros-obra.md` |
-| rendimientos, productividad obra | `rendimientos.md` (legacy) |
-| materiales, precios materiales | `materiales-precios.csv` |
-| TIR, VAN, payback, flujo descontado | `06-financiero/indicadores-evaluacion.md` (TBD) |
-| financiamiento, créditos, UVA, fideicomiso financiero | `06-financiero/fuentes-financiamiento.md` (TBD) |
-| inflación, IPC, IPIM, ICC | `08-macro-argentina/inflacion-indices.md` (TBD) |
-| dólar, FX, MEP, CCL, oficial | `08-macro-argentina/tipos-de-cambio.md` (TBD) |
-| BCRA, tasa de política, REM | `08-macro-argentina/politica-monetaria.md` (TBD) |
-| pricing, tasación, valor m2, precio | `07-comercial/pricing.md` (TBD) |
-| pre-venta, pozo, fideicomiso al costo comercial | `07-comercial/preventa-pozo.md` (TBD) |
-| LEED, certificación verde | `09-triple-impacto/leed-edge-iram.md` (TBD) |
-| modelos de negocio, joint venture, permuta | `10-estrategia/modelos-de-negocio.md` (TBD) |
+| ABL, alumbrado barrido limpieza, TSG | `04-impuestos/municipal/abl-tsg.md` |
+| accesibilidad universal, ley 24314 | `09-triple-impacto/accesibilidad.md` |
+| ajuste alzado, costo + honorarios, llave en mano | `05-construccion/modalidades-contratacion.md` |
+| alquiler temporario, Airbnb, Ley 6255 CABA | `01-mercado-argentino/segmentos-y-productos.md` |
+| alquileres, Ley 27.551, DNU 70/2023 | `02-normativa/regimen-alquileres.md` |
+| ambiental, Ley 25.675, impacto ambiental | `02-normativa/ambiental.md` |
+| análisis de factibilidad, viabilidad | `00-fundamentos/analisis-factibilidad.md` |
+| apalancamiento, leverage, deuda | `06-financiero/apalancamiento.md` |
+| ART, riesgos del trabajo, SRT | `03-laboral/art-srt.md` |
+| beneficiario final, control efectivo | `16-uif-blanqueo/kyc-y-origen-de-fondos.md` |
+| benchmarks, cap rate, valor m², vacancia | `01-mercado-argentino/benchmarks.md` |
+| Bienes Personales, BP | `04-impuestos/nacional/bienes-personales.md` |
+| blanqueo, sinceramiento, Ley 27260, Ley 27743 | `16-uif-blanqueo/blanqueos.md` |
+| boleto compraventa, seña, oponibilidad CCyCN 1170 | `12-suelo-y-dominio/boleto-compraventa.md` |
+| CABA, AGIP, Código Urbanístico, Ley 6099 | `02-normativa/codigo-urbanistico-caba.md` + `04-impuestos/provincial/caba.md` |
+| Cap rate, capitalización de renta | `11-tasacion/metodos-valuacion.md` + `01-mercado-argentino/benchmarks.md` |
+| cashflow, flujo de caja proyecto | `06-financiero/cashflow-real-estate.md` |
+| CCyCN, Código Civil y Comercial | `02-normativa/ccyc-real-estate.md` |
+| Cedular, Ley 27.430, ganancia capital inmueble | `04-impuestos/nacional/cedular-inmuebles.md` |
+| certificación obra, redeterminación, fondo reparo | `05-construccion/certificacion-obra.md` |
+| certificaciones, LEED, EDGE, IRAM, BREEAM | `09-triple-impacto/certificaciones.md` |
+| cesión boleto, cesión derechos | `12-suelo-y-dominio/cesion-de-boleto.md` |
+| ciclo desarrollo inmobiliario | `00-fundamentos/ciclo-desarrollo-inmobiliario.md` |
+| ciclos mercado AR, fases | `08-macro-argentina/ciclos-mercado.md` |
+| Código Edificación CABA, Ley 6100 | `02-normativa/codigo-edificacion-caba.md` |
+| comercialización, ventas, marketing inmobiliario | `07-comercial/*` + `01-mercado-argentino/portales-y-canales.md` |
+| condominio, CCyCN 1983 | `04-impuestos/estructuras-fiscales/condominio.md` |
+| contribución por mejoras, plusvalía urbanística | `04-impuestos/municipal/contribuciones-y-plusvalia.md` |
+| Córdoba, DGR Córdoba | `04-impuestos/provincial/cordoba.md` |
+| corredor inmobiliario, Ley 25.028, CUCICBA | `11-tasacion/normas-profesionales.md` + `16-uif-blanqueo/sujeto-obligado-inmobiliarias.md` |
+| costos obra, hard cost, indirectos, gerenciamiento | `05-construccion/modalidades-contratacion.md` + `06-financiero/cashflow-real-estate.md` |
+| decision frameworks, NPV vs IRR, comparación | `10-estrategia/decision-frameworks.md` |
+| defensa del consumidor, Ley 24.240 | `02-normativa/defensa-consumidor.md` |
+| derechos construcción, delineación, demolición, visado | `04-impuestos/municipal/derechos-construccion.md` |
+| desarrollador, rol developer, teoría | `00-fundamentos/teoria-desarrollador.md` + `10-estrategia/teoria-developer.md` |
+| documentación obra, libros, planos AS-BUILT | `05-construccion/documentacion-obra.md` |
+| due diligence dominial, informe dominio, certificados | `12-suelo-y-dominio/due-diligence-dominial.md` |
+| eficiencia energética, IRAM 11900, etiquetado | `09-triple-impacto/eficiencia-energetica.md` |
+| embudo comercial, lead, conversión | `07-comercial/embudo-comercial.md` |
+| ESG inversores, B Corp, IRIS+ | `09-triple-impacto/esg-inversores.md` |
+| escenarios macro, planificación, monte carlo | `08-macro-argentina/escenarios.md` + `06-financiero/sensibilidad.md` |
+| escribano sujeto obligado, Res UIF 21/2018 | `16-uif-blanqueo/sujeto-obligado-escribanos.md` |
+| escritura pública, RPI, Ley 17.801 | `12-suelo-y-dominio/escritura-y-rpi.md` |
+| estructuras fiscales, comparativa vehículos | `04-impuestos/estructuras-fiscales/comparativa-vehiculos.md` |
+| expropiación, Ley 21.499, indemnización | `12-suelo-y-dominio/expropiacion.md` |
+| fideicomiso ordinario, CCyCN 1666 | `04-impuestos/estructuras-fiscales/fideicomiso-ordinario.md` |
+| fideicomiso al costo, transparencia fiscal | `04-impuestos/estructuras-fiscales/fideicomiso-al-costo.md` |
+| fideicomiso financiero, CNV, oferta pública | `04-impuestos/estructuras-fiscales/fideicomiso-financiero.md` |
+| financiamiento, créditos, UVA, deuda, capital | `06-financiero/financiamiento.md` |
+| Final de Obra, FO, certificado | `05-construccion/final-obra.md` |
+| FOT, FOS, indicadores urbanísticos | `02-normativa/codigo-urbanistico-caba.md` + `_meta/glosario.md` |
+| FX, dólar, MEP, CCL, oficial, brecha | `08-macro-argentina/fx-cambiario.md` |
+| Ganancias, impuesto a las ganancias, escala | `04-impuestos/nacional/ganancias.md` |
+| garantías construcción, vicios, ruina CCyCN 1273 | `05-construccion/garantias-vicios-ruina.md` |
+| gestión de riesgos, matriz, mitigación | `10-estrategia/gestion-riesgos.md` |
+| habilitación comercial, inspección, ocupación vía pública | `04-impuestos/municipal/tasas-municipales.md` |
+| higiene y seguridad obra, Decreto 911/96, EPP | `05-construccion/higiene-seguridad.md` |
+| huella de carbono, embodied carbon, GEI | `09-triple-impacto/huella-carbono.md` |
+| IBB, Ingresos Brutos provincial | `04-impuestos/provincial/_overview.md` + `04-impuestos/provincial/{provincia}.md` |
+| IERIC, libreta digital, aviso de obra | `03-laboral/ieric.md` |
+| Inflación, IPC, ICC, UVA, CER | `08-macro-argentina/inflacion.md` |
+| Inmobiliarias sujeto obligado, Res UIF 28/2018 | `16-uif-blanqueo/sujeto-obligado-inmobiliarias.md` |
+| Inmobiliario provincial, impuesto inmobiliario | `04-impuestos/provincial/{provincia}.md` |
+| IVA, Ley 23.349, obra inmueble propio | `04-impuestos/nacional/iva.md` |
+| Joint Venture, alianzas estratégicas | `10-estrategia/joint-venture.md` |
+| jurisdicción, mapa provincial AR | `04-impuestos/provincial/_overview.md` |
+| KYC, DDC, origen de fondos, perfil cliente | `16-uif-blanqueo/kyc-y-origen-de-fondos.md` |
+| LCT, Ley 20.744, contrato trabajo | `03-laboral/lct-marco.md` |
+| Ley 26.737, tierras rurales, extranjeros, RNTR | `12-suelo-y-dominio/ley-26737-tierras-rurales.md` |
+| Ley 8912 PBA, ordenamiento territorial | `02-normativa/ley-8912-pba.md` |
+| marco UIF, Ley 25.246, sujeto obligado, ROS | `16-uif-blanqueo/marco-uif.md` |
+| mercado AR, panorama, segmentos | `01-mercado-argentino/panorama.md` + `01-mercado-argentino/segmentos-y-productos.md` |
+| métodos de valuación, comparativo, costo, capitalización | `11-tasacion/metodos-valuacion.md` |
+| método residual, valor suelo, factibilidad | `11-tasacion/metodo-residual-suelo.md` |
+| métricas developer, ROI, equity multiple | `06-financiero/metricas-developer.md` |
+| mix tipologías, oferta de producto | `07-comercial/mix-tipologias.md` |
+| modalidades contratación obra | `05-construccion/modalidades-contratacion.md` |
+| modalidades laborales, dependencia vs autónomo | `03-laboral/modalidades.md` |
+| modelos de negocio, build to sell, BTR | `10-estrategia/modelos-negocio.md` + `01-mercado-argentino/segmentos-y-productos.md` |
+| Monotributo, Ley 24.977 | `04-impuestos/nacional/monotributo.md` |
+| normas profesionales tasación, CPAU, CPIC | `11-tasacion/normas-profesionales.md` |
+| panorama mercado AR, ciclo actual | `01-mercado-argentino/panorama.md` |
+| PEP, persona expuesta políticamente | `16-uif-blanqueo/pep-personas-expuestas.md` |
+| permuta, intercambio suelo por UF | `10-estrategia/permuta.md` |
+| players, developers AR, IRSA, Consultatio | `01-mercado-argentino/players-y-actores.md` |
+| política fiscal, déficit, deuda pública | `08-macro-argentina/politica-fiscal.md` |
+| política monetaria, BCRA, tasa | `08-macro-argentina/politica-monetaria.md` |
+| portales, ZonaProp, Argenprop, ML Inmuebles | `01-mercado-argentino/portales-y-canales.md` |
+| posventa, gestión de defectos, retención | `07-comercial/posventa.md` |
+| prehorizontalidad, CCyCN 2070-2072 | `12-suelo-y-dominio/prehorizontalidad.md` |
+| preventa, pozo, fideicomiso al costo comercial | `07-comercial/preventa.md` |
+| pricing, valor m², ladder | `07-comercial/pricing.md` |
+| propiedad horizontal, PH, CCyCN 2037 | `02-normativa/propiedad-horizontal.md` |
+| reservas, boletos, posiciones | `07-comercial/preventa.md` + `12-suelo-y-dominio/boleto-compraventa.md` |
+| SAS, sociedad por acciones simplificada | `04-impuestos/estructuras-fiscales/sas.md` |
+| segmentación cliente, persona | `07-comercial/segmentacion-cliente.md` |
+| segmentos producto, residencial, oficinas, logística | `01-mercado-argentino/segmentos-y-productos.md` |
+| sellos provincial, impuesto sellos | `04-impuestos/provincial/_overview.md` |
+| sensibilidad, monte carlo, escenarios financieros | `06-financiero/sensibilidad.md` |
+| solidaridad art. 30 LCT, jurisprudencia | `03-laboral/solidaridad-art-30.md` |
+| tasación, valuación, tasador | `11-tasacion/metodos-valuacion.md` + `11-tasacion/normas-profesionales.md` |
+| tasación vs valuación fiscal | `11-tasacion/tasacion-vs-valuacion-fiscal.md` |
+| TIR, VAN, payback, flujo descontado | `06-financiero/tir-van.md` |
+| triple impacto, sostenibilidad, marco | `00-fundamentos/triple-impacto.md` + `09-triple-impacto/marco-conceptual.md` |
+| TTN, Tribunal Tasaciones Nación | `11-tasacion/tribunal-tasaciones-nacion.md` |
+| UOCRA, CCT 76/75, jornales | `03-laboral/uocra-cct.md` |
+| usucapión, prescripción adquisitiva, CCyCN 1897 | `12-suelo-y-dominio/usucapion.md` |
+
+---
 
 ## Por jurisdicción
 
 | Jurisdicción | Carpeta principal |
 |---|---|
-| Nacional | `02-normativa/` (CCyCN, leyes generales), `04-impuestos/nacional/`, `03-laboral/` |
-| CABA | `02-normativa/codigo-urbanistico-caba.md`, `04-impuestos/provincial/iibb-caba.md`, `04-impuestos/municipal/abl.md` |
-| PBA | `02-normativa/ley-8912-pba.md`, `04-impuestos/provincial/iibb-pba.md`, `04-impuestos/provincial/sellos-pba.md` |
-| Otras (Cba/Mza/SF) | crear `04-impuestos/provincial/{provincia}/` cuando aplique |
+| Nacional | `02-normativa/` (CCyCN, leyes generales), `04-impuestos/nacional/`, `03-laboral/`, `16-uif-blanqueo/` |
+| CABA | `02-normativa/codigo-urbanistico-caba.md`, `02-normativa/codigo-edificacion-caba.md`, `04-impuestos/provincial/caba.md`, `04-impuestos/municipal/*.md` |
+| PBA | `02-normativa/ley-8912-pba.md`, `04-impuestos/provincial/pba.md`, `04-impuestos/municipal/*.md` |
+| Otras (23 provincias) | `04-impuestos/provincial/{provincia}.md` |
 
-## Estado de la base (Phase 1)
+---
 
-- ✅ Estructura de carpetas
-- ✅ README maestro
-- ✅ `_meta/fuentes-oficiales.md`
-- ✅ `_meta/glosario.md`
-- ✅ `_meta/indice-rapido.md` (este archivo)
-- 🟡 `00-fundamentos/*` (en proceso)
-- ⬜ Resto: ver roadmap en README.md
+## Por tipo de pregunta (routing semántico)
+
+| Tipo de pregunta | Carpeta principal a consultar |
+|---|---|
+| "¿Cómo está el mercado?" / "¿Cuánto rinde?" | `01-mercado-argentino/` |
+| "¿Qué ley aplica?" / "¿Qué dice el CCyCN?" | `02-normativa/` |
+| "¿Qué impuesto pago?" | `04-impuestos/` (nacional / provincial / municipal) |
+| "¿Cómo estructuro la empresa / vehículo?" | `04-impuestos/estructuras-fiscales/` |
+| "¿Qué pasa con la obra / contratación?" | `05-construccion/` + `03-laboral/` |
+| "¿Cuánto rinde el proyecto? ¿TIR / VAN?" | `06-financiero/` |
+| "¿A qué precio vendo? ¿Cómo lanzo?" | `07-comercial/` |
+| "¿Cómo es el contexto macro?" | `08-macro-argentina/` |
+| "¿Cómo certifico LEED / EDGE?" | `09-triple-impacto/` |
+| "¿Qué modelo de negocio uso?" / "JV / permuta" | `10-estrategia/` |
+| "¿Cuánto vale?" / "¿Cómo se tasa?" | `11-tasacion/` |
+| "¿Cómo verifico el terreno?" / "¿Boleto, escritura?" | `12-suelo-y-dominio/` |
+| "¿Qué papeles me piden?" / "UIF / origen fondos / PEP / blanqueo" | `16-uif-blanqueo/` |
+
+---
+
+## Estado de la base
+
+- ✅ Estructura completa
+- ✅ Frontmatter YAML en todos los archivos productivos
+- ✅ Routing por keyword + jurisdicción + tipo de pregunta
+- ✅ 11 bloques temáticos completos
+- ✅ Última actualización: 2026-05-11
+
+> Cuando agregues un archivo nuevo, ACTUALIZÁ este índice. Es la primera fuente de routing del chat — si no está acá, el chat va a tardar más en encontrarlo (más tokens, más latencia).

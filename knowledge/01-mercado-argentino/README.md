@@ -1,43 +1,67 @@
+---
+title: "Mercado inmobiliario argentino — overview"
+topic: "mercado"
+subtopic: "overview"
+jurisdiction: "Argentina"
+last_verified: "2026-05-11"
+sources:
+  - "CEDU (Cámara Empresaria de Desarrolladores Urbanos)"
+  - "AEV (Asociación Empresarios de la Vivienda)"
+  - "CIA (Cámara Inmobiliaria Argentina)"
+  - "INDEC — Construcción ISAC, ICC"
+  - "BCRA — REM, créditos hipotecarios"
+keywords: [mercado argentino, real estate ar, panorama inmobiliario, segmentos, players, benchmarks, portales]
+audience: ["desarrollador", "inversor", "chat"]
+confidence: "alta"
+---
+
 # 01 — Mercado Argentino
 
-Datos vivos del mercado: segmentos, zonas, absorción, precios de cierre, ciclos.
+## TL;DR
+- Mercado fragmentado por jurisdicción: AMBA concentra >60% del stock y de la oferta nueva.
+- Segmentos: **residencial**, **oficinas**, **retail**, **logística/industrial**, **hotelería**, **alquiler temporario**, **usos especiales**.
+- Moneda funcional: **USD** para precio de venta y suelo; **ARS** para construcción y servicios.
+- Volatilidad estructural: precios y rendimientos cambian rápido — derivar a fuentes en vivo.
 
-## Archivos previstos
-- `segmentos-residencial.md` — premium, alto, medio, vivienda asequible
-- `segmentos-comercial.md` — oficinas, retail, logística, hotelería
-- `zonas-caba.md` — barrios, indicadores y dinámica
-- `zonas-pba-norte.md` — corredor norte
-- `zonas-pba-sur-oeste.md`
-- `ciclos-historicos.md` — 2001 / 2018 / 2020 / actual
-- `volumen-escrituras.md` — series Colegio Escribanos CABA + PBA
+## Archivos del módulo
 
-## Reglas de la carpeta
-- **Cierres reales > listados.**
-- Indexar todo precio en **USD** (preferentemente MEP) y aclarar fecha.
-- Citar fuente: Colegio de Escribanos, Reporte Inmobiliario, BCRA.
-- Marcar `last_verified` mensual; los datos envejecen rápido.
+| Archivo | Contenido |
+|---|---|
+| `panorama.md` | Tamaño del mercado, ciclo actual, AMBA vs interior |
+| `segmentos-y-productos.md` | Residencial, oficinas, retail, logística, hotelería, alquiler temporario, usos especiales |
+| `players-y-actores.md` | Developers, fondos, brokers, constructoras, cámaras |
+| `benchmarks.md` | Rangos históricos, cap rate, brecha pozo-terminado, vacancia (con regla volátil) |
+| `portales-y-canales.md` | ZonaProp, Argenprop, ML Inmuebles, Properati, Idealista, embudo |
 
 ## 🔴 Datos volátiles vs 🟢 estables
 
 Aplican las reglas de `_meta/politica-datos.md`.
 
 **🔴 Volátil — el chat NO da el número:**
-- Valor m² USD por barrio / zona.
-- Rentabilidad bruta y neta por barrio.
-- Volumen mensual de escrituración.
-- Cap rate de referencia.
+- Valor m² USD por barrio / zona (consultar ZonaProp Data, Reporte Inmobiliario, Properati Index).
+- Rentabilidad bruta y neta por zona.
+- Volumen mensual de escrituración (Colegio de Escribanos CABA + PBA).
+- Cap rate de referencia (Colliers, Cushman, JLL, CBRE).
+- Vacancia de oficinas / logística.
 - Listados activos y absorción del mes.
+- Tarifas y CPL de portales.
 
-**🟡 Semivolátil:**
-- Rangos históricos de USD/m² por zona (informativo, marcar como tal).
-- Cap Rate típico CABA por categoría (referencia, no operativo).
+**🟡 Semivolátil (rango histórico documentado, marcar como tal):**
+- Rango cap rate por segmento.
+- Brecha pozo-terminado.
+- Ratios estructurales de costos.
 
 **🟢 Estable — respuesta directa:**
-- Caracterización de zonas (qué público, qué tipologías predominan, conectividad).
-- Segmentos de demanda y motivo de compra.
-- Ciclos históricos del mercado AR (qué pasó en 2001, 2018, 2020 y por qué).
-- Métricas de mercado conceptuales: cómo se mide absorción, vacancia, time on market.
-- Cómo se construye un comparable book.
-- Diferencia listado vs cierre.
+- Caracterización de segmentos y productos.
+- Estructura del ecosistema (players, cámaras).
+- Drivers del ciclo argentino.
+- Embudo comercial típico y KPIs estructurales.
+- Cómo se construyen las métricas (cap rate, absorción, vacancia, comparables).
 
-**Para datos del día → enviar a:** Colegio de Escribanos CABA, Reporte Inmobiliario, ZonaProp/Argenprop (sólo listados — usar con cuidado), BCRA informe inmobiliario.
+**Para datos del día → derivar a:** Colegio de Escribanos CABA y PBA, Reporte Inmobiliario, ZonaProp / Properati Data, Colliers / Cushman & Wakefield / JLL / CBRE, BCRA, INDEC.
+
+## Reglas operativas
+
+- **Cierres reales > listados.** Los listados son orientativos, no precio de cierre.
+- Indexar todo precio en **USD** (preferentemente MEP) y aclarar fecha.
+- Marcar `last_verified` mensual; los datos envejecen rápido.

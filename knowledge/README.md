@@ -53,7 +53,10 @@ knowledge/
 ├─ 07-comercial/                 # Pricing, marketing, ventas, posventa
 ├─ 08-macro-argentina/           # Inflación, FX, tasas, contexto país
 ├─ 09-triple-impacto/            # ESG, B Corp, sostenibilidad, normas IRAM/LEED
-└─ 10-estrategia/                # Frameworks de decisión, modelos de negocio
+├─ 10-estrategia/                # Frameworks de decisión, modelos de negocio
+├─ 11-tasacion/                  # Métodos de valuación, residual, TTN, normas profesionales
+├─ 12-suelo-y-dominio/           # DD dominial, boleto, escritura, prehorizontalidad, usucapión, expropiación
+└─ 16-uif-blanqueo/              # UIF, sujetos obligados, KYC, PEP, blanqueos
 ```
 
 > Archivos en la raíz (`formulas.md`, `materiales-precios.csv`, `normativa-basica.md`, `rendimientos.md`, `rubros-obra.md`, `rules.md`) son legacy y se irán migrando a las carpetas temáticas.
@@ -150,5 +153,23 @@ Detalle vivo: `_meta/roadmap.md`.
 
 ## 📋 Estado de la base
 
-Última actualización: **2026-05-10**
+Última actualización: **2026-05-11**
 Archivos productivos: ver `_meta/indice-rapido.md`.
+
+### Bloques completados
+
+| Bloque | Carpeta(s) | Contenido |
+|---|---|---|
+| 1 | `_meta/`, `00-fundamentos/` | Reglas, glosario, fundamentos del developer |
+| 2A | `02-normativa/` | CCyCN, PH, CE/CU CABA, 8912 PBA, alquileres, defensa consumidor, ambiental |
+| 2B | `04-impuestos/nacional/` + `estructuras-fiscales/` | IVA, Ganancias, Bs Personales, Cedular, Monotributo + Fideicomisos, SAS, Condominio |
+| 2C | `04-impuestos/provincial/` | 24 jurisdicciones + overview |
+| 2D | `03-laboral/` | LCT, UOCRA, IERIC, ART, modalidades, solidaridad |
+| 2E | `05-construccion/` | Modalidades, certificación, HyS, garantías, documentación, Final de Obra |
+| 3A | `06-financiero/` | TIR/VAN, cashflow, sensibilidad, financiamiento, apalancamiento, métricas |
+| 3B | `07-comercial/` | Pricing, mix, preventa, embudo, posventa, segmentación |
+| 3C | `10-estrategia/` | Modelos de negocio, JV, permuta, riesgos, decisiones |
+| 4A | `08-macro-argentina/` | Inflación, FX, política monetaria/fiscal, ciclos, escenarios |
+| 4B | `09-triple-impacto/` | Marco, certificaciones, huella carbono, eficiencia, accesibilidad, ESG |
+| **Fase 1 (2026-05-11)** | `01-mercado-argentino/`, `04-impuestos/municipal/`, `11-tasacion/`, `12-suelo-y-dominio/`, `16-uif-blanqueo/` | Mercado AR + municipal + tasación + suelo/dominio + UIF/blanqueo |
+
