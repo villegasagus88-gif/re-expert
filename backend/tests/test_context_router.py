@@ -56,6 +56,26 @@ def test_classify_query_multi_empty_message():
     assert classify_query_multi("") == []
 
 
+# ---------- multi-word keyword matching ----------
+
+@pytest.mark.parametrize(
+    "msg, expected",
+    [
+        # "cap rate" es keyword multi-word de mercado: antes no matcheaba
+        # porque el tokenizer la partía. Debe matchear como substring.
+        ("Cap rate promedio multifamiliar en Palermo", "mercado"),
+        # "net zero" + "embodied carbon" — triple-impacto
+        ("Net zero embodied carbon en obra nueva", "triple-impacto"),
+        # "distrito tecnologico" — estrategia (vs general)
+        ("Distrito Tecnológico CABA: qué beneficios da", "estrategia"),
+        # "customer journey" — comercial (vs general)
+        ("Customer journey postcompra: qué incluye", "comercial"),
+    ],
+)
+def test_classify_query_handles_multi_word_keywords(msg, expected):
+    assert classify_query(msg) == expected
+
+
 def test_all_domains_have_keywords_except_meta_and_general():
     for d in ALL_DOMAINS:
         if d in ("general", "meta"):

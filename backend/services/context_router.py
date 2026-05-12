@@ -255,6 +255,28 @@ DOMAIN_KEYWORDS: dict[Domain, frozenset[str]] = {
 }
 
 
+def _count_matches(message_norm: str, message_tokens: set[str], kws: frozenset[str]) -> int:
+    """
+    Cuenta cuántas keywords del dominio aparecen en el mensaje.
+
+    - Keywords single-word: matchean si el token está en el set tokenizado del
+      mensaje (rápido, exacto).
+    - Keywords multi-word (con espacios): matchean como substring sobre el
+      mensaje normalizado (sin acentos, lowercase). Esto destraba frases
+      como "cap rate", "net zero", "distrito tecnologico", "customer journey".
+    """
+    if not kws:
+        return 0
+    count = 0
+    for kw in kws:
+        if " " in kw:
+            if kw in message_norm:
+                count += 1
+        elif kw in message_tokens:
+            count += 1
+    return count
+
+
 # ============================================================
 # Budgets de tokens
 # ============================================================
@@ -285,14 +307,14 @@ def classify_query(message: str) -> Domain:
     tokens = set(_tokenize(message))
     if not tokens:
         return "general"
+    message_norm = _normalize(message)
 
     best: Domain = "general"
     best_score = 0
     for domain in ALL_DOMAINS:
         if domain in ("general", "meta"):
             continue
-        kws = DOMAIN_KEYWORDS[domain]
-        score = len(tokens & kws)
+        score = _count_matches(message_norm, tokens, DOMAIN_KEYWORDS[domain])
         if score > best_score:
             best_score = score
             best = domain
@@ -309,13 +331,13 @@ def classify_query_multi(message: str, top_n: int = 3) -> list[Domain]:
     tokens = set(_tokenize(message))
     if not tokens:
         return []
+    message_norm = _normalize(message)
 
     scored: list[tuple[Domain, int]] = []
     for domain in ALL_DOMAINS:
         if domain in ("general", "meta"):
             continue
-        kws = DOMAIN_KEYWORDS[domain]
-        score = len(tokens & kws)
+        score = _count_matches(message_norm, tokens, DOMAIN_KEYWORDS[domain])
         if score > 0:
             scored.append((domain, score))
 
