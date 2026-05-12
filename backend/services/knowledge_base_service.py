@@ -1,7 +1,7 @@
 """
 KnowledgeBaseService — lee archivos del bucket `knowledge` (Supabase Storage),
-parsea .md como texto y .csv como tablas, y expone búsqueda por keywords
-con caché TTL en memoria para evitar descargas repetidas.
+parsea .md/.yaml/.yml como texto y .csv como tablas, y expone búsqueda por
+keywords con caché TTL en memoria para evitar descargas repetidas.
 
 Uso típico:
 
@@ -29,7 +29,7 @@ from services.knowledge_storage import knowledge_storage
 
 logger = logging.getLogger(__name__)
 
-DocType = Literal["md", "csv"]
+DocType = Literal["md", "csv", "yaml"]
 
 # Stopwords castellano + inglés (breves, suficiente para filtrar ruido en queries)
 _STOPWORDS = frozenset(
@@ -92,6 +92,16 @@ def parse_md(content: str) -> str:
     return content.strip()
 
 
+def parse_yaml(content: str) -> str:
+    """
+    .yaml/.yml se guardan tal cual: el LLM entiende YAML directamente y
+    parsearlos requeriría agregar PyYAML como dependencia. Mantenerlo como
+    texto plano además preserva comentarios, que muchas veces son metadata
+    útil (fuentes, fechas de actualización, etc).
+    """
+    return content.strip()
+
+
 def parse_csv(content: str, max_rows: int = 500) -> str:
     """
     Convierte un CSV a un texto tabular legible. Para cada fila:
@@ -128,6 +138,9 @@ def build_document(path: str, raw_content: str) -> Document | None:
     elif lower.endswith(".csv"):
         text = parse_csv(raw_content)
         doc_type = "csv"
+    elif lower.endswith((".yaml", ".yml")):
+        text = parse_yaml(raw_content)
+        doc_type = "yaml"
     else:
         return None
 
@@ -175,8 +188,8 @@ class KnowledgeBaseService:
 
     async def load_all(self, force: bool = False) -> list[Document]:
         """
-        Lee todos los archivos .md y .csv del bucket, los parsea y cachea.
-        Si el caché está fresco y `force=False`, devuelve el caché.
+        Lee todos los archivos .md, .csv, .yaml y .yml del bucket, los parsea
+        y cachea. Si el caché está fresco y `force=False`, devuelve el caché.
         Si falla la carga, devuelve el último caché válido (aunque esté viejo)
         o lista vacía.
         """
@@ -196,7 +209,7 @@ class KnowledgeBaseService:
 
             supported = [
                 f for f in files
-                if f["name"].lower().endswith((".md", ".csv"))
+                if f["name"].lower().endswith((".md", ".csv", ".yaml", ".yml"))
             ]
 
             docs: list[Document] = []

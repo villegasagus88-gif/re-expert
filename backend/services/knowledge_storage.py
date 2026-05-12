@@ -42,48 +42,80 @@ class KnowledgeStorageService:
             return False
         return (time.time() - self._cache[path].cached_at) < self._cache_ttl
 
-    async def list_files(self, folder: str = "") -> list[dict]:
+    async def _list_one_level(
+        self, client: httpx.AsyncClient, folder: str
+    ) -> list[dict]:
+        """
+        Llamada cruda al endpoint de Supabase para listar un único nivel.
+        Devuelve tanto archivos como subcarpetas (los folders tienen id=None).
+        """
+        resp = await client.post(
+            f"{STORAGE_URL}/object/list/{BUCKET}",
+            headers={**HEADERS, "Content-Type": "application/json"},
+            json={
+                "prefix": folder,
+                "limit": 1000,
+                "offset": 0,
+                "sortBy": {"column": "name", "order": "asc"},
+            },
+        )
+        if resp.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Error listando archivos: {resp.text}",
+            )
+        return resp.json()
+
+    async def list_files(
+        self, folder: str = "", recursive: bool = True
+    ) -> list[dict]:
         """
         List files in the knowledge bucket.
 
         Args:
             folder: subfolder path (empty = root)
+            recursive: si True, desciende por todas las subcarpetas.
+                       Necesario porque el KB tiene estructura `XX-tema/`.
 
         Returns:
-            List of file objects with name, size, created_at, etc.
+            List of file objects con name, path completo, size, etc.
         """
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                f"{STORAGE_URL}/object/list/{BUCKET}",
-                headers={**HEADERS, "Content-Type": "application/json"},
-                json={
-                    "prefix": folder,
-                    "limit": 1000,
-                    "offset": 0,
-                    "sortBy": {"column": "name", "order": "asc"},
-                },
-            )
+        async with httpx.AsyncClient(timeout=20) as client:
+            results: list[dict] = []
+            # BFS por niveles para soportar anidamiento arbitrario.
+            queue: list[str] = [folder]
+            visited: set[str] = set()
 
-            if resp.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Error listando archivos: {resp.text}",
-                )
+            while queue:
+                current = queue.pop(0)
+                if current in visited:
+                    continue
+                visited.add(current)
 
-            items = resp.json()
-            # Filter out folder placeholders (items with null metadata)
-            return [
-                {
-                    "name": item["name"],
-                    "path": f"{folder}/{item['name']}".strip("/"),
-                    "size": item.get("metadata", {}).get("size", 0) if item.get("metadata") else 0,
-                    "content_type": item.get("metadata", {}).get("mimetype", "") if item.get("metadata") else "",
-                    "created_at": item.get("created_at", ""),
-                    "updated_at": item.get("updated_at", ""),
-                }
-                for item in items
-                if item.get("id") is not None  # skip folder entries
-            ]
+                items = await self._list_one_level(client, current)
+                for item in items:
+                    name = item.get("name", "")
+                    if not name:
+                        continue
+                    item_path = f"{current}/{name}".strip("/") if current else name
+
+                    if item.get("id") is None:
+                        # Es subcarpeta. Si recursive, la sumamos al queue.
+                        if recursive:
+                            queue.append(item_path)
+                        continue
+
+                    metadata = item.get("metadata") or {}
+                    results.append({
+                        "name": name,
+                        "path": item_path,
+                        "size": metadata.get("size", 0),
+                        "content_type": metadata.get("mimetype", ""),
+                        "created_at": item.get("created_at", ""),
+                        "updated_at": item.get("updated_at", ""),
+                    })
+
+            return results
 
     async def get_file(self, path: str) -> tuple[bytes, str]:
         """

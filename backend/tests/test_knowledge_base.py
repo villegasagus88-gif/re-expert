@@ -10,6 +10,7 @@ from services.knowledge_base_service import (
     build_document,
     parse_csv,
     parse_md,
+    parse_yaml,
     score_document,
 )
 
@@ -69,6 +70,38 @@ def test_build_document_csv():
 
 def test_build_document_unsupported_extension():
     assert build_document("whatever.pdf", "ignored") is None
+
+
+SAMPLE_YAML = """\
+# Benchmarks 2025 — fuente: CCC / CAC
+costo_m2:
+  caba_premium: 1800
+  caba_standard: 1200
+  gba_norte: 950
+notas:
+  - Incluye terminaciones medias
+  - Excluye terreno
+"""
+
+
+def test_parse_yaml_preserves_text_and_comments():
+    out = parse_yaml(SAMPLE_YAML)
+    assert "caba_premium: 1800" in out
+    assert "# Benchmarks 2025" in out  # comentarios preservados
+
+
+def test_build_document_yaml():
+    doc = build_document("_meta/benchmarks.yaml", SAMPLE_YAML)
+    assert doc is not None
+    assert doc.doc_type == "yaml"
+    assert doc.domain == "_meta"
+    assert "caba" in doc.tokens or "benchmarks" in doc.tokens
+
+
+def test_build_document_yml_alias():
+    doc = build_document("_meta/quick.yml", "key: value\n")
+    assert doc is not None
+    assert doc.doc_type == "yaml"
 
 
 def test_build_document_root_no_domain():

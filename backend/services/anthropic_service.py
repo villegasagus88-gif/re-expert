@@ -102,7 +102,11 @@ async def load_knowledge_context() -> str:
         logger.warning("No se pudo listar archivos de knowledge: %s", e)
         return ""
 
-    md_files = [f for f in files if f["name"].lower().endswith(".md")]
+    # Extensiones legibles directo por el LLM (markdown + texto + datos en YAML).
+    # CSV/JSON los maneja KnowledgeBaseService con parser propio; acá nos quedamos
+    # con los formatos que ya son texto plano y aprovechables sin transformación.
+    SUPPORTED_EXTS = (".md", ".txt", ".yaml", ".yml")
+    md_files = [f for f in files if f["name"].lower().endswith(SUPPORTED_EXTS)]
     chunks: list[str] = []
     for f in md_files:
         try:
