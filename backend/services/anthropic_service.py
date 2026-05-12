@@ -1,6 +1,15 @@
 """
 Anthropic client service: streams Claude responses and builds system prompt
-with optional knowledge base context loaded from Supabase Storage.
+with knowledge base context loaded from Supabase Storage.
+
+Routing strategy:
+- Si `user_message` se provee a `build_system_prompt`, usamos el router
+  inteligente (`context_router.select_context_for_message`) para inyectar
+  solo el `_meta/` obligatorio + top-K docs relevantes al tema preguntado.
+  Esto reduce ~80% los tokens de input vs bulk dump y mantiene calidad
+  (las reglas + índice + glosario siempre están).
+- Si el router falla o no se provee mensaje, caemos al legacy bulk dump
+  (`load_knowledge_context`) como red de seguridad.
 """
 import asyncio
 import logging
@@ -107,13 +116,36 @@ async def load_knowledge_context() -> str:
     return "\n\n---\n\n".join(chunks)
 
 
-async def build_system_prompt(context_type: str = "chat", project_context: str = "") -> str:
+async def _load_routed_knowledge(user_message: str) -> str:
+    """
+    Usa el context router para devolver solo el contexto relevante a la pregunta
+    del usuario (meta obligatorio + top-K docs por dominio). Si falla, devuelve
+    "" para que el caller decida el fallback.
+    """
+    try:
+        # Import diferido para evitar ciclo + permitir monkeypatch en tests.
+        from services.context_router import select_context_for_message
+
+        _domain, ctx = await select_context_for_message(user_message)
+        return ctx
+    except Exception as e:
+        logger.warning("build_system_prompt: router falló (%s), fallback a bulk", e)
+        return ""
+
+
+async def build_system_prompt(
+    context_type: str = "chat",
+    project_context: str = "",
+    user_message: str | None = None,
+) -> str:
     """
     Arma el system prompt para el request actual.
 
     - context_type="chat" (default): prompt general + base de conocimiento.
+      Si `user_message` viene, ruteamos por dominio (router inteligente).
+      Si no, caemos al bulk dump (legacy, para compat con callers viejos).
     - context_type="sol": prompt de intake de datos + datos reales del proyecto
-      del usuario (si están disponibles).
+      del usuario (no necesita el KB general).
     """
     if context_type == "sol":
         if project_context:
@@ -124,7 +156,15 @@ async def build_system_prompt(context_type: str = "chat", project_context: str =
             )
         return SOL_SYSTEM_PROMPT
 
-    knowledge = await load_knowledge_context()
+    knowledge = ""
+    if user_message:
+        knowledge = await _load_routed_knowledge(user_message)
+
+    # Fallback de seguridad: si el router no devolvió nada (o no se pasó
+    # user_message), cargamos el KB completo como antes.
+    if not knowledge:
+        knowledge = await load_knowledge_context()
+
     if not knowledge:
         return BASE_SYSTEM_PROMPT
     return (

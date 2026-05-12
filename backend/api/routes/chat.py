@@ -211,10 +211,16 @@ async def chat(
 
     # 6. Build system prompt. For SOL, inject the user's real project data so
     #    the assistant knows current budget, progress, and dates.
+    #    For chat general, pass user_message so the router selects only
+    #    relevant KB docs (reduce input tokens ~80% manteniendo calidad).
     project_context = ""
     if body.context_type == "sol":
         project_context = await _build_sol_project_context(db, current_user.id)
-    system_prompt = await build_system_prompt(body.context_type, project_context)
+    system_prompt = await build_system_prompt(
+        body.context_type,
+        project_context,
+        user_message=body.message,
+    )
 
     conv_id_str = str(conv.id)
 

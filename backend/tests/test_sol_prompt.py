@@ -45,3 +45,44 @@ def test_chat_prompt_is_used_when_context_is_chat_default(monkeypatch):
     monkeypatch.setattr(anthropic_service, "load_knowledge_context", _empty_knowledge)
     prompt = asyncio.run(build_system_prompt("chat"))
     assert prompt == BASE_SYSTEM_PROMPT
+
+
+def test_chat_prompt_uses_router_when_user_message_provided(monkeypatch):
+    """Cuando hay user_message, el router debería ser el path primario."""
+    from services import anthropic_service
+
+    async def _routed(message: str):
+        return "ROUTED_CTX_FOR:" + message
+
+    async def _bulk_should_not_be_called():
+        raise AssertionError("bulk loader no debería llamarse si router devolvió ctx")
+
+    monkeypatch.setattr(anthropic_service, "_load_routed_knowledge", _routed)
+    monkeypatch.setattr(
+        anthropic_service, "load_knowledge_context", _bulk_should_not_be_called
+    )
+
+    prompt = asyncio.run(
+        build_system_prompt("chat", user_message="cuánto cuesta el m2 en CABA")
+    )
+    assert "ROUTED_CTX_FOR:cuánto cuesta el m2 en CABA" in prompt
+    assert prompt.startswith(BASE_SYSTEM_PROMPT)
+
+
+def test_chat_prompt_falls_back_to_bulk_when_router_empty(monkeypatch):
+    """Si el router devuelve vacío, caemos al bulk dump (red de seguridad)."""
+    from services import anthropic_service
+
+    async def _routed_empty(_message: str):
+        return ""
+
+    async def _bulk():
+        return "BULK_KB"
+
+    monkeypatch.setattr(anthropic_service, "_load_routed_knowledge", _routed_empty)
+    monkeypatch.setattr(anthropic_service, "load_knowledge_context", _bulk)
+
+    prompt = asyncio.run(
+        build_system_prompt("chat", user_message="cualquier cosa")
+    )
+    assert "BULK_KB" in prompt
