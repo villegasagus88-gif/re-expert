@@ -155,8 +155,10 @@ y el chat usa de manera prioritaria (sin recurrir a búsqueda externa):
 | Mapa keyword → archivo | `_meta/indice-rapido.md` |
 | Reglas de respuesta | `_meta/instrucciones-chat.md` |
 | Política de datos (este archivo) | `_meta/politica-datos.md` |
-| Fórmulas financieras y constructivas | `formulas.md` |
-| Rubros de obra y pesos típicos | `rubros-obra.md` |
+| Flujos por intención del usuario | `_meta/flows-por-intencion.md` |
+| Fórmulas financieras (TIR, VAN, sensibilidad) | `06-financiero/tir-van.md`, `06-financiero/sensibilidad.md`, `06-financiero/metricas-developer.md` |
+| Estructura de costos y rubros de obra | `14-costos-presupuesto/estructura-costos.md` |
+| Rendimientos de mano de obra por tarea | `05-construccion/rendimientos-mano-obra.md` |
 
 Cuando se sumen archivos a las carpetas temáticas (Fase 2 en adelante),
 todos los temas **estables** quedarán pre-cargados (normativa estructural,

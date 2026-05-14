@@ -3,16 +3,23 @@
 Aspectos técnicos y operativos: rubros, rendimientos, materiales, modalidades de
 contratación, control de obra, calidad y seguridad.
 
-## Archivos previstos
-- `rubros-obra.md` (migrar desde raíz legacy)
-- `rendimientos.md` (migrar)
-- `costo-construccion-ar.md` — cómo se compone $/m² en AR
-- `contratacion-modalidades.md` — llave en mano, costo+honorario, gerenciamiento
-- `gestion-cambios.md` — ordenes de cambio, adicionales
-- `control-certificaciones.md` — certificación contra avance verificado
-- `higiene-seguridad.md` — programa SRT, ART, plan de prevención
-- `calidad-recepcion.md` — protocolo de recepción de obra
-- `materiales-clave.md` — hormigón, acero, cerámicos, aberturas (criterios técnicos + variación de precio)
+## Archivos en esta carpeta
+
+Listado dinámico — ver el `ls` real de la carpeta.
+
+- `rendimientos-mano-obra.md` — m²/día por tarea (datos técnicos estables).
+- `modalidades-contratacion.md` — llave en mano, costo+honorario, gerenciamiento.
+- `gestion-subcontratistas.md` + `laboral-patologia-subcontratistas-y-fraude.md` (en `03-laboral`).
+- `certificacion-obra.md` + `control-presupuestario.md` (en `14-costos-presupuesto`).
+- `change-orders-claims.md` — gestión de cambios y adicionales.
+- `higiene-seguridad.md` — programa SRT, ART, plan de prevención.
+- `recepcion-obra.md` + `final-obra.md` + `cierre-traspaso.md` — recepción y traspaso.
+- `garantias-vicios-ruina.md` + `garantias-vicios-aplicado.md` — vicios y ruina.
+- `patologia-constructor-en-problemas.md` — qué hacer si el constructor falla.
+- `documentacion-obra.md` — soportes legales y operativos.
+
+> Estructura de costos y composición $/m² → `14-costos-presupuesto/estructura-costos.md`.
+> Criterios técnicos de materiales clave → `13-arquitectura-ingenieria/`.
 
 ## Reglas
 - $/m² siempre en USD billete + ARS al cambio del día.

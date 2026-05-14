@@ -169,6 +169,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | triple impacto, sostenibilidad, marco | `00-fundamentos/triple-impacto.md` + `09-triple-impacto/marco-conceptual.md` |
 | TTN, Tribunal Tasaciones Nación | `11-tasacion/tribunal-tasaciones-nacion.md` |
 | UOCRA, CCT 76/75, jornales | `03-laboral/uocra-cct.md` |
+| rendimientos mano de obra, m²/día, productividad | `05-construccion/rendimientos-mano-obra.md` |
 | usucapión, prescripción adquisitiva, CCyCN 1897 | `12-suelo-y-dominio/usucapion.md` |
 | UVA, hipoteca, indexación, IPC | `06-financiero/hipoteca-uva.md` + `14-costos-presupuesto/indices-costo.md` |
 | waterfall, GP, LP, pref, catch-up, carried, promote | `06-financiero/waterfall-inversores.md` |

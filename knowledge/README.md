@@ -62,7 +62,9 @@ knowledge/
 └─ 16-uif-blanqueo/              # UIF, sujetos obligados, KYC, PEP, blanqueos
 ```
 
-> Archivos en la raíz (`formulas.md`, `materiales-precios.csv`, `normativa-basica.md`, `rendimientos.md`, `rubros-obra.md`, `rules.md`) son legacy y se irán migrando a las carpetas temáticas.
+> El contenido vive exclusivamente bajo `_meta/` y las carpetas temáticas
+> `NN-*/`. Cualquier archivo suelto en la raíz (fuera de este README) se
+> considera obsoleto y debe migrarse o purgarse.
 
 ---
 
