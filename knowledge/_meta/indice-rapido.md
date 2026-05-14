@@ -3,7 +3,7 @@ title: "Índice rápido por keyword"
 topic: "meta"
 subtopic: "indice"
 jurisdiction: "N/A"
-last_verified: "2026-05-11"
+last_verified: "2026-05-14"
 sources: []
 keywords: [indice, mapa, navegacion, routing, busqueda]
 audience: ["chat"]
@@ -31,6 +31,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | ambiental, Ley 25.675, impacto ambiental | `02-normativa/ambiental.md` |
 | análisis de factibilidad, viabilidad | `00-fundamentos/analisis-factibilidad.md` |
 | análisis de precios unitarios, APU, cómputo métrico | `14-costos-presupuesto/analisis-precios-unitarios.md` |
+| árbol decisión venta inmueble, ITI vs cedular, vivienda única exención/reemplazo, COTI, CDI, habitualista, donación vs venta | `04-impuestos/impuestos-arbol-decision-venta-pf.md` |
 | anteproyecto, proyecto ejecutivo, programa | `13-arquitectura-ingenieria/programa-arquitectonico.md` |
 | apalancamiento, leverage, deuda | `06-financiero/apalancamiento.md` |
 | arquitectura, ingeniería, dirección de obra | `13-arquitectura-ingenieria/programa-arquitectonico.md` |
@@ -42,7 +43,9 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | BIM, building information modeling, Revit, IFC, LOD | `13-arquitectura-ingenieria/bim-tecnologia.md` |
 | blanqueo, sinceramiento, Ley 27260, Ley 27743 | `16-uif-blanqueo/blanqueos.md` |
 | boleto compraventa, seña, oponibilidad CCyCN 1170 | `12-suelo-y-dominio/boleto-compraventa.md` |
+| boleto cláusulas de oro, indemnidad, hold back, arras confirmatorias/penitenciales, pacto comisorio, hardship, fuerza mayor, cláusula penal, mediación 26589 | `02-normativa/contratos-boleto-clausulas-de-oro.md` |
 | CABA, AGIP, Código Urbanístico, Ley 6099 | `02-normativa/codigo-urbanistico-caba.md` + `04-impuestos/provincial/caba.md` |
+| cadena dominial trampas, tracto sucesivo/abreviado, declaratoria no inscripta, donación previa, Ley 24.374, fiduciario sin facultades, fraude pauliana art 338, art 392 buena fe, title insurance | `12-suelo-y-dominio/cadena-dominial-trampas.md` |
 | Cap rate, capitalización de renta | `11-tasacion/metodos-valuacion.md` + `01-mercado-argentino/benchmarks.md` |
 | cashflow, flujo de caja proyecto | `06-financiero/cashflow-real-estate.md` |
 | CCyCN, Código Civil y Comercial | `02-normativa/ccyc-real-estate.md` |
@@ -55,6 +58,8 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | CIRSOC, hormigón armado, acero, mampostería, cargas | `13-arquitectura-ingenieria/cirsoc.md` |
 | Código Edificación CABA, Ley 6100 | `02-normativa/codigo-edificacion-caba.md` |
 | comercialización, ventas, marketing inmobiliario | `07-comercial/*` + `01-mercado-argentino/portales-y-canales.md` |
+| compra terreno due diligence, zonificación, OTBN, bosques nativos, Ley 26.331, Fase 1/2 ESA, ribera, humedales, servidumbres, geotecnia SPT, factibilidad servicios, mensura/subdivisión | `12-suelo-y-dominio/compra-terreno-due-diligence.md` |
+| constructor en problemas, contratista en quiebra/concurso, abandono obra, sobrefacturación, certificación inflada, step-in, reemplazo contratista, paralización obra, claims preventivos, art 1083/1086 | `05-construccion/patologia-constructor-en-problemas.md` |
 | condominio, CCyCN 1983 | `04-impuestos/estructuras-fiscales/condominio.md` |
 | contingencias, imprevistos, change order, buffer | `14-costos-presupuesto/contingencias-imprevistos.md` |
 | contribución por mejoras, plusvalía urbanística | `04-impuestos/municipal/contribuciones-y-plusvalia.md` |
@@ -66,10 +71,12 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | curva S, cronograma, gantt, certificación, avance | `14-costos-presupuesto/curva-s.md` |
 | decision frameworks, NPV vs IRR, comparación | `10-estrategia/decision-frameworks.md` |
 | defensa del consumidor, Ley 24.240 | `02-normativa/defensa-consumidor.md` |
+| defensa consumidor aplicada RE, daño punitivo art 52 bis, daño directo art 40, cláusula abusiva art 37 + 1117, render como oferta vinculante, COPREC, Halabi/Mosca/Ledesma, no entrega en plazo pozo | `02-normativa/defensa-consumidor-aplicada-re.md` |
 | derechos construcción, delineación, demolición, visado | `04-impuestos/municipal/derechos-construccion.md` |
 | desarrollador, rol developer, teoría | `00-fundamentos/teoria-desarrollador.md` + `10-estrategia/teoria-developer.md` |
 | documentación obra, libros, planos AS-BUILT | `05-construccion/documentacion-obra.md` |
 | due diligence dominial, informe dominio, certificados | `12-suelo-y-dominio/due-diligence-dominial.md` |
+| due diligence integral protocolo, DD pre-compra, 9 capas (dominial/gravámenes/personas/urbanística/fiscal/técnica/ambiental/contractual/ocupacional), red flags compra, escrow, condiciones suspensivas | `12-suelo-y-dominio/due-diligence-integral-protocolo.md` |
 | eficiencia energética, IRAM 11900, etiquetado | `09-triple-impacto/eficiencia-energetica.md` |
 | eficiencia de planta, factor K, m² útiles | `13-arquitectura-ingenieria/eficiencia-planta.md` |
 | embudo comercial, lead, conversión | `07-comercial/embudo-comercial.md` |
@@ -87,6 +94,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | fideicomiso ordinario, CCyCN 1666 | `04-impuestos/estructuras-fiscales/fideicomiso-ordinario.md` |
 | fideicomiso al costo, transparencia fiscal | `04-impuestos/estructuras-fiscales/fideicomiso-al-costo.md` |
 | fideicomiso financiero, CNV, oferta pública | `04-impuestos/estructuras-fiscales/fideicomiso-financiero.md` |
+| fideicomiso patología aplicada, autocontratación fiduciario, sobrecosto, dilución fiduciantes, mora ejecución cuotas, fiduciario en problemas/remoción, art 1685 patrimonio separado, fraude pauliana, Resol UIF 30/2017 | `04-impuestos/estructuras-fiscales/fideicomiso-patologia-aplicada.md` |
 | financiamiento, créditos, UVA, deuda, capital | `06-financiero/financiamiento.md` |
 | Final de Obra, FO, certificado | `05-construccion/final-obra.md` |
 | FOT, FOS, indicadores urbanísticos | `02-normativa/codigo-urbanistico-caba.md` + `_meta/glosario.md` |
@@ -94,6 +102,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | FX, dólar, MEP, CCL, oficial, brecha | `08-macro-argentina/fx-cambiario.md` |
 | Ganancias, impuesto a las ganancias, escala | `04-impuestos/nacional/ganancias.md` |
 | garantías construcción, vicios, ruina CCyCN 1273 | `05-construccion/garantias-vicios-ruina.md` |
+| posventa patológica aplicada, vicios redhibitorios CCyCN 1051-1059, ruina art 1273 (10 años solidaridad no renunciable), acción redhibitoria/quanti minoris, seguro decenal, fondo de garantía, humedades/filtraciones/fisuras, defensa constructor | `05-construccion/garantias-vicios-aplicado.md` |
 | gestión de riesgos, matriz, mitigación | `10-estrategia/gestion-riesgos.md` |
 | habilitación comercial, inspección, ocupación vía pública | `04-impuestos/municipal/tasas-municipales.md` |
 | higiene y seguridad obra, Decreto 911/96, EPP | `05-construccion/higiene-seguridad.md` |
@@ -151,6 +160,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | sensibilidad, monte carlo, escenarios financieros | `06-financiero/sensibilidad.md` |
 | sismicidad, INPRES-CIRSOC 103, zonas sísmicas | `13-arquitectura-ingenieria/sismicidad-inpres.md` |
 | solidaridad art. 30 LCT, jurisprudencia | `03-laboral/solidaridad-art-30.md` |
+| subcontratistas patología y fraude laboral, art 30 aplicado (Benítez 2009), art 29 y 29 bis, empresa cáscara, ART trucha, Ley 22.250 fondo cese laboral (IERIC), comitente solidario, telegramas, accidente obra Decreto 911/96 | `03-laboral/laboral-patologia-subcontratistas-y-fraude.md` |
 | stack tecnológico, CRM, WhatsApp, portales, integración | `07-comercial/crm-stack-tecnologico.md` |
 | suelo, geotecnia, fundaciones, SPT | `13-arquitectura-ingenieria/estudio-suelos.md` |
 | tasación, valuación, tasador | `11-tasacion/metodos-valuacion.md` + `11-tasacion/normas-profesionales.md` |
@@ -243,6 +253,29 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 
 ---
 
+## Por situación patológica / aplicada (capa experta)
+
+| Situación | Archivo(s) principal(es) |
+|---|---|
+| "El constructor abandonó / quebró / sobrefactura / no avanza" | `05-construccion/patologia-constructor-en-problemas.md` |
+| "Tengo que comprar un inmueble y quiero hacer DD bien hecha" | `12-suelo-y-dominio/due-diligence-integral-protocolo.md` (+ `due-diligence-dominial.md` para la capa pura) |
+| "Compro un terreno (urbano o rural) — qué riesgos verifico" | `12-suelo-y-dominio/compra-terreno-due-diligence.md` |
+| "La cadena dominial tiene una donación / sucesión rara / sociedad disuelta / poder vencido / bien de familia / subasta" | `12-suelo-y-dominio/cadena-dominial-trampas.md` |
+| "Mi subcontratista trabaja en negro / hubo accidente / vino el SRT / me reclaman solidaridad por art 30 o 22.250" | `03-laboral/laboral-patologia-subcontratistas-y-fraude.md` |
+| "Necesito armar un boleto / locación de obra / mandato / fideicomiso de construcción con cláusulas que me protejan" | `02-normativa/contratos-boleto-clausulas-de-oro.md` |
+| "Vendo un inmueble — qué impuestos pago" (PF, sociedad, fideicomiso, beneficiario del exterior) | `04-impuestos/impuestos-arbol-decision-venta-pf.md` |
+| "Mi fideicomiso al costo tiene autocontratación / sobrecosto / dilución / fiduciario en problemas / cuota impaga" | `04-impuestos/estructuras-fiscales/fideicomiso-patologia-aplicada.md` |
+| "El comprador / locatario me reclama Ley 24.240 — daño punitivo, no entrega en plazo, render mentiroso, COPREC" | `02-normativa/defensa-consumidor-aplicada-re.md` |
+| "Apareció humedad / fisura / vicio en la entrega — qué le corresponde reclamar y cómo me defiendo" | `05-construccion/garantias-vicios-aplicado.md` |
+
+> Los archivos de la capa experta están escritos en clave **operativa / decisional**:
+> red flags, errores frecuentes, checklists profesionales, cláusulas de oro, plantillas de
+> intimación, defensa de cada lado. NO son resumen de norma — la norma está en los
+> archivos base de la misma carpeta. Para responder bien una pregunta de patología,
+> el chat **debe abrir el archivo experto + el archivo base** (cruce norma + práctica).
+
+---
+
 ## Estado de la base
 
 - ✅ Estructura completa
@@ -251,6 +284,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 - ✅ 17 bloques temáticos productivos + `_meta/` extendido
 - ✅ Profundización 06-financiero, 07-comercial, 09-triple-impacto, 10-estrategia, 14-costos, 15-tecnologia, 17-cnv-bcra, 18-seguros, 19-casos
 - ✅ Benchmarks vivos + indicadores macro + comparables internacionales (Fase 8 / Frontera)
-- ✅ Última actualización: 2026-05-11 (Fases 3-8)
+- ✅ **Capa experta aplicada (Top-10)**: patología constructor, DD integral, subcontratistas/fraude, cláusulas de oro, árbol decisión venta PF, fideicomiso patología, compra terreno DD, consumidor aplicado RE, cadena dominial trampas, posventa vicios aplicado
+- ✅ Última actualización: 2026-05-14 (capa experta + ruteo router actualizado)
 
 > Cuando agregues un archivo nuevo, ACTUALIZÁ este índice. Es la primera fuente de routing del chat — si no está acá, el chat va a tardar más en encontrarlo (más tokens, más latencia).
