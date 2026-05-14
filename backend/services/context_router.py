@@ -550,9 +550,12 @@ async def select_context_for_message(
     remaining = max_chars
 
     # 1) Baseline meta — siempre intentamos cargarlo.
-    # La query baseline ahora incluye 'flujos intencion routing' para que el
-    # archivo `_meta/flows-por-intencion.md` quede dentro del top-K junto con
-    # instrucciones, política de datos, índice rápido y glosario.
+    # La query baseline prioriza las reglas operativas + routing del chat:
+    # instrucciones, política de datos, índice rápido, flujos por intención.
+    # `anti-patterns.md` queda fuera del baseline por tamaño (22KB compite con
+    # flows-por-intencion 31KB en un budget de 32KB) — se carga dinámicamente
+    # cuando la query del usuario contiene red flags (su frontmatter tiene
+    # buenas keywords para que el ranking lo levante con boost 3×).
     try:
         meta_ctx = await knowledge_base.get_context(
             query="reglas instrucciones politica datos indice glosario flujos intencion routing",

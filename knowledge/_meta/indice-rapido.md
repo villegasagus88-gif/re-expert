@@ -200,6 +200,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | caso barrio cerrado PBA, club de campo | `19-casos-de-estudio/suburban-pozo-pba.md` |
 | FAQ preguntas frecuentes chat | `_meta/faq-base.md` |
 | flujos por intención, árbol de decisión del chat, customer journey chat, qué viene a hacer el cliente | `_meta/flows-por-intencion.md` |
+| anti-patterns, errores típicos, red flags, malas prácticas del rubro RE AR | `_meta/anti-patterns.md` |
 | personas usuarios perfiles chat | `_meta/personas.md` |
 | templates plantillas respuesta chat | `_meta/templates.md` |
 | benchmarks USD/m² barrios, cap rate, vacancia, costos construcción | `_meta/benchmarks-mercado.yaml` |

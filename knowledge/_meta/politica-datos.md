@@ -156,6 +156,7 @@ y el chat usa de manera prioritaria (sin recurrir a búsqueda externa):
 | Reglas de respuesta | `_meta/instrucciones-chat.md` |
 | Política de datos (este archivo) | `_meta/politica-datos.md` |
 | Flujos por intención del usuario | `_meta/flows-por-intencion.md` |
+| Anti-patterns del rubro (guardrails) | `_meta/anti-patterns.md` |
 | Fórmulas financieras (TIR, VAN, sensibilidad) | `06-financiero/tir-van.md`, `06-financiero/sensibilidad.md`, `06-financiero/metricas-developer.md` |
 | Estructura de costos y rubros de obra | `14-costos-presupuesto/estructura-costos.md` |
 | Rendimientos de mano de obra por tarea | `05-construccion/rendimientos-mano-obra.md` |
