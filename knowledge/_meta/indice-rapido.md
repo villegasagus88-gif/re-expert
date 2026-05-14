@@ -65,7 +65,8 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | contribución por mejoras, plusvalía urbanística | `04-impuestos/municipal/contribuciones-y-plusvalia.md` |
 | control presupuestario, earned value, CPI, SPI, desvíos | `14-costos-presupuesto/control-presupuestario.md` |
 | Córdoba, DGR Córdoba | `04-impuestos/provincial/cordoba.md` |
-| corredor inmobiliario, Ley 25.028, CUCICBA | `11-tasacion/normas-profesionales.md` + `16-uif-blanqueo/sujeto-obligado-inmobiliarias.md` |
+| corredor inmobiliario, Ley 25.028, CUCICBA, COMARPI, Ley 2340 CABA, Ley 13.154 PBA, comisión venta, doble comisión, exclusividad, autorización venta, devengamiento comisión, contrato corretaje art 1345-1355 CCyCN | `07-comercial/corredores-y-comisiones.md` + `11-tasacion/normas-profesionales.md` |
+| corretaje patología, comisión sin matrícula, doble comisión sin pacto, honorarios ocultos al comprador | `07-comercial/corredores-y-comisiones.md` |
 | costos obra, hard cost, indirectos, gerenciamiento | `14-costos-presupuesto/estructura-costos.md` + `05-construccion/modalidades-contratacion.md` |
 | CRM inmobiliario, Tokko, HubSpot, WhatsApp Business | `07-comercial/crm-stack-tecnologico.md` |
 | curva S, cronograma, gantt, certificación, avance | `14-costos-presupuesto/curva-s.md` |
@@ -139,6 +140,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | Monotributo, Ley 24.977 | `04-impuestos/nacional/monotributo.md` |
 | normas profesionales tasación, CPAU, CPIC | `11-tasacion/normas-profesionales.md` |
 | panorama mercado AR, ciclo actual | `01-mercado-argentino/panorama.md` |
+| patología comercial, conflicto venta UF, doble seña, doble venta, mora developer, mora comprador, cambio proyecto obra, diferencia m2 escritura, cesión boleto, devolución seña, retracto, publicidad vs entrega | `07-comercial/patologias-comerciales.md` |
 | PEP, persona expuesta políticamente | `16-uif-blanqueo/pep-personas-expuestas.md` |
 | permuta, intercambio suelo por UF | `10-estrategia/permuta.md` |
 | players, developers AR, IRSA, Consultatio | `01-mercado-argentino/players-y-actores.md` |
