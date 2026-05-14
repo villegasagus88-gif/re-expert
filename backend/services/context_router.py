@@ -459,15 +459,29 @@ def _count_matches(message_norm: str, message_tokens: set[str], kws: frozenset[s
 CHARS_PER_TOKEN = 4
 
 # Budget total del contexto de KB inyectado al system prompt.
-# Realista para que el chat tenga info útil sin reventar latencia/costo.
-# 14k tokens ≈ 56k chars ≈ 50-60 KB de markdown.
-MAX_CONTEXT_TOKENS = 14000
+# 18k tokens ≈ 72k chars ≈ 70-72 KB de markdown.
+#
+# Calibrado para que entren los 3 pilares del `_meta/` en baseline:
+#   - instrucciones-chat.md         ~8 KB  (reglas duras del chat)
+#   - politica-datos.md            ~10 KB  (volátil vs estable)
+#   - flows-por-intencion.md       ~30 KB  (árbol de decisión por intención)
+#                                  ─────
+#   Total pilares                  ~48 KB
+#
+# + slack META para glosario/faq/personas según ranking del baseline query.
+# + DYNAMIC para 4-5 archivos aplicados del/los dominio(s) detectado(s).
+MAX_CONTEXT_TOKENS = 18000
 MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * CHARS_PER_TOKEN
 
-# Dentro de ese total, reservamos una porción para el baseline obligatorio
-# del `_meta/` (reglas, índice, glosario, flujos por intención). El resto va
-# a docs dinámicos.
-META_BUDGET_CHARS = 32000  # ≈ 8000 tokens — incluye flujos por intención
+# META_BUDGET = 52 KB → cabe los 3 pilares (~48 KB) + 4 KB de slack para que
+# glosario/faq/personas entren parcialmente cuando la query los favorezca.
+# Archivos `_meta` que NO entran al baseline por diseño:
+#   - anti-patterns.md (22 KB) → entra vía dynamic cuando hay red flag.
+#   - indice-rapido.md (26 KB) → mapa para humanos; el LLM ya tiene
+#     frontmatter keywords en cada archivo.
+META_BUDGET_CHARS = 52000
+
+# DYNAMIC_BUDGET ≈ 20 KB → 4-5 archivos aplicados (cada uno 4-8 KB).
 DYNAMIC_BUDGET_CHARS = MAX_CONTEXT_CHARS - META_BUDGET_CHARS
 
 
