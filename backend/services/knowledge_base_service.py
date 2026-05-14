@@ -47,6 +47,17 @@ _STOPWORDS = frozenset(
 
 _WORD_RE = re.compile(r"[a-záéíóúñü0-9]+", re.IGNORECASE)
 
+# Detecta el bloque frontmatter YAML al inicio de un .md (entre dos líneas '---')
+# y dentro de él la lista `keywords: [..., ..., ...]` (puede ser multi-línea).
+_FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+_KEYWORDS_RE = re.compile(r"^keywords:\s*\[(.*?)\]\s*$", re.MULTILINE | re.DOTALL)
+
+# Boost que se aplica a matches de la query contra las keywords del frontmatter.
+# Sin boost (1×) la curaduría humana del frontmatter no aporta nada al ranking.
+# Con boost 3× los archivos correctamente etiquetados aparecen al tope cuando
+# la query usa terminología que el autor del archivo previó.
+KEYWORD_BOOST = 3
+
 
 @dataclass
 class Document:
@@ -58,6 +69,9 @@ class Document:
     doc_type: DocType
     content: str  # texto plano (md directo, o csv serializado en filas legibles)
     tokens: frozenset[str] = field(default_factory=frozenset)
+    # Tokens extraídos exclusivamente del campo `keywords` del frontmatter YAML.
+    # Reciben boost en el scoring (ver `score_document`).
+    keyword_tokens: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass
@@ -90,6 +104,23 @@ def _domain_from_path(path: str) -> str:
 def parse_md(content: str) -> str:
     """.md se guarda tal cual (ya es texto legible para el LLM)."""
     return content.strip()
+
+
+def extract_keywords_from_frontmatter(content: str) -> str:
+    """
+    Extrae el valor del campo `keywords: [...]` del frontmatter YAML inicial
+    de un .md. Devuelve el contenido entre los corchetes como string crudo
+    (los tokens los normaliza `_tokenize` después). Si no hay frontmatter o
+    no hay campo `keywords`, devuelve "".
+    """
+    m = _FRONTMATTER_RE.match(content)
+    if not m:
+        return ""
+    fm = m.group(1)
+    kw_match = _KEYWORDS_RE.search(fm)
+    if not kw_match:
+        return ""
+    return kw_match.group(1)
 
 
 def parse_yaml(content: str) -> str:
@@ -132,9 +163,11 @@ def parse_csv(content: str, max_rows: int = 500) -> str:
 def build_document(path: str, raw_content: str) -> Document | None:
     """Parsea un archivo según su extensión. Devuelve None si no es soportado."""
     lower = path.lower()
+    keywords_raw = ""
     if lower.endswith(".md"):
         text = parse_md(raw_content)
         doc_type: DocType = "md"
+        keywords_raw = extract_keywords_from_frontmatter(raw_content)
     elif lower.endswith(".csv"):
         text = parse_csv(raw_content)
         doc_type = "csv"
@@ -152,17 +185,24 @@ def build_document(path: str, raw_content: str) -> Document | None:
         doc_type=doc_type,
         content=text,
         tokens=frozenset(_tokenize(f"{name}\n{text}")),
+        keyword_tokens=frozenset(_tokenize(keywords_raw)) if keywords_raw else frozenset(),
     )
 
 
 def score_document(doc: Document, query_tokens: set[str]) -> int:
     """
-    Score = cantidad de tokens de la query que aparecen en el doc.
+    Score = matches en el body + matches en `keywords` del frontmatter * BOOST.
+
+    El boost (3×) prioriza archivos cuyo autor explicitó las keywords que
+    cubre. Es señal humana curada, mucho más fuerte que un match casual en
+    el cuerpo (especialmente cuando el cuerpo es largo).
     Simple y suficiente para un KB chico. Reemplazable por BM25 más adelante.
     """
     if not query_tokens:
         return 0
-    return len(query_tokens & doc.tokens)
+    body_score = len(query_tokens & doc.tokens)
+    kw_score = len(query_tokens & doc.keyword_tokens) * KEYWORD_BOOST
+    return body_score + kw_score
 
 
 class KnowledgeBaseService:
