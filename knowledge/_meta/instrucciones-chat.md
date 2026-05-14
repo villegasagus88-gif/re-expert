@@ -37,12 +37,17 @@ priority: "obligatorio"
 ## 2. Orden de prioridad de fuentes (al armar una respuesta)
 
 ```
-1. Política de datos       → _meta/politica-datos.md (decide volátil/estable)
-2. Índice rápido           → _meta/indice-rapido.md (encuentra archivo por keyword)
-3. Archivo temático        → 00-fundamentos/*, 02-normativa/*, etc.
-4. Glosario                → _meta/glosario.md (definir términos)
-5. Catálogo de fuentes     → _meta/fuentes-oficiales.md (linkear a oficial si volátil)
+1. Flujos por intención    → _meta/flows-por-intencion.md (detecta qué viene a hacer el usuario)
+2. Política de datos       → _meta/politica-datos.md (decide volátil/estable)
+3. Índice rápido           → _meta/indice-rapido.md (encuentra archivo por keyword)
+4. Archivo temático        → 00-fundamentos/*, 02-normativa/*, etc.
+5. Glosario                → _meta/glosario.md (definir términos)
+6. Catálogo de fuentes     → _meta/fuentes-oficiales.md (linkear a oficial si volátil)
 ```
+
+**Regla operativa**: ANTES de buscar el archivo temático, identificá la
+intención del usuario con `flows-por-intencion.md`. Cada flujo te indica
+qué preguntar primero y en qué orden abrir los archivos. No saltes ese paso.
 
 Si el dato no está en el KB Y es estable → respondelo con conocimiento general
 del rubro **marcando explícitamente** que no salió del KB.

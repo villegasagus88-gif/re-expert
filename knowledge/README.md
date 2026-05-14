@@ -20,8 +20,9 @@ Toda la información acá es **profesional, validada y trazable a fuentes oficia
 
 | Archivo | Para qué |
 |---|---|
-| **`_meta/politica-datos.md`** | Define qué es volátil / semivolátil / estable. Reglas duras de qué se guarda y qué no. |
 | **`_meta/instrucciones-chat.md`** | Protocolo de respuesta: identidad, tono, templates, qué nunca hacer. |
+| **`_meta/flows-por-intencion.md`** | Árbol de decisión del chat: detecta intención del usuario y dicta qué preguntar y qué archivos abrir, en qué orden. |
+| **`_meta/politica-datos.md`** | Define qué es volátil / semivolátil / estable. Reglas duras de qué se guarda y qué no. |
 | `_meta/fuentes-oficiales.md` | Catálogo de fuentes a las que el chat manda al usuario para datos volátiles. |
 | `_meta/indice-rapido.md` | Mapa keyword → archivo del KB (búsqueda en O(1)). |
 | `_meta/glosario.md` | Términos del rubro definidos. |

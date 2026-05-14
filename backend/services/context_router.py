@@ -465,8 +465,9 @@ MAX_CONTEXT_TOKENS = 14000
 MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * CHARS_PER_TOKEN
 
 # Dentro de ese total, reservamos una porción para el baseline obligatorio
-# del `_meta/` (reglas, índice, glosario). El resto va a docs dinámicos.
-META_BUDGET_CHARS = 24000  # ≈ 6000 tokens — alcanza para meta esencial
+# del `_meta/` (reglas, índice, glosario, flujos por intención). El resto va
+# a docs dinámicos.
+META_BUDGET_CHARS = 32000  # ≈ 8000 tokens — incluye flujos por intención
 DYNAMIC_BUDGET_CHARS = MAX_CONTEXT_CHARS - META_BUDGET_CHARS
 
 
@@ -549,9 +550,12 @@ async def select_context_for_message(
     remaining = max_chars
 
     # 1) Baseline meta — siempre intentamos cargarlo.
+    # La query baseline ahora incluye 'flujos intencion routing' para que el
+    # archivo `_meta/flows-por-intencion.md` quede dentro del top-K junto con
+    # instrucciones, política de datos, índice rápido y glosario.
     try:
         meta_ctx = await knowledge_base.get_context(
-            query="reglas instrucciones politica datos indice glosario",
+            query="reglas instrucciones politica datos indice glosario flujos intencion routing",
             domain="_meta",
             max_chars=min(META_BUDGET_CHARS, remaining),
             top_k=8,
