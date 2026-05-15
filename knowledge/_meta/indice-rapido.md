@@ -91,6 +91,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | estructuras fiscales, comparativa vehículos | `04-impuestos/estructuras-fiscales/comparativa-vehiculos.md` |
 | estudio de suelos, SPT, CPT, geotecnia, fundaciones | `13-arquitectura-ingenieria/estudio-suelos.md` |
 | expropiación, Ley 21.499, indemnización | `12-suelo-y-dominio/expropiacion.md` |
+| exit strategy, salida proyecto RE, venta SPV, M&A fideicomiso, pivot BTR, refinanciación, cesión derechos, dación en pago, disolución fideicomiso, drag-along, tag-along, ROFR, ROFO, put option, call option, redemption, lock-up, waterfall exit, promote, carry | `10-estrategia/exit-strategy.md` |
 | FCI cerrado, fondo común inversión inmobiliario, CNV | `06-financiero/fci-inmobiliarios.md` |
 | fideicomiso ordinario, CCyCN 1666 | `04-impuestos/estructuras-fiscales/fideicomiso-ordinario.md` |
 | fideicomiso al costo, transparencia fiscal | `04-impuestos/estructuras-fiscales/fideicomiso-al-costo.md` |
@@ -127,6 +128,7 @@ Mapa para que el chat resuelva en O(1) qué archivo abrir según el tema.
 | LCT, Ley 20.744, contrato trabajo | `03-laboral/lct-marco.md` |
 | Ley 26.737, tierras rurales, extranjeros, RNTR | `12-suelo-y-dominio/ley-26737-tierras-rurales.md` |
 | Ley 8912 PBA, ordenamiento territorial | `02-normativa/ley-8912-pba.md` |
+| litigios típicos RE, juicio inmobiliario, escrituración forzosa art 1185, ejecución boleto, resolución contrato, acción reivindicatoria, división condominio art 1996, desalojo, acción posesoria, usucapión, acción colectiva Halabi, amparo urbanístico, amparo ambiental, concurso developer, quiebra developer, acción pauliana, tercería dominio, medida cautelar, anotación litis, embargo, inhibición, prohibición innovar, prescripción 5 años, costas, fuero | `02-normativa/litigios-tipicos-re.md` |
 | marco UIF, Ley 25.246, sujeto obligado, ROS | `16-uif-blanqueo/marco-uif.md` |
 | marketing digital, Meta Ads, Google Ads, SEO, redes | `07-comercial/marketing-digital.md` |
 | mercado AR, panorama, segmentos | `01-mercado-argentino/panorama.md` + `01-mercado-argentino/segmentos-y-productos.md` |
