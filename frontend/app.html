@@ -1976,16 +1976,20 @@ function updateDailyCounter(remaining,total){
   el.style.color=remaining<=3?'#ef4444':remaining<=7?'#f59e0b':'var(--text-sidebar-muted)';
 }
 
-async function sendMessage(text){
+async function sendMessage(text,opts){
   if(!text.trim()||state.isStreaming)return;
   if(!window.REAuthService||!window.REAuthService.authFetch){alert('Sesion no inicializada');return}
   const userMsg=text.trim();
+  const attachments=(opts&&opts.attachments)||[];
   const isNewConv=!state.currentConversation;
   els.messageInput.value='';els.messageInput.style.height='auto';updateSendBtn();
-  state.messages.push({role:'user',content:userMsg});appendMsg('user',userMsg);
+  const displayMsg=attachments.length
+    ?`${userMsg}\n\n_📎 ${attachments.length} ${attachments.length===1?'imagen adjunta':'imágenes adjuntas'}_`
+    :userMsg;
+  state.messages.push({role:'user',content:displayMsg});appendMsg('user',displayMsg);
   state.isStreaming=true;els.sendBtn.disabled=true;appendStreaming();let full='';
   try{
-    const payload={message:userMsg,context_type:'chat'};
+    const payload={message:userMsg,context_type:'chat',attachments};
     if(state.currentConversation?.id)payload.conversation_id=state.currentConversation.id;
     const r=await window.REAuthService.authFetch(apiBase()+'/api/chat',{
       method:'POST',
@@ -2066,6 +2070,26 @@ function initPlanos(){
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
   input.addEventListener('change',()=>handleFiles(input.files));
 }
+
+// Convierte un File de imagen a un ChatAttachment listo para enviar al
+// backend. Devuelve {type:'image', media_type, data} donde `data` es
+// base64 SIN el prefijo `data:image/...;base64,`.
+function readImageAsAttachment(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const m=/^data:([^;]+);base64,(.*)$/.exec(reader.result||'');
+      if(!m){reject(new Error('Formato de archivo inválido'));return;}
+      resolve({type:'image',media_type:m[1],data:m[2]});
+    };
+    reader.onerror=()=>reject(reader.error||new Error('Error leyendo archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+const PLANOS_IMG_RE=/^image\/(png|jpe?g|gif|webp)$/i;
+const PLANOS_MAX_FILES=4;
+const PLANOS_MAX_BYTES=6*1024*1024; // 6 MB binarios por imagen
 function handleFiles(files){
   if(!files.length)return;
   state.uploadedFiles=[...state.uploadedFiles,...Array.from(files)];
@@ -3142,10 +3166,67 @@ function initProyectoTabs(){
 
 // AI actions for sections
 function initSectionActions(){
-  $('#analyzePlanosBtn')?.addEventListener('click',()=>{
-    const names=state.uploadedFiles.map(f=>f.name).join(', ');
+  $('#analyzePlanosBtn')?.addEventListener('click',async()=>{
+    const all=state.uploadedFiles;
+    if(!all.length)return;
+    const images=all.filter(f=>PLANOS_IMG_RE.test(f.type||''));
+    const oversized=images.filter(f=>f.size>PLANOS_MAX_BYTES);
+    const nonImages=all.filter(f=>!PLANOS_IMG_RE.test(f.type||''));
+
+    // Validaciones
+    if(oversized.length){
+      alert(`Algunas imágenes son muy grandes (>6MB):\n${oversized.map(f=>`• ${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`).join('\n')}\n\nReducí su tamaño antes de subir.`);
+      return;
+    }
+    const usable=images.slice(0,PLANOS_MAX_FILES);
+    const dropped=images.length-usable.length;
+
+    // Leer las imágenes como base64
+    let attachments=[];
+    if(usable.length){
+      try{
+        attachments=await Promise.all(usable.map(readImageAsAttachment));
+      }catch(e){
+        alert('No pude leer los planos: '+e.message);
+        return;
+      }
+    }
+
+    // Construir el prompt
+    let prompt;
+    if(attachments.length){
+      const extras=[];
+      if(dropped>0)extras.push(`${dropped} ${dropped===1?'imagen':'imágenes'} más quedaron afuera (límite ${PLANOS_MAX_FILES} por mensaje)`);
+      if(nonImages.length)extras.push(`adjuntos no procesables como imagen: ${nonImages.map(f=>f.name).join(', ')}`);
+      const note=extras.length?` _(${extras.join('; ')})_`:'';
+      prompt=`Analizá los planos que te adjunto y estimá los materiales necesarios para la obra.${note}
+
+Quiero un desglose con:
+1. **Identificación**: qué tipo de plano es (planta, corte, fachada, instalaciones) y nivel/sector.
+2. **Dimensiones aproximadas** que se puedan inferir (superficie cubierta, alturas, longitudes de muros).
+3. **Cómputo por rubro** con cantidades estimadas:
+   - Mampostería (m² de muro, ladrillos)
+   - Estructura (m³ de hormigón, kg de hierro)
+   - Cubierta (m² de techo)
+   - Pisos y revestimientos (m²)
+   - Aberturas (cantidad y dimensiones)
+   - Instalaciones sanitaria/eléctrica/gas (puntos)
+4. **Costo estimado** por rubro usando precios de referencia abril 2026.
+5. **Observaciones técnicas** o inconsistencias que veas en el plano.
+
+Si no podés leer algo del plano, decímelo en vez de inventarlo.`;
+    }else{
+      // Fallback: no hay imágenes utilizables, mando solo nombres
+      const names=all.map(f=>f.name).join(', ');
+      prompt=`Subí estos archivos pero no son imágenes que pueda procesar: ${names}.
+
+Por ahora solo puedo analizar planos en formato PNG, JPG, GIF o WEBP. Los PDFs requieren exportar cada página como imagen.
+
+¿Querés que te oriente sobre cómo convertir tus archivos para que los pueda analizar?`;
+    }
+
     switchView('chat');
-    setTimeout(()=>sendMessage(`Analiza estos planos y estima los materiales necesarios para la obra: ${names}. Dame un desglose detallado con cantidades estimadas de cada material.`),100);
+    setTimeout(()=>sendMessage(prompt,{attachments}),100);
   });
   $('#refreshPricesBtn')?.addEventListener('click',()=>loadMateriales(true));
   $('#deepAnalysisBtn')?.addEventListener('click',()=>{

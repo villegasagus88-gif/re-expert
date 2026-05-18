@@ -194,20 +194,49 @@ async def chat(
     # 3. Load prior history
     history = await _load_history(db, conv.id)
 
-    # 4. Persist the user message up-front (so it survives stream errors)
+    # 4. Persist the user message up-front (so it survives stream errors).
+    #    Para el log/historial guardamos solo el texto. Las imágenes
+    #    multimodales son one-shot: se mandan a Anthropic en este turno
+    #    pero NO quedan en la conversación persistida (los archivos viven
+    #    en la sesión del browser).
+    content_for_log = body.message
+    if body.attachments:
+        content_for_log = (
+            f"{body.message}\n\n"
+            f"[Adjuntó {len(body.attachments)} "
+            f"{'plano' if len(body.attachments) == 1 else 'planos'} para análisis]"
+        )
     user_msg = Message(
         conversation_id=conv.id,
         role="user",
-        content=body.message,
+        content=content_for_log,
     )
     db.add(user_msg)
     await db.commit()
 
-    # 5. Build messages payload for the Anthropic API
+    # 5. Build messages payload for the Anthropic API.
+    #    El history se manda como texto (los attachments no se persisten).
+    #    El mensaje actual lleva content blocks (image + text) si hay
+    #    attachments, o solo string si no hay.
     api_messages: list[dict] = [
         {"role": m.role, "content": m.content} for m in history
     ]
-    api_messages.append({"role": "user", "content": body.message})
+    if body.attachments:
+        content_blocks: list[dict] = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": att.media_type,
+                    "data": att.data,
+                },
+            }
+            for att in body.attachments
+        ]
+        content_blocks.append({"type": "text", "text": body.message})
+        api_messages.append({"role": "user", "content": content_blocks})
+    else:
+        api_messages.append({"role": "user", "content": body.message})
 
     # 6. Build system prompt. For SOL, inject the user's real project data so
     #    the assistant knows current budget, progress, and dates.

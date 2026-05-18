@@ -78,8 +78,14 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose Content-Length exceeds 1 MB before they are read."""
-    _MAX_BYTES = 1_048_576  # 1 MB
+    """Reject requests whose Content-Length exceeds 10 MB before they are read.
+
+    Bumped from 1 MB to support multimodal image attachments in /api/chat
+    (planos): hasta 4 imágenes x ~6 MB binarios = ~24 MB en peor caso, pero
+    el schema cap por imagen es 8 MB base64 (~6 MB binarios). 10 MB total
+    deja margen para mensaje + 1 imagen completa o 2-3 chicas.
+    """
+    _MAX_BYTES = 10_485_760  # 10 MB
 
     async def dispatch(self, request: _Request, call_next):
         cl = request.headers.get("content-length")
