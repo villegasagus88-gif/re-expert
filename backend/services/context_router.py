@@ -96,12 +96,60 @@ _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
         "8912", "6099", "6100", "alquiler", "alquileres", "27551", "dnu 70",
         "defensa consumidor", "ambiental", "25675", "zonificacion",
         "fot", "fos", "habilitacion", "permiso", "permisos",
+        # Cláusulas contractuales aplicadas (capa experta)
+        "clausulas boleto", "clausulas contrato", "clausulas locacion obra",
+        "clausulas mandato", "clausula reserva", "pacto comisorio",
+        "condicion suspensiva", "condicion resolutoria",
+        "declaraciones y garantias", "indemnidad", "hold back",
+        "arras confirmatorias", "arras penitenciales", "sena confirmatoria",
+        "sena penitencial", "art 1059", "art 1083", "art 1086", "art 1184",
+        "evicion", "eviccion", "art 1044", "libre de gravamenes",
+        "clausula ajuste moneda", "clausula uva", "clausula dolar mep",
+        "clausula cer", "fuerza mayor", "hardship", "renegociacion",
+        "clausula penal", "resolucion automatica", "carta documento",
+        "telegrama colacionado", "arbitraje", "mediacion 26589",
+        "fiador codeudor", "mandato sin representacion",
+        "mandato con representacion", "cesion derechos", "art 1614",
+        "contrato cmar", "contrato gerenciamiento", "clausulas de oro",
+        "clausula abusiva", "clausulas abusivas", "abusiva", "abusivas",
+        "art 1117", "art 37 ley 24240",
+        "open listing", "exclusiva broker", "doble corretaje",
+        # Defensa del consumidor aplicada (capa experta)
+        "consumidor real estate", "consumidor inmueble", "consumidor pozo",
+        "consumidor inmobiliaria", "vendedor profesional",
+        "proveedor real estate", "art 8 informacion", "art 11 garantia",
+        "art 17 vicios", "art 36 financieras", "art 52 bis",
+        "dano punitivo", "daño punitivo", "dano directo", "art 40 lda",
+        "art 1092", "art 1099", "art 1100", "publicidad enganhosa",
+        "publicidad enganosa", "render publicitario", "oferta vinculante",
+        "m2 publicitario", "coprec", "ley 26361", "ley 26993",
+        "halabi", "mosca", "ledesma", "cooperativa obrera",
+        "contrato adhesion", "no entrega en plazo",
+        "demora obra consumidor", "relacion de consumo inmueble",
     ),
     "laboral": (
         "laboral", "lct", "ley 20744", "uocra", "cct", "76/75", "ieric",
         "art", "srt", "riesgos trabajo", "solidaridad", "art 30",
         "modalidades", "dependencia", "autonomo", "contrato trabajo",
         "jornal", "jornales", "convenio", "personal obra",
+        # Patología laboral aplicada (capa experta)
+        "fraude laboral", "trabajo no registrado", "en negro obra",
+        "art 30 lct", "solidaridad laboral", "art 29 lct", "art 29 bis",
+        "intermediacion", "tercerizacion fraudulenta",
+        "contratista cascara", "empresa cascara", "empresa vacia",
+        "rodriguez 1993", "benitez 2009", "vizzoti", "aquino",
+        "art trucha", "art sin cobertura", "alta temprana",
+        "libreta aportes construccion", "fondo cese laboral",
+        "art 17 ley 22250", "comitente solidario", "developer demandado",
+        "fideicomiso demandado laboral", "accidente obra", "muerte obrero",
+        "decreto 911 96", "resolucion srt 51", "aviso de obra srt",
+        "programa de seguridad construccion", "examen preocupacional",
+        "rgrl", "oec", "telegrama laboral", "ros laboral",
+        "ley 27742", "regularizacion espontanea", "art 11 ley 24013",
+        "art 80 lct", "art 132 bis", "ley 27348", "comisiones medicas",
+        "subcontratista", "subcontratistas", "subcontratista fraude",
+        "subcontratista no registrado", "principal y solidario",
+        "en negro", "trabajadores en negro", "obrero en negro",
     ),
     "impuestos": (
         "impuesto", "impuestos", "iva", "ganancias", "bienes personales",
@@ -110,6 +158,40 @@ _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
         "abl", "tsg", "inmobiliario", "derechos construccion", "plusvalia",
         "afip", "agip", "arba", "dgr", "tributario", "fiscal",
         "estructuras fiscales", "vehiculo fiscal", "iti",
+        # Árbol de decisión venta inmueble (capa experta)
+        "venta inmueble impuestos", "arbol decision venta",
+        "vendedor persona fisica", "vivienda unica exencion",
+        "vivienda unica reemplazo", "iti 1.5",
+        "impuesto transferencia inmuebles", "cedular inmuebles",
+        "cedular 15", "ley 27430", "inmueble desde 2018",
+        "habitualista inmobiliario", "iva venta inmueble",
+        "iva obra propia", "iva empresa constructora",
+        "sellos venta inmueble", "coti afip",
+        "codigo oferta transferencia", "retencion vendedor extranjero",
+        "beneficiario del exterior", "cdi argentina",
+        "monotributista venta inmueble", "fideicomiso al costo venta",
+        "dividendos fideicomiso", "retencion ganancias 35",
+        "moratoria afip", "defraudacion fiscal", "prescripcion afip",
+        "donacion vs venta", "donacion inmueble",
+        # Patología fideicomiso aplicada (capa experta)
+        "patologia fideicomiso", "fideicomiso al costo problemas",
+        "fideicomiso construccion problemas", "fraude fiduciario",
+        "autocontratacion fiduciario", "fiduciario constructor mismo",
+        "sobrecosto fideicomiso", "cost overrun fideicomiso",
+        "dilucion fiduciantes", "aumento unidades fideicomiso",
+        "desafectacion cuotas", "mora fiduciante", "default fiduciante",
+        "ejecucion cuotas fideicomiso", "fiduciario en problemas",
+        "fiduciario quiebra", "fiduciario remocion", "art 1685",
+        "art 1685 ccycn", "patrimonio fiduciario separado",
+        "fraude pauliana fideicomiso", "asamblea fiduciantes",
+        "comite fiduciantes", "salida fiduciante",
+        "auditoria fideicomiso", "fiduciario profesional",
+        "fiduciario institucional", "resol uif 30 2017",
+        "autocontratacion", "fiduciario", "fiduciante", "fiduciantes",
+        "rendicion cuentas fiduciario", "remocion fiduciario",
+        "transmision posicion fiduciante", "fideicomisario",
+        "cesion cuotaparte", "fideicomiso testamentario",
+        "multiproyecto fideicomiso",
     ),
     "construccion": (
         "construccion", "obra", "rubros", "modalidad contratacion",
@@ -118,6 +200,43 @@ _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
         "ruina", "garantias construccion", "higiene seguridad",
         "decreto 911", "final de obra", "documentacion obra",
         "rendimiento", "rendimientos", "demolicion", "rcd",
+        # Patología constructor (capa experta)
+        "constructor en problemas", "contratista en problemas",
+        "contratista quiebra", "contratista concurso", "abandono obra",
+        "abandono de obra", "mora contratista", "default contratista",
+        "sobrefacturacion", "sobreprecio", "certificacion inflada",
+        "sobre certificacion", "avance papel", "avance real",
+        "fraude obra", "step in", "step-in", "reemplazo contratista",
+        "retencion solidaria", "garantia fiel cumplimiento",
+        "claims preventivos", "telegrama intimacion constructor",
+        "paralizacion obra", "parada de obra", "art 1083 obra",
+        "art 1086 obra", "locacion de obra", "interdicto obra",
+        "embargo obra", "acopio en riesgo", "propiedad materiales",
+        "subcontratista no pagado",
+        # Posventa / vicios aplicado (capa experta)
+        "posventa", "posventa inmueble", "posventa patologica",
+        "reclamo posventa", "vicios ocultos", "vicios redhibitorios",
+        "vicio oculto", "vicio manifiesto", "art 1051", "art 1054",
+        "art 1057", "art 1059", "art 1273", "10 anos ruina",
+        "ruina decenal", "solidaridad ruina", "proyectista responsable",
+        "director tecnico responsable", "fabricantes elementos esenciales",
+        "garantia constructor", "1 ano manifestacion vicio",
+        "prescripcion vicios 3 anos", "manifestacion del vicio",
+        "fisuras", "fisuras inmueble", "humedad", "humedades",
+        "humedad inmueble", "capilaridad", "filtracion", "filtraciones",
+        "asentamiento diferencial", "aluminosis",
+        "oxidacion hierro", "hormigon defectuoso", "carpinteria",
+        "ascensor falla", "ph reglamento posventa",
+        "expensas extraordinarias posventa", "fondo de garantia",
+        "hold back postventa", "seguro decenal", "seguro post obra",
+        "redhibitoria", "quanti minoris", "accion redhibitoria",
+        "accion quanti minoris", "accion cumplimiento posventa",
+        "perito de parte", "dictamen vicios", "reparacion vs restitucion",
+        "recepcion provisoria", "recepcion definitiva",
+        "observaciones recepcion", "plan inspeccion ensayo",
+        "ensayos no destructivos", "defensa constructor posventa",
+        "defensa developer posventa", "art 1275",
+        "ruina por causa externa", "exoneracion constructor",
     ),
     "financiero": (
         "financiamiento", "financiacion", "credito", "creditos", "hipoteca",
@@ -174,6 +293,62 @@ _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
         "boleto", "compraventa", "1170", "cesion", "escritura", "rpi",
         "17801", "prehorizontalidad", "2070", "usucapion", "prescripcion",
         "expropiacion", "21499", "tierras rurales", "26737", "rntr",
+        # DD integral protocolo (capa experta)
+        "due diligence integral", "dd integral", "dd pre compra",
+        "protocolo dd", "comprar inmueble checklist",
+        "comprar terreno checklist", "red flags compra",
+        "condiciones suspensivas boleto", "escrow",
+        "certificado libre deuda", "libre deuda municipal",
+        "libre deuda arba", "libre deuda agip", "deuda expensas",
+        "inhibiciones", "ihi", "certificado uif compra", "dd uif",
+        "sucesion vendedor", "condominio vendedor",
+        "fideicomiso vendedor", "sociedad vendedora", "poder vigente",
+        "reglamento copropiedad", "ocupantes precarios", "intrusos",
+        "comodato verbal", "locatario vigente", "plano municipal",
+        "plano catastral", "diferencia superficie", "sobre edificacion",
+        "sub edificacion", "antecedentes 20 anos",
+        # Compra terreno DD (capa experta)
+        "compra terreno", "dd terreno", "zonificacion verificar",
+        "altura permitida", "perfil edilicio", "aph",
+        "area proteccion historica", "expropiacion futura",
+        "ensanche calle", "derecho de via", "servidumbres",
+        "servidumbre administrativa", "servidumbre paso",
+        "servidumbre acueducto", "zona seguridad frontera",
+        "ley 23554", "decreto 887 fronteras", "aptitud agronomica",
+        "estudio suelos", "sondeo spt", "spt", "capacidad portante",
+        "napa freatica", "agua subterranea", "riesgo hidrico",
+        "cota ign", "drenaje", "suelos contaminados",
+        "pasivo ambiental", "fase 1 ambiental", "fase 2 ambiental",
+        "phase 1 esa", "phase 2 esa", "eia",
+        "evaluacion impacto ambiental", "dia declaracion impacto",
+        "audiencia publica ambiental", "ley 24051",
+        "residuos peligrosos", "tanques enterrados",
+        "estacion servicio", "agroquimicos", "frigorificos",
+        "bosques nativos", "ley 26331", "otbn", "humedales",
+        "linea ribera", "factibilidad agua", "factibilidad cloaca",
+        "factibilidad gas", "factibilidad red", "cesion publica",
+        "transferencia capacidad constructiva", "mensura",
+        "subdivision parcela", "loteo", "urbanizacion privada",
+        "agrimensor matriculado", "plano subdivision", "npi",
+        # Cadena dominial trampas (capa experta)
+        "cadena dominial", "estudio de titulos", "saneamiento titulo",
+        "titulo perfecto", "titulo imperfecto", "titulo precario",
+        "saltos cadena dominial", "tracto sucesivo", "tracto abreviado",
+        "art 33 ley 17801", "declaratoria herederos no inscripta",
+        "herederos no firmantes", "cesion hereditaria",
+        "sucesion en tramite", "accion de reduccion", "art 2453",
+        "donacion previa", "donacion saneada", "10 anos donacion",
+        "ley 24374", "regularizacion dominial",
+        "titulo 24374", "usucapion sentencia inscripta",
+        "sociedad disuelta cadena", "fiduciario sin facultades",
+        "fiduciario vencido", "gravamen no cancelado",
+        "hipoteca prescripta inscripta", "bien de familia inscripto",
+        "art 244", "vivienda afectada", "transmision por subasta",
+        "subasta judicial titulo", "tercero adquirente buena fe",
+        "art 392", "fraude pauliana", "art 338",
+        "concurso vendedor periodo sospecha", "art 116 lcq",
+        "title insurance", "seguro titulo", "offshore cadena",
+        "beneficiario final", "multipropiedad ph",
     ),
     "arquitectura": (
         "arquitectura", "ingenieria", "programa", "anteproyecto",
@@ -284,14 +459,29 @@ def _count_matches(message_norm: str, message_tokens: set[str], kws: frozenset[s
 CHARS_PER_TOKEN = 4
 
 # Budget total del contexto de KB inyectado al system prompt.
-# Realista para que el chat tenga info útil sin reventar latencia/costo.
-# 14k tokens ≈ 56k chars ≈ 50-60 KB de markdown.
-MAX_CONTEXT_TOKENS = 14000
+# 18k tokens ≈ 72k chars ≈ 70-72 KB de markdown.
+#
+# Calibrado para que entren los 3 pilares del `_meta/` en baseline:
+#   - instrucciones-chat.md         ~8 KB  (reglas duras del chat)
+#   - politica-datos.md            ~10 KB  (volátil vs estable)
+#   - flows-por-intencion.md       ~30 KB  (árbol de decisión por intención)
+#                                  ─────
+#   Total pilares                  ~48 KB
+#
+# + slack META para glosario/faq/personas según ranking del baseline query.
+# + DYNAMIC para 4-5 archivos aplicados del/los dominio(s) detectado(s).
+MAX_CONTEXT_TOKENS = 18000
 MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * CHARS_PER_TOKEN
 
-# Dentro de ese total, reservamos una porción para el baseline obligatorio
-# del `_meta/` (reglas, índice, glosario). El resto va a docs dinámicos.
-META_BUDGET_CHARS = 24000  # ≈ 6000 tokens — alcanza para meta esencial
+# META_BUDGET = 52 KB → cabe los 3 pilares (~48 KB) + 4 KB de slack para que
+# glosario/faq/personas entren parcialmente cuando la query los favorezca.
+# Archivos `_meta` que NO entran al baseline por diseño:
+#   - anti-patterns.md (22 KB) → entra vía dynamic cuando hay red flag.
+#   - indice-rapido.md (26 KB) → mapa para humanos; el LLM ya tiene
+#     frontmatter keywords en cada archivo.
+META_BUDGET_CHARS = 52000
+
+# DYNAMIC_BUDGET ≈ 20 KB → 4-5 archivos aplicados (cada uno 4-8 KB).
 DYNAMIC_BUDGET_CHARS = MAX_CONTEXT_CHARS - META_BUDGET_CHARS
 
 
@@ -374,9 +564,15 @@ async def select_context_for_message(
     remaining = max_chars
 
     # 1) Baseline meta — siempre intentamos cargarlo.
+    # La query baseline prioriza las reglas operativas + routing del chat:
+    # instrucciones, política de datos, índice rápido, flujos por intención.
+    # `anti-patterns.md` queda fuera del baseline por tamaño (22KB compite con
+    # flows-por-intencion 31KB en un budget de 32KB) — se carga dinámicamente
+    # cuando la query del usuario contiene red flags (su frontmatter tiene
+    # buenas keywords para que el ranking lo levante con boost 3×).
     try:
         meta_ctx = await knowledge_base.get_context(
-            query="reglas instrucciones politica datos indice glosario",
+            query="reglas instrucciones politica datos indice glosario flujos intencion routing",
             domain="_meta",
             max_chars=min(META_BUDGET_CHARS, remaining),
             top_k=8,

@@ -2,16 +2,21 @@
 
 Pricing, marketing, ventas, posventa.
 
-## Archivos previstos
+## Archivos
 - `pricing.md` — cómo se determina el precio: comparables, valor percibido, costo, etapa
-- `pricing-dinamico.md` — política de subas por avance + por scarcity
-- `mix-tipologico.md` — cómo definir el mix óptimo
-- `preventa-pozo.md` — estrategia de pre-venta
+- `tasacion-previa-lanzamiento.md` — pricing pozo, ladder, comparables
+- `mix-tipologias.md` — cómo definir el mix óptimo
+- `preventa.md` — estrategia de pre-venta / pozo
 - `embudo-comercial.md` — etapas del funnel + KPIs
-- `corredores-comisiones.md` — comisiones de mercado AR + Ley 2340 CABA
 - `marketing-digital.md` — canales, atribución, CRM, leads
-- `posventa-garantias.md` — vicios y plazos
-- `defensa-consumidor.md` — práctica vs publicidad de UFs
+- `crm-stack-tecnologico.md` — stack tecnológico comercial
+- `segmentacion-cliente.md` — personas y segmentación
+- `customer-journey-postcompra.md` — del lead a la escritura
+- `posventa.md` — gestión post-entrega, reclamos, garantías
+- **`corredores-y-comisiones.md`** — régimen de corretaje (Ley 25.028, Ley 2340 CABA, Ley 13.154 PBA), comisiones típicas, doble cobro, exclusividad, devengamiento
+- **`patologias-comerciales.md`** — catálogo de 15 conflictos típicos venta/pre-venta con prevención + resolución
+
+> **Marco LDC aplicado a RE** → ver `../02-normativa/defensa-consumidor-aplicada-re.md` (publicidad vinculante, daño punitivo, cláusulas abusivas, jurisprudencia).
 
 ## Reglas
 - Diferenciar precio listado vs precio cierre.

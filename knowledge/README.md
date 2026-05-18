@@ -20,8 +20,9 @@ Toda la información acá es **profesional, validada y trazable a fuentes oficia
 
 | Archivo | Para qué |
 |---|---|
-| **`_meta/politica-datos.md`** | Define qué es volátil / semivolátil / estable. Reglas duras de qué se guarda y qué no. |
 | **`_meta/instrucciones-chat.md`** | Protocolo de respuesta: identidad, tono, templates, qué nunca hacer. |
+| **`_meta/flows-por-intencion.md`** | Árbol de decisión del chat: detecta intención del usuario y dicta qué preguntar y qué archivos abrir, en qué orden. |
+| **`_meta/politica-datos.md`** | Define qué es volátil / semivolátil / estable. Reglas duras de qué se guarda y qué no. |
 | `_meta/fuentes-oficiales.md` | Catálogo de fuentes a las que el chat manda al usuario para datos volátiles. |
 | `_meta/indice-rapido.md` | Mapa keyword → archivo del KB (búsqueda en O(1)). |
 | `_meta/glosario.md` | Términos del rubro definidos. |
@@ -61,7 +62,9 @@ knowledge/
 └─ 16-uif-blanqueo/              # UIF, sujetos obligados, KYC, PEP, blanqueos
 ```
 
-> Archivos en la raíz (`formulas.md`, `materiales-precios.csv`, `normativa-basica.md`, `rendimientos.md`, `rubros-obra.md`, `rules.md`) son legacy y se irán migrando a las carpetas temáticas.
+> El contenido vive exclusivamente bajo `_meta/` y las carpetas temáticas
+> `NN-*/`. Cualquier archivo suelto en la raíz (fuera de este README) se
+> considera obsoleto y debe migrarse o purgarse.
 
 ---
 

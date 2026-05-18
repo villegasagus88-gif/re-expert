@@ -394,7 +394,35 @@ Lo que no está documentado **no existe** en un juicio. El comitente que pelea c
 
 ---
 
-## 12. Errores frecuentes del comitente
+## 12. Matriz decisional: señal → acción → asesor
+
+Para uso operativo del jefe de obra / project manager / fiduciante. Cada fila se resuelve en horas o días, no semanas.
+
+| Señal detectada | Materialidad | Acción inmediata | Asesor a involucrar |
+|---|---|---|---|
+| Demora pago a 1 subcontratista | Aislada, primera vez | Pedir explicación escrita al contratista + monitoreo semanal | Director de obra |
+| Demora pago a 2+ subcontratistas o reincidente | Patrón | Intimación CD + retención solidaria del próximo certificado | Legal civil + laboral |
+| Telegrama de operario al comitente | Cualquiera | Contestar dentro de 48h hábiles + retención al subcontratista | Laboral (urgente) |
+| Avance papel > avance físico | Discrepancia <5% | Acta de medición + reducción del certificado | Director de obra |
+| Avance papel > avance físico | Discrepancia >5% o recurrente | Intimación + pericia preconstituida + reducción retenida | Legal civil + perito |
+| Acopio fantasma o desaparecido | Cualquiera | Inventario forzado con escribano + acta + foto | Legal civil + escribano |
+| Cambio de director técnico del contratista | Sin notificación formal | Nota formal exigiendo notificación + suspender certificación hasta normalizar | Director de obra |
+| Maquinaria propia del contratista desaparece | Cualquiera | Acta + pedido explicación + activar plan B identificado | Legal civil |
+| Cambio de subcontratista en gremio crítico | 2da vez en mismo gremio | Pre-mapeo de alternativos para relación directa | Director de obra |
+| Adelanto extra "puntual" pedido | Cualquiera | Negar sin caución equivalente + escalar conversación | Legal civil |
+| Sobreprecio en compra de materiales | Material > 10-15% mercado | Auditoría de compras + retención + pasar compras a directo del comitente | Auditor + comprador propio |
+| Accidente de obrero sin denuncia ART | Cualquiera | Auditoría laboral total + denuncia espontánea ART/SRT + acta | Laboral + S&H |
+| Abandono físico de obra | 15+ días sin avance + sin justificación | Intimación CD + plazo 10-15 días + step-in según contrato | Legal civil + escribano |
+| Concurso preventivo del contratista | Conocido por edicto o información | Step-in inmediato + verificación de crédito + ejecución caución | Concursalista + civil + laboral |
+| Quiebra del contratista | Sentencia conocida | Toma de acopio con escribano + ejecución caución + presentación al síndico | Concursalista + civil + laboral + escribano |
+| Fraude documentado (doble certificación, factura repetida) | Cualquiera | Suspender pagos + pericia + denuncia formal | Legal civil + penal (eventual) + perito |
+| Inspección municipal con observaciones graves | Cualquiera | Acta + comunicación al contratista + plan de subsanación | Director de obra + legal civil |
+
+> **Regla práctica**: si el problema cruza dos columnas (ej. señal de fraude **y** de insolvencia), aplicar la acción de la columna más severa **siempre**. No promediar.
+
+---
+
+## 13. Errores frecuentes del comitente
 
 - **Firmar certificados sin auditar** → en juicio se le opone su propia firma.
 - **No retener fondo de reparo** completo.
@@ -411,7 +439,7 @@ Lo que no está documentado **no existe** en un juicio. El comitente que pelea c
 
 ---
 
-## 13. Preguntas clave que el comitente debe contestar siempre
+## 14. Preguntas clave que el comitente debe contestar siempre
 
 - ¿Sé exactamente cuánto avance físico hay vs cuánto certifiqué?
 - ¿Los subcontratistas críticos están cobrando del contratista principal?
@@ -424,34 +452,34 @@ Lo que no está documentado **no existe** en un juicio. El comitente que pelea c
 
 ---
 
-## 14. Cuándo escalar a asesores
+## 15. Cuándo escalar a asesores
 
-### 14.1 Legal civil / comercial
+### 15.1 Legal civil / comercial
 - Cuando hay intimación formal o resolución contractual.
 - Cuando se activa step-in.
 - Cuando hay reclamo de daños cuantificable.
 
-### 14.2 Laboral
+### 15.2 Laboral
 - Cuando llega telegrama de operario.
 - Cuando hay accidente sin denuncia del subcontratista.
 - Cuando hay reclamo art 30 LCT pendiente o probable.
 
-### 14.3 Concursalista
+### 15.3 Concursalista
 - Apenas se conoce concurso preventivo o quiebra del contratista.
 - Para verificación de crédito y reclamo de acopio.
 
-### 14.4 Técnico / pericial
+### 15.4 Técnico / pericial
 - Para pericia preconstituida en momentos críticos.
 - Para cuantificar daños (mayores costos, retrabajos).
 - Para defender la posición del comitente en juicio.
 
-### 14.5 Aseguradora
+### 15.5 Aseguradora
 - Notificación inmediata ante cualquier evento de caución o TRC.
 - Coordinación con su área de siniestros.
 
 ---
 
-## 15. Resumen ejecutivo accionable
+## 16. Resumen ejecutivo accionable
 
 1. **Auditá** cada certificado contra avance físico real, sin excepción.
 2. **Retené** fondo de reparo siempre.
@@ -466,11 +494,187 @@ Lo que no está documentado **no existe** en un juicio. El comitente que pelea c
 
 ---
 
-## 16. Reglas operativas para el chat
+## 17. Caso especial: cuando el comitente es un fideicomiso al costo
 
-- **Estable y respondible:** señales tempranas, taxonomía de patologías, cláusulas contractuales preventivas, workflow de step-in, marco art 30 LCT y Ley 24.522 (referencial), checklist de auditoría mensual, errores frecuentes.
-- **🔴 Volátil:** plazos procesales específicos (varían por jurisdicción y reforma), montos de cauciones / fondos (negociables), prácticas locales en cada provincia (uso de IERIC, ART, escribanos), jurisprudencia aplicada (fallos específicos cambian).
-- **Marco legal citado**: arts 1083, 1086, 1251-1279 CCyCN; art 30 LCT; Ley 24.522; Decreto 911/96. Cualquier acción legal requiere validación con asesor de la jurisdicción.
+Cuando el desarrollo se gestiona vía fideicomiso al costo, el "comitente" formal del contrato de obra es el **fiduciario**, mientras que los **fiduciantes-beneficiarios** son los comitentes económicos. Esta separación genera patologías específicas que no aparecen en obra con dueño directo.
+
+### 17.1 Configuración típica y conflicto de interés
+- El constructor puede ser **el propio fiduciario** (doble rol).
+- Una **sociedad vinculada** al fiduciario (mismo grupo económico).
+- Un **tercero** contratado por el fiduciario sin licitación documentada.
+- En los dos primeros casos: **el fiduciario se autocertifica** → conflicto de interés estructural.
+
+### 17.2 Riesgos específicos en este escenario
+- **Asimetría informativa**: los fiduciantes no acceden a la auditoría operativa que sí tendría un dueño directo.
+- **Caja única del fiduciario** gestionando múltiples proyectos → riesgo de mezcla y de aportes "prestados" entre obras.
+- **Comisión fiduciaria atada al costo de obra**: si hay sobrecosto, la comisión sube → incentivo invertido.
+- **Step-in inoperable** desde la perspectiva del fiduciante: contractualmente quien firmó el contrato de obra es el fiduciario, no los fiduciantes.
+- **Compras dirigidas a partes vinculadas** sin licitación → sobreprecios trasladados al costo del fideicomiso (que pagan los fiduciantes).
+
+### 17.3 Señales adicionales propias del escenario fiduciario
+- Fiduciario evita o demora la convocatoria a asamblea de fiduciantes.
+- Cambios de auditor externo o ausencia de auditoría real.
+- Rendiciones de cuentas demoradas o agregadas sin desagregar por proyecto.
+- Designación de proveedores sin proceso de selección documentado.
+- Concentración de pagos significativos a sociedades del grupo del fiduciario.
+- Resistencia a entregar respaldo de compras a fiduciantes que lo piden.
+
+### 17.4 Defensa práctica del fiduciante
+- **Auditoría externa independiente** prevista en el contrato de fideicomiso, designada por mayoría no controlada por el fiduciario.
+- **Comité de control** de fiduciantes con poder de exigir documentación y acceder a obra.
+- **Prohibición contractual** de contratar partes vinculadas sin asamblea con mayoría calificada.
+- **Mecanismo de reemplazo del fiduciario** sin necesidad de judicialización ante mala gestión documentada (cláusula explícita con causales objetivas).
+- **Step-in indirecto**: los fiduciantes gatillan reemplazo del fiduciario, y el fiduciario entrante activa step-in contra el constructor.
+- **Cláusula de open book** sobre compras y subcontratos críticos.
+
+### 17.5 Si el fiduciario es el constructor (o lo es una vinculada)
+- Exigir contractualmente **dirección de obra independiente** del fiduciario.
+- **Comisión fiduciaria fija** (no % del costo), o con tope y ajuste por inflación, no por crecimiento del presupuesto.
+- **Auditoría obligatoria de compras y subcontratos** trimestral.
+- Si las señales del §2 se detectan, activar la matriz del §12 **vía el reemplazo del fiduciario**, no contra el "constructor" (que es el mismo).
+
+> Ver `../04-impuestos/estructuras-fiscales/fideicomiso-al-costo.md` y `../10-estrategia/gestion-riesgos.md`. El tema completo de patología del fiduciario tendrá archivo propio en próxima iteración de capa experta.
+
+---
+
+## 18. Jurisprudencia AR aplicada (líneas consolidadas)
+
+Lo siguiente son **líneas jurisprudenciales consolidadas** que orientan la práctica, no fallos puntuales para citar en escrito. Cualquier acción legal requiere validación con fallos actualizados de la jurisdicción.
+
+### 18.1 Solidaridad del comitente (art 30 LCT)
+- **CSJN "Rodríguez c/ Cía. Embotelladora Argentina" (1993)**: línea original que restringía la solidaridad a actividad "normal y específica".
+- **CSJN "Benítez c/ Plataforma Cero" (2009)** y jurisprudencia laboral posterior: la doctrina se amplió, considerando la subcontratación de tareas integrantes del ciclo productivo del comitente.
+- **Práctica actual en construcción privada**: los tribunales laborales suelen extender la solidaridad al desarrollador / comitente cuando el constructor subcontrata gremios y no paga aportes / salarios. La auditoría documentada del comitente y las retenciones efectivas reducen pero no siempre eliminan la responsabilidad.
+- **Implicancia operativa**: documentar la auditoría laboral mensual (§10.3) es la mejor defensa probatoria.
+
+### 18.2 Vicios redhibitorios (arts 1051-1059 CCyCN)
+- **Prescripción de la acción**: 1 año desde la **manifestación del vicio**, no desde la entrega (art 2564 CCyCN).
+- **Caducidad de la garantía**: 3 años para inmuebles desde la recepción (art 1055).
+- **Habitualista / desarrollador**: no puede excluir contractualmente la responsabilidad por vicios redhibitorios cuando vende a consumidor (art 1056 CCyCN + art 11 Ley 24.240).
+- **Implicancia**: cláusulas que pretenden limitar garantía de vicios frente a consumidor se tienen por no escritas (art 37 LDC).
+
+### 18.3 Ruina total o parcial (art 1273 CCyCN)
+- **Plazo de la acción**: 10 años desde la recepción de obra.
+- **Solidaridad pasiva**: constructor + director de obra + proyectista cuando hay vicios en sus respectivos ámbitos (art 1274).
+- **No puede excluirse contractualmente** frente a consumidor.
+- **Implicancia operativa**: archivar documentación de obra completa al menos 10 años post-recepción; mantener póliza de RC profesional vigente del director y proyectista por igual plazo.
+
+### 18.4 Resolución contractual y pacto comisorio (arts 1083-1090 CCyCN)
+- **Pacto comisorio implícito** (art 1086): existe en toda obligación contractual, salvo pacto en contrario.
+- **Procedimiento estándar**: interpelación + plazo razonable de subsanación + comunicación fehaciente de resolución por incumplimiento.
+- **Pacto comisorio expreso**: si el contrato lo prevé con causales claras, la resolución opera por la sola declaración con causa documentada.
+- **Práctica de tribunales**: descalifican resoluciones precipitadas sin plazo razonable o sin documentación de incumplimiento → recae responsabilidad sobre quien resolvió.
+- **Implicancia**: nunca activar step-in sin CD previo + plazo + documentación + escribano para la toma.
+
+### 18.5 Certificados de obra y carga probatoria
+- **Doctrina mayoritaria comercial / civil**: el certificado firmado por el comitente implica reconocimiento del avance allí declarado, **salvo prueba** de error, dolo o fraude.
+- **Carga probatoria**: revertir un certificado firmado requiere prueba contundente (pericia técnica independiente + comparativa documental + fotografías + testigos).
+- **Práctica preventiva**: nunca firmar con "reserva mental" — documentar la observación en el acta de medición y certificar solo el monto verificable. La firma con reserva escrita es defendible; la firma simple no.
+
+### 18.6 Concurso preventivo y quiebra (Ley 24.522)
+- **Período de sospecha** (arts 116-119): los actos del contratista en los meses previos al concurso (anticipos extraordinarios, daciones en pago, garantías nuevas a favor del comitente) pueden ser declarados **inoponibles** al concurso.
+- **Verificación de crédito**: el comitente con crédito a favor debe insinuarse en plazo legal desde el edicto (típicamente 30-60 días, según el caso).
+- **Contratos en curso** (arts 144-159): el síndico decide continuación o resolución dentro del plazo legal.
+- **Acopio del comitente**: documentado como propiedad del comitente con cláusula contractual + actas + cartelería, **no integra la masa** (separación patrimonial).
+- **Implicancia operativa**: la cláusula de transferencia de propiedad del acopio al ingreso a obra (§5.2, §7.3) es la defensa más sólida ante quiebra.
+
+### 18.7 Defensa del consumidor aplicada
+- Ley 24.240 + arts 1092-1122 CCyCN: el adquirente de unidad en pozo es **consumidor**.
+- Publicidad (folletos, renders, web) **integra el contrato** (art 8 LDC).
+- **Cláusulas abusivas** (art 37 LDC + art 988 CCyCN): se tienen por no escritas. Lista no taxativa incluye exoneración de responsabilidad, limitación de daños, jurisdicción exclusiva del vendedor.
+- **Implicancia para el constructor / desarrollador**: el riesgo de reclamos por vicios post-entrega es **mayor** que en obra B2B; la documentación de obra y los seguros de garantía son inversiones defensivas.
+
+> Para profundización por tema, ver archivos específicos planeados en próxima iteración: `legal-vicios-y-ruina-aplicado.md`, `legal-defensa-consumidor-aplicada-re.md`, `legal-jurisprudencia-clave-re.md`.
+
+---
+
+## 19. Reglas operativas para el chat
+
+- **Estable y respondible:** señales tempranas, taxonomía de patologías, cláusulas contractuales preventivas, workflow de step-in, marco art 30 LCT y Ley 24.522 (referencial), checklist de auditoría mensual, errores frecuentes, matriz decisional, líneas jurisprudenciales consolidadas, caso especial fideicomiso al costo.
+- **🔴 Volátil:** plazos procesales específicos (varían por jurisdicción y reforma), montos de cauciones / fondos (negociables), prácticas locales en cada provincia (uso de IERIC, ART, escribanos), fallos puntuales y su evolución, regulación CNV/UIF sobre PSAV cuando aplica al fideicomiso.
+- **Marco legal citado**: arts 1051-1059, 1083, 1086, 1251-1279, 1273, 1274 CCyCN; art 30 LCT; Ley 24.522 (arts 116-119, 138, 144-159); Ley 24.240 (arts 8, 11, 37); Decreto 911/96. Cualquier acción legal requiere validación con asesor de la jurisdicción.
+
+---
+
+## 20. Anexo A — Plantilla de acta de toma de obra (día 0 step-in)
+
+> Modelo de uso operativo. **Adaptar al caso y validar con asesor legal y escribano antes de usar**. La intervención de escribano público es clave para fecha cierta y oponibilidad procesal posterior.
+
+```
+ACTA DE TOMA DE OBRA — PARALIZACIÓN / STEP-IN
+
+Lugar: [CABA / municipio]
+Fecha y hora: [dd/mm/aaaa] — [hh:mm]
+Obra: [denominación + dirección + nomenclatura catastral + matrícula RPI]
+Comitente: [razón social + CUIT + domicilio + representante legal con DNI]
+Contratista saliente: [razón social + CUIT + representante]
+Director de obra: [nombre + matrícula + colegio profesional]
+Escribano interviniente: [nombre + registro + matrícula + foja]
+Testigos: [nombres + DNI, si corresponde]
+
+ANTECEDENTES
+1. Contrato de obra de fecha [dd/mm/aaaa] entre [Comitente] y [Contratista], obrante en
+   [registro/escribanía/instrumento privado con fecha cierta].
+2. Intimación cursada por carta documento N° [XX] de fecha [dd/mm/aaaa] por causal
+   [abandono / mora calificada / fraude / incumplimiento grave / concurso o quiebra].
+3. Vencimiento del plazo de subsanación el [dd/mm/aaaa] sin respuesta o sin subsanación
+   suficiente, conforme se documenta.
+4. Comunicación de resolución contractual por carta documento N° [XX] de fecha [dd/mm/aaaa]
+   con apoyo en cláusula [X] del contrato y arts 1083 / 1086 CCyCN.
+
+ESTADO FÍSICO DE LA OBRA AL MOMENTO DE LA TOMA
+- Avance físico estimado por dirección de obra: [XX%] (descripción por rubro en Anexo I).
+- Personal presente al momento de la toma: [lista nominal con DNI y empleador] — Anexo II.
+- Maquinaria y herramientas en obra: [descripción + n° de serie + propiedad declarada] — Anexo III.
+- Materiales en acopio: [inventario detallado con foto-registro y cartelería] — Anexo IV.
+- Documentación encontrada en obra: libro de órdenes, planos, RFIs, ATR, planes de inspección
+  y ensayo, certificados pendientes, partes diarios — Anexo V.
+- Subcontratistas con presencia en obra: [lista con razón social, CUIT y rubro] — Anexo VI.
+
+OBSERVACIONES TÉCNICAS Y DE SEGURIDAD
+- Estado de seguridad e higiene (Dec. 911/96): [OK / observaciones puntuales].
+- Riesgos inmediatos detectados: [descripción + medidas adoptadas].
+- Estado de instalaciones provisorias (energía, agua, sanitarios, vallado): [descripción].
+
+ACCIONES EJECUTADAS EN EL ACTO
+- Cambio de cerraduras y accesos.
+- Colocación de cartelería identificando nueva dirección y propiedad del acopio.
+- Notificación a aseguradoras: [TRC póliza N° XX, Caución póliza N° XX].
+- Notificación a subcontratistas presentes: nueva contraparte y condiciones de continuidad.
+- Notificación a la municipalidad / inspectores: cambio de responsable técnico.
+- Notificación al/los asesor/es legal/es: [legal civil, laboral, concursal según corresponda].
+
+RESERVAS Y DECLARACIONES DEL COMITENTE
+- El Comitente se reserva los derechos a reclamar daños por todo concepto: mayores costos,
+  retrabajos, lucro cesante, gastos improductivos, intereses, daño moral si correspondiere.
+- El Comitente declara que el acopio descripto en Anexo IV es de su exclusiva propiedad
+  conforme cláusula [X] del contrato de obra y documentación de respaldo que se acompaña
+  (Anexo VII — remitos, facturas, actas de ingreso firmadas).
+- Se intimará a la aseguradora [razón social] a la ejecución de la caución N° [X] por la
+  suma de [$ XXX], con notificación cursada en este acto.
+- En caso de oposición del Contratista saliente, el Comitente se reserva el derecho de
+  promover las acciones civiles, comerciales y/o penales que correspondan.
+
+FIRMAS
+- Por el Comitente: [firma + aclaración + DNI + cargo].
+- Director de obra: [firma + matrícula].
+- Escribano público: [firma + sello + foja del libro de protocolo].
+- Por el Contratista saliente: [firma o constancia de notificación cursada / negativa a firmar].
+- Testigos: [firmas + DNI, si corresponde].
+
+ANEXOS
+I    — Avance físico por rubro al día de la toma.
+II   — Lista nominal de personal presente.
+III  — Maquinaria y herramientas inventariadas.
+IV   — Inventario de acopio con foto-registro y cartelería.
+V    — Documentación de obra encontrada.
+VI   — Subcontratistas activos.
+VII  — Respaldo de propiedad del acopio (remitos, facturas, actas de ingreso).
+VIII — Foto-registro general (con sello de fecha y hora).
+IX   — Comunicaciones previas: contrato, addendas, CDs, mails, actas anteriores.
+```
+
+> **Práctica profesional**: el día de la toma debe ser pre-coordinado por el comitente con su asesor legal, escribano, director de obra y equipo alternativo de continuidad. Improvisar el día 0 es la causa principal de step-ins judicializados.
 
 ---
 
