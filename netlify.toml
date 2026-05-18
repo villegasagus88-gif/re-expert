@@ -2,43 +2,43 @@
 #
 # Arquitectura:
 #   - Netlify sirve los archivos estáticos de frontend/ (HTML/JS/CSS).
-#   - Backend FastAPI corre en Render (re-expert-api.onrender.com).
+#   - Backend FastAPI corre en Railway (re-expert-production.up.railway.app).
 #   - Para evitar CORS y que toda la app viva bajo el mismo dominio
 #     (re-expert.netlify.app o el dominio custom), Netlify hace
-#     reverse-proxy de /api/* y /static/* al backend de Render.
+#     reverse-proxy de /api/*, /static/* y /health al backend.
 #   - Esto significa que `frontend/config.js` puede usar API_BASE=''
 #     (same-origin) en producción y todo "just works".
 #
-# Si cambiás la URL del backend (ej. Render le asigna otro hostname
-# como re-expert-api-XXXX.onrender.com), actualizá las dos líneas
-# `to = "..."` de abajo y commit. Netlify rebuildea solo.
+# Si la URL del backend en Railway cambia (custom domain, redeploy con
+# otro nombre, etc.), actualizar las 3 líneas `to = "..."` de abajo
+# y commit. Netlify rebuildea solo.
 
 [build]
   base = "frontend"
   publish = "."
   command = ""
 
-# ── Reverse proxy: /api/* → backend en Render ────────────────────────
-# El status=200 fuerza el rewrite (no es un redirect 301/302 — el
-# browser no se entera, queda como same-origin).
-# El force=true se aplica antes de las reglas de SPA fallback.
+# ── Reverse proxy: /api/* → backend en Railway ───────────────────────
+# status=200 fuerza rewrite (no es redirect 301/302; el browser no se
+# entera, queda same-origin). force=true se aplica antes de las reglas
+# de fallback de SPA.
 [[redirects]]
   from = "/api/*"
-  to = "https://re-expert-api.onrender.com/api/:splat"
+  to = "https://re-expert-production.up.railway.app/api/:splat"
   status = 200
   force = true
 
 # /static/* (PDFs/DOCXs generados por SOL) → backend
 [[redirects]]
   from = "/static/*"
-  to = "https://re-expert-api.onrender.com/static/:splat"
+  to = "https://re-expert-production.up.railway.app/static/:splat"
   status = 200
   force = true
 
-# /health → backend (útil para UptimeRobot/monitoring desde el front-end)
+# /health → backend (UptimeRobot / dashboards externos pueden pingear acá)
 [[redirects]]
   from = "/health"
-  to = "https://re-expert-api.onrender.com/health"
+  to = "https://re-expert-production.up.railway.app/health"
   status = 200
   force = true
 
@@ -85,5 +85,5 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     # HSTS: 6 meses, incluye subdomains. Cuando estés 100% seguro
-    # de que TODO el tráfico de re-expert.app va por HTTPS, sumá `preload`.
+    # de que TODO el tráfico va por HTTPS, sumá `preload`.
     Strict-Transport-Security = "max-age=15552000; includeSubDomains"
