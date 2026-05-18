@@ -19,6 +19,8 @@ Response headers (on success AND on 429):
 """
 from datetime import UTC, datetime, timedelta
 
+from config.plans import PLAN_LIMITS
+from config.plans import limits_for as _limits_for
 from fastapi import HTTPException, status
 from models.conversation import Conversation
 from models.message import Message
@@ -26,14 +28,8 @@ from models.user import User
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-PLAN_LIMITS: dict[str, dict[str, int]] = {
-    "free": {"per_hour": 5, "per_day": 20},
-    "pro": {"per_hour": 50, "per_day": 200},
-}
-
-
-def _limits_for(plan: str) -> dict[str, int]:
-    return PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+# Re-exported so existing imports of `rate_limit_service.PLAN_LIMITS` keep working.
+__all__ = ["PLAN_LIMITS", "check_user_rate_limit"]
 
 
 async def _oldest_created_at(

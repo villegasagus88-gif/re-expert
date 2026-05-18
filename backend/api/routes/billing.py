@@ -1,12 +1,13 @@
 """
-Billing status endpoint.
+Billing endpoints — canonical for plan / subscription operations.
 
-GET /api/billing/status — returns current plan, Stripe subscription details
-(renewal date, cancellation info) and invoice history.
+GET  /api/billing/status   — plan + Stripe subscription details + invoices
+POST /api/billing/checkout — create Stripe-hosted Checkout for the Pro plan
+POST /api/billing/portal   — open Stripe Billing Portal (manage / cancel)
 
-Stripe calls are best-effort: if STRIPE_SECRET_KEY is not configured or the
-user has no stripe_customer_id the endpoint returns plan-only info without
-raising errors.
+Stripe calls in /status are best-effort: if STRIPE_SECRET_KEY is not
+configured or the user has no stripe_customer_id, /status returns plan-only
+info without raising. /checkout and /portal raise 503 if Stripe is missing.
 """
 import asyncio
 import logging
@@ -18,6 +19,10 @@ from config.settings import settings
 from core.auth import get_current_user
 from fastapi import APIRouter, Depends
 from models.user import User
+from services.stripe_service import (
+    create_billing_portal_session,
+    create_pro_checkout_session,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +103,31 @@ async def billing_status(user: User = Depends(get_current_user)):
         logger.warning("billing_status: error fetching invoices — %s", exc)
 
     return result
+
+
+@router.post(
+    "/checkout",
+    summary="Crear sesión de checkout de Stripe para el plan Pro",
+    responses={
+        400: {"description": "Usuario ya es Pro"},
+        401: {"description": "Token inválido"},
+        502: {"description": "Error en Stripe"},
+        503: {"description": "Stripe no configurado"},
+    },
+)
+async def billing_checkout(user: User = Depends(get_current_user)):
+    """Returns `{url, session_id}` — redirigir el browser a `url`."""
+    return await create_pro_checkout_session(user)
+
+
+@router.post(
+    "/portal",
+    summary="Abrir el portal de facturación de Stripe",
+    responses={
+        400: {"description": "Usuario no Pro o sin customer asociado"},
+        502: {"description": "Error en Stripe"},
+        503: {"description": "Stripe no configurado"},
+    },
+)
+async def billing_portal(user: User = Depends(get_current_user)):
+    return await create_billing_portal_session(user)

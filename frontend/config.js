@@ -6,7 +6,12 @@ window.RE_CONFIG = {
   SUPABASE_URL: 'https://uaiiqjouxlcvleiimokz.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_lPyD13RGcJG4bjJIew9z6g_cYQ9n269',
   // Producción (Railway). Reemplazar por el dominio definitivo cuando se configure.
-  API_BASE: 'https://re-expert-production.up.railway.app'
+  API_BASE: 'https://re-expert-production.up.railway.app',
+  // Sentry — dejar vacío para deshabilitar. sentry.js además ignora localhost.
+  SENTRY_DSN: '',
+  SENTRY_ENVIRONMENT: 'production',
+  SENTRY_TRACES_SAMPLE_RATE: 0.0,
+  VERSION: '0.1.0'
 };
 
 // Override automático en desarrollo local (localhost/127.0.0.1 → backend en :8000)

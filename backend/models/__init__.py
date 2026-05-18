@@ -10,6 +10,7 @@ from models.message import Message
 from models.milestone import Milestone
 from models.payment import Payment
 from models.reminder import Reminder
+from models.stripe_event import StripeEvent
 from models.token_usage import TokenUsage
 from models.user import User
 from models.user_channel import UserChannel
@@ -30,4 +31,5 @@ __all__ = [
     "Reminder",
     "UserChannel",
     "Contact",
+    "StripeEvent",
 ]

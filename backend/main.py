@@ -25,8 +25,33 @@ from services.scheduler_service import start_scheduler, stop_scheduler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.requests import Request as _Request
 from starlette.responses import JSONResponse as _JSONResponse
+
+# Sentry — init BEFORE the FastAPI app is created so middleware auto-wraps.
+# Disabled when SENTRY_DSN is empty (default), which is the case in tests
+# and local dev without explicit opt-in.
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.asyncio import AsyncioIntegration
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        release=settings.VERSION,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        # Don't include request bodies — they can contain user prompts / PII.
+        send_default_pii=False,
+        max_request_body_size="never",
+        integrations=[
+            StarletteIntegration(transaction_style="endpoint"),
+            FastApiIntegration(transaction_style="endpoint"),
+            AsyncioIntegration(),
+        ],
+    )
 
 
 @asynccontextmanager
@@ -66,6 +91,23 @@ class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class _HSTSMiddleware(BaseHTTPMiddleware):
+    """Add Strict-Transport-Security header on every response (production only).
+
+    HSTS instructs browsers to only contact this host over HTTPS for the next
+    `max-age` seconds. `includeSubDomains` extends the policy to subdomains.
+    `preload` is opt-in to the HSTS preload list maintained by the browser
+    vendors — only enable when you've already verified all subdomains serve
+    HTTPS, since it is hard to reverse.
+    """
+    _HEADER_VALUE = "max-age=31536000; includeSubDomains"
+
+    async def dispatch(self, request: _Request, call_next):
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = self._HEADER_VALUE
+        return response
+
+
 # CORS — environment-aware, never wildcard in production (see core/cors.py)
 app.add_middleware(
     CORSMiddleware,
@@ -75,6 +117,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(_BodySizeLimitMiddleware)
+
+# HTTPS enforcement — only in production. In Railway/Vercel/etc. the platform
+# proxy terminates TLS and forwards the original scheme via X-Forwarded-Proto;
+# Starlette's HTTPSRedirectMiddleware respects that header when uvicorn is
+# started with --proxy-headers (see Dockerfile).
+if not settings.DEBUG:
+    app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(_HSTSMiddleware)
 
 # Routes
 app.include_router(auth_router)

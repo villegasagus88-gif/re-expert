@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /pricing.html
+Allow: /login.html
+Allow: /register.html
+Disallow: /app.html
+Disallow: /account.html
+Disallow: /success.html
+
+Sitemap: https://re-expert.app/sitemap.xml
