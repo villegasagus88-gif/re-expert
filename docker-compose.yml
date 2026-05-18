@@ -45,7 +45,10 @@ services:
       # Conexión al postgres del compose (hostname = nombre del servicio)
       DATABASE_URL: postgresql://re_expert:re_expert_local@postgres:5432/re_expert
       DEBUG: "true"
-      FRONTEND_URL: http://localhost:5173
+      # Default localhost; override exportando FRONTEND_URL antes de
+      # `docker compose up` (ej. apuntando al Cloudflare Tunnel para
+      # que el link del reset email sea accesible desde afuera).
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       # Supabase opcional — vacío en local (usamos disco para reports)
       SUPABASE_URL: ""
       SUPABASE_SERVICE_ROLE_KEY: ""
