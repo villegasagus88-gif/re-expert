@@ -62,12 +62,31 @@ services:
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: "0.0"
 
-      # ── Knobs sin secretos ──
-      - key: DEBUG
-        value: "false"
-      - key: ANTHROPIC_MODEL
-        value: claude-sonnet-4-6-20250514
+      # ── LLM / model knobs ──
+      - key: LLM_PROVIDER
+        value: auto
+      # Gemini key (free 15 RPM / 1M tok/day) — opcional pero recomendado
+      # como fallback gratuito si Anthropic se queda sin saldo.
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # ── Sched / agent knobs ──
       - key: SCHEDULER_ENABLED
         value: "true"
       - key: SCHEDULER_POLL_INTERVAL_SECONDS
         value: "30"
+      # URL pública del backend — usada para links absolutos a PDFs que
+      # SOL manda por WhatsApp/Telegram. Se autocompleta a la URL que
+      # Render asigna al service. Si querés dominio custom, override acá.
+      - key: BACKEND_PUBLIC_URL
+        fromService:
+          type: web
+          name: re-expert-api
+          property: host
+
+      # ── App knobs ──
+      - key: DEBUG
+        value: "false"
+      # ANTHROPIC_MODEL default ("claude-sonnet-4-6", alias sin fecha)
+      # se hereda de config/settings.py. Si querés pinear a un snapshot
+      # específico, agregalo acá con `value: claude-sonnet-4-6-YYYYMMDD`.
