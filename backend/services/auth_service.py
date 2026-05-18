@@ -69,8 +69,8 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
         await db.commit()
         await db.refresh(user)
 
-        # Generate tokens
-        access_token, refresh_token = create_token_pair(user.id)
+        # Generate tokens (incluye token_version actual del usuario)
+        access_token, refresh_token = create_token_pair(user.id, user.token_version)
 
         return {
             "access_token": access_token,
@@ -109,8 +109,8 @@ async def login_user(email: str, password: str) -> dict:
         await db.commit()
         await db.refresh(user)
 
-        # Generate tokens
-        access_token, refresh_token = create_token_pair(user.id)
+        # Generate tokens (incluye token_version actual del usuario)
+        access_token, refresh_token = create_token_pair(user.id, user.token_version)
 
         return {
             "access_token": access_token,
@@ -167,8 +167,17 @@ async def refresh_session(refresh_token: str) -> dict:
                 detail="Usuario no encontrado",
             )
 
-        # Generate new token pair
-        new_access, new_refresh = create_token_pair(user.id)
+        # Verificar token_version: si el user cambió password después de
+        # emitirse este refresh, hay que rechazar.
+        token_tv = int(payload.get("tv", 0))
+        if token_tv != int(user.token_version or 0):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Sesión inválida — la contraseña fue cambiada recientemente.",
+            )
+
+        # Generate new token pair (con el token_version actual del user)
+        new_access, new_refresh = create_token_pair(user.id, user.token_version)
 
         return {
             "access_token": new_access,
@@ -226,6 +235,11 @@ async def update_profile(
                     detail="Contraseña actual incorrecta",
                 )
             user.password_hash = _hash_password(new_password)
+            # NO bumpeamos token_version acá: el user conoce su current
+            # password, no es un escenario de "cuenta comprometida". Si
+            # quisiéramos "logout de otras sesiones tras change-password"
+            # habría que hacerlo + reissue del token del actor en la misma
+            # response. Lo dejamos para v1.1 si hace falta.
 
         if full_name is not None:
             user.full_name = full_name

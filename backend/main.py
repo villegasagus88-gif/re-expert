@@ -25,8 +25,33 @@ from services.scheduler_service import start_scheduler, stop_scheduler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.requests import Request as _Request
 from starlette.responses import JSONResponse as _JSONResponse
+
+# Sentry — init BEFORE the FastAPI app is created so middleware auto-wraps.
+# Disabled when SENTRY_DSN is empty (default), which is the case in tests
+# and local dev without explicit opt-in.
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.asyncio import AsyncioIntegration
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.SENTRY_ENVIRONMENT,
+        release=settings.VERSION,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        # Don't include request bodies — they can contain user prompts / PII.
+        send_default_pii=False,
+        max_request_body_size="never",
+        integrations=[
+            StarletteIntegration(transaction_style="endpoint"),
+            FastApiIntegration(transaction_style="endpoint"),
+            AsyncioIntegration(),
+        ],
+    )
 
 
 @asynccontextmanager
@@ -53,17 +78,59 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose Content-Length exceeds 1 MB before they are read."""
-    _MAX_BYTES = 1_048_576  # 1 MB
+    """Reject requests whose body exceeds 10 MB.
+
+    10 MB para soportar attachments multimodales en /api/chat (planos):
+    hasta 4 imágenes x ~6 MB binarios. El schema ya capea por imagen,
+    este middleware es la barrera dura a nivel transport.
+
+    Defensa contra Transfer-Encoding: chunked (que no manda Content-Length):
+    rechazamos métodos con body sin CL para no permitir bypass del cap.
+    """
+    _MAX_BYTES = 10_485_760  # 10 MB
+    _METHODS_WITH_BODY = {"POST", "PUT", "PATCH"}
 
     async def dispatch(self, request: _Request, call_next):
-        cl = request.headers.get("content-length")
-        if cl and int(cl) > self._MAX_BYTES:
-            return _JSONResponse(
-                {"detail": "Request body too large (max 1 MB)"},
-                status_code=413,
-            )
+        if request.method in self._METHODS_WITH_BODY:
+            cl = request.headers.get("content-length")
+            if cl is None:
+                # Sin Content-Length no podemos garantizar el cap antes
+                # de leer el body. Rechazamos para evitar bypass por
+                # chunked transfer encoding o streaming malicioso.
+                return _JSONResponse(
+                    {"detail": "Falta Content-Length (chunked no soportado)"},
+                    status_code=411,  # Length Required
+                )
+            try:
+                size = int(cl)
+            except ValueError:
+                return _JSONResponse(
+                    {"detail": "Content-Length inválido"},
+                    status_code=400,
+                )
+            if size > self._MAX_BYTES:
+                return _JSONResponse(
+                    {"detail": "Request body too large (max 10 MB)"},
+                    status_code=413,
+                )
         return await call_next(request)
+
+
+class _HSTSMiddleware(BaseHTTPMiddleware):
+    """Add Strict-Transport-Security header on every response (production only).
+
+    HSTS instructs browsers to only contact this host over HTTPS for the next
+    `max-age` seconds. `includeSubDomains` extends the policy to subdomains.
+    `preload` is opt-in to the HSTS preload list maintained by the browser
+    vendors — only enable when you've already verified all subdomains serve
+    HTTPS, since it is hard to reverse.
+    """
+    _HEADER_VALUE = "max-age=31536000; includeSubDomains"
+
+    async def dispatch(self, request: _Request, call_next):
+        response = await call_next(request)
+        response.headers["Strict-Transport-Security"] = self._HEADER_VALUE
+        return response
 
 
 # CORS — environment-aware, never wildcard in production (see core/cors.py)
@@ -75,6 +142,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(_BodySizeLimitMiddleware)
+
+# HTTPS enforcement — only in production. In Railway/Vercel/etc. the platform
+# proxy terminates TLS and forwards the original scheme via X-Forwarded-Proto;
+# Starlette's HTTPSRedirectMiddleware respects that header when uvicorn is
+# started with --proxy-headers (see Dockerfile).
+if not settings.DEBUG:
+    app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(_HSTSMiddleware)
 
 # Routes
 app.include_router(auth_router)

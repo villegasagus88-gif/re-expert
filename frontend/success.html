@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Suscripción activada · RE Expert</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="config.js"></script>
+  <script src="sentry.js"></script>
   <style>
     :root {
       --bg-0: #09090b;
@@ -224,7 +226,7 @@
 </head>
 <body>
   <div class="wrap">
-    <a href="index.html" class="brand">
+    <a href="app.html" class="brand">
       <div class="brand-logo">RE</div>
       <div class="brand-name">RE Expert</div>
     </a>
@@ -245,7 +247,7 @@
       <p class="subtitle">Tu cuenta RE Expert ya tiene acceso completo a todas las funcionalidades Pro. Gracias por confiar en nosotros.</p>
 
       <ul class="perks">
-        <li><span class="perk-dot"></span>Consultas ilimitadas al asistente IA</li>
+        <li><span class="perk-dot"></span>200 mensajes / día al asistente IA</li>
         <li><span class="perk-dot"></span>Presupuestos automáticos con IA</li>
         <li><span class="perk-dot"></span>Dashboard completo de proyecto y obra</li>
         <li><span class="perk-dot"></span>Indicadores CPI / SPI / EAC en tiempo real</li>
@@ -272,7 +274,7 @@
 
     function goToApp() {
       clearInterval(timer);
-      window.location.href = 'index.html';
+      window.location.href = 'app.html';
     }
   </script>
 </body>

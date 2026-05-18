@@ -1,4 +1,89 @@
+# Netlify config para el frontend de RE Expert.
+#
+# Arquitectura:
+#   - Netlify sirve los archivos estáticos de frontend/ (HTML/JS/CSS).
+#   - Backend FastAPI corre en Railway (re-expert-production.up.railway.app).
+#   - Para evitar CORS y que toda la app viva bajo el mismo dominio
+#     (re-expert.netlify.app o el dominio custom), Netlify hace
+#     reverse-proxy de /api/*, /static/* y /health al backend.
+#   - Esto significa que `frontend/config.js` puede usar API_BASE=''
+#     (same-origin) en producción y todo "just works".
+#
+# Si la URL del backend en Railway cambia (custom domain, redeploy con
+# otro nombre, etc.), actualizar las 3 líneas `to = "..."` de abajo
+# y commit. Netlify rebuildea solo.
+
 [build]
   base = "frontend"
   publish = "."
   command = ""
+
+# ── Reverse proxy: /api/* → backend en Railway ───────────────────────
+# status=200 fuerza rewrite (no es redirect 301/302; el browser no se
+# entera, queda same-origin). force=true se aplica antes de las reglas
+# de fallback de SPA.
+[[redirects]]
+  from = "/api/*"
+  to = "https://re-expert-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+# /static/* (PDFs/DOCXs generados por SOL) → backend
+[[redirects]]
+  from = "/static/*"
+  to = "https://re-expert-production.up.railway.app/static/:splat"
+  status = 200
+  force = true
+
+# /health → backend (UptimeRobot / dashboards externos pueden pingear acá)
+[[redirects]]
+  from = "/health"
+  to = "https://re-expert-production.up.railway.app/health"
+  status = 200
+  force = true
+
+# ── Pretty URLs ──────────────────────────────────────────────────────
+# Netlify por default ya hace pretty URLs (login → login.html), pero
+# para que /forgot-password y /reset-password no caigan en 404 antes
+# de que se aplique pretty URL, los listamos explícitos.
+[[redirects]]
+  from = "/forgot-password"
+  to = "/forgot-password.html"
+  status = 200
+
+[[redirects]]
+  from = "/reset-password"
+  to = "/reset-password.html"
+  status = 200
+
+[[redirects]]
+  from = "/app"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/account"
+  to = "/account.html"
+  status = 200
+
+[[redirects]]
+  from = "/pricing"
+  to = "/pricing.html"
+  status = 200
+
+[[redirects]]
+  from = "/success"
+  to = "/success.html"
+  status = 200
+
+# ── Headers de seguridad ─────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    # HSTS: 6 meses, incluye subdomains. Cuando estés 100% seguro
+    # de que TODO el tráfico va por HTTPS, sumá `preload`.
+    Strict-Transport-Security = "max-age=15552000; includeSubDomains"

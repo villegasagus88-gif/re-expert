@@ -23,6 +23,7 @@
     'login',
     'register',
     'forgot-password',
+    'reset-password',
     'pricing',
     'success',
   ];

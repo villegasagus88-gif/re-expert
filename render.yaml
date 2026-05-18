@@ -1,0 +1,92 @@
+# Render Blueprint — RE Expert backend
+# https://render.com/docs/blueprint-spec
+#
+# Cómo usar:
+#   1. Push este archivo a main (ya hecho).
+#   2. https://dashboard.render.com → New + → Blueprint
+#   3. Conectar el repo, Render detecta este archivo y crea el servicio.
+#   4. En la página del servicio → Environment → completar las vars
+#      marcadas con `sync: false` (secrets).
+#   5. Manual Deploy → Deploy latest commit. Listo.
+#
+# Free plan = 750h/mes (suficiente para 1 servicio always-on).
+# Cold start ~30s después de 15 min inactivo — mitigar con UptimeRobot
+# pingueando /health cada 5 min.
+
+services:
+  - type: web
+    name: re-expert-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    # Render corre las migraciones antes de promover el deploy.
+    # Igual que el `preDeployCommand` que usábamos en railway.json.
+    preDeployCommand: alembic upgrade head
+    envVars:
+      # ── Secrets (set via dashboard, NEVER commit values) ──
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+      # ── Stripe (opcionales — dejar vacío hasta que conectes Stripe) ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_PRO
+        sync: false
+      - key: STRIPE_SUCCESS_URL
+        sync: false
+      - key: STRIPE_CANCEL_URL
+        sync: false
+
+      # ── Sentry (opcional, dejar vacío para deshabilitar) ──
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.0"
+
+      # ── LLM / model knobs ──
+      - key: LLM_PROVIDER
+        value: auto
+      # Gemini key (free 15 RPM / 1M tok/day) — opcional pero recomendado
+      # como fallback gratuito si Anthropic se queda sin saldo.
+      - key: GEMINI_API_KEY
+        sync: false
+
+      # ── Sched / agent knobs ──
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: SCHEDULER_POLL_INTERVAL_SECONDS
+        value: "30"
+      # URL pública del backend — usada para links absolutos a PDFs que
+      # SOL manda por WhatsApp/Telegram. Se autocompleta a la URL que
+      # Render asigna al service. Si querés dominio custom, override acá.
+      - key: BACKEND_PUBLIC_URL
+        fromService:
+          type: web
+          name: re-expert-api
+          property: host
+
+      # ── App knobs ──
+      - key: DEBUG
+        value: "false"
+      # ANTHROPIC_MODEL default ("claude-sonnet-4-6", alias sin fecha)
+      # se hereda de config/settings.py. Si querés pinear a un snapshot
+      # específico, agregalo acá con `value: claude-sonnet-4-6-YYYYMMDD`.

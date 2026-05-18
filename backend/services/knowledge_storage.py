@@ -12,12 +12,18 @@ import httpx
 from config.settings import settings
 from fastapi import HTTPException, UploadFile, status
 
-STORAGE_URL = f"{settings.SUPABASE_URL}/storage/v1"
+STORAGE_URL = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1" if settings.SUPABASE_URL else ""
 HEADERS = {
     "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
     "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
 }
 BUCKET = "knowledge"
+# True solo si tenemos URL + service role key. Cuando es False degradamos
+# graciosamente: list_files devuelve [], get_file devuelve 404 limpio,
+# upload/delete fallan con 503 explícito. Sin esto, los endpoints de
+# /api/knowledge/* tiraban 500 con stacktrace ofuscado cuando se corría
+# sin Supabase Storage configurado (ej. dev local con Postgres propio).
+STORAGE_ENABLED: bool = bool(settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY)
 
 
 @dataclass
@@ -79,7 +85,11 @@ class KnowledgeStorageService:
 
         Returns:
             List of file objects con name, path completo, size, etc.
+            Si Supabase Storage no está configurado (SUPABASE_URL vacío),
+            devuelve [] en vez de tirar 500.
         """
+        if not STORAGE_ENABLED:
+            return []
         async with httpx.AsyncClient(timeout=20) as client:
             results: list[dict] = []
             # BFS por niveles para soportar anidamiento arbitrario.
@@ -129,6 +139,12 @@ class KnowledgeStorageService:
             cached = self._cache[path]
             return cached.content, cached.content_type
 
+        if not STORAGE_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Archivo no encontrado: {path}",
+            )
+
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 f"{STORAGE_URL}/object/{BUCKET}/{path}",
@@ -169,6 +185,11 @@ class KnowledgeStorageService:
         Returns:
             Dict with path and public URL.
         """
+        if not STORAGE_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase Storage no está configurado (faltan SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY)",
+            )
         content = await file.read()
         content_type = file.content_type or "application/octet-stream"
 
@@ -203,6 +224,11 @@ class KnowledgeStorageService:
 
     async def delete_file(self, path: str) -> None:
         """Delete a file from the knowledge bucket."""
+        if not STORAGE_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase Storage no está configurado",
+            )
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.delete(
                 f"{STORAGE_URL}/object/{BUCKET}/{path}",

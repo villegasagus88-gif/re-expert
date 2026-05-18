@@ -91,6 +91,19 @@
     }
   }
 
+  // Si el usuario llegó al login/register vía ?redirect=foo.html (desde
+  // pricing.html o account.html), volvemos ahí post-login. Si no, va al
+  // app principal. Solo aceptamos rutas relativas mismas-origen para
+  // evitar open redirect.
+  function _postAuthDestination() {
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get('redirect');
+    if (!r) return 'app.html';
+    // Aceptar solo "foo.html" o "foo.html?bar=baz" relativos.
+    if (/^[a-z0-9_\-]+\.html(\?.*)?$/i.test(r)) return r;
+    return 'app.html';
+  }
+
   // ===== Redirect post-login =====
   // Solo redirige a app.html si el backend confirma que la sesión es válida.
   // No alcanza con que el JWT no esté vencido localmente: la firma puede haber
@@ -117,7 +130,7 @@
         headers: { 'Authorization': 'Bearer ' + stored },
       });
       if (resp.ok) {
-        window.location.replace('index.html');
+        window.location.replace(_postAuthDestination());
         return;
       }
       if (resp.status === 401 || resp.status === 403) {
@@ -176,7 +189,7 @@
         if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
         sessionStorage.setItem('re_authed', '1');
       }
-      window.location.replace('index.html');
+      window.location.replace(_postAuthDestination());
     } catch {
       showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
@@ -232,7 +245,7 @@
         if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
         sessionStorage.setItem('re_authed', '1');
       }
-      window.location.replace('index.html');
+      window.location.replace(_postAuthDestination());
     } catch {
       showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
@@ -240,12 +253,101 @@
     }
   }
 
-  // ===== FORGOT PASSWORD =====
-  async function handleForgotPassword() {
-    showAlert(
-      'La recuperación de contraseña estará disponible próximamente. Contactá al soporte si necesitás acceso urgente.',
-      'success'
-    );
+  // ===== FORGOT PASSWORD (en login.html) =====
+  // Lleva al usuario al formulario de recuperación. La lógica de
+  // forgot/reset vive en forgot-password.html y reset-password.html.
+  function handleForgotPassword() {
+    window.location.href = 'forgot-password.html';
+  }
+
+  // Handler del formulario de forgot-password.html (envía el mail).
+  async function handleForgotSubmit(event) {
+    event.preventDefault();
+    clearAllErrors('forgot-form');
+
+    const email = byId('email').value.trim();
+    const emailErr = validateEmail(email);
+    if (emailErr) { setInputError('email', emailErr); return; }
+
+    setLoading('submit-btn', true);
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
+      }
+      // El backend siempre responde 200 si el email es válido (no leak).
+      if (!resp.ok && resp.status !== 200) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'Error al solicitar recuperación. Intentá de nuevo.');
+        return;
+      }
+      showAlert(
+        'Listo. Si el email está registrado, te enviamos un link para restablecer tu contraseña. Revisá tu bandeja de entrada (y spam).',
+        'success'
+      );
+      byId('forgot-form').reset();
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading('submit-btn', false);
+    }
+  }
+
+  // Handler del formulario de reset-password.html (aplica nueva contraseña).
+  async function handleResetSubmit(event) {
+    event.preventDefault();
+    clearAllErrors('reset-form');
+
+    const password = byId('password').value;
+    const confirm = byId('password-confirm').value;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || '';
+
+    if (!token) {
+      showAlert('Link inválido. Volvé a pedir uno nuevo desde "Olvidé mi contraseña".');
+      return;
+    }
+
+    const passErr = validatePasswordStrength(password);
+    if (passErr) { setInputError('password', passErr); return; }
+    if (password !== confirm) {
+      setInputError('password-confirm', 'Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading('submit-btn', true);
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: password }),
+      });
+      if (resp.status === 400) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'El link de recuperación no es válido o expiró.');
+        return;
+      }
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
+      }
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'Error actualizando contraseña.');
+        return;
+      }
+      showAlert('Contraseña actualizada. Redirigiendo al login…', 'success');
+      setTimeout(() => { window.location.replace('login.html'); }, 1800);
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading('submit-btn', false);
+    }
   }
 
   // Exports
@@ -253,6 +355,8 @@
     handleLogin,
     handleRegister,
     handleForgotPassword,
+    handleForgotSubmit,
+    handleResetSubmit,
     redirectIfAuthenticated,
     clearAllErrors,
   };

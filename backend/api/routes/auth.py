@@ -3,9 +3,12 @@ Auth routes: register, login, refresh, and me (protected).
 """
 from api.schemas.auth import (
     AuthResponse,
+    ForgotPasswordRequest,
+    GenericOk,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     UpdateProfileRequest,
     UserOut,
 )
@@ -20,6 +23,7 @@ from services.auth_service import (
     register_user,
     update_profile,
 )
+from services.password_reset_service import confirm_reset, request_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -132,4 +136,45 @@ async def update_me(
 async def mark_onboarding_complete(current_user: User = Depends(get_current_user)):
     await complete_onboarding(str(current_user.id))
     return {"ok": True}
+
+
+# ── Forgot / reset password ──────────────────────────────────────────
+# Ambos endpoints son públicos (no requieren JWT). El de "forgot" tiene
+# rate limit más agresivo para no permitir enumeración o spam de mails.
+
+@router.post(
+    "/forgot-password",
+    response_model=GenericOk,
+    summary="Solicitar email de recuperación de contraseña",
+    responses={
+        200: {"description": "Si el email existe, se envió el link"},
+        422: {"description": "Email mal formado"},
+        429: {"description": "Demasiados intentos, esperá un rato"},
+    },
+)
+@limiter.limit("3/hour")
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
+    # NO leak: respondemos lo mismo si el email existe o no.
+    await request_reset(body.email)
+    return GenericOk(
+        ok=True,
+        message="Si el email está registrado, te enviamos un link de recuperación.",
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=GenericOk,
+    summary="Aplicar nueva contraseña usando el token del email",
+    responses={
+        200: {"description": "Contraseña actualizada"},
+        400: {"description": "Token inválido, usado o vencido"},
+        422: {"description": "Nueva contraseña débil"},
+        429: {"description": "Demasiados intentos"},
+    },
+)
+@limiter.limit("10/hour")
+async def reset_password(request: Request, body: ResetPasswordRequest):
+    await confirm_reset(body.token, body.new_password)
+    return GenericOk(ok=True, message="Contraseña actualizada. Ya podés iniciar sesión.")
 
