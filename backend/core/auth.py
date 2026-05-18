@@ -92,4 +92,17 @@ async def get_current_user(
             detail="Usuario no encontrado",
         )
 
+    # Token version check: invalida JWTs viejos cuando el user cambia
+    # password (o hacemos logout global bumpeando user.token_version).
+    # Tokens emitidos antes del fix (sin `tv` claim) cuentan como tv=0,
+    # que es el default — backward compatible para tokens vivos al
+    # momento del deploy de esta feature.
+    token_tv = int(payload.get("tv", 0))
+    if token_tv != int(user.token_version or 0):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sesión inválida — la contraseña fue cambiada recientemente. Iniciá sesión de nuevo.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user

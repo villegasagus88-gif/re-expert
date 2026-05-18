@@ -22,6 +22,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
+import httpx
 from config.settings import settings
 from fastapi import HTTPException, status
 from models.base import get_session_factory
@@ -54,32 +55,110 @@ def _build_reset_url(token: str) -> str:
     return f"{base.rstrip('/')}/reset-password.html?token={token}"
 
 
-def _send_reset_email(email: str, full_name: str | None, url: str) -> None:
-    """
-    Send the reset email. Stub for now — logs to stdout so devs can
-    copy the link manually during testing.
+def _build_reset_email_html(name: str, url: str) -> str:
+    """Cuerpo HTML del email de recuperación. Inline styles para que
+    Gmail/Outlook no lo rompan. Texto en español neutral."""
+    return f"""<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:40px 20px">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+        <tr><td style="padding:32px 40px 0">
+          <div style="font-size:22px;font-weight:700;color:#09090b;letter-spacing:-.3px">RE Expert</div>
+          <div style="font-size:12px;color:#71717a;margin-top:2px">Real Estate AI</div>
+        </td></tr>
+        <tr><td style="padding:24px 40px">
+          <h1 style="font-size:20px;font-weight:700;color:#18181b;margin:0 0 12px">Restablecé tu contraseña</h1>
+          <p style="font-size:14px;line-height:1.6;color:#3f3f46;margin:0 0 16px">
+            Hola {name}, alguien (esperemos que vos) pidió restablecer la contraseña de tu cuenta en RE Expert.
+            Hacé click en el botón de abajo para elegir una nueva. El link es válido {RESET_TOKEN_TTL_MINUTES} minutos.
+          </p>
+          <div style="margin:28px 0">
+            <a href="{url}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">
+              Restablecer contraseña
+            </a>
+          </div>
+          <p style="font-size:13px;line-height:1.6;color:#71717a;margin:0 0 8px">
+            Si el botón no funciona, copiá y pegá este link en el navegador:
+          </p>
+          <p style="font-size:12px;line-height:1.5;color:#52525b;word-break:break-all;background:#f4f4f5;padding:10px 12px;border-radius:6px;margin:0 0 24px">
+            {url}
+          </p>
+          <p style="font-size:13px;line-height:1.6;color:#71717a;margin:0">
+            Si no fuiste vos, ignorá este mail — tu contraseña no cambió.
+          </p>
+        </td></tr>
+        <tr><td style="padding:20px 40px 32px;border-top:1px solid #e4e4e7">
+          <p style="font-size:11px;color:#a1a1aa;margin:0;text-align:center">
+            © 2026 RE Expert · Real Estate AI para Argentina
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>"""
 
-    SECURITY: en producción (DEBUG=False) NO loguea el URL completo
-    (que contiene el token) porque queda en Sentry/Railway logs y
-    cualquiera con acceso a logs podría tomar la cuenta. Falla loudly
-    para que sea obvio que hay que wirear un proveedor real.
 
-    To wire a real provider (SendGrid/Resend/Postmark/etc.):
-      1. Add SDK + API key env var in settings.
-      2. Replace this body with the provider call.
-      3. Keep the function signature so callers don't change.
+async def _send_via_resend(email: str, name: str, url: str) -> bool:
+    """Envía vía Resend API. Devuelve True si OK, False si falló (loggea
+    pero NO levanta — un fallo de email no debe romper el flow del user)."""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": settings.RESEND_FROM,
+                    "to": [email],
+                    "subject": "Restablecé tu contraseña — RE Expert",
+                    "html": _build_reset_email_html(name, url),
+                },
+            )
+        if resp.status_code >= 400:
+            logger.error(
+                "Resend API error %s para %s: %s",
+                resp.status_code, email, resp.text[:300],
+            )
+            return False
+        logger.info("Reset email enviado vía Resend a %s", email)
+        return True
+    except Exception as e:
+        logger.exception("Excepción enviando email via Resend: %s", e)
+        return False
+
+
+async def _send_reset_email(email: str, full_name: str | None, url: str) -> None:
     """
+    Envía el email de reset. Prioridad:
+      1. Si RESEND_API_KEY está seteada → manda real via Resend API.
+      2. Si DEBUG=True y no hay Resend → loggea el URL al stdout (dev).
+      3. Si DEBUG=False y no hay Resend → loggea ERROR y no envía
+         (NO loguea el URL: el token quedaría en logs y cualquiera con
+         acceso a logs podría tomar la cuenta).
+    """
+    name = full_name or "amigo/a"
+
+    if settings.RESEND_API_KEY:
+        ok = await _send_via_resend(email, name, url)
+        if not ok and settings.DEBUG:
+            # En dev, si Resend falla pero estamos en DEBUG, loguear el
+            # link al stdout como fallback útil.
+            logger.warning("Resend falló; link dev → %s", url)
+        return
+
     if not settings.DEBUG:
-        # No hacer logger.error con el URL: el token quedaría en logs.
         logger.error(
-            "Password reset email stub triggered in PRODUCTION for %s. "
-            "Email no enviado. Configurá un proveedor real "
-            "(SendGrid/Resend/Postmark) en services/password_reset_service.py.",
+            "Password reset triggered in PRODUCTION for %s pero NO hay "
+            "RESEND_API_KEY configurada. Email no enviado. Setear "
+            "RESEND_API_KEY (https://resend.com/api-keys) en las env vars.",
             email,
         )
         return
 
-    name = full_name or "amigo/a"
+    # Dev sin Resend: log al stdout con el link clickeable.
     logger.warning(
         "\n"
         "════════════ PASSWORD RESET EMAIL (stub, DEV ONLY) ════════════\n"
@@ -170,7 +249,7 @@ async def request_reset(email: str) -> None:
         db.add(reset)
         await db.commit()
 
-        _send_reset_email(user.email, user.full_name, _build_reset_url(token))
+        await _send_reset_email(user.email, user.full_name, _build_reset_url(token))
 
 
 async def confirm_reset(token: str, new_password: str) -> None:
@@ -205,11 +284,15 @@ async def confirm_reset(token: str, new_password: str) -> None:
                 detail="El link de recuperación expiró. Pedí uno nuevo.",
             )
 
-        # Update password + mark token used in a single transaction.
+        # Update password + bump token_version (invalida JWTs viejos del
+        # usuario) + mark token used, todo en una transacción.
         await db.execute(
             update(User)
             .where(User.id == reset.user_id)
-            .values(password_hash=_hash_password(new_password))
+            .values(
+                password_hash=_hash_password(new_password),
+                token_version=User.token_version + 1,
+            )
         )
         reset.used_at = now
         await db.commit()

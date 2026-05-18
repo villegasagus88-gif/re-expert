@@ -14,10 +14,26 @@ window.RE_CONFIG = {
   VERSION: '0.1.0'
 };
 
-// Override automático en desarrollo local (localhost/127.0.0.1 → backend en :8000)
+// Detección automática del API_BASE según contexto (heurística por puerto):
+//   - localhost:5173 (docker-compose nginx con proxy a /api/):
+//       same-origin → API_BASE='' (rutas relativas)
+//   - localhost en otro puerto (http-server/live-server suelto):
+//       backend separado en :8000 → API_BASE='http://localhost:8000'
+//   - Cualquier dominio público (Cloudflare Tunnel, Netlify, etc):
+//       same-origin (asume reverse proxy a /api/* en producción)
 (function () {
-  var h = (typeof window !== 'undefined' && window.location && window.location.hostname) || '';
-  if (h === 'localhost' || h === '127.0.0.1') {
-    window.RE_CONFIG.API_BASE = 'http://localhost:8000';
+  var loc = (typeof window !== 'undefined' && window.location) || {};
+  var h = (loc.hostname || '').toLowerCase();
+  var port = loc.port || (loc.protocol === 'https:' ? '443' : '80');
+  var isLocalhost = (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0');
+
+  if (!isLocalhost) {
+    // Dominio público: same-origin (reverse proxy maneja /api/*).
+    window.RE_CONFIG.API_BASE = '';
+    return;
   }
+
+  // Local: si estamos en :5173 (compose nginx con proxy), same-origin.
+  // Cualquier otro puerto → backend separado en :8000.
+  window.RE_CONFIG.API_BASE = (port === '5173') ? '' : 'http://localhost:8000';
 })();

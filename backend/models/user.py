@@ -9,7 +9,7 @@ from datetime import datetime
 from uuid import UUID
 
 from models.base import Base
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,6 +34,12 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
     onboarding_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false", nullable=False
+    )
+    # Bump cada vez que queremos invalidar todos los JWTs del usuario
+    # (password reset, logout global, etc). El claim `tv` del JWT debe
+    # coincidir con este valor para que el token sea aceptado.
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
     )
     # Teléfono del usuario en formato internacional (lo pide SOL en onboarding).
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
