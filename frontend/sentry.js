@@ -25,6 +25,35 @@
         : 0.0,
       // Don't ship request bodies / form data — they can contain user prompts / PII.
       sendDefaultPii: false,
+      // Strip sensitive query params (reset tokens, jwt, api keys) from
+      // events before they leave the browser. Sentry would otherwise
+      // capture them via URL, request.url, transaction names, etc.
+      beforeSend: function (event) {
+        try {
+          var SENSITIVE = /([?&](?:token|access_token|refresh_token|jwt|api_key|key|password)=)[^&#]*/gi;
+          var redact = function (s) {
+            return typeof s === 'string' ? s.replace(SENSITIVE, '$1[Filtered]') : s;
+          };
+          if (event.request) {
+            event.request.url = redact(event.request.url);
+            if (event.request.query_string) {
+              event.request.query_string = redact(event.request.query_string);
+            }
+          }
+          if (event.breadcrumbs) {
+            event.breadcrumbs = event.breadcrumbs.map(function (b) {
+              if (b && b.data && typeof b.data.url === 'string') {
+                b.data.url = redact(b.data.url);
+              }
+              return b;
+            });
+          }
+          if (typeof event.transaction === 'string') {
+            event.transaction = redact(event.transaction);
+          }
+        } catch (_) { /* never let beforeSend throw */ }
+        return event;
+      },
       // Common noise to drop before it counts against quota.
       ignoreErrors: [
         'ResizeObserver loop limit exceeded',

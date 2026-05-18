@@ -293,15 +293,18 @@ async def chat(
             return
         except Exception as e:
             logger.exception("Error en stream_chat: %s", e)
-            # Diagnóstico temporal: exponemos el tipo + mensaje truncado del
-            # error para destrabar el debug en producción. Volver a un mensaje
-            # genérico una vez resuelto.
-            err_type = type(e).__name__
-            err_msg = (str(e) or "").splitlines()[0][:240] if str(e) else ""
-            yield _sse({
-                "type": "error",
-                "message": f"Error generando respuesta [{err_type}: {err_msg}]",
-            })
+            # En producción NO exponemos el tipo/mensaje real al cliente:
+            # Anthropic suele incluir parte del request en el error, lo
+            # que puede filtrar prompts, API key parcial, o info de
+            # rate-limit que sirve para reconnaissance. En DEBUG sí
+            # exponemos para facilitar dev.
+            if settings.DEBUG:
+                err_type = type(e).__name__
+                err_msg = (str(e) or "").splitlines()[0][:240] if str(e) else ""
+                msg = f"Error generando respuesta [{err_type}: {err_msg}]"
+            else:
+                msg = "Error generando respuesta. Si el problema persiste, contactá soporte."
+            yield _sse({"type": "error", "message": msg})
             return
 
         # Persist assistant message (with token count if available)

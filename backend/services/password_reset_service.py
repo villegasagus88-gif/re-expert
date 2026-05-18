@@ -27,7 +27,7 @@ from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.password_reset import PasswordReset
 from models.user import User
-from sqlalchemy import select, update
+from sqlalchemy import and_, func, select, update
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +59,30 @@ def _send_reset_email(email: str, full_name: str | None, url: str) -> None:
     Send the reset email. Stub for now — logs to stdout so devs can
     copy the link manually during testing.
 
+    SECURITY: en producción (DEBUG=False) NO loguea el URL completo
+    (que contiene el token) porque queda en Sentry/Railway logs y
+    cualquiera con acceso a logs podría tomar la cuenta. Falla loudly
+    para que sea obvio que hay que wirear un proveedor real.
+
     To wire a real provider (SendGrid/Resend/Postmark/etc.):
       1. Add SDK + API key env var in settings.
       2. Replace this body with the provider call.
       3. Keep the function signature so callers don't change.
     """
+    if not settings.DEBUG:
+        # No hacer logger.error con el URL: el token quedaría en logs.
+        logger.error(
+            "Password reset email stub triggered in PRODUCTION for %s. "
+            "Email no enviado. Configurá un proveedor real "
+            "(SendGrid/Resend/Postmark) en services/password_reset_service.py.",
+            email,
+        )
+        return
+
     name = full_name or "amigo/a"
     logger.warning(
         "\n"
-        "════════════ PASSWORD RESET EMAIL (stub) ════════════\n"
+        "════════════ PASSWORD RESET EMAIL (stub, DEV ONLY) ════════════\n"
         " To:      %s\n"
         " Subject: Restablecé tu contraseña — RE Expert\n"
         " Body:\n"
@@ -76,12 +91,20 @@ def _send_reset_email(email: str, full_name: str | None, url: str) -> None:
         "   (válido %d minutos):\n\n"
         "   %s\n\n"
         "   Si no fuiste vos, ignorá este mail. Tu contraseña no cambió.\n"
-        "═══════════════════════════════════════════════════════\n",
+        "═══════════════════════════════════════════════════════════════\n",
         email,
         name,
         RESET_TOKEN_TTL_MINUTES,
         url,
     )
+
+
+# Throttle por email: máximo 3 pedidos de reset por hora para el mismo
+# usuario. Esto complementa el rate limit por IP del endpoint (3/h) —
+# sin esto un atacante con IPs rotantes podría spamear resets a una
+# víctima específica para llenarle el buzón de mails.
+_RESET_THROTTLE_WINDOW = timedelta(hours=1)
+_RESET_THROTTLE_MAX = 3
 
 
 async def request_reset(email: str) -> None:
@@ -99,10 +122,45 @@ async def request_reset(email: str) -> None:
             logger.info("Password reset requested for non-existent email %r", email)
             return
 
+        now = datetime.now(UTC)
+
+        # Throttle per email: contar tokens emitidos en la última hora.
+        # Si ya hay >= _RESET_THROTTLE_MAX, no creamos otro. Igual
+        # devolvemos 200 para no filtrar el throttle al atacante.
+        recent_count = await db.scalar(
+            select(func.count(PasswordReset.id)).where(
+                and_(
+                    PasswordReset.user_id == user.id,
+                    PasswordReset.created_at >= now - _RESET_THROTTLE_WINDOW,
+                )
+            )
+        )
+        if recent_count is not None and recent_count >= _RESET_THROTTLE_MAX:
+            logger.warning(
+                "Password reset throttled for user_id=%s (count=%s in last hour)",
+                user.id,
+                recent_count,
+            )
+            return
+
+        # Invalidate any previously-issued unused token for this user.
+        # Sin esto, un atacante que interceptó un email viejo lo puede
+        # usar incluso después de que el legítimo dueño pidió uno nuevo.
+        await db.execute(
+            update(PasswordReset)
+            .where(
+                and_(
+                    PasswordReset.user_id == user.id,
+                    PasswordReset.used_at.is_(None),
+                )
+            )
+            .values(used_at=now)
+        )
+
         # Generate single-use token. 32 bytes → ~43 url-safe chars.
         token = secrets.token_urlsafe(32)
         token_hash = _hash_token(token)
-        expires_at = datetime.now(UTC) + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
+        expires_at = now + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
 
         reset = PasswordReset(
             user_id=user.id,

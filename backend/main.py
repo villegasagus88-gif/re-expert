@@ -78,22 +78,41 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose Content-Length exceeds 10 MB before they are read.
+    """Reject requests whose body exceeds 10 MB.
 
-    Bumped from 1 MB to support multimodal image attachments in /api/chat
-    (planos): hasta 4 imágenes x ~6 MB binarios = ~24 MB en peor caso, pero
-    el schema cap por imagen es 8 MB base64 (~6 MB binarios). 10 MB total
-    deja margen para mensaje + 1 imagen completa o 2-3 chicas.
+    10 MB para soportar attachments multimodales en /api/chat (planos):
+    hasta 4 imágenes x ~6 MB binarios. El schema ya capea por imagen,
+    este middleware es la barrera dura a nivel transport.
+
+    Defensa contra Transfer-Encoding: chunked (que no manda Content-Length):
+    rechazamos métodos con body sin CL para no permitir bypass del cap.
     """
     _MAX_BYTES = 10_485_760  # 10 MB
+    _METHODS_WITH_BODY = {"POST", "PUT", "PATCH"}
 
     async def dispatch(self, request: _Request, call_next):
-        cl = request.headers.get("content-length")
-        if cl and int(cl) > self._MAX_BYTES:
-            return _JSONResponse(
-                {"detail": "Request body too large (max 1 MB)"},
-                status_code=413,
-            )
+        if request.method in self._METHODS_WITH_BODY:
+            cl = request.headers.get("content-length")
+            if cl is None:
+                # Sin Content-Length no podemos garantizar el cap antes
+                # de leer el body. Rechazamos para evitar bypass por
+                # chunked transfer encoding o streaming malicioso.
+                return _JSONResponse(
+                    {"detail": "Falta Content-Length (chunked no soportado)"},
+                    status_code=411,  # Length Required
+                )
+            try:
+                size = int(cl)
+            except ValueError:
+                return _JSONResponse(
+                    {"detail": "Content-Length inválido"},
+                    status_code=400,
+                )
+            if size > self._MAX_BYTES:
+                return _JSONResponse(
+                    {"detail": "Request body too large (max 10 MB)"},
+                    status_code=413,
+                )
         return await call_next(request)
 
 

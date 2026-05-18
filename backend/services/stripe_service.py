@@ -164,7 +164,17 @@ async def parse_webhook_event(
             logger.warning("stripe webhook: malformed payload — %s", exc)
             raise HTTPException(status_code=400, detail="Payload inválido") from exc
 
-    # No webhook secret configured — accept unverified payloads (only safe in dev).
+    # No webhook secret configured — only allowed in DEBUG. In production
+    # this would let any attacker forge `checkout.session.completed` and
+    # upgrade arbitrary users to Pro for free.
+    if not settings.DEBUG:
+        logger.error(
+            "stripe webhook rejected: STRIPE_WEBHOOK_SECRET not configured in production"
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Webhook no configurado (falta STRIPE_WEBHOOK_SECRET)",
+        )
     import json
     try:
         return json.loads(payload)
