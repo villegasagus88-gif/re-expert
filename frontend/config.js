@@ -2,10 +2,10 @@
 //
 // Arquitectura de prod:
 //   - Frontend en Netlify (re-expert.netlify.app o dominio custom).
-//   - Backend en Render (re-expert-api.onrender.com).
+//   - Backend en Railway (re-expert-production.up.railway.app).
 //   - Netlify hace reverse-proxy de /api/* → backend (ver netlify.toml).
 //   - Por eso API_BASE='' en prod = same-origin = el browser nunca habla
-//     directo con onrender.com → sin CORS, sin mixed-content issues.
+//     directo con railway.app → sin CORS, sin mixed-content issues.
 //
 // Para local dev hay dos modos:
 //   - docker-compose con nginx (puerto :5173, también same-origin).
