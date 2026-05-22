@@ -133,6 +133,24 @@ class _HSTSMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class _HTTPSRedirectExceptHealth:
+    """ASGI middleware: HTTPSRedirect but exempt /health.
+
+    Railway's internal healthcheck probes /health over plain HTTP without
+    X-Forwarded-Proto, so HTTPSRedirectMiddleware would return 307 and the
+    healthcheck would fail. We skip the redirect for /health only.
+    """
+    def __init__(self, app):
+        self._inner = HTTPSRedirectMiddleware(app)
+        self._app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and scope.get("path") == "/health":
+            await self._app(scope, receive, send)
+        else:
+            await self._inner(scope, receive, send)
+
+
 # CORS — environment-aware, never wildcard in production (see core/cors.py)
 app.add_middleware(
     CORSMiddleware,
@@ -148,7 +166,7 @@ app.add_middleware(_BodySizeLimitMiddleware)
 # Starlette's HTTPSRedirectMiddleware respects that header when uvicorn is
 # started with --proxy-headers (see Dockerfile).
 if not settings.DEBUG:
-    app.add_middleware(HTTPSRedirectMiddleware)
+    app.add_middleware(_HTTPSRedirectExceptHealth)
     app.add_middleware(_HSTSMiddleware)
 
 # Routes
