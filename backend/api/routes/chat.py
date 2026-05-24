@@ -12,7 +12,7 @@ SSE event spec:
   - done:  {"type": "done",  "tokens_used": <int|null>}
   - error: {"type": "error", "message": "<human message>"}
 
-Stream hard-caps at 60s; if exceeded an error event is emitted.
+Stream hard-caps at 180s; if exceeded an error event is emitted.
 
 Smoke test with curl (replace <JWT>):
 
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 MAX_HISTORY_MESSAGES = 20
-STREAM_TIMEOUT_SECONDS = 60
+STREAM_TIMEOUT_SECONDS = 180
 
 
 TITLE_MAX_LEN = 60
