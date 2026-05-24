@@ -1860,7 +1860,9 @@ function handleTitleTap(){
   $('#pageContainer').scrollTo({top:0,behavior:'smooth'});
 }
 function newConversation(){
+  if(state.isStreaming)return;
   state.currentConversation=null;state.messages=[];
+  els.messagesEl.innerHTML='';
   renderHistory();showWelcome();
   els.exportBtn.style.display='none';
   switchView('chat');
