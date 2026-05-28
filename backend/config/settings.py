@@ -52,6 +52,18 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # ===== DB POOL =====
+    # Conexiones que mantenemos warm en el pool. Supabase Pooler en
+    # transaction mode acepta hasta 15-30 conexiones por cliente.
+    # Para 1 instancia Railway con tráfico moderado, 5 suele alcanzar.
+    DB_POOL_SIZE: int = 5
+    # Overflow temporal cuando hay picos. Total max = pool_size + max_overflow.
+    DB_MAX_OVERFLOW: int = 5
+    # Segundos antes de descartar una conexión idle.
+    DB_POOL_RECYCLE: int = 1800  # 30 min
+    # Timeout esperando una conexión libre del pool.
+    DB_POOL_TIMEOUT: int = 10
+
     # ===== ANTHROPIC =====
     # Usamos el alias (sin fecha) que siempre apunta al último snapshot
     # estable. Override con env var ANTHROPIC_MODEL si querés pinear.

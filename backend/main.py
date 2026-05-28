@@ -161,18 +161,22 @@ class _NoCacheAPIMiddleware(BaseHTTPMiddleware):
 
 
 class _HTTPSRedirectExceptHealth:
-    """ASGI middleware: HTTPSRedirect but exempt /health.
+    """ASGI middleware: HTTPSRedirect but exempt /health* endpoints.
 
-    Railway's internal healthcheck probes /health over plain HTTP without
-    X-Forwarded-Proto, so HTTPSRedirectMiddleware would return 307 and the
-    healthcheck would fail. We skip the redirect for /health only.
+    Railway's internal healthcheck probes over plain HTTP without
+    X-Forwarded-Proto, so HTTPSRedirectMiddleware devolvería 307 y
+    la healthcheck fallaría. Exemptamos cualquier path bajo /health
+    (`/health`, `/health/ready`, `/health/db`).
     """
     def __init__(self, app):
         self._inner = HTTPSRedirectMiddleware(app)
         self._app = app
 
     async def __call__(self, scope, receive, send):
-        if scope.get("type") == "http" and scope.get("path") == "/health":
+        path = scope.get("path") or ""
+        if scope.get("type") == "http" and (
+            path == "/health" or path.startswith("/health/")
+        ):
             await self._app(scope, receive, send)
         else:
             await self._inner(scope, receive, send)
@@ -235,4 +239,41 @@ app.mount(
 
 @app.get("/health")
 async def health():
+    """Liveness probe — el proceso está vivo y respondiendo HTTP.
+    No verifica dependencias. Railway usa este endpoint.
+    """
     return {"status": "ok", "version": settings.VERSION}
+
+
+@app.get("/health/ready")
+async def health_ready():
+    """Readiness probe — el proceso está listo para recibir tráfico.
+    Verifica conectividad con la DB. Si la DB está caída, devuelve 503
+    y un load balancer debería sacar el container de rotación.
+
+    Útil para Kubernetes-style readiness; en Railway hoy usamos solo
+    `/health`, pero este endpoint queda disponible para futuros LBs.
+    """
+    from sqlalchemy import text as _sa_text
+    from models.base import get_session_factory
+
+    try:
+        async with get_session_factory()() as db:
+            res = await db.execute(_sa_text("SELECT 1"))
+            row = res.scalar()
+            if row != 1:
+                raise RuntimeError("SELECT 1 returned unexpected value")
+    except Exception as exc:
+        return _JSONResponse(
+            {"status": "not_ready", "reason": "db_unreachable", "detail": str(exc)[:200]},
+            status_code=503,
+        )
+    return {"status": "ready", "version": settings.VERSION}
+
+
+@app.get("/health/db")
+async def health_db():
+    """Alias de /health/ready (más explícito en el nombre).
+    Útil para alerting que monitorea específicamente la DB.
+    """
+    return await health_ready()

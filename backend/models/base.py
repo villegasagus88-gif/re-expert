@@ -36,16 +36,33 @@ _SessionLocal: async_sessionmaker[AsyncSession] | None = None
 
 
 def get_engine() -> AsyncEngine:
-    """Lazily create and return the shared async engine."""
+    """Lazily create and return the shared async engine.
+
+    Pool config:
+      - pool_size: conexiones warm permanentes.
+      - max_overflow: conexiones extra bajo picos (temporales).
+      - pool_recycle: cierra conexiones idle después de N segundos
+        (evita que Supabase Pooler las corte y nos quedemos con stale
+        sockets).
+      - pool_pre_ping: hace SELECT 1 antes de usar la conexión.
+      - pool_timeout: cuánto esperar una conexión libre antes de
+        levantar TimeoutError (mejor que esperar infinito).
+
+    asyncpg connect_args:
+      - statement_cache_size=0 + prepared_statement_cache_size=0 son
+        requeridos por Supabase Pooler en transaction mode (no soporta
+        prepared statements). Safe en direct connection también.
+    """
     global _engine
     if _engine is None:
-        # statement_cache_size=0 + prepared_statement_cache_size=0 are required when
-        # connecting through Supabase's pgbouncer pooler (port 6543, transaction mode),
-        # which does not support prepared statements. Safe to keep on direct (5432) too.
         _engine = create_async_engine(
             _asyncpg_url(settings.DATABASE_URL),
             echo=settings.DEBUG,
+            pool_size=settings.DB_POOL_SIZE,
+            max_overflow=settings.DB_MAX_OVERFLOW,
+            pool_recycle=settings.DB_POOL_RECYCLE,
             pool_pre_ping=True,
+            pool_timeout=settings.DB_POOL_TIMEOUT,
             connect_args={
                 "statement_cache_size": 0,
                 "prepared_statement_cache_size": 0,
