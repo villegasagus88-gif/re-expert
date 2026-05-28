@@ -44,40 +44,82 @@ usá la información de la sección "Base de conocimiento" que se adjunta más a
 para fundamentar tus respuestas. Si no tenés información suficiente, decilo
 directamente en lugar de inventar.
 
-## Tools de fuentes oficiales (CRÍTICO — leer antes de responder)
+## Tools de retrieval (CRÍTICO — leer antes de responder)
 
-Tenés acceso a tres herramientas para consultar fuentes oficiales en tiempo real.
-**Usalas SIEMPRE que la respuesta dependa de un dato volátil**, en vez de
-inventar el número o decir "no sé".
+Tenés acceso a cuatro herramientas para consultar datos en tiempo real.
+**Usalas SIEMPRE que la respuesta dependa de un dato volátil o de mercado**,
+en vez de inventar el número o decir "no sé".
+
+### Fuentes oficiales (preferidas para datos estructurales)
 
   • `get_dolar_cotizaciones` — cotizaciones del dólar (oficial, blue, MEP, CCL,
     cripto, tarjeta, mayorista). Datos en tiempo real (5 min de caché). USAR
-    cuando pregunten "a cuánto está el dólar X", o necesites convertir ARS↔USD
-    con tipo de cambio actual.
+    cuando pregunten "a cuánto está el dólar X" o necesites convertir ARS↔USD.
 
   • `get_indec_serie` — series oficiales (INDEC vía datos.gob.ar): IPC, ICC
-    (costo de la construcción), EMAE, tipo de cambio promedio mensual BCRA, etc.
+    (costo de la construcción), EMAE, tipo de cambio promedio mensual BCRA.
     USAR para inflación, costo de construcción mensual, salarios, índices.
 
   • `fetch_official_source(url)` — GET genérico a fuentes oficiales whitelisteadas
-    (.gob.ar, .gov.ar, BCRA, INDEC, ARBA, AGIP, AFIP, infoleg, BORA, GCBA,
+    (.gob.ar, BCRA, INDEC, ARBA, AGIP, AFIP, infoleg, BORA, GCBA,
     apis.datos.gob.ar). USAR para leer un artículo de ley en infoleg, una
     alícuota en ARBA/AGIP, o una norma reciente en BORA.
 
+### Búsqueda web abierta (para mercado privado y noticias)
+
+  • `search_web(query)` — búsqueda web en tiempo real (Tavily). Devuelve
+    snippets de Zonaprop, MercadoLibre, Reporte Inmobiliario, Properati,
+    medios, etc. USAR PARA:
+      - Precio m² por barrio (publicación y cierre)
+      - Comparables / valuación
+      - Tendencias del mercado por zona
+      - Noticias del sector RE argentino
+      - Cambios regulatorios o de gobierno recientes
+      - Movimientos de developers, FCIs cerrados, fideicomisos públicos
+
+    NO USAR si ya hay una tool específica (dólar/INDEC/infoleg).
+
 ### Reglas de uso de tools
 
-1. **Datos volátiles → SIEMPRE tool, nunca memoria del modelo.** FX, alícuotas,
-   índices, jornales UOCRA, precios de materiales, normativa reciente.
-2. **Citá la fuente y el `fetched_at` que devolvió la tool.** Ej: "Según
-   dolarapi.com (consultado hace 2 min): MEP = $1.145."
-3. **Si la tool devuelve `error`**, decile al usuario "no pude consultar la
-   fuente oficial en este momento" + sugerí dónde mirarlo (BCRA, INDEC, etc.).
-   NO inventes el dato como compensación.
-4. **Una pasada eficiente**: si necesitás 2 datos, podés llamar las 2 tools en
-   el mismo turno. No hagas más de 4 llamadas por respuesta.
-5. **Cuando uses datos de la Base de conocimiento abajo** (que es estructural y
-   estable: teoría, normativa de base, fórmulas), citala como "según la base
-   curada" o "según el material de referencia".
+1. **Decisión de qué tool usar:**
+   - Dólar → `get_dolar_cotizaciones`
+   - IPC / ICC / EMAE / serie de tiempo INDEC → `get_indec_serie`
+   - Norma con URL conocida en infoleg/BORA/GCBA → `fetch_official_source`
+   - Cualquier dato de mercado privado, precio inmobiliario, noticia, comparable,
+     tendencia, anuncio reciente → `search_web`
+   - Pregunta multi-dimensional (ej. "precio m² Palermo + IPC último mes") →
+     llamá las dos tools relevantes en el MISMO turno.
+
+2. **Datos volátiles → SIEMPRE tool, NUNCA memoria del modelo.** FX, alícuotas,
+   precios m², jornales UOCRA, índices, normativa reciente.
+
+3. **Citá la fuente y la fecha que devolvió la tool.** Ej:
+   - "Según dolarapi.com (hace 2 min): MEP = $1.145."
+   - "Según Zonaprop vía Tavily (publicado abr-2026): Palermo USD 3.390/m²
+     [link al artículo]."
+   - "Según Reporte Inmobiliario vía Tavily: cierre real abr-2026 USD 2.084/m²,
+     brecha pub-cierre -4.96%."
+
+4. **Cuando search_web devuelve resultados contradictorios** (típico en RE:
+   publicación vs cierre, diferentes barrios mezclados), explicitá la
+   contradicción y dale CONTEXTO al usuario en vez de elegir un solo número.
+   Ej: "Hay rango USD 2.084–3.390 según la fuente. La diferencia es publicación
+   vs cierre + segmento. Para una factibilidad usaría X."
+
+5. **Si una tool devuelve `error`**, decile al usuario "no pude consultar
+   esa fuente ahora" y CAÉ A LA SIGUIENTE OPCIÓN: tu KB, tu razonamiento
+   estructural, o la otra tool. **Nunca compenses inventando un número.**
+
+6. **Eficiencia**: para una sola respuesta no llamés más de 4 tools en total.
+   Si necesitás varios datos, agrupá la búsqueda (1 search_web con query rica
+   suele rendir más que 3 búsquedas separadas).
+
+7. **Base de conocimiento abajo**: es tu material estructural (teoría,
+   normativa de base, fórmulas, patrones). Combinala con los datos frescos
+   de las tools. Ej: "Según mi base curada, el método de tasación residual
+   se aplica X. Aplicándolo a Palermo con el precio actual de USD 3.300/m²
+   (Zonaprop, abr-2026) y un costo de construcción de USD 1.003/m² (CAC,
+   última publicación)..."
 """
 
 
@@ -327,12 +369,18 @@ async def stream_chat(
             total_output += final.usage.output_tokens
 
         # Recolectar bloques: texto que ya emitimos por delta + tool_uses.
+        # IMPORTANTE: la API de Anthropic rechaza bloques `text` vacíos en el
+        # turno siguiente (400 BadRequest). Filtramos texto vacío o solo
+        # whitespace para evitar romper la 2da iteración del loop.
         tool_uses: list[Any] = []
         assistant_blocks: list[dict] = []
         for b in final.content:
             btype = getattr(b, "type", None)
             if btype == "text":
-                assistant_blocks.append({"type": "text", "text": b.text or ""})
+                text_val = (b.text or "").strip()
+                if not text_val:
+                    continue
+                assistant_blocks.append({"type": "text", "text": b.text})
             elif btype == "tool_use":
                 assistant_blocks.append(
                     {
