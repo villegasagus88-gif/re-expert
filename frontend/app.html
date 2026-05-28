@@ -129,6 +129,76 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 
 .sidebar-footer{padding:10px 14px;border-top:1px solid var(--border-sidebar)}
 .model-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-sidebar-muted);font-weight:500}
+
+/* Proyectos (workspaces) section */
+.ws-section{padding:4px 10px;border-top:1px solid var(--border-sidebar);margin-top:6px}
+.ws-head{display:flex;align-items:center;justify-content:space-between;padding:8px 6px 4px}
+.ws-head .sidebar-label{padding:0}
+.ws-btn-add{background:transparent;border:none;color:var(--text-sidebar-muted);cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;border-radius:4px}
+.ws-btn-add:hover{background:var(--bg-sidebar-hover);color:#fff}
+.ws-list{display:flex;flex-direction:column;gap:1px;max-height:160px;overflow-y:auto}
+.ws-empty{font-size:11px;color:var(--text-sidebar-muted);padding:4px 6px;font-style:italic}
+.ws-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:var(--radius-sm);color:rgba(255,255,255,.65);font-size:11.5px;cursor:pointer;transition:all .15s var(--ease-out);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ws-item:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.9)}
+.ws-item.active{background:var(--bg-sidebar-active);color:#fff}
+.ws-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#6366f1}
+.ws-name{flex:1;overflow:hidden;text-overflow:ellipsis}
+.ws-count{font-size:10px;color:var(--text-sidebar-muted);background:rgba(255,255,255,.05);padding:1px 6px;border-radius:8px;flex-shrink:0}
+.ws-item.active .ws-count{background:rgba(255,255,255,.12)}
+.ws-profile-btn{display:flex;align-items:center;gap:7px;width:100%;background:transparent;border:none;color:rgba(255,255,255,.55);font-size:11.5px;padding:7px 10px;border-radius:var(--radius-sm);cursor:pointer;text-align:left;font-family:var(--font);margin-top:2px}
+.ws-profile-btn:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.9)}
+.ws-profile-btn svg{flex-shrink:0;opacity:.6}
+
+/* Workspace badge (mostrar workspace activo encima del chat) */
+.ws-active-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--bg-1);border-bottom:1px solid var(--border-0);font-size:11.5px;color:var(--text-2)}
+.ws-active-bar.show{display:flex}
+.ws-active-bar .ws-dot{width:7px;height:7px}
+.ws-active-name{font-weight:600;color:var(--text-1)}
+.ws-active-actions{margin-left:auto;display:flex;gap:4px}
+.ws-active-actions button{background:transparent;border:none;color:var(--text-3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px}
+.ws-active-actions button:hover{background:var(--accent-subtle);color:var(--text-1)}
+
+/* Memory chips (perfil + workspace memory) */
+.mem-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;padding-right:4px}
+.mem-item{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:8px 10px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:var(--radius-md)}
+.mem-item input{background:var(--bg-0);border:1px solid var(--border-0);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-1);font-family:var(--font);width:100%;box-sizing:border-box}
+.mem-item input:focus{outline:none;border-color:var(--accent-brand)}
+.mem-item .mem-key{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+.mem-item .mem-del{background:transparent;border:none;color:var(--text-3);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:14px}
+.mem-item .mem-del:hover{background:rgba(239,68,68,.1);color:#ef4444}
+.mem-source{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;padding:1px 5px;border-radius:6px;background:rgba(99,102,241,.12);color:var(--accent-brand);font-weight:600}
+.mem-source.auto-silent{background:rgba(34,197,94,.12);color:#22c55e}
+.mem-source.auto-confirmed{background:rgba(245,158,11,.12);color:#f59e0b}
+.mem-add-row{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-0)}
+.mem-add-row input{flex:1;background:var(--bg-0);border:1px solid var(--border-0);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text-1);font-family:var(--font)}
+.mem-add-row button{background:var(--accent-brand);border:none;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:var(--font)}
+.mem-add-row button:hover{filter:brightness(1.1)}
+.mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:16px;font-style:italic}
+
+/* Form rows inside workspace modal */
+.ws-form-row{margin-bottom:12px}
+.ws-form-row label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:4px}
+.ws-form-row input,.ws-form-row textarea{width:100%;background:var(--bg-1);border:1px solid var(--border-0);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text-1);font-family:var(--font);box-sizing:border-box}
+.ws-form-row input:focus,.ws-form-row textarea:focus{outline:none;border-color:var(--accent-brand)}
+.ws-form-row textarea{min-height:60px;resize:vertical}
+.ws-color-row{display:flex;gap:6px;flex-wrap:wrap}
+.ws-color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.ws-color-swatch.active{border-color:var(--text-0)}
+.ws-modal-actions{display:flex;gap:8px;margin-top:14px}
+.ws-modal-actions button{flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;font-family:var(--font);border:none}
+.btn-primary{background:var(--accent-brand);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--bg-1);color:var(--text-2);border:1px solid var(--border-0)}
+.btn-secondary:hover{background:var(--accent-subtle)}
+.btn-danger{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+
+/* Modal wider for memory */
+.modal.modal-wide{width:520px;max-width:94vw}
+.modal-tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--border-0);margin-bottom:10px}
+.modal-tab{background:transparent;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font)}
+.modal-tab.active{color:var(--accent-brand);border-bottom-color:var(--accent-brand)}
+
 .model-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,.4)}
 
 /* Main */
@@ -799,6 +869,20 @@ select.pay-form-input{cursor:pointer}
       </button>
     </nav>
 
+    <div class="ws-section" id="workspacesSection">
+      <div class="ws-head">
+        <div class="sidebar-label">Proyectos</div>
+        <button class="ws-btn-add" id="newWorkspaceBtn" title="Nuevo proyecto">+</button>
+      </div>
+      <div class="ws-list" id="workspacesList">
+        <div class="ws-empty">Sin proyectos</div>
+      </div>
+      <button class="ws-profile-btn" id="openProfileBtn" title="Editar mi perfil global">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Mi perfil
+      </button>
+    </div>
+
     <div class="sidebar-section" id="chatHistorySection">
       <div class="sidebar-label">Historial</div>
       <div class="chat-history" id="chatHistory">
@@ -842,6 +926,17 @@ select.pay-form-input{cursor:pointer}
         </button>
       </div>
     </header>
+
+    <div class="ws-active-bar" id="wsActiveBar">
+      <span class="ws-dot" id="wsActiveDot"></span>
+      <span>Proyecto:</span>
+      <span class="ws-active-name" id="wsActiveName">—</span>
+      <div class="ws-active-actions">
+        <button id="wsViewMemoryBtn" title="Ver memoria del proyecto">Memoria</button>
+        <button id="wsEditBtn" title="Editar proyecto">Editar</button>
+        <button id="wsExitBtn" title="Salir del proyecto">✕</button>
+      </div>
+    </div>
 
     <div class="page-container" id="pageContainer">
       <!-- CHAT VIEW -->
@@ -1308,6 +1403,85 @@ select.pay-form-input{cursor:pointer}
       </div>
     </div>
 
+    <!-- Workspace create/edit Modal -->
+    <div class="modal-overlay" id="workspaceModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="workspaceModalTitle">Nuevo proyecto</h3>
+          <button class="btn-icon" id="workspaceModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="ws-form-row">
+            <label for="wsNameInput">Nombre del proyecto</label>
+            <input id="wsNameInput" type="text" maxlength="120" placeholder="Ej: Edificio Soler 4500">
+          </div>
+          <div class="ws-form-row">
+            <label for="wsDescInput">Descripción (opcional)</label>
+            <textarea id="wsDescInput" maxlength="500" placeholder="Tipo de obra, ubicación, etapa..."></textarea>
+          </div>
+          <div class="ws-form-row">
+            <label>Color</label>
+            <div class="ws-color-row" id="wsColorRow">
+              <div class="ws-color-swatch active" data-color="#6366f1" style="background:#6366f1"></div>
+              <div class="ws-color-swatch" data-color="#22c55e" style="background:#22c55e"></div>
+              <div class="ws-color-swatch" data-color="#f59e0b" style="background:#f59e0b"></div>
+              <div class="ws-color-swatch" data-color="#ef4444" style="background:#ef4444"></div>
+              <div class="ws-color-swatch" data-color="#a855f7" style="background:#a855f7"></div>
+              <div class="ws-color-swatch" data-color="#06b6d4" style="background:#06b6d4"></div>
+              <div class="ws-color-swatch" data-color="#ec4899" style="background:#ec4899"></div>
+            </div>
+          </div>
+          <div class="ws-modal-actions">
+            <button class="btn-secondary" id="wsCancelBtn">Cancelar</button>
+            <button class="btn-danger" id="wsDeleteBtn" style="display:none">Eliminar</button>
+            <button class="btn-primary" id="wsSaveBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile (global memory) Modal -->
+    <div class="modal-overlay" id="profileModal">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3>Mi perfil</h3>
+          <button class="btn-icon" id="profileModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px">Datos que el bot recuerda sobre vos en <strong>todos los chats</strong> (rol, zonas, preferencias). Para datos de un proyecto específico, abrí su memoria.</p>
+          <div class="mem-list" id="profileList">
+            <div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>
+          </div>
+          <div class="mem-add-row">
+            <input id="profileKeyInput" type="text" placeholder="clave (ej: rol)" maxlength="80">
+            <input id="profileValueInput" type="text" placeholder="valor (ej: desarrollador inmobiliario)" maxlength="1000">
+            <button id="profileAddBtn">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Memory Modal -->
+    <div class="modal-overlay" id="memoryModal">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3 id="memoryModalTitle">Memoria del proyecto</h3>
+          <button class="btn-icon" id="memoryModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px">Información que el bot recuerda de este proyecto en <strong>todos los chats dentro del mismo</strong>. Podés agregar, editar o borrar manualmente.</p>
+          <div class="mem-list" id="memoryList">
+            <div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>
+          </div>
+          <div class="mem-add-row">
+            <input id="memoryKeyInput" type="text" placeholder="clave (ej: lote_usd)" maxlength="80">
+            <input id="memoryValueInput" type="text" placeholder="valor (ej: 850000)" maxlength="1000">
+            <button id="memoryAddBtn">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Onboarding Modal -->
     <div class="ob-overlay" id="onboardingOverlay">
       <div class="ob-modal">
@@ -1478,7 +1652,10 @@ const state = {
   currentConversation:null, messages:[], isStreaming:false,
   theme: localStorage.getItem('re_theme')||'light',
   currentView:'chat', uploadedFiles:[],
-  user: null
+  user: null,
+  workspaces: [], activeWorkspace: null, profile: [],
+  // Estado interno del modal de proyecto (null = creando, id = editando)
+  _editingWorkspaceId: null, _editingColor: '#6366f1'
 };
 const historyMeta = {page:0, totalPages:1, loading:false};
 let userPlan = 'free';
@@ -1591,7 +1768,9 @@ async function loadConversationsFromCloud(append=false){
   else{els.chatHistory.innerHTML='<div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div>';}
   const page=append?historyMeta.page+1:1;
   try{
-    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page='+page+'&page_size=20');
+    // Filtro por workspace: si hay activo, traemos solo sus chats; si no, solo los sueltos.
+    const wsFilter=state.activeWorkspace?'&workspace_id='+encodeURIComponent(state.activeWorkspace.id):'&workspace_id=none';
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page='+page+'&page_size=20'+wsFilter);
     if(r.status===401){window.REAuthService.logout();return}
     if(!r.ok)throw new Error('Error listando conversaciones');
     const data=await r.json();
@@ -1617,6 +1796,218 @@ function renderHistory(){
   if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
   els.chatHistory.innerHTML=state.conversations.map(c=>`<div class="history-item ${state.currentConversation?.id===c.id?'active':''}" data-id="${c.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>${esc(c.title)}</div>`).join('');
   els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',()=>loadConversation(el.dataset.id)));
+}
+
+// ===== WORKSPACES (Proyectos) =====
+async function loadWorkspaces(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces');
+    if(!r.ok)return;
+    const data=await r.json();
+    state.workspaces=data.items||[];
+    renderWorkspaces();
+  }catch(e){console.error('loadWorkspaces:',e)}
+}
+function renderWorkspaces(){
+  const list=document.getElementById('workspacesList');
+  if(!list)return;
+  if(!state.workspaces.length){list.innerHTML='<div class="ws-empty">Sin proyectos</div>';return}
+  list.innerHTML=state.workspaces.map(w=>`<div class="ws-item ${state.activeWorkspace?.id===w.id?'active':''}" data-id="${w.id}"><span class="ws-dot" style="background:${esc(w.color||'#6366f1')}"></span><span class="ws-name">${esc(w.name)}</span><span class="ws-count">${w.conversation_count||0}</span></div>`).join('');
+  list.querySelectorAll('.ws-item').forEach(el=>el.addEventListener('click',()=>openWorkspace(el.dataset.id)));
+}
+async function openWorkspace(id){
+  const w=state.workspaces.find(x=>x.id===id);if(!w)return;
+  state.activeWorkspace=w;
+  state.currentConversation=null;state.messages=[];
+  showWelcome();
+  renderWorkspaces();
+  updateWsActiveBar();
+  await loadConversationsFromCloud();
+  switchView('chat');
+}
+function exitWorkspace(){
+  state.activeWorkspace=null;
+  state.currentConversation=null;state.messages=[];
+  showWelcome();
+  renderWorkspaces();
+  updateWsActiveBar();
+  loadConversationsFromCloud();
+}
+function updateWsActiveBar(){
+  const bar=document.getElementById('wsActiveBar');
+  const name=document.getElementById('wsActiveName');
+  const dot=document.getElementById('wsActiveDot');
+  if(!bar)return;
+  if(state.activeWorkspace){
+    bar.classList.add('show');
+    name.textContent=state.activeWorkspace.name;
+    dot.style.background=state.activeWorkspace.color||'#6366f1';
+  }else{
+    bar.classList.remove('show');
+  }
+}
+function openWorkspaceModal(id){
+  state._editingWorkspaceId=id||null;
+  const w=id?state.workspaces.find(x=>x.id===id):null;
+  document.getElementById('workspaceModalTitle').textContent=id?'Editar proyecto':'Nuevo proyecto';
+  document.getElementById('wsNameInput').value=w?.name||'';
+  document.getElementById('wsDescInput').value=w?.description||'';
+  state._editingColor=w?.color||'#6366f1';
+  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>{
+    s.classList.toggle('active',s.dataset.color===state._editingColor);
+  });
+  document.getElementById('wsDeleteBtn').style.display=id?'':'none';
+  document.getElementById('workspaceModal').classList.add('active');
+  setTimeout(()=>document.getElementById('wsNameInput').focus(),50);
+}
+function closeWorkspaceModal(){document.getElementById('workspaceModal').classList.remove('active')}
+async function saveWorkspace(){
+  const name=document.getElementById('wsNameInput').value.trim();
+  const description=document.getElementById('wsDescInput').value.trim();
+  const color=state._editingColor||'#6366f1';
+  if(!name){alert('El nombre es obligatorio');return}
+  const payload={name,description,color};
+  try{
+    let r;
+    if(state._editingWorkspaceId){
+      r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state._editingWorkspaceId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }else{
+      r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando proyecto')}
+    const ws=await r.json();
+    closeWorkspaceModal();
+    await loadWorkspaces();
+    if(!state._editingWorkspaceId){
+      // Abrir el nuevo proyecto automáticamente
+      openWorkspace(ws.id);
+    }else if(state.activeWorkspace?.id===ws.id){
+      state.activeWorkspace=ws;
+      updateWsActiveBar();
+    }
+  }catch(e){alert(e.message)}
+}
+async function deleteWorkspace(){
+  if(!state._editingWorkspaceId)return;
+  if(!confirm('¿Eliminar este proyecto? Los chats no se borran, quedan como sueltos.'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state._editingWorkspaceId,{method:'DELETE'});
+    if(!r.ok&&r.status!==204){throw new Error('Error eliminando proyecto')}
+    closeWorkspaceModal();
+    if(state.activeWorkspace?.id===state._editingWorkspaceId)exitWorkspace();
+    await loadWorkspaces();
+  }catch(e){alert(e.message)}
+}
+
+// ===== PROFILE (memoria global) =====
+async function loadProfile(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile');
+    if(!r.ok)return;
+    const data=await r.json();
+    state.profile=data.items||[];
+  }catch(e){console.error('loadProfile:',e)}
+}
+function openProfileModal(){
+  loadProfile().then(renderProfile);
+  document.getElementById('profileModal').classList.add('active');
+}
+function closeProfileModal(){document.getElementById('profileModal').classList.remove('active')}
+function renderProfile(){
+  const list=document.getElementById('profileList');
+  if(!list)return;
+  if(!state.profile.length){list.innerHTML='<div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>';return}
+  list.innerHTML=state.profile.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly title="${esc(it.source||'')}"><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  list.querySelectorAll('.mem-item').forEach(row=>{
+    const key=row.dataset.key;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateProfileItem(key,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteProfileItem(key));
+  });
+}
+async function addProfileItem(){
+  const key=document.getElementById('profileKeyInput').value.trim();
+  const value=document.getElementById('profileValueInput').value.trim();
+  if(!key||!value)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,source:'manual',confidence:'high'})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando')}
+    document.getElementById('profileKeyInput').value='';
+    document.getElementById('profileValueInput').value='';
+    await loadProfile();renderProfile();
+  }catch(e){alert(e.message)}
+}
+async function updateProfileItem(key,value){
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+    await loadProfile();
+  }catch(e){console.error(e)}
+}
+async function deleteProfileItem(key){
+  if(!confirm('¿Eliminar este dato del perfil?'))return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'DELETE'});
+    await loadProfile();renderProfile();
+  }catch(e){console.error(e)}
+}
+
+// ===== WORKSPACE MEMORY =====
+async function loadWorkspaceMemory(wsId){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+wsId+'/memory');
+    if(!r.ok)return[];
+    const data=await r.json();
+    return data.items||[];
+  }catch(e){console.error('loadWorkspaceMemory:',e);return[]}
+}
+function openMemoryModal(){
+  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  document.getElementById('memoryModalTitle').textContent='Memoria — '+state.activeWorkspace.name;
+  loadWorkspaceMemory(state.activeWorkspace.id).then(items=>{
+    state._currentMemoryItems=items;
+    renderMemoryList(items);
+  });
+  document.getElementById('memoryModal').classList.add('active');
+}
+function closeMemoryModal(){document.getElementById('memoryModal').classList.remove('active')}
+function renderMemoryList(items){
+  const list=document.getElementById('memoryList');
+  if(!list)return;
+  if(!items.length){list.innerHTML='<div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>';return}
+  list.innerHTML=items.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  list.querySelectorAll('.mem-item').forEach(row=>{
+    const key=row.dataset.key;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateMemoryItem(key,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteMemoryItem(key));
+  });
+}
+async function addMemoryItem(){
+  if(!state.activeWorkspace)return;
+  const key=document.getElementById('memoryKeyInput').value.trim();
+  const value=document.getElementById('memoryValueInput').value.trim();
+  if(!key||!value)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,source:'manual',confidence:'high'})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando')}
+    document.getElementById('memoryKeyInput').value='';
+    document.getElementById('memoryValueInput').value='';
+    const items=await loadWorkspaceMemory(state.activeWorkspace.id);
+    renderMemoryList(items);
+  }catch(e){alert(e.message)}
+}
+async function updateMemoryItem(key,value){
+  if(!state.activeWorkspace)return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+  }catch(e){console.error(e)}
+}
+async function deleteMemoryItem(key){
+  if(!state.activeWorkspace)return;
+  if(!confirm('¿Eliminar este dato de memoria?'))return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'DELETE'});
+    const items=await loadWorkspaceMemory(state.activeWorkspace.id);
+    renderMemoryList(items);
+  }catch(e){console.error(e)}
 }
 
 function showMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='flex';els.welcomeScreen.style.display='none';els.messagesEl.style.display='none'}
@@ -1733,6 +2124,7 @@ async function sendMessage(text,opts){
   try{
     const payload={message:userMsg,context_type:'chat',attachments};
     if(state.currentConversation?.id)payload.conversation_id=state.currentConversation.id;
+    if(state.activeWorkspace?.id&&!state.currentConversation?.id)payload.workspace_id=state.activeWorkspace.id;
     const r=await window.REAuthService.authFetch(apiBase()+'/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
@@ -3618,7 +4010,12 @@ async function onUserLoggedIn(user){
   footer.style.display='flex';
   document.getElementById('userEmail').textContent=user.email||'';
   updatePlanBadge();
-  await loadConversationsFromCloud();
+  // Cargar proyectos y perfil global en paralelo con conversaciones sueltas
+  await Promise.all([
+    loadWorkspaces(),
+    loadProfile(),
+    loadConversationsFromCloud(),
+  ]);
   // Mostrar onboarding si es primer uso
   if(user&&!user.onboarding_completed&&!localStorage.getItem('re_onboarding_done')){
     const displayName=user.full_name?user.full_name.split(' ')[0]:(user.email?.split('@')[0]||'');
@@ -3628,6 +4025,7 @@ async function onUserLoggedIn(user){
 
 async function handleLogout(){
   state.user=null;state.conversations=[];state.currentConversation=null;state.messages=[];
+  state.workspaces=[];state.activeWorkspace=null;state.profile=[];
   await window.REAuthService.logout();
 }
 
@@ -3659,6 +4057,33 @@ function init(){
   els.exportModal.addEventListener('click',e=>{if(e.target===els.exportModal)els.exportModal.classList.remove('active')});
   document.getElementById('upgradeModalClose').addEventListener('click',hideUpgradeModal);
   document.getElementById('upgradeModal').addEventListener('click',e=>{if(e.target===e.currentTarget)hideUpgradeModal()});
+
+  // ── Workspaces (Proyectos) ──
+  document.getElementById('newWorkspaceBtn').addEventListener('click',()=>openWorkspaceModal(null));
+  document.getElementById('workspaceModalClose').addEventListener('click',closeWorkspaceModal);
+  document.getElementById('wsCancelBtn').addEventListener('click',closeWorkspaceModal);
+  document.getElementById('wsSaveBtn').addEventListener('click',saveWorkspace);
+  document.getElementById('wsDeleteBtn').addEventListener('click',deleteWorkspace);
+  document.getElementById('workspaceModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWorkspaceModal()});
+  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>{
+    s.addEventListener('click',()=>{
+      state._editingColor=s.dataset.color;
+      document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(x=>x.classList.toggle('active',x===s));
+    });
+  });
+  // Active workspace bar actions
+  document.getElementById('wsExitBtn').addEventListener('click',exitWorkspace);
+  document.getElementById('wsEditBtn').addEventListener('click',()=>{if(state.activeWorkspace)openWorkspaceModal(state.activeWorkspace.id)});
+  document.getElementById('wsViewMemoryBtn').addEventListener('click',openMemoryModal);
+  // Mi perfil
+  document.getElementById('openProfileBtn').addEventListener('click',openProfileModal);
+  document.getElementById('profileModalClose').addEventListener('click',closeProfileModal);
+  document.getElementById('profileModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProfileModal()});
+  document.getElementById('profileAddBtn').addEventListener('click',addProfileItem);
+  // Workspace memory modal
+  document.getElementById('memoryModalClose').addEventListener('click',closeMemoryModal);
+  document.getElementById('memoryModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMemoryModal()});
+  document.getElementById('memoryAddBtn').addEventListener('click',addMemoryItem);
   $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
   $$('.sidebar-nav-item').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));

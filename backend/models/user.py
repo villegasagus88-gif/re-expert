@@ -64,6 +64,13 @@ class User(Base):
     payments: Mapped[list["Payment"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    # Capa 1B — Workspaces ("Proyectos" en la UI) y memoria persistente.
+    workspaces: Mapped[list["Workspace"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    profile_global_items: Mapped[list["UserProfileGlobal"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email!r} plan={self.plan}>"
@@ -73,3 +80,4 @@ class User(Base):
 from models.conversation import Conversation  # noqa: E402
 from models.payment import Payment  # noqa: E402
 from models.project import Project  # noqa: E402
+from models.workspace import UserProfileGlobal, Workspace  # noqa: E402

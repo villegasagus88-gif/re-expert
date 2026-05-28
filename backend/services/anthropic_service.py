@@ -120,6 +120,29 @@ en vez de inventar el número o decir "no sé".
    se aplica X. Aplicándolo a Palermo con el precio actual de USD 3.300/m²
    (Zonaprop, abr-2026) y un costo de construcción de USD 1.003/m² (CAC,
    última publicación)..."
+
+## Memoria del usuario y del proyecto activo
+
+Si más abajo aparecen bloques **"Sobre el usuario (perfil)"** y/o
+**"Contexto del proyecto activo"**, ese es contexto persistente del usuario:
+- "Perfil" → datos estables del usuario (rol, zonas de trabajo, tipología
+  habitual, estructura jurídica preferida, etc.). Aplica siempre.
+- "Proyecto activo" → datos del proyecto en el que está trabajando ahora
+  (dirección, lote, FOT, costos cargados, decisiones tomadas, partes).
+  Aplica solo a este chat.
+
+Reglas:
+- Tratá esos datos como verdad ya conocida: **no le preguntes al usuario
+  cosas que ya están en la memoria**. Ej: si el perfil dice "rol:
+  desarrollador" y "zona: Palermo", asumilo en tus respuestas.
+- Cuando el usuario diga "el proyecto" o "mi obra" sin precisar, asumí que
+  habla del proyecto activo (si hay).
+- Si la pregunta requiere un dato que NO está en memoria pero esperarías
+  tenerlo, pedíselo de forma corta y específica (1 sola pregunta).
+- La memoria puede estar incompleta o desactualizada. Si el usuario dice
+  algo que contradice un valor de memoria, asumí que el dato nuevo es el
+  correcto y avisalo en el cierre: "Anoté que ahora el lote cuesta USD X
+  (antes era USD Y) — podés guardarlo en la memoria del proyecto".
 """
 
 
@@ -216,10 +239,43 @@ async def _load_routed_knowledge(user_message: str) -> str:
         return ""
 
 
+def _format_memory_block(
+    title: str, items: list[tuple[str, str]], max_chars: int
+) -> str:
+    """
+    Formatea una lista de (key, value) como bullets markdown bajo un título.
+    Trunca el bloque entero si excede `max_chars` (priorizando los primeros
+    items, que asumimos son los más relevantes según orden del caller).
+    Devuelve "" si la lista está vacía.
+    """
+    if not items:
+        return ""
+    lines = [f"## {title}"]
+    consumed = len(lines[0]) + 2
+    for k, v in items:
+        line = f"- **{k}**: {v}"
+        if consumed + len(line) + 1 > max_chars:
+            lines.append("- _(... más items omitidos por límite de contexto)_")
+            break
+        lines.append(line)
+        consumed += len(line) + 1
+    return "\n".join(lines)
+
+
+# Caps de caracteres por bloque. ~1 token ≈ 4 chars (es).
+# 1600 chars ≈ 400 tokens (perfil global) — datos estables del usuario.
+# 3200 chars ≈ 800 tokens (memoria de workspace) — datos del proyecto activo.
+PROFILE_MEMORY_MAX_CHARS = 1600
+WORKSPACE_MEMORY_MAX_CHARS = 3200
+
+
 async def build_system_prompt(
     context_type: str = "chat",
     project_context: str = "",
     user_message: str | None = None,
+    profile_items: list[tuple[str, str]] | None = None,
+    workspace_memory: list[tuple[str, str]] | None = None,
+    workspace_name: str | None = None,
 ) -> str:
     """
     Arma el system prompt para el request actual.
@@ -229,15 +285,41 @@ async def build_system_prompt(
       Si no, caemos al bulk dump (legacy, para compat con callers viejos).
     - context_type="sol": prompt de intake de datos + datos reales del proyecto
       del usuario (no necesita el KB general).
+
+    Capa 1B — memoria persistente:
+    - `profile_items` (lista de (key,value)) → bloque "Sobre el usuario"
+      que viaja en TODOS los chats (chat general y SOL). Ej:
+      [("rol","desarrollador"), ("zonas","Palermo, Núñez")].
+    - `workspace_memory` → bloque "Contexto del proyecto activo" que se inyecta
+      solo si la conversación está dentro de un workspace. Ej:
+      [("lote_usd","850000"), ("estructura_juridica","fideicomiso al costo")].
+    - `workspace_name` → nombre del workspace para encabezar el bloque.
     """
+    profile_block = _format_memory_block(
+        "Sobre el usuario (perfil)",
+        profile_items or [],
+        PROFILE_MEMORY_MAX_CHARS,
+    )
+    ws_title = (
+        f"Contexto del proyecto activo: {workspace_name}"
+        if workspace_name
+        else "Contexto del proyecto activo"
+    )
+    workspace_block = _format_memory_block(
+        ws_title, workspace_memory or [], WORKSPACE_MEMORY_MAX_CHARS
+    )
+
+    memory_section = "\n\n".join(b for b in (profile_block, workspace_block) if b)
+
     if context_type == "sol":
+        parts = [SOL_SYSTEM_PROMPT]
+        if memory_section:
+            parts.append(memory_section)
         if project_context:
-            return (
-                f"{SOL_SYSTEM_PROMPT}\n\n"
-                f"## Datos actuales del proyecto del usuario\n\n"
-                f"{project_context}"
+            parts.append(
+                f"## Datos actuales del proyecto del usuario\n\n{project_context}"
             )
-        return SOL_SYSTEM_PROMPT
+        return "\n\n".join(parts)
 
     knowledge = ""
     if user_message:
@@ -248,13 +330,12 @@ async def build_system_prompt(
     if not knowledge:
         knowledge = await load_knowledge_context()
 
-    if not knowledge:
-        return BASE_SYSTEM_PROMPT
-    return (
-        f"{BASE_SYSTEM_PROMPT}\n\n"
-        f"## Base de conocimiento\n\n"
-        f"{knowledge}"
-    )
+    parts = [BASE_SYSTEM_PROMPT]
+    if memory_section:
+        parts.append(memory_section)
+    if knowledge:
+        parts.append(f"## Base de conocimiento\n\n{knowledge}")
+    return "\n\n".join(parts)
 
 
 ToolRunner = Callable[[str, dict[str, Any]], Awaitable[dict]]

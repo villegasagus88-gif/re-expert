@@ -39,6 +39,7 @@ from models.conversation import Conversation
 from models.message import Message
 from models.project import Project
 from models.user import User
+from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
@@ -84,16 +85,30 @@ async def _get_or_create_conversation(
     user_id: UUID,
     conversation_id: UUID | None,
     first_message: str | None = None,
+    workspace_id: UUID | None = None,
 ) -> Conversation:
     """
     Load an existing conversation (verifying ownership) or create a new one.
 
     When creating, derive the title from `first_message` so the sidebar
     shows something meaningful instead of the "Nueva conversación" default.
+
+    `workspace_id` solo aplica al crear (capa 1B). Si viene, verifica que
+    el workspace pertenezca al usuario antes de asociarlo.
     """
     if conversation_id is None:
         title = _derive_title(first_message or "")
-        conv = Conversation(user_id=user_id, title=title)
+        # Validar ownership del workspace si fue provisto.
+        if workspace_id is not None:
+            ws = await db.get(Workspace, workspace_id)
+            if ws is None or ws.user_id != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Workspace no encontrado",
+                )
+        conv = Conversation(
+            user_id=user_id, title=title, workspace_id=workspace_id
+        )
         db.add(conv)
         await db.flush()
         return conv
@@ -105,6 +120,37 @@ async def _get_or_create_conversation(
             detail="Conversación no encontrada",
         )
     return conv
+
+
+async def _load_profile_items(
+    db: AsyncSession, user_id: UUID
+) -> list[tuple[str, str]]:
+    """Carga items de perfil global del usuario, ordenados por sort_order."""
+    result = await db.execute(
+        select(UserProfileGlobal)
+        .where(UserProfileGlobal.user_id == user_id)
+        .order_by(
+            UserProfileGlobal.sort_order.asc(),
+            UserProfileGlobal.created_at.asc(),
+        )
+    )
+    return [(i.key, i.value) for i in result.scalars().all()]
+
+
+async def _load_workspace_memory(
+    db: AsyncSession, workspace_id: UUID
+) -> list[tuple[str, str]]:
+    """Carga items de memoria del workspace, ordenados por uso reciente primero."""
+    result = await db.execute(
+        select(WorkspaceMemory)
+        .where(WorkspaceMemory.workspace_id == workspace_id)
+        .order_by(
+            # Items confirmados recientes primero; los viejos al final.
+            WorkspaceMemory.last_used_at.desc().nullslast(),
+            WorkspaceMemory.created_at.asc(),
+        )
+    )
+    return [(i.key, i.value) for i in result.scalars().all()]
 
 
 async def _load_history(
@@ -188,9 +234,14 @@ async def chat(
     rate_limit_headers = await check_user_rate_limit(db, current_user)
 
     # 2. Get or create conversation (verifies ownership).
-    #    If creating new, derive title from the first user message.
+    #    If creating new, derive title from the first user message and
+    #    optionally assign workspace.
     conv = await _get_or_create_conversation(
-        db, current_user.id, body.conversation_id, first_message=body.message
+        db,
+        current_user.id,
+        body.conversation_id,
+        first_message=body.message,
+        workspace_id=body.workspace_id,
     )
 
     # 3. Load prior history
@@ -247,10 +298,31 @@ async def chat(
     project_context = ""
     if body.context_type == "sol":
         project_context = await _build_sol_project_context(db, current_user.id)
+
+    # Capa 1B — perfil global del usuario y memoria del workspace activo.
+    # El perfil viaja siempre. La memoria del workspace solo si la
+    # conversación está vinculada a uno. Best-effort: si algo falla acá,
+    # mejor responder sin memoria que romper el chat.
+    profile_items: list[tuple[str, str]] = []
+    workspace_memory: list[tuple[str, str]] = []
+    workspace_name: str | None = None
+    try:
+        profile_items = await _load_profile_items(db, current_user.id)
+        if conv.workspace_id is not None:
+            workspace_memory = await _load_workspace_memory(db, conv.workspace_id)
+            ws_obj = await db.get(Workspace, conv.workspace_id)
+            if ws_obj is not None:
+                workspace_name = ws_obj.name
+    except Exception:
+        logger.exception("Error cargando memoria (continúa sin memoria)")
+
     system_prompt = await build_system_prompt(
         body.context_type,
         project_context,
         user_message=body.message,
+        profile_items=profile_items,
+        workspace_memory=workspace_memory,
+        workspace_name=workspace_name,
     )
 
     conv_id_str = str(conv.id)

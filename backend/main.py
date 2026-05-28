@@ -13,10 +13,12 @@ from api.routes.knowledge import router as knowledge_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
 from api.routes.payments import router as payments_router
+from api.routes.profile import router as profile_router
 from api.routes.project import router as project_router
 from api.routes.reminders import router as reminders_router
 from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
+from api.routes.workspaces import router as workspaces_router
 from config.settings import settings
 from core.rate_limit import limiter
 from fastapi import FastAPI
@@ -215,10 +217,12 @@ app.include_router(materials_router)
 app.include_router(academia_router)
 app.include_router(payments_router)
 app.include_router(project_router)
+app.include_router(profile_router)
 app.include_router(stripe_router)
 app.include_router(usage_router)
 app.include_router(ingest_router)
 app.include_router(news_router)
+app.include_router(workspaces_router)
 # SOL agent + reminders + channels
 app.include_router(agent_router)
 app.include_router(reminders_router)

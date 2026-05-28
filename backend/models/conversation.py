@@ -22,6 +22,13 @@ class Conversation(Base):
         nullable=False,
         index=True,
     )
+    # Capa 1B — Workspace al que pertenece esta conversación (null = "chat suelto").
+    workspace_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     title: Mapped[str] = mapped_column(
         String, nullable=False, server_default="Nueva conversación"
     )
@@ -36,6 +43,7 @@ class Conversation(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="conversations")
+    workspace: Mapped["Workspace | None"] = relationship(back_populates="conversations")
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation",
         cascade="all, delete-orphan",
@@ -48,3 +56,4 @@ class Conversation(Base):
 
 from models.message import Message  # noqa: E402
 from models.user import User  # noqa: E402
+from models.workspace import Workspace  # noqa: E402
