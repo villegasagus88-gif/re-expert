@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # Usamos el alias (sin fecha) que siempre apunta al último snapshot
     # estable. Override con env var ANTHROPIC_MODEL si querés pinear.
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    # Modelo más barato para queries simples (~75% más barato que Sonnet).
+    # Se activa via heurística en services/model_selector.py.
+    ANTHROPIC_MODEL_FAST: str = "claude-haiku-4-5"
+    # Habilita el selector dinámico Haiku/Sonnet. Si está en False, todo
+    # va a ANTHROPIC_MODEL (comportamiento legacy).
+    SMART_MODEL_ROUTING: bool = True
 
     # ===== LLM PROVIDER (selector) =====
     # auto = usa Gemini si hay GEMINI_API_KEY, sino Anthropic.

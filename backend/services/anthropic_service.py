@@ -223,19 +223,49 @@ ToolRunner = Callable[[str, dict[str, Any]], Awaitable[dict]]
 MAX_TOOL_ITERATIONS = 4
 
 
+# Umbral mínimo para activar prompt caching. Anthropic facturable solo
+# si el prefix cacheable supera ~1024 tokens (Sonnet) / 2048 (Haiku).
+# Con un threshold conservador en chars (~4 chars/token), evitamos
+# pagar el write-premium (+25%) cuando el system es chico.
+_PROMPT_CACHE_MIN_CHARS = 4000
+
+
+def _system_with_cache(system: str) -> str | list[dict]:
+    """Convierte un system string a list-of-blocks con cache_control.
+
+    Anthropic acepta system como string (legacy) o lista de blocks.
+    Marcando el bloque con cache_control=ephemeral, Anthropic cachea
+    el prefijo por 5 min:
+      - Cache write: +25% de costo en el primer request.
+      - Cache hit: -90% en input tokens.
+    Por eso solo cacheamos cuando el system es grande (>~1K tokens).
+    """
+    if len(system) < _PROMPT_CACHE_MIN_CHARS:
+        return system
+    return [
+        {
+            "type": "text",
+            "text": system,
+            "cache_control": {"type": "ephemeral"},
+        }
+    ]
+
+
 async def stream_chat(
     messages: list[dict],
     system: str,
     max_tokens: int = 4096,
     tools: list[dict] | None = None,
     tool_runner: ToolRunner | None = None,
+    model: str | None = None,
 ) -> AsyncIterator[dict]:
     """
     Streams Claude's response. Yields event dicts:
       - {"type": "delta", "text": <chunk>}
       - {"type": "tool_use", "name": "...", "input": {...}}     (si tools)
       - {"type": "tool_result", "name": "...", "result": {...}} (si tools)
-      - {"type": "end", "input_tokens": N, "output_tokens": M}
+      - {"type": "end", "input_tokens": N, "output_tokens": M,
+                       "cache_read_tokens": N, "cache_creation_tokens": N}
 
     Cuando `tools` y `tool_runner` se proveen, hace loop tool-use:
       stream → si stop_reason=='tool_use' → ejecutamos tools →
@@ -244,16 +274,26 @@ async def stream_chat(
     Mutamos `messages` para acumular bloques de assistant/tool_result (es
     requisito del protocolo de Anthropic para la continuación del turno).
 
+    Prompt caching: el system_prompt se envía como bloque con
+    `cache_control: ephemeral` cuando supera ~1K tokens. Anthropic cachea
+    el prefix por 5 min — turnos consecutivos en la misma conversación
+    pagan -90% en input tokens del prefix. También funciona cross-user
+    si el KB ruteado es idéntico.
+
     Raises anthropic exceptions on API errors (caller handles).
     """
     client = get_client()
+    system_payload = _system_with_cache(system)
+    # Override del modelo si el caller lo pasa (vía model_selector).
+    # Sino, default del settings (compat).
+    model_id = model or settings.ANTHROPIC_MODEL
 
     # Path simple: sin tools, comportamiento idéntico al original.
     if not tools or not tool_runner:
         async with client.messages.stream(
-            model=settings.ANTHROPIC_MODEL,
+            model=model_id,
             max_tokens=max_tokens,
-            system=system,
+            system=system_payload,
             messages=messages,
         ) as stream:
             async for text in stream.text_stream:
@@ -273,9 +313,9 @@ async def stream_chat(
 
     for _ in range(MAX_TOOL_ITERATIONS):
         async with client.messages.stream(
-            model=settings.ANTHROPIC_MODEL,
+            model=model_id,
             max_tokens=max_tokens,
-            system=system,
+            system=system_payload,
             tools=tools,
             messages=messages,
         ) as stream:

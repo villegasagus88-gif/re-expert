@@ -40,6 +40,7 @@ from models.message import Message
 from models.project import Project
 from models.user import User
 from services.anthropic_service import build_system_prompt, stream_chat
+from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
 from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
 from services.token_usage_service import log_token_usage
@@ -282,6 +283,15 @@ async def chat(
         input_tokens: int | None = None
         output_tokens: int | None = None
 
+        # Selector dinámico Haiku/Sonnet. Queries simples van a Haiku
+        # (~75% más barato); las complejas, multimodales o SOL a Sonnet.
+        selected_model = pick_model(
+            body.message,
+            context_type=body.context_type,
+            has_attachments=bool(body.attachments),
+            plan=current_user.plan,
+        )
+
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
                 async for event in stream_chat(
@@ -289,6 +299,7 @@ async def chat(
                     system_prompt,
                     tools=tools_arg,
                     tool_runner=tool_runner_arg,
+                    model=selected_model,
                 ):
                     etype = event["type"]
                     if etype == "delta":
@@ -370,7 +381,7 @@ async def chat(
                 user_id=current_user.id,
                 conversation_id=conv.id,
                 message_id=assistant_msg_id,
-                model=settings.ANTHROPIC_MODEL,
+                model=selected_model,  # modelo real que respondió (Haiku/Sonnet)
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
             )
