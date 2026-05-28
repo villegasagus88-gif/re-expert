@@ -10,6 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify para sanitizar HTML emitido por el LLM antes de innerHTML.
+       Sin esto, un prompt injection podría hacer que el modelo escupa
+       <script> tags que se ejecutarían en el browser del usuario. -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="config.js"></script>
   <script src="sentry.js"></script>
   <script src="authService.js"></script>
@@ -1970,7 +1974,21 @@ function markToolDone(name,ok,source){
   row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
 }
 
-function parseMd(t){if(typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});return marked.parse(t)}return esc(t).replace(/\n/g,'<br>')}
+function parseMd(t){
+  if(typeof marked==='undefined') return esc(t).replace(/\n/g,'<br>');
+  marked.setOptions({breaks:true,gfm:true});
+  const raw=marked.parse(t);
+  // Sanitización XSS: DOMPurify limpia <script>, event handlers, iframes, etc.
+  // El LLM puede ser inducido (prompt injection) a emitir HTML peligroso.
+  // Sin DOMPurify, ese HTML se ejecutaría al hacer innerHTML.
+  if(typeof DOMPurify!=='undefined'){
+    return DOMPurify.sanitize(raw,{
+      ADD_ATTR:['target','rel'],          // permitir abrir links externos en pestaña nueva
+      ALLOWED_URI_REGEXP:/^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    });
+  }
+  return raw;
+}
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 function addCopyBtns(){els.messagesEl.querySelectorAll('pre').forEach(pre=>{if(pre.parentElement.classList.contains('code-block-wrapper'))return;const w=document.createElement('div');w.className='code-block-wrapper';pre.parentNode.insertBefore(w,pre);w.appendChild(pre);const b=document.createElement('button');b.className='copy-btn';b.textContent='Copiar';b.onclick=()=>{navigator.clipboard.writeText(pre.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar',1500)})};w.appendChild(b)})}
 function scrollBottom(){requestAnimationFrame(()=>{$('#pageContainer').scrollTop=$('#pageContainer').scrollHeight})}
@@ -2112,16 +2130,70 @@ function initPlanos(){
 // Convierte un File de imagen a un ChatAttachment listo para enviar al
 // backend. Devuelve {type:'image', media_type, data} donde `data` es
 // base64 SIN el prefijo `data:image/...;base64,`.
+//
+// Antes de codificar, hacemos resize si la imagen excede 1568px en su
+// lado más largo. Anthropic factura por píxeles: una imagen 3000×2000
+// (~6MP) cuesta ~2x más que la misma escalada a 1568×1024 (~1.6MP)
+// y la pérdida de detalle para análisis de planos es despreciable.
+// Resultado: ~50% menos tokens de input multimodal sin tocar la API.
+const _IMAGE_MAX_DIMENSION = 1568;
+const _IMAGE_JPEG_QUALITY = 0.85;
+
+function _shouldResize(file){
+  // Resize solo si es un raster (PNG/JPG/WEBP). GIFs los pasamos tal
+  // cual porque pueden ser animaciones — canvas las aplanaría.
+  return /^image\/(png|jpe?g|webp)$/i.test(file.type || '');
+}
+
+async function _resizeImageFile(file){
+  // Devuelve un Blob nuevo con la imagen redimensionada. Si no hace
+  // falta resize (chica), devuelve el File original.
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if(!bitmap) return file;
+  const maxDim = Math.max(bitmap.width, bitmap.height);
+  if(maxDim <= _IMAGE_MAX_DIMENSION){
+    bitmap.close && bitmap.close();
+    return file;
+  }
+  const scale = _IMAGE_MAX_DIMENSION / maxDim;
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close && bitmap.close();
+  // Exportamos como JPEG si el original NO era PNG con transparencia.
+  // JPEG comprime mejor y para planos sirve.
+  const outType = (file.type === 'image/png') ? 'image/png' : 'image/jpeg';
+  return await new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob || file),
+      outType,
+      _IMAGE_JPEG_QUALITY
+    );
+  });
+}
+
 function readImageAsAttachment(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>{
-      const m=/^data:([^;]+);base64,(.*)$/.exec(reader.result||'');
-      if(!m){reject(new Error('Formato de archivo inválido'));return;}
-      resolve({type:'image',media_type:m[1],data:m[2]});
-    };
-    reader.onerror=()=>reject(reader.error||new Error('Error leyendo archivo'));
-    reader.readAsDataURL(file);
+  return new Promise(async (resolve,reject)=>{
+    try{
+      // Resize antes de codificar para reducir tokens.
+      const blob = _shouldResize(file) ? await _resizeImageFile(file) : file;
+      const reader=new FileReader();
+      reader.onload=()=>{
+        const m=/^data:([^;]+);base64,(.*)$/.exec(reader.result||'');
+        if(!m){reject(new Error('Formato de archivo inválido'));return;}
+        resolve({type:'image',media_type:m[1],data:m[2]});
+      };
+      reader.onerror=()=>reject(reader.error||new Error('Error leyendo archivo'));
+      reader.readAsDataURL(blob);
+    }catch(e){
+      reject(e);
+    }
   });
 }
 
@@ -2621,6 +2693,15 @@ function solMsgHTML(role,content){
 
 function parseSolMd(t){
   let html=typeof marked!=='undefined'?(marked.setOptions({breaks:true,gfm:true}),marked.parse(t)):esc(t).replace(/\n/g,'<br>');
+  // Sanitización XSS antes de inyectar el SVG decorativo (que sí es nuestro).
+  if(typeof DOMPurify!=='undefined'){
+    html=DOMPurify.sanitize(html,{
+      ADD_ATTR:['target','rel'],
+      ALLOWED_URI_REGEXP:/^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    });
+  }
+  // El reemplazo decorativo se hace DESPUÉS del sanitize porque el SVG
+  // que inyectamos es controlado por nosotros (no proviene del LLM).
   html=html.replace(/\[CARGADO→([^\]]+)\]/g,'<div class="sol-routed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Dato cargado en → $1</div>');
   return html;
 }

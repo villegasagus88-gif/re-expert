@@ -133,6 +133,33 @@ class _HSTSMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class _NoCacheAPIMiddleware(BaseHTTPMiddleware):
+    """Force `Cache-Control: no-store` on every /api/* response.
+
+    Sin esto, un CDN/proxy intermedio (Cloudflare, Netlify, corporate
+    proxies) podría cachear respuestas autenticadas. Como las respuestas
+    incluyen datos del user (perfiles, pagos, conversaciones), un user
+    podría llegar a ver datos cacheados de otro user que pasó por el
+    mismo edge.
+
+    Se aplica solo a /api/* — los assets estáticos (HTML/CSS/JS) los
+    sirve Netlify con su propia política de cache.
+
+    Si un handler específico necesita override (ej. SSE chat con
+    `no-cache` para streaming), lo setea ANTES y nosotros no pisamos.
+    """
+    _NO_STORE = "no-store, no-cache, must-revalidate, private"
+
+    async def dispatch(self, request: _Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/api/"):
+            # No pisar si el handler ya seteó algo específico (SSE).
+            if not response.headers.get("Cache-Control"):
+                response.headers["Cache-Control"] = self._NO_STORE
+                response.headers.setdefault("Pragma", "no-cache")
+        return response
+
+
 class _HTTPSRedirectExceptHealth:
     """ASGI middleware: HTTPSRedirect but exempt /health.
 
@@ -160,6 +187,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(_BodySizeLimitMiddleware)
+# No-cache para /api/* — evita que CDNs/proxies cacheen respuestas con
+# datos de usuario y los sirvan a otros usuarios. Crítico cuando hay
+# proxies intermedios como Netlify Edge o Cloudflare.
+app.add_middleware(_NoCacheAPIMiddleware)
 
 # HTTPS enforcement — only in production. In Railway/Vercel/etc. the platform
 # proxy terminates TLS and forwards the original scheme via X-Forwarded-Proto;
