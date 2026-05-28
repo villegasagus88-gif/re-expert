@@ -23,6 +23,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+import httpx
+from config.settings import settings
 from services import retrieval_service as rs
 
 logger = logging.getLogger(__name__)
@@ -95,6 +97,51 @@ RETRIEVAL_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 },
             },
             "required": ["serie_id"],
+        },
+    },
+    {
+        "name": "search_web",
+        "description": (
+            "Búsqueda web en tiempo real vía Tavily. Devuelve los top "
+            "snippets relevantes a tu query + un `answer` agregado.\n\n"
+            "USAR PARA datos de mercado privado y noticias del rubro que NO "
+            "están en fuentes oficiales:\n"
+            "  • Precios m² por barrio (Zonaprop, MercadoLibre, RI, Properati)\n"
+            "  • Comparables de propiedades\n"
+            "  • Tendencias del mercado RE argentino\n"
+            "  • Anuncios y movimientos de developers\n"
+            "  • Noticias recientes del sector\n"
+            "  • Planes de gobierno / cambios regulatorios recientes\n\n"
+            "NO USAR PARA datos que ya tienen tool específica:\n"
+            "  • Dólar → get_dolar_cotizaciones (más rápida)\n"
+            "  • IPC/ICC INDEC → get_indec_serie\n"
+            "  • Norma específica en infoleg (con URL conocida) → fetch_official_source\n\n"
+            "Citá SIEMPRE título + URL + fecha del snippet en tu respuesta. "
+            "Si los resultados se contradicen, decilo explícitamente."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 400,
+                    "description": "Términos a buscar. Sé específico: 'precio m² palermo capital federal abril 2026' rinde más que 'palermo precio'.",
+                },
+                "max_results": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "default": 5,
+                },
+                "search_depth": {
+                    "type": "string",
+                    "enum": ["basic", "advanced"],
+                    "default": "basic",
+                    "description": "advanced cuesta más créditos pero rinde mejor para preguntas complejas.",
+                },
+            },
+            "required": ["query"],
         },
     },
     {
@@ -201,6 +248,91 @@ async def _tool_get_indec_serie(**inputs: Any) -> dict:
     }
 
 
+_TAVILY_URL = "https://api.tavily.com/search"
+_TAVILY_TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
+
+
+async def _tool_search_web(**inputs: Any) -> dict:
+    api_key = settings.TAVILY_API_KEY
+    if not api_key:
+        return {
+            "error": (
+                "Búsqueda web no configurada (falta TAVILY_API_KEY). "
+                "Avisale al usuario que no podés buscar en la web y "
+                "fundamentá con lo que tenés (KB + fuentes oficiales)."
+            )
+        }
+
+    query = (inputs.get("query") or "").strip()
+    if not query:
+        return {"error": "query vacía"}
+
+    max_results = int(inputs.get("max_results") or 5)
+    max_results = max(1, min(10, max_results))
+    search_depth = inputs.get("search_depth") or "basic"
+    if search_depth not in ("basic", "advanced"):
+        search_depth = "basic"
+
+    # Caché 1h. La key NO incluye la api_key (cambiarla no debería invalidar).
+    cache_key = f"tavily::{query}::{max_results}::{search_depth}"
+    cached = rs._cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    body = {
+        "api_key": api_key,
+        "query": query,
+        "max_results": max_results,
+        "search_depth": search_depth,
+        "include_answer": True,
+        "topic": "general",
+    }
+
+    client = await rs.get_client()
+    try:
+        resp = await client.post(_TAVILY_URL, json=body, timeout=_TAVILY_TIMEOUT)
+    except httpx.RequestError as e:
+        return {"error": f"Tavily no respondió: {e}"}
+
+    if resp.status_code == 401:
+        return {"error": "Tavily rechazó la API key (401)."}
+    if resp.status_code == 429:
+        return {"error": "Tavily rate limit (429). Probá de nuevo en unos minutos."}
+    if resp.status_code >= 500:
+        return {"error": f"Tavily caído ({resp.status_code})."}
+    if resp.status_code >= 400:
+        return {"error": f"Tavily error {resp.status_code}: {resp.text[:200]}"}
+
+    try:
+        data = resp.json()
+    except ValueError as e:
+        return {"error": f"Tavily devolvió no-JSON: {e}"}
+
+    # Compactar snippets para no inflar tokens: 800 chars por resultado max.
+    results = []
+    for r in (data.get("results") or [])[:max_results]:
+        results.append(
+            {
+                "title": (r.get("title") or "")[:200],
+                "url": r.get("url"),
+                "snippet": (r.get("content") or "")[:800],
+                "published_date": r.get("published_date"),
+                "score": r.get("score"),
+            }
+        )
+
+    payload = {
+        "query": query,
+        "answer": (data.get("answer") or "")[:1500] or None,
+        "results": results,
+        "fetched_at": _now_iso(),
+        "ttl_seconds": 3600,
+        "source": "tavily.com",
+    }
+    rs._cache_set(cache_key, payload, ttl_seconds=3600)
+    return payload
+
+
 async def _tool_fetch_official_source(**inputs: Any) -> dict:
     url = (inputs.get("url") or "").strip()
     if not url:
@@ -228,6 +360,7 @@ async def _tool_fetch_official_source(**inputs: Any) -> dict:
 RETRIEVAL_TOOL_IMPLS = {
     "get_dolar_cotizaciones": _tool_get_dolar_cotizaciones,
     "get_indec_serie": _tool_get_indec_serie,
+    "search_web": _tool_search_web,
     "fetch_official_source": _tool_fetch_official_source,
 }
 

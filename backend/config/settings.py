@@ -104,6 +104,13 @@ class Settings(BaseSettings):
     # ===== MAPS (opcional) =====
     GOOGLE_MAPS_API_KEY: str = ""
 
+    # ===== TAVILY (web search para chat) =====
+    # API key de https://tavily.com — habilita la tool `search_web` del chat.
+    # Si está vacía, la tool queda deshabilitada y el modelo cae al
+    # comportamiento anterior (citar fuentes pero no fetchear web abierta).
+    # Free tier: 1000 búsquedas/mes.
+    TAVILY_API_KEY: str = ""
+
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).
     # e.g. https://re-expert.app  or  https://staging.re-expert.app
