@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from api.routes.academia import router as academia_router
 from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
@@ -211,6 +212,7 @@ app.include_router(conversations_router)
 app.include_router(chat_router)
 app.include_router(knowledge_router)
 app.include_router(materials_router)
+app.include_router(academia_router)
 app.include_router(payments_router)
 app.include_router(project_router)
 app.include_router(stripe_router)

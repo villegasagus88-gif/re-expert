@@ -1,0 +1,122 @@
+{
+  "updated_at": "2026-05-28",
+  "categories": [
+    {
+      "id": "desarrollo",
+      "title": "Desarrollo inmobiliario",
+      "courses": [
+        {
+          "id": "intro-desarrollo",
+          "title": "Introducción al desarrollo inmobiliario",
+          "level": "beginner",
+          "icon": "🏗️",
+          "icon_color": "dev",
+          "description": "Ciclo completo de un proyecto: desde la compra de tierra hasta la venta. Conceptos de factibilidad, estructura de negocio y primeros pasos.",
+          "provider": "Universidad de Buenos Aires — Extensión",
+          "duration_hours": 24,
+          "duration_weeks": 8,
+          "price_ars": 85000,
+          "price_label": "$85.000"
+        },
+        {
+          "id": "analisis-financiero",
+          "title": "Análisis financiero de proyectos inmobiliarios",
+          "level": "intermediate",
+          "icon": "📊",
+          "icon_color": "dev",
+          "description": "Pro-formas, TIR, VAN, cap rates, estructura de capital. Modelado financiero con Excel y análisis de sensibilidad para desarrollos.",
+          "provider": "UCEMA — Escuela de Negocios",
+          "duration_hours": 36,
+          "duration_weeks": 12,
+          "price_ars": 120000,
+          "price_label": "$120.000"
+        },
+        {
+          "id": "masterclass-fideicomisos",
+          "title": "Masterclass: Estructuración de fideicomisos inmobiliarios",
+          "level": "advanced",
+          "icon": "🎯",
+          "icon_color": "dev",
+          "description": "Fideicomisos al costo, SPVs, estructura legal y fiscal, captación de inversores, due diligence avanzado y casos reales de Argentina.",
+          "provider": "IAE Business School",
+          "duration_hours": 48,
+          "duration_weeks": 16,
+          "price_ars": 280000,
+          "price_label": "$280.000"
+        },
+        {
+          "id": "re-inversores",
+          "title": "Real estate para inversores: primeros pasos",
+          "level": "beginner",
+          "icon": "💰",
+          "icon_color": "finance",
+          "description": "Cómo evaluar una inversión inmobiliaria, tipos de activos, métricas clave, errores comunes y cómo armar tu primer deal.",
+          "provider": "Coursera — Universidad de los Andes",
+          "duration_hours": 16,
+          "duration_weeks": 6,
+          "price_ars": 0,
+          "price_label": "Gratis",
+          "is_free": true
+        }
+      ]
+    },
+    {
+      "id": "construccion",
+      "title": "Construcción y obra",
+      "courses": [
+        {
+          "id": "fundamentos-construccion",
+          "title": "Fundamentos de construcción y lectura de planos",
+          "level": "beginner",
+          "icon": "🧱",
+          "icon_color": "build",
+          "description": "Interpretación de planos arquitectónicos y estructurales, procesos constructivos básicos, materiales y rendimientos estándar.",
+          "provider": "CAC — Cámara Argentina de la Construcción",
+          "duration_hours": 20,
+          "duration_weeks": 6,
+          "price_ars": 45000,
+          "price_label": "$45.000"
+        },
+        {
+          "id": "direccion-obra",
+          "title": "Dirección y control de obra",
+          "level": "intermediate",
+          "icon": "📐",
+          "icon_color": "build",
+          "description": "Planificación de obra, gestión de subcontratistas, control de calidad, presupuestación por rubros y certificaciones de avance.",
+          "provider": "UTN — Facultad Regional Buenos Aires",
+          "duration_hours": 40,
+          "duration_weeks": 10,
+          "price_ars": 95000,
+          "price_label": "$95.000"
+        },
+        {
+          "id": "pmp-construccion",
+          "title": "Project Management para construcción (PMI/PMP)",
+          "level": "advanced",
+          "icon": "📋",
+          "icon_color": "management",
+          "description": "Metodología PMI aplicada a obras: earned value, ruta crítica, gestión de riesgos, cronogramas y control de proyecto profesional.",
+          "provider": "PMI Argentina Chapter",
+          "duration_hours": 60,
+          "duration_weeks": 20,
+          "price_ars": 350000,
+          "price_label": "$350.000"
+        },
+        {
+          "id": "marco-legal-construccion",
+          "title": "Marco legal de la construcción en Argentina",
+          "level": "intermediate",
+          "icon": "⚖️",
+          "icon_color": "legal",
+          "description": "Código urbanístico, permisos, habilitaciones, seguros de obra, ART, responsabilidades y marco contractual con subcontratistas.",
+          "provider": "CPAU — Consejo Profesional de Arquitectura",
+          "duration_hours": 18,
+          "duration_weeks": 8,
+          "price_ars": 65000,
+          "price_label": "$65.000"
+        }
+      ]
+    }
+  ]
+}

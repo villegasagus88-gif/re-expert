@@ -1,0 +1,78 @@
+{
+  "updated_at": "2026-05-28",
+  "intro": "Caminos progresivos desde cero hasta nivel profesional. Cada ruta combina cursos en el orden correcto para maximizar tu aprendizaje.",
+  "paths": [
+    {
+      "id": "ruta-desarrollador",
+      "title": "Ruta: Desarrollador inmobiliario",
+      "steps": [
+        {
+          "order": 1,
+          "title": "Bases del negocio inmobiliario",
+          "subtitle": "Entender el mercado, tipos de desarrollos y modelos de negocio",
+          "courses": [
+            "📖 Intro al desarrollo inmobiliario",
+            "📖 Real estate para inversores",
+            "📊 Lectura de mercado"
+          ]
+        },
+        {
+          "order": 2,
+          "title": "Análisis y estructuración",
+          "subtitle": "Evaluar viabilidad financiera y armar estructura legal",
+          "courses": [
+            "📊 Análisis financiero de proyectos",
+            "⚖️ Marco legal",
+            "📐 Factibilidad técnica"
+          ]
+        },
+        {
+          "order": 3,
+          "title": "Ejecución y escala",
+          "subtitle": "Gestionar obra, inversores y crecimiento del negocio",
+          "courses": [
+            "🎯 Fideicomisos inmobiliarios",
+            "📋 Project management",
+            "🤝 Captación de inversores"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ruta-constructor",
+      "title": "Ruta: Constructor / Director de obra",
+      "steps": [
+        {
+          "order": 1,
+          "title": "Fundamentos constructivos",
+          "subtitle": "Materiales, procesos y lectura de documentación técnica",
+          "courses": [
+            "🧱 Fundamentos de construcción",
+            "📐 Lectura de planos",
+            "📏 Cómputo y presupuesto"
+          ]
+        },
+        {
+          "order": 2,
+          "title": "Gestión de obra",
+          "subtitle": "Planificación, control y gestión de equipos en campo",
+          "courses": [
+            "📋 Dirección y control de obra",
+            "⚖️ Marco legal de construcción",
+            "🔧 Instalaciones especiales"
+          ]
+        },
+        {
+          "order": 3,
+          "title": "Nivel profesional",
+          "subtitle": "Certificaciones, project management y optimización",
+          "courses": [
+            "📋 PMI/PMP para construcción",
+            "📊 Control de costos avanzado",
+            "🏗️ BIM management"
+          ]
+        }
+      ]
+    }
+  ]
+}

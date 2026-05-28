@@ -1006,7 +1006,7 @@ select.pay-form-input{cursor:pointer}
             <button class="section-tab" data-acad-tab="rutas">Rutas de aprendizaje</button>
           </div>
 
-          <!-- TAB: CURSOS -->
+          <!-- TAB: CURSOS — contenido dinámico vía loadAcademia() -->
           <div id="acadTabCursos" class="acad-tab-content">
             <div class="level-filters">
               <button class="level-btn active" data-level="todos">Todos</button>
@@ -1014,218 +1014,20 @@ select.pay-form-input{cursor:pointer}
               <button class="level-btn" data-level="intermediate">Intermedio</button>
               <button class="level-btn" data-level="advanced">Avanzado</button>
             </div>
-
-            <div class="section-block">
-              <div class="section-block-title">Desarrollo inmobiliario</div>
-              <div class="course-grid" id="coursesDevGrid">
-                <div class="course-card" data-lvl="beginner">
-                  <div class="course-top">
-                    <div class="course-icon dev">🏗️</div>
-                    <span class="course-level beginner">Principiante</span>
-                  </div>
-                  <div class="course-title">Introducción al desarrollo inmobiliario</div>
-                  <div class="course-desc">Ciclo completo de un proyecto: desde la compra de tierra hasta la venta. Conceptos de factibilidad, estructura de negocio y primeros pasos.</div>
-                  <div class="course-provider">Universidad de Buenos Aires — Extensión</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 24 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 8 semanas</span>
-                    <span class="course-price">$85.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="intermediate">
-                  <div class="course-top">
-                    <div class="course-icon dev">📊</div>
-                    <span class="course-level intermediate">Intermedio</span>
-                  </div>
-                  <div class="course-title">Análisis financiero de proyectos inmobiliarios</div>
-                  <div class="course-desc">Pro-formas, TIR, VAN, cap rates, estructura de capital. Modelado financiero con Excel y análisis de sensibilidad para desarrollos.</div>
-                  <div class="course-provider">UCEMA — Escuela de Negocios</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 36 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 12 semanas</span>
-                    <span class="course-price">$120.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="advanced">
-                  <div class="course-top">
-                    <div class="course-icon dev">🎯</div>
-                    <span class="course-level advanced">Avanzado</span>
-                  </div>
-                  <div class="course-title">Masterclass: Estructuración de fideicomisos inmobiliarios</div>
-                  <div class="course-desc">Fideicomisos al costo, SPVs, estructura legal y fiscal, captación de inversores, due diligence avanzado y casos reales de Argentina.</div>
-                  <div class="course-provider">IAE Business School</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 48 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 16 semanas</span>
-                    <span class="course-price">$280.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="beginner">
-                  <div class="course-top">
-                    <div class="course-icon finance">💰</div>
-                    <span class="course-level beginner">Principiante</span>
-                  </div>
-                  <div class="course-title">Real estate para inversores: primeros pasos</div>
-                  <div class="course-desc">Cómo evaluar una inversión inmobiliaria, tipos de activos, métricas clave, errores comunes y cómo armar tu primer deal.</div>
-                  <div class="course-provider">Coursera — Universidad de los Andes</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 16 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 6 semanas</span>
-                    <span class="course-price free">Gratis</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-block">
-              <div class="section-block-title">Construcción y obra</div>
-              <div class="course-grid" id="coursesBuildGrid">
-                <div class="course-card" data-lvl="beginner">
-                  <div class="course-top">
-                    <div class="course-icon build">🧱</div>
-                    <span class="course-level beginner">Principiante</span>
-                  </div>
-                  <div class="course-title">Fundamentos de construcción y lectura de planos</div>
-                  <div class="course-desc">Interpretación de planos arquitectónicos y estructurales, procesos constructivos básicos, materiales y rendimientos estándar.</div>
-                  <div class="course-provider">CAC — Cámara Argentina de la Construcción</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 20 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 6 semanas</span>
-                    <span class="course-price">$45.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="intermediate">
-                  <div class="course-top">
-                    <div class="course-icon build">📐</div>
-                    <span class="course-level intermediate">Intermedio</span>
-                  </div>
-                  <div class="course-title">Dirección y control de obra</div>
-                  <div class="course-desc">Planificación de obra, gestión de subcontratistas, control de calidad, presupuestación por rubros y certificaciones de avance.</div>
-                  <div class="course-provider">UTN — Facultad Regional Buenos Aires</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 40 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 10 semanas</span>
-                    <span class="course-price">$95.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="advanced">
-                  <div class="course-top">
-                    <div class="course-icon management">📋</div>
-                    <span class="course-level advanced">Avanzado</span>
-                  </div>
-                  <div class="course-title">Project Management para construcción (PMI/PMP)</div>
-                  <div class="course-desc">Metodología PMI aplicada a obras: earned value, ruta crítica, gestión de riesgos, cronogramas y control de proyecto profesional.</div>
-                  <div class="course-provider">PMI Argentina Chapter</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 60 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 20 semanas</span>
-                    <span class="course-price">$350.000</span>
-                  </div>
-                </div>
-                <div class="course-card" data-lvl="intermediate">
-                  <div class="course-top">
-                    <div class="course-icon legal">⚖️</div>
-                    <span class="course-level intermediate">Intermedio</span>
-                  </div>
-                  <div class="course-title">Marco legal de la construcción en Argentina</div>
-                  <div class="course-desc">Código urbanístico, permisos, habilitaciones, seguros de obra, ART, responsabilidades y marco contractual con subcontratistas.</div>
-                  <div class="course-provider">CPAU — Consejo Profesional de Arquitectura</div>
-                  <div class="course-meta-row">
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 18 hs</span>
-                    <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 8 semanas</span>
-                    <span class="course-price">$65.000</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            <div id="academiaCoursesContainer"></div>
             <button class="btn-primary" id="aiCourseRec">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               Pedile a la IA que te recomiende cursos según tu perfil
             </button>
           </div>
 
-          <!-- TAB: RUTAS -->
+          <!-- TAB: RUTAS — contenido dinámico vía loadAcademia() -->
           <div id="acadTabRutas" class="acad-tab-content" style="display:none">
-            <div class="news-takeaway" style="margin-bottom:20px">
+            <div class="news-takeaway" id="academiaPathsIntro" style="margin-bottom:20px;display:none">
               <span class="news-takeaway-icon">🎓</span>
-              <div class="news-takeaway-text"><strong>Rutas de aprendizaje curadas</strong>Caminos progresivos desde cero hasta nivel profesional. Cada ruta combina cursos en el orden correcto para maximizar tu aprendizaje.</div>
+              <div class="news-takeaway-text"><strong>Rutas de aprendizaje curadas</strong><span id="academiaPathsIntroText"></span></div>
             </div>
-
-            <div class="section-block">
-              <div class="section-block-title">Ruta: Desarrollador inmobiliario</div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">1</div>
-                  <div><div class="path-title">Bases del negocio inmobiliario</div><div class="path-sub">Entender el mercado, tipos de desarrollos y modelos de negocio</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">📖 Intro al desarrollo inmobiliario</span>
-                  <span class="path-step">📖 Real estate para inversores</span>
-                  <span class="path-step">📊 Lectura de mercado</span>
-                </div>
-              </div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">2</div>
-                  <div><div class="path-title">Análisis y estructuración</div><div class="path-sub">Evaluar viabilidad financiera y armar estructura legal</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">📊 Análisis financiero de proyectos</span>
-                  <span class="path-step">⚖️ Marco legal</span>
-                  <span class="path-step">📐 Factibilidad técnica</span>
-                </div>
-              </div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">3</div>
-                  <div><div class="path-title">Ejecución y escala</div><div class="path-sub">Gestionar obra, inversores y crecimiento del negocio</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">🎯 Fideicomisos inmobiliarios</span>
-                  <span class="path-step">📋 Project management</span>
-                  <span class="path-step">🤝 Captación de inversores</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-block">
-              <div class="section-block-title">Ruta: Constructor / Director de obra</div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">1</div>
-                  <div><div class="path-title">Fundamentos constructivos</div><div class="path-sub">Materiales, procesos y lectura de documentación técnica</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">🧱 Fundamentos de construcción</span>
-                  <span class="path-step">📐 Lectura de planos</span>
-                  <span class="path-step">📏 Cómputo y presupuesto</span>
-                </div>
-              </div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">2</div>
-                  <div><div class="path-title">Gestión de obra</div><div class="path-sub">Planificación, control y gestión de equipos en campo</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">📋 Dirección y control de obra</span>
-                  <span class="path-step">⚖️ Marco legal de construcción</span>
-                  <span class="path-step">🔧 Instalaciones especiales</span>
-                </div>
-              </div>
-              <div class="path-card">
-                <div class="path-header">
-                  <div class="path-num">3</div>
-                  <div><div class="path-title">Nivel profesional</div><div class="path-sub">Certificaciones, project management y optimización</div></div>
-                </div>
-                <div class="path-steps">
-                  <span class="path-step">📋 PMI/PMP para construcción</span>
-                  <span class="path-step">📊 Control de costos avanzado</span>
-                  <span class="path-step">🏗️ BIM management</span>
-                </div>
-              </div>
-            </div>
-
+            <div id="academiaPathsContainer"></div>
             <button class="btn-primary" id="aiPathRec">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               Pedile a la IA una ruta personalizada
@@ -1839,6 +1641,7 @@ function switchView(v){
   if(v==='materiales')loadMateriales();
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
+  if(v==='academia')loadAcademia();
 }
 
 // Vuelve a la vista anterior (gesto swipe-right o navegación programática).
@@ -2712,6 +2515,122 @@ async function loadProyecto(force=false){
     ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML='<div class="pay-empty">Error: '+esc(e.message)+'</div>';});
   }finally{
     proyectoState.loading=false;
+  }
+}
+
+// Academia: state + carga del backend
+const academiaState={courses:null,paths:null,loaded:false,loading:false};
+
+const _ACAD_LEVEL_LABEL={beginner:'Principiante',intermediate:'Intermedio',advanced:'Avanzado'};
+
+function _academiaCourseCardHTML(c){
+  const lvlLabel=_ACAD_LEVEL_LABEL[c.level]||c.level;
+  const priceClass=c.is_free?'course-price free':'course-price';
+  // Todos los datos van por esc() para defensa en profundidad — la
+  // data viene del backend que es nuestro, pero igual escapamos para
+  // que un día que se permita admin upload no genere XSS.
+  return `<div class="course-card" data-lvl="${esc(c.level)}">
+    <div class="course-top">
+      <div class="course-icon ${esc(c.icon_color||'dev')}">${esc(c.icon||'📚')}</div>
+      <span class="course-level ${esc(c.level)}">${esc(lvlLabel)}</span>
+    </div>
+    <div class="course-title">${esc(c.title)}</div>
+    <div class="course-desc">${esc(c.description)}</div>
+    <div class="course-provider">${esc(c.provider||'')}</div>
+    <div class="course-meta-row">
+      <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ${c.duration_hours} hs</span>
+      <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${c.duration_weeks} semanas</span>
+      <span class="${priceClass}">${esc(c.price_label||'')}</span>
+    </div>
+  </div>`;
+}
+
+function _academiaCategoryHTML(cat){
+  return `<div class="section-block">
+    <div class="section-block-title">${esc(cat.title)}</div>
+    <div class="course-grid">${cat.courses.map(_academiaCourseCardHTML).join('')}</div>
+  </div>`;
+}
+
+function _academiaPathHTML(p){
+  return `<div class="section-block">
+    <div class="section-block-title">${esc(p.title)}</div>
+    ${p.steps.map(s=>`
+      <div class="path-card">
+        <div class="path-header">
+          <div class="path-num">${s.order}</div>
+          <div>
+            <div class="path-title">${esc(s.title)}</div>
+            <div class="path-sub">${esc(s.subtitle||'')}</div>
+          </div>
+        </div>
+        <div class="path-steps">${s.courses.map(c=>`<span class="path-step">${esc(c)}</span>`).join('')}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function _academiaSkeleton(){
+  const sk='<div class="course-card"><div class="skeleton" style="height:14px;width:60%;border-radius:3px;margin-bottom:8px"></div><div class="skeleton" style="height:10px;width:80%;border-radius:3px;margin-bottom:6px"></div><div class="skeleton" style="height:10px;width:55%;border-radius:3px"></div></div>';
+  return '<div class="section-block"><div class="course-grid">'+sk+sk+sk+sk+'</div></div>';
+}
+
+function _renderAcademiaCourses(data){
+  const cont=$('#academiaCoursesContainer');if(!cont)return;
+  if(!data||!data.categories||!data.categories.length){
+    cont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">Sin cursos disponibles</div></div>';
+    return;
+  }
+  cont.innerHTML=data.categories.map(_academiaCategoryHTML).join('');
+  // Reaplicar el filtro de nivel activo (si el user había seleccionado).
+  const activeLevelBtn=document.querySelector('.level-btn.active');
+  if(activeLevelBtn){
+    const lvl=activeLevelBtn.dataset.level;
+    if(lvl&&lvl!=='todos'){
+      cont.querySelectorAll('.course-card').forEach(card=>{
+        card.style.display=(card.dataset.lvl===lvl)?'':'none';
+      });
+    }
+  }
+}
+
+function _renderAcademiaPaths(data){
+  const cont=$('#academiaPathsContainer');if(!cont)return;
+  if(!data||!data.paths||!data.paths.length){
+    cont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">Sin rutas disponibles</div></div>';
+    return;
+  }
+  const intro=$('#academiaPathsIntro'),introTxt=$('#academiaPathsIntroText');
+  if(data.intro&&intro&&introTxt){introTxt.textContent=data.intro;intro.style.display='';}
+  cont.innerHTML=data.paths.map(_academiaPathHTML).join('');
+}
+
+async function loadAcademia(force=false){
+  if(academiaState.loading)return;
+  if(academiaState.loaded&&!force){
+    _renderAcademiaCourses(academiaState.courses);
+    _renderAcademiaPaths(academiaState.paths);
+    return;
+  }
+  const coursesCont=$('#academiaCoursesContainer'),pathsCont=$('#academiaPathsContainer');
+  if(coursesCont)coursesCont.innerHTML=_academiaSkeleton();
+  academiaState.loading=true;
+  try{
+    const [rCourses,rPaths]=await Promise.all([
+      window.REAuthService.authFetch(apiBase()+'/api/academia/courses'),
+      window.REAuthService.authFetch(apiBase()+'/api/academia/paths'),
+    ]);
+    if(rCourses.status===401||rPaths.status===401){window.REAuthService.logout();return;}
+    if(!rCourses.ok)throw new Error('cursos '+rCourses.status);
+    if(!rPaths.ok)throw new Error('rutas '+rPaths.status);
+    academiaState.courses=await rCourses.json();
+    academiaState.paths=await rPaths.json();
+    academiaState.loaded=true;
+    _renderAcademiaCourses(academiaState.courses);
+    _renderAcademiaPaths(academiaState.paths);
+  }catch(e){
+    if(coursesCont)coursesCont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">No pudimos cargar los cursos</div><div class="empty-desc">'+esc(e.message)+'</div></div>';
+  }finally{
+    academiaState.loading=false;
   }
 }
 
