@@ -48,7 +48,7 @@ def _parse_sse(content: bytes) -> list[dict]:
     return events
 
 
-async def _fake_stream_chat(messages, system, max_tokens=4096):
+async def _fake_stream_chat(messages, system, max_tokens=4096, tools=None, tool_runner=None):
     """Fake Claude stream: two deltas then usage totals."""
     yield {"type": "delta", "text": "Hola"}
     yield {"type": "delta", "text": " mundo"}

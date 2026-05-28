@@ -1860,7 +1860,9 @@ function handleTitleTap(){
   $('#pageContainer').scrollTo({top:0,behavior:'smooth'});
 }
 function newConversation(){
+  if(state.isStreaming)return;
   state.currentConversation=null;state.messages=[];
+  els.messagesEl.innerHTML='';
   renderHistory();showWelcome();
   els.exportBtn.style.display='none';
   switchView('chat');
@@ -1932,9 +1934,41 @@ function renderMessages(){if(!state.messages.length){showWelcome();return}showMe
 
 function msgHTML(role,content){const u=role==='user';return`<div class="message message-${u?'user':'assistant'}"><div class="message-inner"><div class="message-avatar">${u?'TU':'RE'}</div><div class="message-content"><div class="message-sender">${u?'Tu':'RE Expert'}</div><div class="message-text">${u?esc(content):parseMd(content)}</div></div></div></div>`}
 function appendMsg(role,content){showMessages();const d=document.createElement('div');d.innerHTML=msgHTML(role,content);els.messagesEl.appendChild(d.firstElementChild);addCopyBtns();scrollBottom()}
-function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-label">Generando respuesta…</span></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
+function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="tool-trace" style="display:none;font-size:12px;color:var(--text-3);margin-bottom:6px"></div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-label">Generando respuesta…</span></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
 function updateStreaming(t){const el=$('#streamMsg');if(el){el.querySelector('.message-text').innerHTML=parseMd(t);scrollBottom()}}
 function finalizeStreaming(){const el=$('#streamMsg');if(el){el.removeAttribute('id');addCopyBtns()}}
+
+// Bonita-de-mostrar para el nombre técnico de cada tool de retrieval.
+const TOOL_LABELS={
+  get_dolar_cotizaciones:'Cotizaciones del dólar',
+  get_indec_serie:'Series oficiales INDEC',
+  fetch_official_source:'Fuente oficial'
+};
+function prettyToolLabel(name,source){
+  const base=TOOL_LABELS[name]||name;
+  if(name==='fetch_official_source'&&source){
+    try{const h=new URL(source).hostname;return base+' ('+h+')'}catch(_){}
+  }
+  return base;
+}
+function pushToolUse(name,input){
+  const trace=$('#streamMsg .tool-trace');if(!trace)return;
+  trace.style.display='';
+  const row=document.createElement('div');
+  row.dataset.tool=name;
+  row.innerHTML=`<span class="tool-dot">●</span> Consultando ${esc(prettyToolLabel(name,input&&input.url))}…`;
+  trace.appendChild(row);scrollBottom();
+}
+function markToolDone(name,ok,source){
+  const trace=$('#streamMsg .tool-trace');if(!trace)return;
+  // Marca la fila pendiente más reciente con ese name como terminada.
+  const rows=Array.from(trace.querySelectorAll(`[data-tool="${name}"]:not(.done)`));
+  const row=rows[rows.length-1];if(!row)return;
+  row.classList.add('done');
+  const label=prettyToolLabel(name,source);
+  row.innerHTML=(ok?'✓':'⚠️')+' '+esc(label);
+  row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
+}
 
 function parseMd(t){if(typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});return marked.parse(t)}return esc(t).replace(/\n/g,'<br>')}
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
@@ -2042,6 +2076,10 @@ async function sendMessage(text,opts){
             }
           }else if(ev.type==='delta'&&ev.text){
             full+=ev.text;updateStreaming(full);
+          }else if(ev.type==='tool_use'){
+            pushToolUse(ev.name,ev.input);
+          }else if(ev.type==='tool_result'){
+            markToolDone(ev.name,ev.ok!==false,ev.source);
           }else if(ev.type==='error'){
             throw new Error(ev.message||'Error del backend');
           }else if(ev.type==='done'){

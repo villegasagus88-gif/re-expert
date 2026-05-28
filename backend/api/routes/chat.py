@@ -12,7 +12,7 @@ SSE event spec:
   - done:  {"type": "done",  "tokens_used": <int|null>}
   - error: {"type": "error", "message": "<human message>"}
 
-Stream hard-caps at 60s; if exceeded an error event is emitted.
+Stream hard-caps at 180s; if exceeded an error event is emitted.
 
 Smoke test with curl (replace <JWT>):
 
@@ -41,6 +41,7 @@ from models.project import Project
 from models.user import User
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.rate_limit_service import check_user_rate_limit
+from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
 from services.token_usage_service import log_token_usage
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,7 +51,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 MAX_HISTORY_MESSAGES = 20
-STREAM_TIMEOUT_SECONDS = 60
+STREAM_TIMEOUT_SECONDS = 180
 
 
 TITLE_MAX_LEN = 60
@@ -253,6 +254,15 @@ async def chat(
 
     conv_id_str = str(conv.id)
 
+    # 7. Tools de retrieval: solo en chat general (no SOL — SOL tiene su
+    #    propio agente). Si el turno trae imágenes adjuntas, deshabilitamos
+    #    tools: el flujo multimodal va directo a una sola pasada del modelo.
+    use_retrieval_tools = (
+        body.context_type == "chat" and not body.attachments
+    )
+    tools_arg = RETRIEVAL_TOOL_SCHEMAS if use_retrieval_tools else None
+    tool_runner_arg = run_retrieval_tool if use_retrieval_tools else None
+
     async def event_stream():
         """
         Yield SSE events per the streaming spec and persist the assistant
@@ -274,11 +284,42 @@ async def chat(
 
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
-                async for event in stream_chat(api_messages, system_prompt):
-                    if event["type"] == "delta":
+                async for event in stream_chat(
+                    api_messages,
+                    system_prompt,
+                    tools=tools_arg,
+                    tool_runner=tool_runner_arg,
+                ):
+                    etype = event["type"]
+                    if etype == "delta":
                         full_response += event["text"]
                         yield _sse({"type": "delta", "text": event["text"]})
-                    elif event["type"] == "end":
+                    elif etype == "tool_use":
+                        # Le avisamos al frontend que el modelo está
+                        # consultando una fuente externa (UX: "Consultando
+                        # dolarapi.com..."). El input puede tener datos
+                        # sensibles? No en estas tools (URL pública / serie_id),
+                        # pero igual lo recortamos por las dudas.
+                        yield _sse(
+                            {
+                                "type": "tool_use",
+                                "name": event["name"],
+                                "input": event.get("input") or {},
+                            }
+                        )
+                    elif etype == "tool_result":
+                        # No mandamos el payload completo al frontend (puede
+                        # ser muy grande). Solo nombre + flag de error.
+                        result = event.get("result") or {}
+                        yield _sse(
+                            {
+                                "type": "tool_result",
+                                "name": event["name"],
+                                "ok": "error" not in result,
+                                "source": result.get("source") or result.get("url"),
+                            }
+                        )
+                    elif etype == "end":
                         input_tokens = event["input_tokens"]
                         output_tokens = event["output_tokens"]
                         tokens_used = input_tokens + output_tokens

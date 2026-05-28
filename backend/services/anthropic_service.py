@@ -12,8 +12,10 @@ Routing strategy:
   (`load_knowledge_context`) como red de seguridad.
 """
 import asyncio
+import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Any
 
 from anthropic import AsyncAnthropic
 from config.settings import settings
@@ -41,6 +43,41 @@ Respondés en español rioplatense, de forma clara y concisa. Cuando corresponda
 usá la información de la sección "Base de conocimiento" que se adjunta más abajo
 para fundamentar tus respuestas. Si no tenés información suficiente, decilo
 directamente en lugar de inventar.
+
+## Tools de fuentes oficiales (CRÍTICO — leer antes de responder)
+
+Tenés acceso a tres herramientas para consultar fuentes oficiales en tiempo real.
+**Usalas SIEMPRE que la respuesta dependa de un dato volátil**, en vez de
+inventar el número o decir "no sé".
+
+  • `get_dolar_cotizaciones` — cotizaciones del dólar (oficial, blue, MEP, CCL,
+    cripto, tarjeta, mayorista). Datos en tiempo real (5 min de caché). USAR
+    cuando pregunten "a cuánto está el dólar X", o necesites convertir ARS↔USD
+    con tipo de cambio actual.
+
+  • `get_indec_serie` — series oficiales (INDEC vía datos.gob.ar): IPC, ICC
+    (costo de la construcción), EMAE, tipo de cambio promedio mensual BCRA, etc.
+    USAR para inflación, costo de construcción mensual, salarios, índices.
+
+  • `fetch_official_source(url)` — GET genérico a fuentes oficiales whitelisteadas
+    (.gob.ar, .gov.ar, BCRA, INDEC, ARBA, AGIP, AFIP, infoleg, BORA, GCBA,
+    apis.datos.gob.ar). USAR para leer un artículo de ley en infoleg, una
+    alícuota en ARBA/AGIP, o una norma reciente en BORA.
+
+### Reglas de uso de tools
+
+1. **Datos volátiles → SIEMPRE tool, nunca memoria del modelo.** FX, alícuotas,
+   índices, jornales UOCRA, precios de materiales, normativa reciente.
+2. **Citá la fuente y el `fetched_at` que devolvió la tool.** Ej: "Según
+   dolarapi.com (consultado hace 2 min): MEP = $1.145."
+3. **Si la tool devuelve `error`**, decile al usuario "no pude consultar la
+   fuente oficial en este momento" + sugerí dónde mirarlo (BCRA, INDEC, etc.).
+   NO inventes el dato como compensación.
+4. **Una pasada eficiente**: si necesitás 2 datos, podés llamar las 2 tools en
+   el mismo turno. No hagas más de 4 llamadas por respuesta.
+5. **Cuando uses datos de la Base de conocimiento abajo** (que es estructural y
+   estable: teoría, normativa de base, fórmulas), citala como "según la base
+   curada" o "según el material de referencia".
 """
 
 
@@ -178,32 +215,123 @@ async def build_system_prompt(
     )
 
 
+ToolRunner = Callable[[str, dict[str, Any]], Awaitable[dict]]
+
+# Tope de iteraciones del loop tool-use. Cada iteración es una llamada al
+# modelo. 4 alcanza para casos típicos (1-2 fetch + síntesis) sin riesgo
+# de bucle infinito si el modelo se queda pidiendo tools.
+MAX_TOOL_ITERATIONS = 4
+
+
 async def stream_chat(
     messages: list[dict],
     system: str,
     max_tokens: int = 4096,
+    tools: list[dict] | None = None,
+    tool_runner: ToolRunner | None = None,
 ) -> AsyncIterator[dict]:
     """
     Streams Claude's response. Yields event dicts:
       - {"type": "delta", "text": <chunk>}
+      - {"type": "tool_use", "name": "...", "input": {...}}     (si tools)
+      - {"type": "tool_result", "name": "...", "result": {...}} (si tools)
       - {"type": "end", "input_tokens": N, "output_tokens": M}
 
+    Cuando `tools` y `tool_runner` se proveen, hace loop tool-use:
+      stream → si stop_reason=='tool_use' → ejecutamos tools →
+      stream con tool_results → repetir hasta end_turn o tope.
+
+    Mutamos `messages` para acumular bloques de assistant/tool_result (es
+    requisito del protocolo de Anthropic para la continuación del turno).
+
     Raises anthropic exceptions on API errors (caller handles).
-    The final "end" event is emitted once, after the text stream completes.
     """
     client = get_client()
-    async with client.messages.stream(
-        model=settings.ANTHROPIC_MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=messages,
-    ) as stream:
-        async for text in stream.text_stream:
-            yield {"type": "delta", "text": text}
 
-        final = await stream.get_final_message()
-        yield {
-            "type": "end",
-            "input_tokens": final.usage.input_tokens,
-            "output_tokens": final.usage.output_tokens,
-        }
+    # Path simple: sin tools, comportamiento idéntico al original.
+    if not tools or not tool_runner:
+        async with client.messages.stream(
+            model=settings.ANTHROPIC_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=messages,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield {"type": "delta", "text": text}
+
+            final = await stream.get_final_message()
+            yield {
+                "type": "end",
+                "input_tokens": final.usage.input_tokens,
+                "output_tokens": final.usage.output_tokens,
+            }
+        return
+
+    # Path con tools: loop hasta que el modelo no pida más tools.
+    total_input = 0
+    total_output = 0
+
+    for _ in range(MAX_TOOL_ITERATIONS):
+        async with client.messages.stream(
+            model=settings.ANTHROPIC_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            tools=tools,
+            messages=messages,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield {"type": "delta", "text": text}
+
+            final = await stream.get_final_message()
+            total_input += final.usage.input_tokens
+            total_output += final.usage.output_tokens
+
+        # Recolectar bloques: texto que ya emitimos por delta + tool_uses.
+        tool_uses: list[Any] = []
+        assistant_blocks: list[dict] = []
+        for b in final.content:
+            btype = getattr(b, "type", None)
+            if btype == "text":
+                assistant_blocks.append({"type": "text", "text": b.text or ""})
+            elif btype == "tool_use":
+                assistant_blocks.append(
+                    {
+                        "type": "tool_use",
+                        "id": b.id,
+                        "name": b.name,
+                        "input": b.input or {},
+                    }
+                )
+                tool_uses.append(b)
+
+        # Si no llamó tools, terminamos.
+        if final.stop_reason != "tool_use" or not tool_uses:
+            break
+
+        # Ejecutar tools en serie. Si una falla, devolvemos el error como
+        # parte del tool_result (el modelo lo lee y puede compensar).
+        messages.append({"role": "assistant", "content": assistant_blocks})
+        tool_result_blocks: list[dict] = []
+        for tu in tool_uses:
+            inputs = tu.input or {}
+            yield {"type": "tool_use", "name": tu.name, "input": inputs}
+            try:
+                result = await tool_runner(tu.name, inputs)
+            except Exception as e:
+                logger.exception("tool_runner falló para %s", tu.name)
+                result = {"error": f"Tool {tu.name} crashed: {e}"}
+            yield {"type": "tool_result", "name": tu.name, "result": result}
+            tool_result_blocks.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": tu.id,
+                    "content": json.dumps(result, ensure_ascii=False, default=str),
+                }
+            )
+        messages.append({"role": "user", "content": tool_result_blocks})
+
+    yield {
+        "type": "end",
+        "input_tokens": total_input,
+        "output_tokens": total_output,
+    }

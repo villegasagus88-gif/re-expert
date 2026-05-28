@@ -39,7 +39,7 @@ window.RE_CONFIG = {
   var isLocalhost = (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0');
 
   if (!isLocalhost) {
-    window.RE_CONFIG.API_BASE = '';
+    window.RE_CONFIG.API_BASE = 'https://re-expert-production.up.railway.app';
     return;
   }
 
