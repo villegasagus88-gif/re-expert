@@ -1,28 +1,58 @@
 """
-News endpoint: GET /api/news.
+News endpoints.
 
-Lee noticias del bucket Supabase Storage `knowledge/noticias/` y las
-devuelve paginadas y ordenadas por fecha desc. La autenticación se
-exige (mismas credenciales que el resto de la app) para que no sea
-público; el contenido es curado y se sirve únicamente a usuarios
-autenticados.
+Tres fuentes de noticias, cada una con su tab en el frontend:
+
+  GET /api/news              → "Últimas" (feed cronológico desde
+                                Supabase Storage bucket knowledge/noticias/).
+                                Real-time, low-churn pero actualizable
+                                sin redeploy.
+  GET /api/news/destacadas   → "Destacadas" (hero + cards curadas).
+                                Servido desde backend/data/news/destacadas.json.
+                                Cambia con releases (curación editorial).
+  GET /api/news/opinion      → "Opinión" (testimonios de analistas).
+                                Servido desde backend/data/news/opinion.json.
+                                Curación trimestral típica.
+
+La separación es por TIPO DE CONTENIDO: "Últimas" requiere refresco
+frecuente y muchos ítems → bucket. "Destacadas" y "Opinión" son
+contenido editorial fijo → JSON versionado.
 """
-from api.schemas.news import NewsResponse
+import json
+from functools import lru_cache
+from pathlib import Path
+
+from api.schemas.news import NewsResponse, OpinionResponse, SpotlightResponse
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
 from services.news_service import list_news
 
 router = APIRouter(prefix="/api/news", tags=["news"])
 
+_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "news"
+_DESTACADAS_PATH = _DATA_DIR / "destacadas.json"
+_OPINION_PATH = _DATA_DIR / "opinion.json"
+
+
+@lru_cache(maxsize=2)
+def _load_json(path: str) -> dict:
+    """Cache en memoria — el contenido es estático entre deploys."""
+    p = Path(path)
+    if not p.exists():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Archivo de noticias no disponible: {p.name}",
+        )
+    with open(p, encoding="utf-8") as f:
+        return json.load(f)
+
 
 @router.get(
     "",
     response_model=NewsResponse,
-    summary="Listar noticias del knowledge base",
-    responses={
-        401: {"description": "Token inválido o ausente"},
-    },
+    summary="Tab 'Últimas': feed cronológico desde Supabase Storage",
+    responses={401: {"description": "Token inválido o ausente"}},
 )
 async def get_news(
     page: int = Query(1, ge=1, description="Página (1-indexed)"),
@@ -33,3 +63,31 @@ async def get_news(
     _user: User = Depends(get_current_user),
 ) -> NewsResponse:
     return await list_news(page=page, per_page=per_page, category=category)
+
+
+@router.get(
+    "/destacadas",
+    response_model=SpotlightResponse,
+    summary="Tab 'Destacadas': hero + cards + feed curados editorialmente",
+    responses={
+        401: {"description": "Token inválido o ausente"},
+        503: {"description": "Archivo de destacadas no disponible"},
+    },
+)
+async def get_destacadas(_user: User = Depends(get_current_user)) -> SpotlightResponse:
+    data = _load_json(str(_DESTACADAS_PATH))
+    return SpotlightResponse(**data)
+
+
+@router.get(
+    "/opinion",
+    response_model=OpinionResponse,
+    summary="Tab 'Opinión': testimonios de analistas y referentes",
+    responses={
+        401: {"description": "Token inválido o ausente"},
+        503: {"description": "Archivo de opinión no disponible"},
+    },
+)
+async def get_opinion(_user: User = Depends(get_current_user)) -> OpinionResponse:
+    data = _load_json(str(_OPINION_PATH))
+    return OpinionResponse(**data)

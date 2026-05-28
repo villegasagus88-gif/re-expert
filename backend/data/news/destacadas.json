@@ -1,0 +1,80 @@
+{
+  "updated_at": "2026-04-04",
+  "takeaway": {
+    "icon": "⚡",
+    "title": "Lectura rápida del momento",
+    "text": "El BCRA bajó la tasa de referencia 200 puntos. Los créditos hipotecarios UVA se abaratan. Cemento y hierro siguen al alza por presión energética. Se espera aumento de demanda en segundo semestre."
+  },
+  "categories": [
+    {"id": "todas", "label": "Todas"},
+    {"id": "macro", "label": "Macro"},
+    {"id": "mercado", "label": "Mercado"},
+    {"id": "costos", "label": "Costos"},
+    {"id": "financiacion", "label": "Financiación"},
+    {"id": "regulacion", "label": "Regulación"}
+  ],
+  "hero": [
+    {
+      "category": "macro",
+      "title": "El BCRA reduce la tasa de política monetaria al 29%: impacto directo en créditos hipotecarios y financiación de obra",
+      "excerpt": "La decisión del Banco Central de bajar 200 puntos la tasa de referencia genera un efecto cascada en el costo de financiamiento. Los créditos hipotecarios UVA podrían reducir su tasa hasta 2 puntos, reactivando la demanda de vivienda nueva en AMBA y Córdoba.",
+      "impact": "↑ Impacto positivo en financiación y demanda",
+      "impact_kind": "positive",
+      "source": "Ámbito Financiero",
+      "when": "Hoy, 09:45",
+      "featured": true
+    },
+    {
+      "category": "costos",
+      "title": "Cemento y hierro acumulan +17% en el trimestre: presión por tarifas energéticas",
+      "excerpt": "",
+      "impact": "↑ Impacto alto en presupuestos de obra",
+      "impact_kind": "high",
+      "source": "Área Tres",
+      "when": "Hoy, 08:20",
+      "featured": false
+    },
+    {
+      "category": "mercado",
+      "title": "Ventas de departamentos en pozo crecen 23% interanual en CABA",
+      "excerpt": "",
+      "impact": "↑ Señal positiva para desarrolladores",
+      "impact_kind": "positive",
+      "source": "Reporte Inmobiliario",
+      "when": "Ayer",
+      "featured": false
+    }
+  ],
+  "feed": [
+    {
+      "category": "financiacion",
+      "title": "Banco Nación lanza línea de crédito puente para desarrolladores a tasa bonificada",
+      "subtitle": "Hasta $150M por proyecto, plazo 24 meses, tasa Badlar +3%. Destinado a obras con avance mínimo de 30%.",
+      "meta": "Infobae · Hoy, 11:30"
+    },
+    {
+      "category": "regulacion",
+      "title": "CABA modifica código urbanístico: aumenta FOT en corredores de altura",
+      "subtitle": "Las avenidas principales de Caballito, Flores y Villa Urquiza pasan de FOT 3.5 a 4.2. Genera oportunidades en parcelas subutilizadas.",
+      "meta": "Clarín ARQ · Ayer"
+    },
+    {
+      "category": "costos",
+      "title": "Índice CAC de marzo: costo de construcción sube 4.8% mensual",
+      "subtitle": "Acumula 18.2% en el primer trimestre. Mano de obra y materiales eléctricos lideran el aumento.",
+      "meta": "CAC · 02 Abr"
+    },
+    {
+      "category": "mercado",
+      "title": "Rosario: se reactiva la demanda de lotes en zona norte tras extensión del Metrobús",
+      "subtitle": "Precios de tierra subieron 15% en 6 meses en el corredor noroeste.",
+      "meta": "La Capital · 01 Abr"
+    },
+    {
+      "category": "macro",
+      "title": "FMI mejora proyección de crecimiento de Argentina a 5.2% para 2026",
+      "subtitle": "La revisión al alza impulsa la confianza inversora en real estate.",
+      "meta": "Reuters · 31 Mar"
+    }
+  ]
+}

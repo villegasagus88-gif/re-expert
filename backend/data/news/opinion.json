@@ -1,0 +1,42 @@
+{
+  "updated_at": "2026-04-04",
+  "takeaway": {
+    "icon": "🎯",
+    "title": "Consenso de analistas — Abril 2026",
+    "text": "Los principales economistas ven un segundo semestre más dinámico para real estate: baja de tasas, estabilidad cambiaria y reactivación del crédito hipotecario como drivers principales."
+  },
+  "cards": [
+    {
+      "avatar_initials": "MC",
+      "avatar_class": "av1",
+      "name": "Martín Castellanos",
+      "role": "Economista jefe — Banco Galicia",
+      "quote": "La baja de tasas va a generar un efecto multiplicador en el sector. Esperamos que los créditos hipotecarios crezcan un 40% en volumen en el segundo semestre. Es el mejor momento en 5 años para lanzar proyectos residenciales.",
+      "date": "04 Abr 2026 · Entrevista en Ámbito"
+    },
+    {
+      "avatar_initials": "LF",
+      "avatar_class": "av2",
+      "name": "Laura Fernández",
+      "role": "Directora de Research — CBRE Argentina",
+      "quote": "El mercado de oficinas premium ya tocó piso. Vemos absorción neta positiva por primera vez en 3 años. Los desarrolladores que compraron tierra en 2024 están en posición privilegiada.",
+      "date": "03 Abr 2026 · Reporte trimestral CBRE"
+    },
+    {
+      "avatar_initials": "DR",
+      "avatar_class": "av3",
+      "name": "Diego Ruiz",
+      "role": "Presidente — Cámara Argentina de la Construcción",
+      "quote": "El costo de construcción en dólares sigue siendo competitivo, aunque la presión de tarifas energéticas es el principal riesgo. Recomendamos cerrar contratos de materiales con precio fijo para los próximos 90 días.",
+      "date": "01 Abr 2026 · Conferencia CAC"
+    },
+    {
+      "avatar_initials": "SP",
+      "avatar_class": "av4",
+      "name": "Soledad Puente",
+      "role": "Analista macro — Consultora Ecolatina",
+      "quote": "Con inflación debajo del 3% mensual y brecha cambiaria mínima, el escenario para inversión en ladrillo es el más favorable desde 2017. La clave es la sostenibilidad fiscal del segundo semestre.",
+      "date": "31 Mar 2026 · Informe semanal"
+    }
+  ]
+}

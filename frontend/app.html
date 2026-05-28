@@ -1123,101 +1123,13 @@ select.pay-form-input{cursor:pointer}
             <button class="section-tab" data-news-tab="opinion">Opinión</button>
           </div>
 
-          <!-- TAB: DESTACADAS -->
+          <!-- TAB: DESTACADAS — contenido dinámico vía loadNewsDestacadas() -->
           <div id="newsTabDestacadas" class="news-tab-content">
-
-            <!-- Takeaway bar -->
-            <div class="news-takeaway">
-              <span class="news-takeaway-icon">⚡</span>
-              <div class="news-takeaway-text"><strong>Lectura rápida del momento</strong>El BCRA bajó la tasa de referencia 200 puntos. Los créditos hipotecarios UVA se abaratan. Cemento y hierro siguen al alza por presión energética. Se espera aumento de demanda en segundo semestre.</div>
-            </div>
-
-            <!-- Category filters -->
-            <div class="news-filters">
-              <button class="news-filter active" data-category="todas">Todas</button>
-              <button class="news-filter" data-category="macro">Macro</button>
-              <button class="news-filter" data-category="mercado">Mercado</button>
-              <button class="news-filter" data-category="costos">Costos</button>
-              <button class="news-filter" data-category="financiacion">Financiación</button>
-              <button class="news-filter" data-category="regulacion">Regulación</button>
-            </div>
-
-            <!-- Hero cards -->
-            <div class="news-hero">
-              <div class="news-card news-card-featured" data-cat="macro">
-                <div class="news-card-chip chip-macro">Macro</div>
-                <div class="news-card-title">El BCRA reduce la tasa de política monetaria al 29%: impacto directo en créditos hipotecarios y financiación de obra</div>
-                <div class="news-card-excerpt">La decisión del Banco Central de bajar 200 puntos la tasa de referencia genera un efecto cascada en el costo de financiamiento. Los créditos hipotecarios UVA podrían reducir su tasa hasta 2 puntos, reactivando la demanda de vivienda nueva en AMBA y Córdoba.</div>
-                <div class="news-card-impact impact-positive">↑ Impacto positivo en financiación y demanda</div>
-                <div class="news-card-meta"><span class="news-card-source">Ámbito Financiero</span><span>·</span><span>Hoy, 09:45</span></div>
-              </div>
-              <div class="news-card" data-cat="costos">
-                <div class="news-card-chip chip-costos">Costos</div>
-                <div class="news-card-title">Cemento y hierro acumulan +17% en el trimestre: presión por tarifas energéticas</div>
-                <div class="news-card-impact impact-high">↑ Impacto alto en presupuestos de obra</div>
-                <div class="news-card-meta"><span class="news-card-source">Área Tres</span><span>·</span><span>Hoy, 08:20</span></div>
-              </div>
-              <div class="news-card" data-cat="mercado">
-                <div class="news-card-chip chip-mercado">Mercado</div>
-                <div class="news-card-title">Ventas de departamentos en pozo crecen 23% interanual en CABA</div>
-                <div class="news-card-impact impact-positive">↑ Señal positiva para desarrolladores</div>
-                <div class="news-card-meta"><span class="news-card-source">Reporte Inmobiliario</span><span>·</span><span>Ayer</span></div>
-              </div>
-            </div>
-
-            <!-- More cards -->
-            <div class="section-block">
-              <div class="section-block-title">También importante</div>
-              <div class="news-feed">
-                <div class="news-feed-item" data-cat="financiacion">
-                  <div class="news-feed-num">01</div>
-                  <div class="news-feed-body">
-                    <div class="news-card-chip chip-financiacion" style="margin-bottom:4px">Financiación</div>
-                    <div class="news-feed-title">Banco Nación lanza línea de crédito puente para desarrolladores a tasa bonificada</div>
-                    <div class="news-feed-sub">Hasta $150M por proyecto, plazo 24 meses, tasa Badlar +3%. Destinado a obras con avance mínimo de 30%.</div>
-                    <div class="news-feed-meta">Infobae · Hoy, 11:30</div>
-                  </div>
-                </div>
-                <div class="news-feed-item" data-cat="regulacion">
-                  <div class="news-feed-num">02</div>
-                  <div class="news-feed-body">
-                    <div class="news-card-chip chip-regulacion" style="margin-bottom:4px">Regulación</div>
-                    <div class="news-feed-title">CABA modifica código urbanístico: aumenta FOT en corredores de altura</div>
-                    <div class="news-feed-sub">Las avenidas principales de Caballito, Flores y Villa Urquiza pasan de FOT 3.5 a 4.2. Genera oportunidades en parcelas subutilizadas.</div>
-                    <div class="news-feed-meta">Clarín ARQ · Ayer</div>
-                  </div>
-                </div>
-                <div class="news-feed-item" data-cat="costos">
-                  <div class="news-feed-num">03</div>
-                  <div class="news-feed-body">
-                    <div class="news-card-chip chip-costos" style="margin-bottom:4px">Costos</div>
-                    <div class="news-feed-title">Índice CAC de marzo: costo de construcción sube 4.8% mensual</div>
-                    <div class="news-feed-sub">Acumula 18.2% en el primer trimestre. Mano de obra y materiales eléctricos lideran el aumento.</div>
-                    <div class="news-feed-meta">CAC · 02 Abr</div>
-                  </div>
-                </div>
-                <div class="news-feed-item" data-cat="mercado">
-                  <div class="news-feed-num">04</div>
-                  <div class="news-feed-body">
-                    <div class="news-card-chip chip-mercado" style="margin-bottom:4px">Mercado</div>
-                    <div class="news-feed-title">Rosario: se reactiva la demanda de lotes en zona norte tras extensión del Metrobús</div>
-                    <div class="news-feed-sub">Precios de tierra subieron 15% en 6 meses en el corredor noroeste.</div>
-                    <div class="news-feed-meta">La Capital · 01 Abr</div>
-                  </div>
-                </div>
-                <div class="news-feed-item" data-cat="macro">
-                  <div class="news-feed-num">05</div>
-                  <div class="news-feed-body">
-                    <div class="news-card-chip chip-macro" style="margin-bottom:4px">Macro</div>
-                    <div class="news-feed-title">FMI mejora proyección de crecimiento de Argentina a 5.2% para 2026</div>
-                    <div class="news-feed-sub">La revisión al alza impulsa la confianza inversora en real estate.</div>
-                    <div class="news-feed-meta">Reuters · 31 Mar</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button class="btn-primary" id="aiNewsSummary">
+            <div id="newsDestacadasTakeaway"></div>
+            <div id="newsDestacadasFilters" class="news-filters"></div>
+            <div id="newsDestacadasHero" class="news-hero"></div>
+            <div id="newsDestacadasFeed"></div>
+            <button class="btn-primary" id="aiNewsSummary" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               Resumen IA de la semana
             </button>
@@ -1304,45 +1216,11 @@ select.pay-form-input{cursor:pointer}
             </div>
           </div>
 
-          <!-- TAB: OPINIÓN -->
+          <!-- TAB: OPINIÓN — contenido dinámico vía loadNewsOpinion() -->
           <div id="newsTabOpinion" class="news-tab-content" style="display:none">
-            <div class="news-takeaway">
-              <span class="news-takeaway-icon">🎯</span>
-              <div class="news-takeaway-text"><strong>Consenso de analistas — Abril 2026</strong>Los principales economistas ven un segundo semestre más dinámico para real estate: baja de tasas, estabilidad cambiaria y reactivación del crédito hipotecario como drivers principales.</div>
-            </div>
-
-            <div class="opinion-grid">
-              <div class="opinion-card">
-                <div class="opinion-avatar av1">MC</div>
-                <div class="opinion-name">Martín Castellanos</div>
-                <div class="opinion-role">Economista jefe — Banco Galicia</div>
-                <div class="opinion-quote">"La baja de tasas va a generar un efecto multiplicador en el sector. Esperamos que los créditos hipotecarios crezcan un 40% en volumen en el segundo semestre. Es el mejor momento en 5 años para lanzar proyectos residenciales."</div>
-                <div class="opinion-date">04 Abr 2026 · Entrevista en Ámbito</div>
-              </div>
-              <div class="opinion-card">
-                <div class="opinion-avatar av2">LF</div>
-                <div class="opinion-name">Laura Fernández</div>
-                <div class="opinion-role">Directora de Research — CBRE Argentina</div>
-                <div class="opinion-quote">"El mercado de oficinas premium ya tocó piso. Vemos absorción neta positiva por primera vez en 3 años. Los desarrolladores que compraron tierra en 2024 están en posición privilegiada."</div>
-                <div class="opinion-date">03 Abr 2026 · Reporte trimestral CBRE</div>
-              </div>
-              <div class="opinion-card">
-                <div class="opinion-avatar av3">DR</div>
-                <div class="opinion-name">Diego Ruiz</div>
-                <div class="opinion-role">Presidente — Cámara Argentina de la Construcción</div>
-                <div class="opinion-quote">"El costo de construcción en dólares sigue siendo competitivo, aunque la presión de tarifas energéticas es el principal riesgo. Recomendamos cerrar contratos de materiales con precio fijo para los próximos 90 días."</div>
-                <div class="opinion-date">01 Abr 2026 · Conferencia CAC</div>
-              </div>
-              <div class="opinion-card">
-                <div class="opinion-avatar av4">SP</div>
-                <div class="opinion-name">Soledad Puente</div>
-                <div class="opinion-role">Analista macro — Consultora Ecolatina</div>
-                <div class="opinion-quote">"Con inflación debajo del 3% mensual y brecha cambiaria mínima, el escenario para inversión en ladrillo es el más favorable desde 2017. La clave es la sostenibilidad fiscal del segundo semestre."</div>
-                <div class="opinion-date">31 Mar 2026 · Informe semanal</div>
-              </div>
-            </div>
-
-            <button class="btn-primary" id="aiOpinionSummary">
+            <div id="newsOpinionTakeaway"></div>
+            <div id="newsOpinionGrid" class="opinion-grid"></div>
+            <button class="btn-primary" id="aiOpinionSummary" style="display:none">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               Síntesis IA de opiniones
             </button>
@@ -1642,6 +1520,14 @@ function switchView(v){
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
   if(v==='academia')loadAcademia();
+  if(v==='noticias'){
+    // Re-disparar la tab activa por si cambió desde la última visita.
+    const activeNewsTab=document.querySelector('[data-news-tab].active');
+    const which=activeNewsTab?activeNewsTab.dataset.newsTab:'destacadas';
+    if(which==='destacadas')loadNewsDestacadas();
+    else if(which==='opinion')loadNewsOpinion();
+    else if(which==='ultimas')loadNews({append:false}).catch(()=>{});
+  }
 }
 
 // Vuelve a la vista anterior (gesto swipe-right o navegación programática).
@@ -3129,10 +3015,16 @@ function initNoticiasTabs(){
       $$('[data-news-tab]').forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
       $$('.news-tab-content').forEach(c=>c.style.display='none');
-      $(`#newsTab${tab.dataset.newsTab.charAt(0).toUpperCase()+tab.dataset.newsTab.slice(1)}`).style.display='';
+      const which=tab.dataset.newsTab;
+      $(`#newsTab${which.charAt(0).toUpperCase()+which.slice(1)}`).style.display='';
+      // Lazy load del contenido de la tab recién activada (la primera vez,
+      // y después usa caché en memoria — el JSON es estático).
+      if(which==='destacadas')loadNewsDestacadas();
+      else if(which==='opinion')loadNewsOpinion();
     });
   });
-  // Category filters
+  // Category filters (estáticos del feed Últimas — los de Destacadas se
+  // bindean al renderizar porque las categorías vienen del backend).
   $$('.news-filters').forEach(filterGroup=>{
     filterGroup.querySelectorAll('.news-filter').forEach(btn=>{
       btn.addEventListener('click',()=>{
@@ -3153,6 +3045,8 @@ function initNoticiasTabs(){
     loadMoreBtn.addEventListener('click',()=>loadNews({append:true}));
   }
   loadNews({append:false}).catch(()=>{ /* mantiene mock si falla */ });
+  // Carga inicial de Destacadas (tab activa por default).
+  loadNewsDestacadas().catch(()=>{});
 }
 
 // Estado de paginación de Noticias.
@@ -3232,6 +3126,190 @@ async function loadNews({append=false}={}){
   }finally{
     _newsState.loading=false;
     if(btn)btn.disabled=false;
+  }
+}
+
+// ── Tabs "Destacadas" + "Opinión" ──────────────────────────────────
+// Mismo patrón que loadAcademia: cargar JSON una sola vez (lazy on tab
+// click), cachear en memoria, render con esc() defensa-en-profundidad.
+const newsDestacadasState={data:null,loaded:false,loading:false};
+const newsOpinionState={data:null,loaded:false,loading:false};
+
+function _newsCatSafe(c){
+  const cat=(c||'').toLowerCase();
+  return NEWS_KNOWN_CATS.includes(cat)?cat:'';
+}
+
+function _newsHeroCardHTML(card){
+  const cat=_newsCatSafe(card.category);
+  const chipLabel=cat?cat.charAt(0).toUpperCase()+cat.slice(1):esc(card.category||'');
+  const kind=['positive','high','warning','negative'].includes(card.impact_kind)?card.impact_kind:'positive';
+  const cls='news-card'+(card.featured?' news-card-featured':'');
+  const excerpt=card.excerpt?`<div class="news-card-excerpt">${esc(card.excerpt)}</div>`:'';
+  const impact=card.impact?`<div class="news-card-impact impact-${kind}">${esc(card.impact)}</div>`:'';
+  const source=card.source?`<span class="news-card-source">${esc(card.source)}</span>`:'';
+  const when=card.when?`<span>${esc(card.when)}</span>`:'';
+  const sep=(card.source&&card.when)?'<span>·</span>':'';
+  const meta=(source||when)?`<div class="news-card-meta">${source}${sep}${when}</div>`:'';
+  return `<div class="${cls}" data-cat="${esc(cat||'todas')}">
+    <div class="news-card-chip chip-${esc(cat||'macro')}">${esc(chipLabel)}</div>
+    <div class="news-card-title">${esc(card.title||'')}</div>
+    ${excerpt}
+    ${impact}
+    ${meta}
+  </div>`;
+}
+
+function _newsFeedNumHTML(item,idx){
+  const cat=_newsCatSafe(item.category);
+  const chipLabel=cat?cat.charAt(0).toUpperCase()+cat.slice(1):esc(item.category||'');
+  const sub=item.subtitle?`<div class="news-feed-sub">${esc(item.subtitle)}</div>`:'';
+  const meta=item.meta?`<div class="news-feed-meta">${esc(item.meta)}</div>`:'';
+  const chip=cat?`<div class="news-card-chip chip-${cat}" style="margin-bottom:4px">${esc(chipLabel)}</div>`:'';
+  return `<div class="news-feed-item" data-cat="${esc(cat||'todas')}">
+    <div class="news-feed-num">${String(idx+1).padStart(2,'0')}</div>
+    <div class="news-feed-body">
+      ${chip}
+      <div class="news-feed-title">${esc(item.title||'')}</div>
+      ${sub}
+      ${meta}
+    </div>
+  </div>`;
+}
+
+function _renderNewsDestacadas(data){
+  const take=$('#newsDestacadasTakeaway');
+  const filt=$('#newsDestacadasFilters');
+  const hero=$('#newsDestacadasHero');
+  const feed=$('#newsDestacadasFeed');
+  const btnAI=$('#aiNewsSummary');
+  if(!take||!filt||!hero||!feed)return;
+  // Takeaway
+  if(data.takeaway){
+    take.innerHTML=`<div class="news-takeaway">
+      <span class="news-takeaway-icon">${esc(data.takeaway.icon||'⚡')}</span>
+      <div class="news-takeaway-text"><strong>${esc(data.takeaway.title||'')}</strong>${esc(data.takeaway.text||'')}</div>
+    </div>`;
+  }else{take.innerHTML='';}
+  // Category chips
+  const cats=Array.isArray(data.categories)?data.categories:[];
+  filt.innerHTML=cats.map((c,i)=>`<button class="news-filter${i===0?' active':''}" data-category="${esc(c.id||'todas')}">${esc(c.label||'')}</button>`).join('');
+  // Hero
+  const heroCards=Array.isArray(data.hero)?data.hero:[];
+  hero.innerHTML=heroCards.map(_newsHeroCardHTML).join('');
+  // Feed numerado ("También importante")
+  const feedItems=Array.isArray(data.feed)?data.feed:[];
+  if(feedItems.length){
+    feed.innerHTML=`<div class="section-block">
+      <div class="section-block-title">También importante</div>
+      <div class="news-feed">${feedItems.map(_newsFeedNumHTML).join('')}</div>
+    </div>`;
+  }else{feed.innerHTML='';}
+  // Bind category filter behavior (mismo patrón que initNoticiasTabs).
+  filt.querySelectorAll('.news-filter').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      filt.querySelectorAll('.news-filter').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat=btn.dataset.category;
+      const container=filt.parentElement;
+      container.querySelectorAll('[data-cat]').forEach(it=>{
+        it.style.display=(cat==='todas'||it.dataset.cat===cat)?'':'none';
+      });
+    });
+  });
+  // Mostrar botón de IA si hay contenido real.
+  if(btnAI)btnAI.style.display=(heroCards.length||feedItems.length)?'':'none';
+}
+
+function _renderNewsOpinion(data){
+  const take=$('#newsOpinionTakeaway');
+  const grid=$('#newsOpinionGrid');
+  const btnAI=$('#aiOpinionSummary');
+  if(!take||!grid)return;
+  if(data.takeaway){
+    take.innerHTML=`<div class="news-takeaway">
+      <span class="news-takeaway-icon">${esc(data.takeaway.icon||'🎯')}</span>
+      <div class="news-takeaway-text"><strong>${esc(data.takeaway.title||'')}</strong>${esc(data.takeaway.text||'')}</div>
+    </div>`;
+  }else{take.innerHTML='';}
+  const cards=Array.isArray(data.cards)?data.cards:[];
+  grid.innerHTML=cards.map(c=>{
+    const av=['av1','av2','av3','av4'].includes(c.avatar_class)?c.avatar_class:'av1';
+    const role=c.role?`<div class="opinion-role">${esc(c.role)}</div>`:'';
+    const date=c.date?`<div class="opinion-date">${esc(c.date)}</div>`:'';
+    return `<div class="opinion-card">
+      <div class="opinion-avatar ${av}">${esc(c.avatar_initials||'?')}</div>
+      <div class="opinion-name">${esc(c.name||'')}</div>
+      ${role}
+      <div class="opinion-quote">${esc(c.quote||'')}</div>
+      ${date}
+    </div>`;
+  }).join('');
+  if(btnAI)btnAI.style.display=cards.length?'':'none';
+}
+
+function _newsDestacadasSkeleton(){
+  return `<div class="news-takeaway"><div class="skeleton" style="height:14px;width:70%;border-radius:3px"></div></div>
+    <div class="news-hero">
+      <div class="news-card"><div class="skeleton" style="height:14px;width:80%;border-radius:3px;margin-bottom:8px"></div><div class="skeleton" style="height:10px;width:60%;border-radius:3px"></div></div>
+      <div class="news-card"><div class="skeleton" style="height:14px;width:75%;border-radius:3px;margin-bottom:8px"></div><div class="skeleton" style="height:10px;width:55%;border-radius:3px"></div></div>
+    </div>`;
+}
+
+function _newsOpinionSkeleton(){
+  const sk='<div class="opinion-card"><div class="skeleton" style="height:40px;width:40px;border-radius:50%;margin-bottom:8px"></div><div class="skeleton" style="height:12px;width:50%;border-radius:3px;margin-bottom:6px"></div><div class="skeleton" style="height:10px;width:80%;border-radius:3px"></div></div>';
+  return sk+sk+sk+sk;
+}
+
+async function loadNewsDestacadas(force=false){
+  if(newsDestacadasState.loading)return;
+  if(newsDestacadasState.loaded&&!force){
+    _renderNewsDestacadas(newsDestacadasState.data);
+    return;
+  }
+  if(!window.REAuthService||!window.REAuthService.authFetch)return;
+  const cont=$('#newsTabDestacadas');
+  const take=$('#newsDestacadasTakeaway');
+  if(take&&!newsDestacadasState.loaded){take.innerHTML=_newsDestacadasSkeleton();}
+  newsDestacadasState.loading=true;
+  try{
+    const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
+    const r=await window.REAuthService.authFetch(`${apiBase}/api/news/destacadas`);
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    newsDestacadasState.data=await r.json();
+    newsDestacadasState.loaded=true;
+    _renderNewsDestacadas(newsDestacadasState.data);
+  }catch(e){
+    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las destacadas</div><div class="empty-desc">${esc(e.message)}</div></div>`;
+  }finally{
+    newsDestacadasState.loading=false;
+  }
+}
+
+async function loadNewsOpinion(force=false){
+  if(newsOpinionState.loading)return;
+  if(newsOpinionState.loaded&&!force){
+    _renderNewsOpinion(newsOpinionState.data);
+    return;
+  }
+  if(!window.REAuthService||!window.REAuthService.authFetch)return;
+  const take=$('#newsOpinionTakeaway');
+  const grid=$('#newsOpinionGrid');
+  if(grid&&!newsOpinionState.loaded){grid.innerHTML=_newsOpinionSkeleton();}
+  newsOpinionState.loading=true;
+  try{
+    const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
+    const r=await window.REAuthService.authFetch(`${apiBase}/api/news/opinion`);
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    newsOpinionState.data=await r.json();
+    newsOpinionState.loaded=true;
+    _renderNewsOpinion(newsOpinionState.data);
+  }catch(e){
+    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las opiniones</div><div class="empty-desc">${esc(e.message)}</div></div>`;
+  }finally{
+    newsOpinionState.loading=false;
   }
 }
 
