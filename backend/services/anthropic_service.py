@@ -329,12 +329,18 @@ async def stream_chat(
             total_output += final.usage.output_tokens
 
         # Recolectar bloques: texto que ya emitimos por delta + tool_uses.
+        # IMPORTANTE: la API de Anthropic rechaza bloques `text` vacíos en el
+        # turno siguiente (400 BadRequest). Filtramos texto vacío o solo
+        # whitespace para evitar romper la 2da iteración del loop.
         tool_uses: list[Any] = []
         assistant_blocks: list[dict] = []
         for b in final.content:
             btype = getattr(b, "type", None)
             if btype == "text":
-                assistant_blocks.append({"type": "text", "text": b.text or ""})
+                text_val = (b.text or "").strip()
+                if not text_val:
+                    continue
+                assistant_blocks.append({"type": "text", "text": b.text})
             elif btype == "tool_use":
                 assistant_blocks.append(
                     {
