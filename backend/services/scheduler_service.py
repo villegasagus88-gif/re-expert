@@ -17,14 +17,16 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from config.settings import settings
 from models.base import get_session_factory
+from models.password_reset import PasswordReset
 from models.reminder import Reminder
+from models.stripe_event import StripeEvent
 from models.user import User
 from services.notification_dispatcher import dispatch
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -80,8 +82,47 @@ async def _process_due_reminders(db: AsyncSession) -> int:
     return fired
 
 
+# Cleanup tablas con TTL natural — corre 1 vez por día desde el mismo
+# scheduler para no agregar otro proceso. Si el backend se restartea,
+# el "último run" se pierde (in-memory) y vuelve a correr el cleanup,
+# que es idempotente (DELETE WHERE expires_at < now()).
+_CLEANUP_PERIOD = timedelta(hours=24)
+_STRIPE_EVENTS_RETENTION = timedelta(days=30)
+_last_cleanup_at: datetime | None = None
+
+
+async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
+    """Borra rows con TTL natural. Devuelve cuentas por tabla.
+
+    - `password_resets` con expires_at < now() — tokens vencidos no sirven.
+    - `stripe_events` con received_at < now() - 30d — fuera de ventana
+      de re-delivery de Stripe (~3 días). 30d es más que suficiente.
+    """
+    now = datetime.now(timezone.utc)
+
+    # password_resets vencidos
+    res_pr = await db.execute(
+        delete(PasswordReset).where(PasswordReset.expires_at < now)
+    )
+    pr_deleted = res_pr.rowcount or 0
+
+    # stripe_events viejos
+    cutoff_stripe = now - _STRIPE_EVENTS_RETENTION
+    res_se = await db.execute(
+        delete(StripeEvent).where(StripeEvent.received_at < cutoff_stripe)
+    )
+    se_deleted = res_se.rowcount or 0
+
+    await db.commit()
+    return {
+        "password_resets_deleted": pr_deleted,
+        "stripe_events_deleted": se_deleted,
+    }
+
+
 async def _scheduler_loop():
     """Loop principal. Sale cuando _stop_event se setea."""
+    global _last_cleanup_at
     interval = settings.SCHEDULER_POLL_INTERVAL_SECONDS
     SessionLocal = get_session_factory()
     logger.info("Scheduler arrancado (poll cada %ss)", interval)
@@ -92,6 +133,23 @@ async def _scheduler_loop():
                 fired = await _process_due_reminders(db)
                 if fired:
                     logger.info("Scheduler disparó %d recordatorios", fired)
+
+                # Cleanup diario: corre si nunca corrió o pasaron 24h.
+                now = datetime.now(timezone.utc)
+                if (
+                    _last_cleanup_at is None
+                    or (now - _last_cleanup_at) >= _CLEANUP_PERIOD
+                ):
+                    try:
+                        stats = await _run_daily_cleanup(db)
+                        if any(stats.values()):
+                            logger.info(
+                                "Daily cleanup: %s",
+                                ", ".join(f"{k}={v}" for k, v in stats.items()),
+                            )
+                        _last_cleanup_at = now
+                    except Exception as e:
+                        logger.exception("Cleanup error: %s", e)
         except Exception as e:
             logger.exception("Scheduler tick error: %s", e)
         try:
