@@ -3,20 +3,27 @@
 // Arquitectura de prod:
 //   - Frontend en Netlify (re-expert.netlify.app o dominio custom).
 //   - Backend en Railway (re-expert-production.up.railway.app).
-//   - Netlify hace reverse-proxy de /api/* → backend (ver netlify.toml).
-//   - Por eso API_BASE='' en prod = same-origin = el browser nunca habla
-//     directo con railway.app → sin CORS, sin mixed-content issues.
+//   - El browser habla DIRECTO con Railway (no via Netlify proxy).
+//
+// ¿Por qué directo y no via Netlify reverse-proxy?
+//   - Los rewrites de Netlify a hosts externos tienen un timeout duro
+//     de ~26s. El chat con streaming SSE + KB router routinely supera
+//     ese límite (Sonnet razonando + cargando contexto del KB).
+//   - Resultado del proxy: 504 desde Netlify Edge, aunque Railway haya
+//     devuelto 200 OK. La conexión SSE se corta.
+//   - Solución: API_BASE apunta directo a Railway. CORS ya está bien
+//     configurado server-side (FRONTEND_URL incluye re-expert.netlify.app).
+//   - Trade-off: dos dominios visibles para el browser, pero a cambio
+//     conseguimos streams largos sin cortes. Histórico: af20676.
 //
 // Para local dev hay dos modos:
-//   - docker-compose con nginx (puerto :5173, también same-origin).
-//   - backend FastAPI suelto en :8000 (puerto :3000/:5500/etc del front).
-//
-// El bloque de detección al final aplica la heurística correcta.
+//   - docker-compose con nginx (puerto :5173, same-origin → API_BASE='').
+//   - backend FastAPI suelto en :8000 → API_BASE='http://localhost:8000'.
 
 window.RE_CONFIG = {
   SUPABASE_URL: 'https://uaiiqjouxlcvleiimokz.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_lPyD13RGcJG4bjJIew9z6g_cYQ9n269',
-  // Default same-origin. Override automático abajo para dev local sin proxy.
+  // En prod se setea a la URL de Railway abajo. En dev queda local.
   API_BASE: '',
   // Sentry — dejar vacío para deshabilitar. sentry.js además ignora localhost.
   SENTRY_DSN: '',
@@ -26,12 +33,12 @@ window.RE_CONFIG = {
 };
 
 // Detección automática del API_BASE:
-//   - Cualquier dominio público (Netlify, Cloudflare Tunnel, dominio custom):
-//       same-origin → API_BASE='' (el reverse proxy se encarga).
+//   - Cualquier dominio público (Netlify, Cloudflare Tunnel, custom):
+//       → Railway directo (bypass del proxy por timeout de 26s en SSE).
 //   - localhost:5173 (docker-compose nginx con proxy a /api/):
-//       same-origin → API_BASE=''.
-//   - localhost en otro puerto (dev frontend suelto, sin proxy):
-//       backend separado en :8000 → API_BASE='http://localhost:8000'.
+//       → same-origin (API_BASE='').
+//   - localhost otro puerto (dev frontend suelto):
+//       → backend separado en :8000.
 (function () {
   var loc = (typeof window !== 'undefined' && window.location) || {};
   var h = (loc.hostname || '').toLowerCase();
@@ -39,11 +46,11 @@ window.RE_CONFIG = {
   var isLocalhost = (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0');
 
   if (!isLocalhost) {
+    // Prod / cualquier dominio público → Railway directo.
     window.RE_CONFIG.API_BASE = 'https://re-expert-production.up.railway.app';
     return;
   }
 
-  // En local: si el puerto es 5173 (compose nginx) usamos same-origin,
-  // en cualquier otro puerto asumimos backend en :8000.
+  // Local: :5173 (compose nginx) = same-origin, otros = backend en :8000.
   window.RE_CONFIG.API_BASE = (port === '5173') ? '' : 'http://localhost:8000';
 })();
