@@ -184,6 +184,23 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .mem-add-row button:hover{filter:brightness(1.1)}
 .mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:16px;font-style:italic}
 
+/* ── Modal Crear Proyecto (estilo ChatGPT + paleta) ── */
+.modal.ws-modal-create{width:460px;max-width:92vw}
+.ws-create-label{display:block;font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.ws-name-field{display:flex;align-items:center;gap:10px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;padding:12px 14px;transition:border-color .15s}
+.ws-name-field:focus-within{border-color:var(--accent-brand)}
+.ws-name-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.06);transition:background .2s}
+.ws-name-field input{flex:1;background:transparent;border:none;outline:none;font-size:15px;color:var(--text-0);font-family:var(--font);padding:0}
+.ws-name-field input::placeholder{color:var(--text-3)}
+.ws-color-picker{margin-top:16px}
+.ws-color-picker-label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:8px}
+.ws-desc-field{margin-top:14px}
+.ws-desc-field textarea{width:100%;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text-1);font-family:var(--font);box-sizing:border-box;resize:vertical;min-height:48px}
+.ws-desc-field textarea:focus{outline:none;border-color:var(--accent-brand)}
+.ws-desc-field textarea::placeholder{color:var(--text-3)}
+.ws-info-box{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;background:var(--accent-brand-light);border:1px solid rgba(99,102,241,.14);border-radius:10px;font-size:12px;color:var(--text-2);line-height:1.5}
+.ws-info-box svg{flex-shrink:0;color:var(--accent-brand);margin-top:1px}
+
 /* Form rows inside workspace modal */
 .ws-form-row{margin-bottom:12px}
 .ws-form-row label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:4px}
@@ -1419,24 +1436,22 @@ select.pay-form-input{cursor:pointer}
       </div>
     </div>
 
-    <!-- Workspace create/edit Modal -->
+    <!-- Workspace create/edit Modal (estilo proyectos) -->
     <div class="modal-overlay" id="workspaceModal">
-      <div class="modal">
+      <div class="modal ws-modal-create">
         <div class="modal-header">
-          <h3 id="workspaceModalTitle">Nuevo proyecto</h3>
+          <h3 id="workspaceModalTitle">Crear proyecto</h3>
           <button class="btn-icon" id="workspaceModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body">
-          <div class="ws-form-row">
-            <label for="wsNameInput">Nombre del proyecto</label>
-            <input id="wsNameInput" type="text" maxlength="120" placeholder="Ej: Edificio Soler 4500">
+          <label class="ws-create-label" for="wsNameInput">Nombre del proyecto</label>
+          <div class="ws-name-field">
+            <span class="ws-name-dot" id="wsNameDot" style="background:#6366f1"></span>
+            <input id="wsNameInput" type="text" maxlength="120" placeholder="Ej: Edificio Soler 4500" autocomplete="off">
           </div>
-          <div class="ws-form-row">
-            <label for="wsDescInput">Descripción (opcional)</label>
-            <textarea id="wsDescInput" maxlength="500" placeholder="Tipo de obra, ubicación, etapa..."></textarea>
-          </div>
-          <div class="ws-form-row">
-            <label>Color</label>
+
+          <div class="ws-color-picker">
+            <span class="ws-color-picker-label">Color del proyecto</span>
             <div class="ws-color-row" id="wsColorRow">
               <div class="ws-color-swatch active" data-color="#6366f1" style="background:#6366f1"></div>
               <div class="ws-color-swatch" data-color="#22c55e" style="background:#22c55e"></div>
@@ -1447,10 +1462,20 @@ select.pay-form-input{cursor:pointer}
               <div class="ws-color-swatch" data-color="#ec4899" style="background:#ec4899"></div>
             </div>
           </div>
+
+          <div class="ws-desc-field">
+            <textarea id="wsDescInput" maxlength="500" placeholder="Descripción (opcional): tipo de obra, ubicación, etapa..." rows="2"></textarea>
+          </div>
+
+          <div class="ws-info-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a7 7 0 00-4 12.7V17a1 1 0 001 1h6a1 1 0 001-1v-2.3A7 7 0 0012 2z"/><path d="M9 21h6"/></svg>
+            <span>Los proyectos guardan chats y memoria propia en un solo lugar. El color ayuda a identificarlos de un vistazo.</span>
+          </div>
+
           <div class="ws-modal-actions">
-            <button class="btn-secondary" id="wsCancelBtn">Cancelar</button>
             <button class="btn-danger" id="wsDeleteBtn" style="display:none">Eliminar</button>
-            <button class="btn-primary" id="wsSaveBtn">Guardar</button>
+            <button class="btn-secondary" id="wsCancelBtn">Cancelar</button>
+            <button class="btn-primary" id="wsSaveBtn">Crear proyecto</button>
           </div>
         </div>
       </div>
@@ -1820,7 +1845,8 @@ async function loadWorkspaces(){
     const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces');
     if(!r.ok)return;
     const data=await r.json();
-    state.workspaces=data.items||[];
+    // El endpoint devuelve una lista directa; toleramos también {items:[...]}.
+    state.workspaces=Array.isArray(data)?data:(data.items||[]);
     renderWorkspaces();
   }catch(e){console.error('loadWorkspaces:',e)}
 }
@@ -1876,16 +1902,21 @@ function updateWsActiveBar(){
     bar.classList.remove('show');
   }
 }
+// Aplica un color: actualiza estado, swatch activo y el dot grande del input.
+function setWorkspaceColor(color){
+  state._editingColor=color;
+  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>s.classList.toggle('active',s.dataset.color===color));
+  const dot=document.getElementById('wsNameDot');
+  if(dot)dot.style.background=color;
+}
 function openWorkspaceModal(id){
   state._editingWorkspaceId=id||null;
   const w=id?state.workspaces.find(x=>x.id===id):null;
-  document.getElementById('workspaceModalTitle').textContent=id?'Editar proyecto':'Nuevo proyecto';
+  document.getElementById('workspaceModalTitle').textContent=id?'Editar proyecto':'Crear proyecto';
+  document.getElementById('wsSaveBtn').textContent=id?'Guardar cambios':'Crear proyecto';
   document.getElementById('wsNameInput').value=w?.name||'';
   document.getElementById('wsDescInput').value=w?.description||'';
-  state._editingColor=w?.color||'#6366f1';
-  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>{
-    s.classList.toggle('active',s.dataset.color===state._editingColor);
-  });
+  setWorkspaceColor(w?.color||'#6366f1');
   document.getElementById('wsDeleteBtn').style.display=id?'':'none';
   document.getElementById('workspaceModal').classList.add('active');
   setTimeout(()=>document.getElementById('wsNameInput').focus(),50);
@@ -4097,11 +4128,9 @@ function init(){
   document.getElementById('wsDeleteBtn').addEventListener('click',deleteWorkspace);
   document.getElementById('workspaceModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWorkspaceModal()});
   document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>{
-    s.addEventListener('click',()=>{
-      state._editingColor=s.dataset.color;
-      document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(x=>x.classList.toggle('active',x===s));
-    });
+    s.addEventListener('click',()=>setWorkspaceColor(s.dataset.color));
   });
+  document.getElementById('wsNameInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveWorkspace()}});
   // Active workspace bar actions
   document.getElementById('wsExitBtn').addEventListener('click',exitWorkspace);
   document.getElementById('wsEditBtn').addEventListener('click',()=>{if(state.activeWorkspace)openWorkspaceModal(state.activeWorkspace.id)});
