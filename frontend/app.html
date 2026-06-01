@@ -1772,6 +1772,9 @@ function handleTitleTap(){
 }
 function newConversation(){
   if(state.isStreaming)return;
+  // "Nuevo chat" siempre es un chat suelto: si estabas en un proyecto, salís de él.
+  // Para abrir un chat dentro de un proyecto, se toca el proyecto en el subnav.
+  if(state.activeWorkspace)exitWorkspace();
   state.currentConversation=null;state.messages=[];
   els.messagesEl.innerHTML='';
   renderHistory();showWelcome();
@@ -4146,7 +4149,7 @@ function init(){
   document.getElementById('memoryAddBtn').addEventListener('click',addMemoryItem);
   $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
-  $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>switchView(b.dataset.view))});
+  $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
   initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();initOnboarding();
