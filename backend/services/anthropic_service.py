@@ -334,14 +334,28 @@ async def build_system_prompt(
         profile_items or [],
         PROFILE_MEMORY_MAX_CHARS,
     )
-    ws_title = (
-        f"Contexto del proyecto activo: {workspace_name}"
-        if workspace_name
-        else "Contexto del proyecto activo"
-    )
-    workspace_block = _format_memory_block(
-        ws_title, workspace_memory or [], WORKSPACE_MEMORY_MAX_CHARS
-    )
+    # Si hay proyecto activo, SIEMPRE anunciamos su nombre — aunque todavía
+    # no tenga memoria. Así el bot sabe en qué proyecto está, lo trata como
+    # "el proyecto" y guarda datos nuevos con remember(scope='workspace').
+    workspace_block = ""
+    if workspace_name:
+        ws_title = f"Contexto del proyecto activo: {workspace_name}"
+        if workspace_memory:
+            workspace_block = _format_memory_block(
+                ws_title, workspace_memory, WORKSPACE_MEMORY_MAX_CHARS
+            )
+        else:
+            workspace_block = (
+                f"## {ws_title}\n"
+                f"Estás trabajando dentro del proyecto **{workspace_name}**. "
+                f"Su memoria todavía está vacía. Cuando el usuario comparta datos "
+                f"clave del proyecto (cliente, monto, dirección, decisión, etc.), "
+                f"guardalos con la tool remember usando scope='workspace'."
+            )
+    elif workspace_memory:
+        workspace_block = _format_memory_block(
+            "Contexto del proyecto activo", workspace_memory, WORKSPACE_MEMORY_MAX_CHARS
+        )
 
     memory_section = "\n\n".join(b for b in (profile_block, workspace_block) if b)
 
