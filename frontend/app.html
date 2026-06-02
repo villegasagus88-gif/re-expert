@@ -2055,6 +2055,15 @@ async function renderWorkspaceMemPanel(){
   if(!items.length){cont.innerHTML='<div class="wsv-empty">Sin memoria guardada todavía. El bot la irá completando, o podés agregarla desde “Administrar memoria”.</div>';return}
   cont.innerHTML=items.map(m=>`<div class="wsv-mem-item"><span class="wsv-mem-key">${esc(m.key)}</span><span class="wsv-mem-val">${esc(m.value)}</span></div>`).join('');
 }
+// Refresca la UI de memoria si está visible (tras un guardado automático del bot).
+function refreshMemoryIfOpen(){
+  const memPanel=document.getElementById('wsvPanelMemoria');
+  if(state.currentView==='workspace'&&memPanel&&memPanel.style.display!=='none')renderWorkspaceMemPanel();
+  const modal=document.getElementById('memoryModal');
+  if(modal&&modal.classList.contains('active')&&state.activeWorkspace){
+    loadWorkspaceMemory(state.activeWorkspace.id).then(items=>{state._currentMemoryItems=items;renderMemoryList(items)});
+  }
+}
 function exitWorkspace(){
   state.activeWorkspace=null;
   state.currentConversation=null;state.messages=[];
@@ -2413,12 +2422,22 @@ function prettyToolLabel(name,source){
   }
   return base;
 }
+function _memKeyPretty(input){
+  const k=(input&&input.key)||'';
+  return k?k.replace(/[_\-.]+/g,' ').trim():'';
+}
 function pushToolUse(name,input){
   const trace=$('#streamMsg .tool-trace');if(!trace)return;
   trace.style.display='';
   const row=document.createElement('div');
   row.dataset.tool=name;
-  row.innerHTML=`<span class="tool-dot">●</span> Consultando ${esc(prettyToolLabel(name,input&&input.url))}…`;
+  if(name==='remember'){
+    const k=_memKeyPretty(input);
+    row.dataset.memkey=k;
+    row.innerHTML=`<span class="tool-dot">●</span> Guardando en memoria${k?': '+esc(k):''}…`;
+  }else{
+    row.innerHTML=`<span class="tool-dot">●</span> Consultando ${esc(prettyToolLabel(name,input&&input.url))}…`;
+  }
   trace.appendChild(row);scrollBottom();
 }
 function markToolDone(name,ok,source){
@@ -2427,6 +2446,14 @@ function markToolDone(name,ok,source){
   const rows=Array.from(trace.querySelectorAll(`[data-tool="${name}"]:not(.done)`));
   const row=rows[rows.length-1];if(!row)return;
   row.classList.add('done');
+  if(name==='remember'){
+    const k=row.dataset.memkey||'';
+    row.innerHTML=(ok?'💾 Recordado'+(k?': '+esc(k):''):'⚠️ No se pudo guardar');
+    row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
+    // Si el panel de memoria del proyecto está abierto, lo refrescamos.
+    if(ok&&state.activeWorkspace&&typeof refreshMemoryIfOpen==='function')refreshMemoryIfOpen();
+    return;
+  }
   const label=prettyToolLabel(name,source);
   row.innerHTML=(ok?'✓':'⚠️')+' '+esc(label);
   row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
