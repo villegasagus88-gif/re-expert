@@ -14,6 +14,8 @@ workspaces o memoria de otro.
 - PATCH  /api/workspaces/{id}/memory/{mid}   → editar item
 - DELETE /api/workspaces/{id}/memory/{mid}   → borrar item
 """
+import io
+import re
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -27,11 +29,13 @@ from api.schemas.workspace import (
     WorkspaceUpdate,
 )
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
 from models.user import User
 from models.workspace import Workspace, WorkspaceMemory
+from services.memory_export import render_memory_csv, render_memory_pdf
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -248,6 +252,60 @@ async def list_memory(
     )
     items = list(result.scalars().all())
     return MemoryListOut(items=[_mem_to_out(i) for i in items])
+
+
+def _slugify(name: str) -> str:
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", (name or "proyecto").strip().lower())
+    return s.strip("-")[:40] or "proyecto"
+
+
+@router.get(
+    "/{workspace_id}/export",
+    summary="Exportar la memoria del proyecto (PDF o CSV) para una reunión",
+    responses={
+        404: {"description": "Workspace no encontrado"},
+        400: {"description": "Formato no soportado"},
+    },
+)
+async def export_memory(
+    workspace_id: UUID,
+    format: str = Query("pdf", pattern="^(pdf|csv)$"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws = await _get_owned_workspace(db, current_user.id, workspace_id)
+    result = await db.execute(
+        select(WorkspaceMemory)
+        .where(WorkspaceMemory.workspace_id == workspace_id)
+        .order_by(WorkspaceMemory.created_at.asc())
+    )
+    items = [
+        {
+            "key": i.key,
+            "value": i.value,
+            "confidence": i.confidence,
+            "source": i.source,
+            "updated_at": i.updated_at,
+        }
+        for i in result.scalars().all()
+    ]
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    base = f"memoria-{_slugify(ws.name)}-{today}"
+    if format == "pdf":
+        blob = render_memory_pdf(ws.name, items)
+        media = "application/pdf"
+        filename = f"{base}.pdf"
+    else:
+        blob = render_memory_csv(ws.name, items)
+        media = "text/csv; charset=utf-8"
+        filename = f"{base}.csv"
+
+    return StreamingResponse(
+        io.BytesIO(blob),
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post(

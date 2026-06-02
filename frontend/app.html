@@ -183,6 +183,12 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .mem-add-row button{background:var(--accent-brand);border:none;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:var(--font)}
 .mem-add-row button:hover{filter:brightness(1.1)}
 .mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:16px;font-style:italic}
+.mem-export-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.mem-export-label{font-size:11.5px;color:var(--text-2);font-weight:500}
+.mem-export-btn{display:inline-flex;align-items:center;gap:6px;background:var(--bg-1);border:1px solid var(--border-0);color:var(--text-1);font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:7px;cursor:pointer;font-family:var(--font);transition:all .12s}
+.mem-export-btn:hover{border-color:var(--accent-brand);color:var(--accent-brand)}
+.mem-export-btn svg{opacity:.8}
+.mem-export-btn:disabled{opacity:.5;cursor:wait}
 
 /* ── Modal Crear Proyecto (estilo ChatGPT + paleta) ── */
 .modal.ws-modal-create{width:460px;max-width:92vw}
@@ -1610,7 +1616,18 @@ select.pay-form-input{cursor:pointer}
           <button class="btn-icon" id="memoryModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body">
-          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px">Información que el bot recuerda de este proyecto en <strong>todos los chats dentro del mismo</strong>. Podés agregar, editar o borrar manualmente.</p>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Información que el bot recuerda de este proyecto en <strong>todos los chats dentro del mismo</strong>. Podés agregar, editar o borrar manualmente.</p>
+          <div class="mem-export-bar">
+            <span class="mem-export-label">Exportar para reunión:</span>
+            <button class="mem-export-btn" data-fmt="pdf" title="Descargar PDF">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15h6M9 18h6M9 12h2"/></svg>
+              PDF
+            </button>
+            <button class="mem-export-btn" data-fmt="csv" title="Descargar para Excel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13l3 3M11 13l-3 3"/></svg>
+              Excel
+            </button>
+          </div>
           <div class="mem-list" id="memoryList">
             <div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>
           </div>
@@ -2355,6 +2372,20 @@ function openMemoryModal(){
   document.getElementById('memoryModal').classList.add('active');
 }
 function closeMemoryModal(){document.getElementById('memoryModal').classList.remove('active')}
+async function exportWorkspaceMemory(fmt,btn){
+  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  if(btn)btn.disabled=true;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/export?format='+encodeURIComponent(fmt));
+    if(!r.ok)throw new Error('No se pudo exportar la memoria');
+    const blob=await r.blob();
+    const cd=r.headers.get('Content-Disposition')||'';
+    const m=cd.match(/filename="?([^"]+)"?/);
+    const fn=(m&&m[1])||('memoria.'+(fmt==='pdf'?'pdf':'csv'));
+    const u=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+  }catch(e){alert(e.message)}finally{if(btn)btn.disabled=false}
+}
 function renderMemoryList(items){
   const list=document.getElementById('memoryList');
   if(!list)return;
@@ -4507,6 +4538,7 @@ function init(){
   document.getElementById('memoryModalClose').addEventListener('click',closeMemoryModal);
   document.getElementById('memoryModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMemoryModal()});
   document.getElementById('memoryAddBtn').addEventListener('click',addMemoryItem);
+  document.querySelectorAll('.mem-export-btn').forEach(b=>b.addEventListener('click',()=>exportWorkspaceMemory(b.dataset.fmt,b)));
   $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
