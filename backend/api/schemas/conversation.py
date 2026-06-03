@@ -11,6 +11,19 @@ from pydantic import BaseModel, Field
 class CreateConversationRequest(BaseModel):
     title: SanitizedStr = Field(default="Nueva conversación", min_length=1, max_length=255)
     section: str = Field(default="general", max_length=50, pattern="^(general|sol)$")
+    workspace_id: str | None = None
+
+
+class UpdateConversationRequest(BaseModel):
+    """Editar título o mover conversación entre workspaces.
+
+    `workspace_id`:
+      - string UUID  → mover al workspace indicado
+      - cadena vacía "" o null → desasignar (queda como "chat suelto")
+      - field ausente → no se modifica
+    """
+    title: SanitizedStr | None = Field(default=None, min_length=1, max_length=255)
+    workspace_id: str | None = None
 
 
 # ── Responses ──
@@ -30,6 +43,7 @@ class ConversationOut(BaseModel):
     id: str
     title: str
     section: str
+    workspace_id: str | None = None
     created_at: datetime
     updated_at: datetime
     message_count: int = 0
@@ -43,6 +57,7 @@ class ConversationDetailOut(BaseModel):
     id: str
     title: str
     section: str
+    workspace_id: str | None = None
     created_at: datetime
     updated_at: datetime
     messages: list[MessageOut] = []

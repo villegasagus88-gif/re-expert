@@ -129,6 +129,161 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 
 .sidebar-footer{padding:10px 14px;border-top:1px solid var(--border-sidebar)}
 .model-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-sidebar-muted);font-weight:500}
+
+/* Proyectos (workspaces) — integrado como sidebar-nav-item expandible */
+.sidebar-nav-expandable{position:relative}
+.sidebar-nav-expandable .nav-label{flex:1;text-align:left}
+.sidebar-nav-expandable .nav-count{font-size:9.5px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(99,102,241,.35);padding:1px 6px;border-radius:8px;line-height:1.5;min-width:14px;text-align:center}
+.sidebar-nav-expandable .nav-chevron{flex-shrink:0;opacity:.55;transition:transform .2s var(--ease-out)}
+.sidebar-nav-expandable[aria-expanded="true"] .nav-chevron{transform:rotate(180deg);opacity:.9}
+.sidebar-nav-expandable[aria-expanded="true"]{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.95)}
+.sidebar-nav-expandable[aria-expanded="true"] svg{opacity:.95}
+.sidebar-nav-item:active{transform:scale(.98)}
+
+.sidebar-subnav{max-height:0;overflow:hidden;transition:max-height .25s var(--ease-out);padding:0 4px}
+.sidebar-subnav.open{max-height:340px;padding:2px 4px 6px;overflow-y:auto}
+.ws-list{display:flex;flex-direction:column;gap:1px}
+.ws-empty{font-size:11px;color:var(--text-sidebar-muted);padding:6px 14px;font-style:italic}
+.ws-item{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 26px;border-radius:var(--radius-sm);color:rgba(255,255,255,.6);font-size:11.5px;cursor:pointer;transition:all .15s var(--ease-out);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.ws-item::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:1px;background:rgba(255,255,255,.08)}
+.ws-item:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.9)}
+.ws-item:active{transform:scale(.98)}
+.ws-item.active{background:var(--bg-sidebar-active);color:#fff}
+.ws-item.active::before{background:rgba(255,255,255,.25)}
+.ws-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#6366f1;box-shadow:0 0 0 2px rgba(0,0,0,.15)}
+.ws-name{flex:1;overflow:hidden;text-overflow:ellipsis}
+.ws-count{font-size:10px;color:var(--text-sidebar-muted);background:rgba(255,255,255,.05);padding:1px 6px;border-radius:8px;flex-shrink:0}
+.ws-item.active .ws-count{background:rgba(255,255,255,.18);color:#fff}
+.ws-add-inline{display:flex;align-items:center;gap:6px;width:calc(100% - 8px);margin:6px 4px 2px 22px;background:transparent;border:1px dashed rgba(255,255,255,.15);color:rgba(255,255,255,.55);font-size:11px;padding:6px 8px;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font);transition:all .15s var(--ease-out)}
+.ws-add-inline:hover{border-color:var(--accent-brand);color:#fff;background:rgba(99,102,241,.1)}
+.ws-add-inline:active{transform:scale(.98)}
+
+/* Workspace badge (mostrar workspace activo encima del chat) */
+.ws-active-bar{display:none;align-items:center;gap:8px;padding:6px 14px;background:var(--bg-1);border-bottom:1px solid var(--border-0);font-size:11.5px;color:var(--text-2)}
+.ws-active-bar.show{display:flex}
+.ws-active-bar .ws-dot{width:7px;height:7px}
+.ws-active-name{font-weight:600;color:var(--text-1)}
+.ws-active-actions{margin-left:auto;display:flex;gap:4px}
+.ws-active-actions button{background:transparent;border:none;color:var(--text-3);cursor:pointer;font-size:11px;padding:3px 8px;border-radius:4px}
+.ws-active-actions button:hover{background:var(--accent-subtle);color:var(--text-1)}
+
+/* Memory chips (perfil + workspace memory) */
+.mem-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;padding-right:4px}
+.mem-item{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:8px 10px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:var(--radius-md)}
+.mem-item input{background:var(--bg-0);border:1px solid var(--border-0);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-1);font-family:var(--font);width:100%;box-sizing:border-box}
+.mem-item input:focus{outline:none;border-color:var(--accent-brand)}
+.mem-item .mem-key{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+.mem-item .mem-del{background:transparent;border:none;color:var(--text-3);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:14px}
+.mem-item .mem-del:hover{background:rgba(239,68,68,.1);color:#ef4444}
+.mem-source{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;padding:1px 5px;border-radius:6px;background:rgba(99,102,241,.12);color:var(--accent-brand);font-weight:600}
+.mem-source.auto-silent{background:rgba(34,197,94,.12);color:#22c55e}
+.mem-source.auto-confirmed{background:rgba(245,158,11,.12);color:#f59e0b}
+.mem-add-row{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-0)}
+.mem-add-row input{flex:1;background:var(--bg-0);border:1px solid var(--border-0);border-radius:6px;padding:7px 10px;font-size:12px;color:var(--text-1);font-family:var(--font)}
+.mem-add-row button{background:var(--accent-brand);border:none;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:var(--font)}
+.mem-add-row button:hover{filter:brightness(1.1)}
+.mem-empty{font-size:12px;color:var(--text-3);text-align:center;padding:16px;font-style:italic}
+.mem-export-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.mem-export-label{font-size:11.5px;color:var(--text-2);font-weight:500}
+.mem-export-btn{display:inline-flex;align-items:center;gap:6px;background:var(--bg-1);border:1px solid var(--border-0);color:var(--text-1);font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:7px;cursor:pointer;font-family:var(--font);transition:all .12s}
+.mem-export-btn:hover{border-color:var(--accent-brand);color:var(--accent-brand)}
+.mem-export-btn svg{opacity:.8}
+.mem-export-btn:disabled{opacity:.5;cursor:wait}
+
+/* ── Modal Crear Proyecto (estilo ChatGPT + paleta) ── */
+.modal.ws-modal-create{width:460px;max-width:92vw}
+.ws-create-label{display:block;font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:8px}
+.ws-name-field{display:flex;align-items:center;gap:10px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;padding:12px 14px;transition:border-color .15s}
+.ws-name-field:focus-within{border-color:var(--accent-brand)}
+.ws-name-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.06);transition:background .2s}
+.ws-name-field input{flex:1;background:transparent;border:none;outline:none;font-size:15px;color:var(--text-0);font-family:var(--font);padding:0}
+.ws-name-field input::placeholder{color:var(--text-3)}
+.ws-color-picker{margin-top:16px}
+.ws-color-picker-label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:8px}
+.ws-desc-field{margin-top:14px}
+.ws-desc-field textarea{width:100%;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text-1);font-family:var(--font);box-sizing:border-box;resize:vertical;min-height:48px}
+.ws-desc-field textarea:focus{outline:none;border-color:var(--accent-brand)}
+.ws-desc-field textarea::placeholder{color:var(--text-3)}
+.ws-info-box{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;background:var(--accent-brand-light);border:1px solid rgba(99,102,241,.14);border-radius:10px;font-size:12px;color:var(--text-2);line-height:1.5}
+.ws-info-box svg{flex-shrink:0;color:var(--accent-brand);margin-top:1px}
+
+/* ── Vista de Proyecto (workspace view) ── */
+.wsv-wrap{max-width:760px;margin:0 auto;padding:32px 24px 80px;width:100%;box-sizing:border-box}
+.wsv-head{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.wsv-folder{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;color:#fff;flex-shrink:0;background:var(--accent-brand)}
+.wsv-title{font-size:26px;font-weight:700;color:var(--text-0);margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsv-head-actions{display:flex;gap:8px;flex-shrink:0}
+.wsv-hbtn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--text-2);background:var(--bg-1);border:1px solid var(--border-0);border-radius:8px;padding:7px 11px;cursor:pointer;transition:all .15s}
+.wsv-hbtn:hover{color:var(--text-0);border-color:var(--accent-brand);background:var(--bg-2)}
+.wsv-newchat{display:flex;align-items:center;gap:12px;width:100%;background:var(--bg-1);border:1px solid var(--border-0);border-radius:14px;padding:16px 18px;cursor:pointer;font-size:15px;color:var(--text-2);transition:all .15s;box-sizing:border-box;text-align:left}
+.wsv-newchat:hover{border-color:var(--accent-brand);background:var(--bg-2);color:var(--text-0)}
+.wsv-newchat svg{flex-shrink:0;color:var(--accent-brand)}
+.wsv-newchat strong{color:var(--text-0);font-weight:600}
+.wsv-tabs{display:flex;gap:6px;margin:26px 0 6px;border-bottom:1px solid var(--border-0)}
+.wsv-tab{background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--text-3);cursor:pointer;margin-bottom:-1px;transition:color .15s}
+.wsv-tab:hover{color:var(--text-1)}
+.wsv-tab.active{color:var(--text-0);border-bottom-color:var(--accent-brand)}
+.wsv-panel{padding-top:8px}
+.wsv-chats{display:flex;flex-direction:column}
+.wsv-chat-row{display:flex;align-items:flex-start;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border-0);cursor:pointer;transition:background .12s}
+.wsv-chat-row:hover{background:var(--bg-1)}
+.wsv-chat-main{flex:1;min-width:0}
+.wsv-chat-title{font-size:14.5px;font-weight:600;color:var(--text-0);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wsv-chat-prev{font-size:13px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wsv-chat-date{font-size:12px;color:var(--text-3);flex-shrink:0;padding-top:2px}
+.wsv-empty{padding:32px 8px;text-align:center;font-size:13.5px;color:var(--text-3)}
+.wsv-mem{display:flex;flex-direction:column;gap:8px}
+.wsv-mem-item{display:flex;gap:10px;padding:11px 13px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;font-size:13px}
+.wsv-mem-key{font-weight:600;color:var(--accent-brand);flex-shrink:0}
+.wsv-mem-val{color:var(--text-1);word-break:break-word}
+.wsv-mem-manage{margin-top:14px;background:transparent;border:1px solid var(--border-0);border-radius:8px;padding:9px 14px;font-size:13px;color:var(--text-2);cursor:pointer;transition:all .15s}
+.wsv-mem-manage:hover{border-color:var(--accent-brand);color:var(--text-0)}
+.wsv-chat-row{position:relative}
+
+/* ── Botón "..." en items + menú contextual ── */
+.history-item .hi-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hi-more,.ws-more,.wsv-chat-more{margin-left:auto;flex-shrink:0;background:transparent;border:none;color:inherit;opacity:0;cursor:pointer;padding:2px 4px;border-radius:5px;display:flex;align-items:center;transition:opacity .12s,background .12s}
+.wsv-chat-more{align-self:center}
+.history-item:hover .hi-more,.ws-item:hover .ws-more,.wsv-chat-row:hover .wsv-chat-more{opacity:.6}
+.hi-more:hover,.ws-more:hover,.wsv-chat-more:hover{opacity:1!important;background:rgba(127,127,127,.18)}
+@media(hover:none){.hi-more,.ws-more,.wsv-chat-more{opacity:.5}}
+.ctx-menu{position:fixed;z-index:400;min-width:218px;max-width:84vw;background:var(--bg-modal);border:1px solid var(--border-0);border-radius:13px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.ctx-item{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border-radius:8px;background:transparent;border:none;color:var(--text-1);cursor:pointer;text-align:left;font-family:var(--font);font-size:13.5px;box-sizing:border-box;line-height:1.3}
+.ctx-item:hover{background:var(--bg-2)}
+.ctx-item svg{flex-shrink:0;opacity:.85}
+.ctx-item.ctx-danger{color:#ef4444}
+.ctx-item.ctx-danger svg{opacity:1}
+.ctx-item-arrow{margin-left:auto;opacity:.55}
+.ctx-sep{height:1px;background:var(--border-0);margin:5px 6px}
+.ctx-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.ctx-empty{padding:9px 11px;font-size:12.5px;color:var(--text-3)}
+.ctx-scroll{max-height:240px;overflow-y:auto}
+.inline-rename{flex:1;min-width:0;background:var(--bg-0);border:1px solid var(--accent-brand);border-radius:5px;color:var(--text-0);font-family:var(--font);font-size:inherit;padding:2px 6px;outline:none}
+
+/* Form rows inside workspace modal */
+.ws-form-row{margin-bottom:12px}
+.ws-form-row label{display:block;font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:4px}
+.ws-form-row input,.ws-form-row textarea{width:100%;background:var(--bg-1);border:1px solid var(--border-0);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text-1);font-family:var(--font);box-sizing:border-box}
+.ws-form-row input:focus,.ws-form-row textarea:focus{outline:none;border-color:var(--accent-brand)}
+.ws-form-row textarea{min-height:60px;resize:vertical}
+.ws-color-row{display:flex;gap:6px;flex-wrap:wrap}
+.ws-color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.ws-color-swatch.active{border-color:var(--text-0)}
+.ws-modal-actions{display:flex;gap:8px;margin-top:14px}
+.ws-modal-actions button{flex:1;padding:9px;font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;font-family:var(--font);border:none}
+.btn-primary{background:var(--accent-brand);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--bg-1);color:var(--text-2);border:1px solid var(--border-0)}
+.btn-secondary:hover{background:var(--accent-subtle)}
+.btn-danger{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+
+/* Modal wider for memory */
+.modal.modal-wide{width:520px;max-width:94vw}
+.modal-tabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--border-0);margin-bottom:10px}
+.modal-tab{background:transparent;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;font-family:var(--font)}
+.modal-tab.active{color:var(--accent-brand);border-bottom-color:var(--accent-brand)}
+
 .model-dot{width:5px;height:5px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,.4)}
 
 /* Main */
@@ -797,6 +952,27 @@ select.pay-form-input{cursor:pointer}
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
         Academia
       </button>
+
+      <button class="sidebar-nav-item sidebar-nav-expandable" id="navProyectos" aria-expanded="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+        <span class="nav-label">Proyectos</span>
+        <span class="nav-count" id="navProyectosCount" style="display:none">0</span>
+        <svg class="nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="sidebar-subnav" id="workspacesSubnav">
+        <div class="ws-list" id="workspacesList">
+          <div class="ws-empty">Sin proyectos todavía</div>
+        </div>
+        <button class="ws-add-inline" id="newWorkspaceBtn">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nuevo proyecto
+        </button>
+      </div>
+
+      <button class="sidebar-nav-item" id="openProfileBtn" title="Tu perfil global (memoria entre todos los chats)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Mi perfil
+      </button>
     </nav>
 
     <div class="sidebar-section" id="chatHistorySection">
@@ -843,6 +1019,17 @@ select.pay-form-input{cursor:pointer}
       </div>
     </header>
 
+    <div class="ws-active-bar" id="wsActiveBar">
+      <span class="ws-dot" id="wsActiveDot"></span>
+      <span>Proyecto:</span>
+      <span class="ws-active-name" id="wsActiveName">—</span>
+      <div class="ws-active-actions">
+        <button id="wsViewMemoryBtn" title="Ver memoria del proyecto">Memoria</button>
+        <button id="wsEditBtn" title="Editar proyecto">Editar</button>
+        <button id="wsExitBtn" title="Salir del proyecto">✕</button>
+      </div>
+    </div>
+
     <div class="page-container" id="pageContainer">
       <!-- CHAT VIEW -->
       <div class="view active" id="viewChat">
@@ -863,6 +1050,50 @@ select.pay-form-input{cursor:pointer}
           <div class="sk-bubble"><div class="skeleton sk-avatar"></div><div class="sk-content"><div class="skeleton sk-name"></div><div class="skeleton sk-line sk-line-half"></div></div></div>
         </div>
         <div class="messages" id="messages" style="display:none"></div>
+      </div>
+
+      <!-- WORKSPACE (Proyecto) VIEW -->
+      <div class="view" id="viewWorkspace">
+        <div class="wsv-wrap">
+          <div class="wsv-head">
+            <span class="wsv-folder" id="wsvFolder">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+            </span>
+            <h1 class="wsv-title" id="wsvTitle">Proyecto</h1>
+            <div class="wsv-head-actions">
+              <button class="wsv-hbtn" id="wsvMemBtn" title="Memoria del proyecto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+                Memoria
+              </button>
+              <button class="wsv-hbtn" id="wsvEditBtn" title="Editar proyecto">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+                Editar
+              </button>
+            </div>
+          </div>
+
+          <button class="wsv-newchat" id="wsvNewChat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Nuevo chat en <strong id="wsvNewChatName">este proyecto</strong></span>
+          </button>
+
+          <div class="wsv-tabs">
+            <button class="wsv-tab active" data-wstab="chats">Chats</button>
+            <button class="wsv-tab" data-wstab="memoria">Memoria</button>
+          </div>
+
+          <div class="wsv-panel" id="wsvPanelChats">
+            <div class="wsv-chats" id="wsvChats">
+              <div class="wsv-empty">Sin chats en este proyecto todavía.</div>
+            </div>
+          </div>
+          <div class="wsv-panel" id="wsvPanelMemoria" style="display:none">
+            <div class="wsv-mem" id="wsvMem">
+              <div class="wsv-empty">Sin memoria guardada todavía.</div>
+            </div>
+            <button class="wsv-mem-manage" id="wsvMemManage">Administrar memoria…</button>
+          </div>
+        </div>
       </div>
 
       <!-- PLANOS VIEW -->
@@ -1308,6 +1539,107 @@ select.pay-form-input{cursor:pointer}
       </div>
     </div>
 
+    <!-- Menú contextual (chats / proyectos) -->
+    <div class="ctx-menu" id="ctxMenu" style="display:none"></div>
+
+    <!-- Workspace create/edit Modal (estilo proyectos) -->
+    <div class="modal-overlay" id="workspaceModal">
+      <div class="modal ws-modal-create">
+        <div class="modal-header">
+          <h3 id="workspaceModalTitle">Crear proyecto</h3>
+          <button class="btn-icon" id="workspaceModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <label class="ws-create-label" for="wsNameInput">Nombre del proyecto</label>
+          <div class="ws-name-field">
+            <span class="ws-name-dot" id="wsNameDot" style="background:#6366f1"></span>
+            <input id="wsNameInput" type="text" maxlength="120" placeholder="Ej: Edificio Soler 4500" autocomplete="off">
+          </div>
+
+          <div class="ws-color-picker">
+            <span class="ws-color-picker-label">Color del proyecto</span>
+            <div class="ws-color-row" id="wsColorRow">
+              <div class="ws-color-swatch active" data-color="#6366f1" style="background:#6366f1"></div>
+              <div class="ws-color-swatch" data-color="#22c55e" style="background:#22c55e"></div>
+              <div class="ws-color-swatch" data-color="#f59e0b" style="background:#f59e0b"></div>
+              <div class="ws-color-swatch" data-color="#ef4444" style="background:#ef4444"></div>
+              <div class="ws-color-swatch" data-color="#a855f7" style="background:#a855f7"></div>
+              <div class="ws-color-swatch" data-color="#06b6d4" style="background:#06b6d4"></div>
+              <div class="ws-color-swatch" data-color="#ec4899" style="background:#ec4899"></div>
+            </div>
+          </div>
+
+          <div class="ws-desc-field">
+            <textarea id="wsDescInput" maxlength="500" placeholder="Descripción (opcional): tipo de obra, ubicación, etapa..." rows="2"></textarea>
+          </div>
+
+          <div class="ws-info-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a7 7 0 00-4 12.7V17a1 1 0 001 1h6a1 1 0 001-1v-2.3A7 7 0 0012 2z"/><path d="M9 21h6"/></svg>
+            <span>Los proyectos guardan chats y memoria propia en un solo lugar. El color ayuda a identificarlos de un vistazo.</span>
+          </div>
+
+          <div class="ws-modal-actions">
+            <button class="btn-danger" id="wsDeleteBtn" style="display:none">Eliminar</button>
+            <button class="btn-secondary" id="wsCancelBtn">Cancelar</button>
+            <button class="btn-primary" id="wsSaveBtn">Crear proyecto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile (global memory) Modal -->
+    <div class="modal-overlay" id="profileModal">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3>Mi perfil</h3>
+          <button class="btn-icon" id="profileModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:12px">Datos que el bot recuerda sobre vos en <strong>todos los chats</strong> (rol, zonas, preferencias). Para datos de un proyecto específico, abrí su memoria.</p>
+          <div class="mem-list" id="profileList">
+            <div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>
+          </div>
+          <div class="mem-add-row">
+            <input id="profileKeyInput" type="text" placeholder="clave (ej: rol)" maxlength="80">
+            <input id="profileValueInput" type="text" placeholder="valor (ej: desarrollador inmobiliario)" maxlength="1000">
+            <button id="profileAddBtn">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Memory Modal -->
+    <div class="modal-overlay" id="memoryModal">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3 id="memoryModalTitle">Memoria del proyecto</h3>
+          <button class="btn-icon" id="memoryModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Información que el bot recuerda de este proyecto en <strong>todos los chats dentro del mismo</strong>. Podés agregar, editar o borrar manualmente.</p>
+          <div class="mem-export-bar">
+            <span class="mem-export-label">Exportar para reunión:</span>
+            <button class="mem-export-btn" data-fmt="pdf" title="Descargar PDF">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15h6M9 18h6M9 12h2"/></svg>
+              PDF
+            </button>
+            <button class="mem-export-btn" data-fmt="csv" title="Descargar para Excel">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13l3 3M11 13l-3 3"/></svg>
+              Excel
+            </button>
+          </div>
+          <div class="mem-list" id="memoryList">
+            <div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>
+          </div>
+          <div class="mem-add-row">
+            <input id="memoryKeyInput" type="text" placeholder="clave (ej: lote_usd)" maxlength="80">
+            <input id="memoryValueInput" type="text" placeholder="valor (ej: 850000)" maxlength="1000">
+            <button id="memoryAddBtn">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Onboarding Modal -->
     <div class="ob-overlay" id="onboardingOverlay">
       <div class="ob-modal">
@@ -1478,7 +1810,10 @@ const state = {
   currentConversation:null, messages:[], isStreaming:false,
   theme: localStorage.getItem('re_theme')||'light',
   currentView:'chat', uploadedFiles:[],
-  user: null
+  user: null,
+  workspaces: [], activeWorkspace: null, profile: [],
+  // Estado interno del modal de proyecto (null = creando, id = editando)
+  _editingWorkspaceId: null, _editingColor: '#6366f1'
 };
 const historyMeta = {page:0, totalPages:1, loading:false};
 let userPlan = 'free';
@@ -1510,11 +1845,13 @@ function switchView(v){
   state.currentView=v;
   $$('.view').forEach(el=>el.classList.remove('active'));
   $(`#view${v.charAt(0).toUpperCase()+v.slice(1)}`).classList.add('active');
-  $$('.sidebar-nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===v));
+  $$('.sidebar-nav-item').forEach(el=>{if(el.dataset.view)el.classList.toggle('active',el.dataset.view===v)});
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
   const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia'};
-  els.topbarTitle.textContent=titles[v]||'';
+  if(v==='workspace')els.topbarTitle.textContent=state.activeWorkspace?.name||'Proyecto';
+  else els.topbarTitle.textContent=titles[v]||'';
+  if(typeof updateWsActiveBar==='function')updateWsActiveBar();
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
   if(v==='materiales')loadMateriales();
   if(v==='pagos')loadPagos();
@@ -1554,6 +1891,9 @@ function handleTitleTap(){
 }
 function newConversation(){
   if(state.isStreaming)return;
+  // "Nuevo chat" siempre es un chat suelto: si estabas en un proyecto, salís de él.
+  // Para abrir un chat dentro de un proyecto, se toca el proyecto en el subnav.
+  if(state.activeWorkspace)exitWorkspace();
   state.currentConversation=null;state.messages=[];
   els.messagesEl.innerHTML='';
   renderHistory();showWelcome();
@@ -1591,7 +1931,9 @@ async function loadConversationsFromCloud(append=false){
   else{els.chatHistory.innerHTML='<div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line"></div></div><div class="sk-conv"><div class="skeleton sk-conv-icon"></div><div class="skeleton sk-conv-line-short"></div></div>';}
   const page=append?historyMeta.page+1:1;
   try{
-    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page='+page+'&page_size=20');
+    // El historial del sidebar SIEMPRE muestra los chats sueltos (sin proyecto).
+    // Los chats de un proyecto viven en la vista del proyecto, no acá.
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page='+page+'&page_size=20&workspace_id=none');
     if(r.status===401){window.REAuthService.logout();return}
     if(!r.ok)throw new Error('Error listando conversaciones');
     const data=await r.json();
@@ -1615,8 +1957,474 @@ async function loadConversationsFromCloud(append=false){
 }
 function renderHistory(){
   if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
-  els.chatHistory.innerHTML=state.conversations.map(c=>`<div class="history-item ${state.currentConversation?.id===c.id?'active':''}" data-id="${c.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>${esc(c.title)}</div>`).join('');
-  els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',()=>loadConversation(el.dataset.id)));
+  els.chatHistory.innerHTML=state.conversations.map(c=>`<div class="history-item ${state.currentConversation?.id===c.id?'active':''}" data-id="${c.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="hi-title">${esc(c.title)}</span><button class="hi-more" data-id="${c.id}" title="Opciones" aria-label="Opciones">${CTX_DOTS_SVG}</button></div>`).join('');
+  els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('.hi-more'))return;loadConversation(el.dataset.id)}));
+  els.chatHistory.querySelectorAll('.hi-more').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openChatCtxMenu(b.dataset.id,b)}));
+}
+
+// ===== WORKSPACES (Proyectos) =====
+async function loadWorkspaces(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces');
+    if(!r.ok)return;
+    const data=await r.json();
+    // El endpoint devuelve una lista directa; toleramos también {items:[...]}.
+    state.workspaces=Array.isArray(data)?data:(data.items||[]);
+    renderWorkspaces();
+  }catch(e){console.error('loadWorkspaces:',e)}
+}
+function renderWorkspaces(){
+  const list=document.getElementById('workspacesList');
+  const countBadge=document.getElementById('navProyectosCount');
+  if(!list)return;
+  if(countBadge){
+    if(state.workspaces.length){countBadge.style.display='';countBadge.textContent=state.workspaces.length}
+    else countBadge.style.display='none';
+  }
+  if(!state.workspaces.length){list.innerHTML='<div class="ws-empty">Sin proyectos todavía</div>';return}
+  list.innerHTML=state.workspaces.map(w=>`<div class="ws-item ${state.activeWorkspace?.id===w.id?'active':''}" data-id="${w.id}" title="${esc(w.name)}"><span class="ws-dot" style="background:${esc(w.color||'#6366f1')}"></span><span class="ws-name">${esc(w.name)}</span><span class="ws-count">${w.conversation_count||0}</span><button class="ws-more" data-id="${w.id}" title="Opciones" aria-label="Opciones">${CTX_DOTS_SVG}</button></div>`).join('');
+  list.querySelectorAll('.ws-item').forEach(el=>el.addEventListener('click',ev=>{ev.stopPropagation();if(ev.target.closest('.ws-more'))return;openWorkspace(el.dataset.id)}));
+  list.querySelectorAll('.ws-more').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openWsCtxMenu(b.dataset.id,b)}));
+}
+function toggleProyectos(forceState){
+  const btn=document.getElementById('navProyectos');
+  const sub=document.getElementById('workspacesSubnav');
+  if(!btn||!sub)return;
+  const willOpen=typeof forceState==='boolean'?forceState:btn.getAttribute('aria-expanded')!=='true';
+  btn.setAttribute('aria-expanded',willOpen?'true':'false');
+  sub.classList.toggle('open',willOpen);
+}
+// Abre la VISTA de un proyecto: header + "nuevo chat" + lista de sus chats.
+// No toca el historial del sidebar (que sigue mostrando los chats sueltos).
+async function openWorkspace(id){
+  const w=state.workspaces.find(x=>x.id===id);if(!w)return;
+  state.activeWorkspace=w;
+  state.currentConversation=null;state.messages=[];
+  renderWorkspaces();
+  toggleProyectos(true);
+  // Pintar el header de la vista.
+  const color=w.color||'#6366f1';
+  const folder=document.getElementById('wsvFolder');if(folder)folder.style.background=color;
+  document.getElementById('wsvTitle').textContent=w.name;
+  document.getElementById('wsvNewChatName').textContent=w.name;
+  switchWsTab('chats');
+  switchView('workspace');
+  await loadWorkspaceChats(w.id);
+}
+// Trae los chats del proyecto y los pinta en su vista.
+async function loadWorkspaceChats(wsId){
+  const cont=document.getElementById('wsvChats');if(!cont)return;
+  cont.innerHTML='<div class="wsv-empty">Cargando…</div>';
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations?page=1&page_size=50&workspace_id='+encodeURIComponent(wsId));
+    if(!r.ok)throw new Error('http '+r.status);
+    const data=await r.json();
+    state._workspaceChats=(data.items||[]).map(c=>({id:c.id,title:c.title,messages:[],createdAt:c.created_at,preview:c.last_message_preview||''}));
+    renderWorkspaceChats();
+  }catch(e){console.error('loadWorkspaceChats:',e);cont.innerHTML='<div class="wsv-empty">No se pudieron cargar los chats.</div>'}
+}
+function renderWorkspaceChats(){
+  const cont=document.getElementById('wsvChats');if(!cont)return;
+  const items=state._workspaceChats||[];
+  if(!items.length){cont.innerHTML='<div class="wsv-empty">Sin chats en este proyecto todavía. Tocá “Nuevo chat” para empezar.</div>';return}
+  cont.innerHTML=items.map(c=>`<div class="wsv-chat-row" data-id="${c.id}"><div class="wsv-chat-main"><div class="wsv-chat-title">${esc(c.title||'Chat sin título')}</div>${c.preview?`<div class="wsv-chat-prev">${esc(c.preview)}</div>`:''}</div><span class="wsv-chat-date">${fmtShortDate(c.createdAt)}</span><button class="wsv-chat-more" data-id="${c.id}" title="Opciones" aria-label="Opciones">${CTX_DOTS_SVG}</button></div>`).join('');
+  cont.querySelectorAll('.wsv-chat-row').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('.wsv-chat-more'))return;openWorkspaceChat(el.dataset.id)}));
+  cont.querySelectorAll('.wsv-chat-more').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openChatCtxMenu(b.dataset.id,b)}));
+}
+// Abre un chat del proyecto en la vista de chat, manteniendo el proyecto activo.
+async function openWorkspaceChat(id){
+  const c=(state._workspaceChats||[]).find(x=>x.id===id);if(!c)return;
+  switchView('chat');showMessagesLoading();
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+id);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error cargando conversacion');
+    const data=await r.json();
+    c.messages=(data.messages||[]).map(m=>({role:m.role,content:m.content}));
+    state.currentConversation=c;state.messages=c.messages;
+    renderMessages();
+    els.topbarTitle.textContent=c.title;
+    updateWsActiveBar();
+  }catch(e){console.error('Error cargando chat de proyecto:',e);hideMessagesLoading();showWelcome()}
+}
+// "Nuevo chat en [proyecto]": chat limpio scopeado al proyecto activo.
+function newChatInWorkspace(){
+  if(!state.activeWorkspace)return;
+  state.currentConversation=null;state.messages=[];
+  els.messagesEl.innerHTML='';
+  showWelcome();
+  els.exportBtn.style.display='none';
+  switchView('chat');
+  els.messageInput.focus();
+}
+function switchWsTab(which){
+  document.querySelectorAll('.wsv-tab').forEach(t=>t.classList.toggle('active',t.dataset.wstab===which));
+  const chats=document.getElementById('wsvPanelChats');
+  const mem=document.getElementById('wsvPanelMemoria');
+  if(chats)chats.style.display=which==='chats'?'':'none';
+  if(mem)mem.style.display=which==='memoria'?'':'none';
+  if(which==='memoria'&&state.activeWorkspace)renderWorkspaceMemPanel();
+}
+async function renderWorkspaceMemPanel(){
+  const cont=document.getElementById('wsvMem');if(!cont)return;
+  cont.innerHTML='<div class="wsv-empty">Cargando…</div>';
+  const items=await loadWorkspaceMemory(state.activeWorkspace.id);
+  if(!items.length){cont.innerHTML='<div class="wsv-empty">Sin memoria guardada todavía. El bot la irá completando, o podés agregarla desde “Administrar memoria”.</div>';return}
+  cont.innerHTML=items.map(m=>`<div class="wsv-mem-item"><span class="wsv-mem-key">${esc(m.key)}</span><span class="wsv-mem-val">${esc(m.value)}</span></div>`).join('');
+}
+// Refresca la UI de memoria si está visible (tras un guardado automático del bot).
+function refreshMemoryIfOpen(){
+  const memPanel=document.getElementById('wsvPanelMemoria');
+  if(state.currentView==='workspace'&&memPanel&&memPanel.style.display!=='none')renderWorkspaceMemPanel();
+  const modal=document.getElementById('memoryModal');
+  if(modal&&modal.classList.contains('active')&&state.activeWorkspace){
+    loadWorkspaceMemory(state.activeWorkspace.id).then(items=>{state._currentMemoryItems=items;renderMemoryList(items)});
+  }
+}
+function exitWorkspace(){
+  state.activeWorkspace=null;
+  state.currentConversation=null;state.messages=[];
+  showWelcome();
+  renderWorkspaces();
+  updateWsActiveBar();
+  loadConversationsFromCloud();
+}
+// La barra superior de proyecto solo tiene sentido dentro de un CHAT del
+// proyecto (en la vista del proyecto el header ya muestra el nombre).
+function updateWsActiveBar(){
+  const bar=document.getElementById('wsActiveBar');
+  const name=document.getElementById('wsActiveName');
+  const dot=document.getElementById('wsActiveDot');
+  if(!bar)return;
+  if(state.activeWorkspace&&state.currentView==='chat'){
+    bar.classList.add('show');
+    name.textContent=state.activeWorkspace.name;
+    dot.style.background=state.activeWorkspace.color||'#6366f1';
+  }else{
+    bar.classList.remove('show');
+  }
+}
+function fmtShortDate(iso){
+  if(!iso)return'';
+  try{const d=new Date(iso);const m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return d.getDate()+' '+m[d.getMonth()]}catch(e){return''}
+}
+
+// ===== MENÚ CONTEXTUAL (chats / proyectos) =====
+const CTX_DOTS_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+const _ico={
+  pen:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>',
+  folder:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
+  trash:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  back:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  arrow:'<svg class="ctx-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>',
+  unlink:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+};
+function closeCtxMenu(){const m=document.getElementById('ctxMenu');if(m){m.style.display='none';m.innerHTML=''}}
+function _positionCtxMenu(anchor){
+  const m=document.getElementById('ctxMenu');
+  m.style.visibility='hidden';m.style.display='block';
+  const r=anchor.getBoundingClientRect();const mw=m.offsetWidth,mh=m.offsetHeight;
+  let x=r.right-mw; if(x<8)x=8; if(x+mw>window.innerWidth-8)x=window.innerWidth-mw-8;
+  let y=r.bottom+4; if(y+mh>window.innerHeight-8)y=r.top-mh-4; if(y<8)y=8;
+  m.style.left=Math.round(x)+'px';m.style.top=Math.round(y)+'px';m.style.visibility='';
+}
+function _ctxFindConv(id){
+  return state.conversations.find(c=>c.id===id)||(state._workspaceChats||[]).find(c=>c.id===id)||null;
+}
+function openChatCtxMenu(id,anchor){
+  const m=document.getElementById('ctxMenu');
+  m.innerHTML=`
+    <button class="ctx-item" data-act="rename">${_ico.pen}Cambiar el nombre</button>
+    <button class="ctx-item" data-act="move">${_ico.folder}Mover al proyecto${_ico.arrow}</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item ctx-danger" data-act="delete">${_ico.trash}Eliminar</button>`;
+  m.querySelector('[data-act="rename"]').onclick=()=>{closeCtxMenu();startRenameConversation(id)};
+  m.querySelector('[data-act="move"]').onclick=(e)=>{e.stopPropagation();showMoveSubmenu(id,anchor)};
+  m.querySelector('[data-act="delete"]').onclick=()=>{closeCtxMenu();deleteConversationById(id)};
+  _positionCtxMenu(anchor);
+}
+function showMoveSubmenu(id,anchor){
+  const m=document.getElementById('ctxMenu');
+  const conv=_ctxFindConv(id);
+  const curWs=state.activeWorkspace?.id||null; // contexto actual
+  let html=`<button class="ctx-item" data-back="1">${_ico.back}Mover al proyecto</button><div class="ctx-sep"></div><div class="ctx-scroll">`;
+  if(state.workspaces.length){
+    html+=state.workspaces.map(w=>`<button class="ctx-item" data-ws="${w.id}"><span class="ctx-dot" style="background:${esc(w.color||'#6366f1')}"></span>${esc(w.name)}</button>`).join('');
+  }else{
+    html+=`<div class="ctx-empty">No tenés proyectos todavía</div>`;
+  }
+  html+=`</div><div class="ctx-sep"></div><button class="ctx-item" data-ws="">${_ico.unlink}Sacar del proyecto</button>`;
+  m.innerHTML=html;
+  m.querySelector('[data-back]').onclick=(e)=>{e.stopPropagation();openChatCtxMenu(id,anchor)};
+  m.querySelectorAll('[data-ws]').forEach(b=>b.onclick=()=>{closeCtxMenu();moveConversation(id,b.dataset.ws)});
+  _positionCtxMenu(anchor);
+}
+function openWsCtxMenu(id,anchor){
+  const m=document.getElementById('ctxMenu');
+  m.innerHTML=`
+    <button class="ctx-item" data-act="newchat">${_ico.plus}Nuevo chat</button>
+    <button class="ctx-item" data-act="edit">${_ico.pen}Editar proyecto</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item ctx-danger" data-act="delete">${_ico.trash}Eliminar</button>`;
+  m.querySelector('[data-act="newchat"]').onclick=async()=>{closeCtxMenu();await openWorkspace(id);newChatInWorkspace()};
+  m.querySelector('[data-act="edit"]').onclick=()=>{closeCtxMenu();openWorkspaceModal(id)};
+  m.querySelector('[data-act="delete"]').onclick=()=>{closeCtxMenu();deleteWorkspaceById(id)};
+  _positionCtxMenu(anchor);
+}
+// ── Acciones de chat ──
+function startRenameConversation(id){
+  const titleEl=document.querySelector('.history-item[data-id="'+id+'"] .hi-title')||document.querySelector('.wsv-chat-row[data-id="'+id+'"] .wsv-chat-title');
+  if(!titleEl){const t=prompt('Nuevo nombre:');if(t&&t.trim())renameConversation(id,t.trim());return}
+  const old=titleEl.textContent;
+  const input=document.createElement('input');
+  input.className='inline-rename';input.value=old;input.maxLength=120;
+  titleEl.replaceWith(input);input.focus();input.select();
+  let done=false;
+  const finish=async(save)=>{
+    if(done)return;done=true;
+    const val=input.value.trim();
+    if(save&&val&&val!==old)await renameConversation(id,val);
+    renderHistory();
+    if(state.currentView==='workspace')renderWorkspaceChats();
+  };
+  input.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();finish(true)}else if(e.key==='Escape'){e.preventDefault();finish(false)}});
+  input.addEventListener('blur',()=>finish(true));
+  input.addEventListener('click',e=>e.stopPropagation());
+}
+async function renameConversation(id,title){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})});
+    if(!r.ok)throw new Error('No se pudo renombrar');
+    const c1=state.conversations.find(c=>c.id===id);if(c1)c1.title=title;
+    const c2=(state._workspaceChats||[]).find(c=>c.id===id);if(c2)c2.title=title;
+    if(state.currentConversation?.id===id){state.currentConversation.title=title;els.topbarTitle.textContent=title}
+  }catch(e){alert(e.message)}
+}
+async function moveConversation(id,wsId){
+  try{
+    const body={workspace_id:wsId===''?null:wsId};
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'No se pudo mover')}
+    // Si el chat movido es el abierto y dejó de pertenecer al proyecto activo, lo cerramos.
+    if(state.currentConversation?.id===id&&state.activeWorkspace&&wsId!==state.activeWorkspace.id){
+      state.currentConversation=null;state.messages=[];showWelcome();
+    }
+    await loadConversationsFromCloud();
+    if(state.activeWorkspace)await loadWorkspaceChats(state.activeWorkspace.id);
+    await loadWorkspaces();
+  }catch(e){alert(e.message)}
+}
+async function deleteConversationById(id){
+  if(!confirm('¿Eliminar esta conversación? No se puede deshacer.'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+id,{method:'DELETE'});
+    if(!r.ok&&r.status!==204)throw new Error('No se pudo eliminar');
+    state.conversations=state.conversations.filter(c=>c.id!==id);
+    state._workspaceChats=(state._workspaceChats||[]).filter(c=>c.id!==id);
+    if(state.currentConversation?.id===id){state.currentConversation=null;state.messages=[];els.messagesEl.innerHTML='';showWelcome();if(state.currentView==='chat')els.topbarTitle.textContent='Chat Experto'}
+    renderHistory();
+    if(state.currentView==='workspace')renderWorkspaceChats();
+    loadWorkspaces();
+  }catch(e){alert(e.message)}
+}
+// ── Acción de proyecto ──
+async function deleteWorkspaceById(id){
+  if(!confirm('¿Eliminar este proyecto? Los chats no se borran, quedan como sueltos.'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+id,{method:'DELETE'});
+    if(!r.ok&&r.status!==204)throw new Error('No se pudo eliminar el proyecto');
+    if(state.activeWorkspace?.id===id){exitWorkspace();switchView('chat')}
+    await loadWorkspaces();
+  }catch(e){alert(e.message)}
+}
+// Aplica un color: actualiza estado, swatch activo y el dot grande del input.
+function setWorkspaceColor(color){
+  state._editingColor=color;
+  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>s.classList.toggle('active',s.dataset.color===color));
+  const dot=document.getElementById('wsNameDot');
+  if(dot)dot.style.background=color;
+}
+function openWorkspaceModal(id){
+  state._editingWorkspaceId=id||null;
+  const w=id?state.workspaces.find(x=>x.id===id):null;
+  document.getElementById('workspaceModalTitle').textContent=id?'Editar proyecto':'Crear proyecto';
+  document.getElementById('wsSaveBtn').textContent=id?'Guardar cambios':'Crear proyecto';
+  document.getElementById('wsNameInput').value=w?.name||'';
+  document.getElementById('wsDescInput').value=w?.description||'';
+  setWorkspaceColor(w?.color||'#6366f1');
+  document.getElementById('wsDeleteBtn').style.display=id?'':'none';
+  document.getElementById('workspaceModal').classList.add('active');
+  setTimeout(()=>document.getElementById('wsNameInput').focus(),50);
+}
+function closeWorkspaceModal(){document.getElementById('workspaceModal').classList.remove('active')}
+async function saveWorkspace(){
+  const name=document.getElementById('wsNameInput').value.trim();
+  const description=document.getElementById('wsDescInput').value.trim();
+  const color=state._editingColor||'#6366f1';
+  if(!name){alert('El nombre es obligatorio');return}
+  const payload={name,description,color};
+  try{
+    let r;
+    if(state._editingWorkspaceId){
+      r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state._editingWorkspaceId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }else{
+      r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    }
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando proyecto')}
+    const ws=await r.json();
+    closeWorkspaceModal();
+    await loadWorkspaces();
+    if(!state._editingWorkspaceId){
+      // Abrir el nuevo proyecto automáticamente
+      openWorkspace(ws.id);
+    }else if(state.activeWorkspace?.id===ws.id){
+      state.activeWorkspace=ws;
+      updateWsActiveBar();
+      // Refrescar el header de la vista de proyecto si está abierta.
+      const color=ws.color||'#6366f1';
+      const folder=document.getElementById('wsvFolder');if(folder)folder.style.background=color;
+      const t=document.getElementById('wsvTitle');if(t)t.textContent=ws.name;
+      const n=document.getElementById('wsvNewChatName');if(n)n.textContent=ws.name;
+      if(state.currentView==='workspace')els.topbarTitle.textContent=ws.name;
+    }
+  }catch(e){alert(e.message)}
+}
+async function deleteWorkspace(){
+  if(!state._editingWorkspaceId)return;
+  if(!confirm('¿Eliminar este proyecto? Los chats no se borran, quedan como sueltos.'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state._editingWorkspaceId,{method:'DELETE'});
+    if(!r.ok&&r.status!==204){throw new Error('Error eliminando proyecto')}
+    closeWorkspaceModal();
+    if(state.activeWorkspace?.id===state._editingWorkspaceId){exitWorkspace();switchView('chat')}
+    await loadWorkspaces();
+  }catch(e){alert(e.message)}
+}
+
+// ===== PROFILE (memoria global) =====
+async function loadProfile(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile');
+    if(!r.ok)return;
+    const data=await r.json();
+    state.profile=data.items||[];
+  }catch(e){console.error('loadProfile:',e)}
+}
+function openProfileModal(){
+  loadProfile().then(renderProfile);
+  document.getElementById('profileModal').classList.add('active');
+}
+function closeProfileModal(){document.getElementById('profileModal').classList.remove('active')}
+function renderProfile(){
+  const list=document.getElementById('profileList');
+  if(!list)return;
+  if(!state.profile.length){list.innerHTML='<div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>';return}
+  list.innerHTML=state.profile.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly title="${esc(it.source||'')}"><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  list.querySelectorAll('.mem-item').forEach(row=>{
+    const key=row.dataset.key;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateProfileItem(key,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteProfileItem(key));
+  });
+}
+async function addProfileItem(){
+  const key=document.getElementById('profileKeyInput').value.trim();
+  const value=document.getElementById('profileValueInput').value.trim();
+  if(!key||!value)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,source:'manual',confidence:'high'})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando')}
+    document.getElementById('profileKeyInput').value='';
+    document.getElementById('profileValueInput').value='';
+    await loadProfile();renderProfile();
+  }catch(e){alert(e.message)}
+}
+async function updateProfileItem(key,value){
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+    await loadProfile();
+  }catch(e){console.error(e)}
+}
+async function deleteProfileItem(key){
+  if(!confirm('¿Eliminar este dato del perfil?'))return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'DELETE'});
+    await loadProfile();renderProfile();
+  }catch(e){console.error(e)}
+}
+
+// ===== WORKSPACE MEMORY =====
+async function loadWorkspaceMemory(wsId){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+wsId+'/memory');
+    if(!r.ok)return[];
+    const data=await r.json();
+    return data.items||[];
+  }catch(e){console.error('loadWorkspaceMemory:',e);return[]}
+}
+function openMemoryModal(){
+  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  document.getElementById('memoryModalTitle').textContent='Memoria — '+state.activeWorkspace.name;
+  loadWorkspaceMemory(state.activeWorkspace.id).then(items=>{
+    state._currentMemoryItems=items;
+    renderMemoryList(items);
+  });
+  document.getElementById('memoryModal').classList.add('active');
+}
+function closeMemoryModal(){document.getElementById('memoryModal').classList.remove('active')}
+async function exportWorkspaceMemory(fmt,btn){
+  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  if(btn)btn.disabled=true;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/export?format='+encodeURIComponent(fmt));
+    if(!r.ok)throw new Error('No se pudo exportar la memoria');
+    const blob=await r.blob();
+    const cd=r.headers.get('Content-Disposition')||'';
+    const m=cd.match(/filename="?([^"]+)"?/);
+    const fn=(m&&m[1])||('memoria.'+(fmt==='pdf'?'pdf':'csv'));
+    const u=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+  }catch(e){alert(e.message)}finally{if(btn)btn.disabled=false}
+}
+function renderMemoryList(items){
+  const list=document.getElementById('memoryList');
+  if(!list)return;
+  if(!items.length){list.innerHTML='<div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>';return}
+  list.innerHTML=items.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  list.querySelectorAll('.mem-item').forEach(row=>{
+    const key=row.dataset.key;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateMemoryItem(key,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteMemoryItem(key));
+  });
+}
+async function addMemoryItem(){
+  if(!state.activeWorkspace)return;
+  const key=document.getElementById('memoryKeyInput').value.trim();
+  const value=document.getElementById('memoryValueInput').value.trim();
+  if(!key||!value)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,source:'manual',confidence:'high'})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||'Error guardando')}
+    document.getElementById('memoryKeyInput').value='';
+    document.getElementById('memoryValueInput').value='';
+    const items=await loadWorkspaceMemory(state.activeWorkspace.id);
+    renderMemoryList(items);
+  }catch(e){alert(e.message)}
+}
+async function updateMemoryItem(key,value){
+  if(!state.activeWorkspace)return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+  }catch(e){console.error(e)}
+}
+async function deleteMemoryItem(key){
+  if(!state.activeWorkspace)return;
+  if(!confirm('¿Eliminar este dato de memoria?'))return;
+  try{
+    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'DELETE'});
+    const items=await loadWorkspaceMemory(state.activeWorkspace.id);
+    renderMemoryList(items);
+  }catch(e){console.error(e)}
 }
 
 function showMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='flex';els.welcomeScreen.style.display='none';els.messagesEl.style.display='none'}
@@ -1645,12 +2453,22 @@ function prettyToolLabel(name,source){
   }
   return base;
 }
+function _memKeyPretty(input){
+  const k=(input&&input.key)||'';
+  return k?k.replace(/[_\-.]+/g,' ').trim():'';
+}
 function pushToolUse(name,input){
   const trace=$('#streamMsg .tool-trace');if(!trace)return;
   trace.style.display='';
   const row=document.createElement('div');
   row.dataset.tool=name;
-  row.innerHTML=`<span class="tool-dot">●</span> Consultando ${esc(prettyToolLabel(name,input&&input.url))}…`;
+  if(name==='remember'){
+    const k=_memKeyPretty(input);
+    row.dataset.memkey=k;
+    row.innerHTML=`<span class="tool-dot">●</span> Guardando en memoria${k?': '+esc(k):''}…`;
+  }else{
+    row.innerHTML=`<span class="tool-dot">●</span> Consultando ${esc(prettyToolLabel(name,input&&input.url))}…`;
+  }
   trace.appendChild(row);scrollBottom();
 }
 function markToolDone(name,ok,source){
@@ -1659,6 +2477,14 @@ function markToolDone(name,ok,source){
   const rows=Array.from(trace.querySelectorAll(`[data-tool="${name}"]:not(.done)`));
   const row=rows[rows.length-1];if(!row)return;
   row.classList.add('done');
+  if(name==='remember'){
+    const k=row.dataset.memkey||'';
+    row.innerHTML=(ok?'💾 Recordado'+(k?': '+esc(k):''):'⚠️ No se pudo guardar');
+    row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
+    // Si el panel de memoria del proyecto está abierto, lo refrescamos.
+    if(ok&&state.activeWorkspace&&typeof refreshMemoryIfOpen==='function')refreshMemoryIfOpen();
+    return;
+  }
   const label=prettyToolLabel(name,source);
   row.innerHTML=(ok?'✓':'⚠️')+' '+esc(label);
   row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
@@ -1733,6 +2559,7 @@ async function sendMessage(text,opts){
   try{
     const payload={message:userMsg,context_type:'chat',attachments};
     if(state.currentConversation?.id)payload.conversation_id=state.currentConversation.id;
+    if(state.activeWorkspace?.id&&!state.currentConversation?.id)payload.workspace_id=state.activeWorkspace.id;
     const r=await window.REAuthService.authFetch(apiBase()+'/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
@@ -1776,9 +2603,16 @@ async function sendMessage(text,opts){
               const title=userMsg.slice(0,60)+(userMsg.length>60?'…':'');
               const newConv={id:ev.conversation_id,title,messages:[],createdAt:new Date().toISOString()};
               state.currentConversation=newConv;
-              state.conversations.unshift(newConv);
+              if(state.activeWorkspace){
+                // Chat dentro de un proyecto: va a la lista del proyecto,
+                // no al historial de chats sueltos del sidebar.
+                state._workspaceChats=state._workspaceChats||[];
+                state._workspaceChats.unshift({...newConv,preview:userMsg});
+              }else{
+                state.conversations.unshift(newConv);
+                renderHistory();
+              }
               els.topbarTitle.textContent=title;
-              renderHistory();
             }else{
               state.currentConversation.id=ev.conversation_id;
             }
@@ -3618,7 +4452,12 @@ async function onUserLoggedIn(user){
   footer.style.display='flex';
   document.getElementById('userEmail').textContent=user.email||'';
   updatePlanBadge();
-  await loadConversationsFromCloud();
+  // Cargar proyectos y perfil global en paralelo con conversaciones sueltas
+  await Promise.all([
+    loadWorkspaces(),
+    loadProfile(),
+    loadConversationsFromCloud(),
+  ]);
   // Mostrar onboarding si es primer uso
   if(user&&!user.onboarding_completed&&!localStorage.getItem('re_onboarding_done')){
     const displayName=user.full_name?user.full_name.split(' ')[0]:(user.email?.split('@')[0]||'');
@@ -3628,6 +4467,7 @@ async function onUserLoggedIn(user){
 
 async function handleLogout(){
   state.user=null;state.conversations=[];state.currentConversation=null;state.messages=[];
+  state.workspaces=[];state.activeWorkspace=null;state.profile=[];
   await window.REAuthService.logout();
 }
 
@@ -3659,9 +4499,49 @@ function init(){
   els.exportModal.addEventListener('click',e=>{if(e.target===els.exportModal)els.exportModal.classList.remove('active')});
   document.getElementById('upgradeModalClose').addEventListener('click',hideUpgradeModal);
   document.getElementById('upgradeModal').addEventListener('click',e=>{if(e.target===e.currentTarget)hideUpgradeModal()});
+
+  // ── Workspaces (Proyectos) ──
+  document.getElementById('navProyectos').addEventListener('click',()=>toggleProyectos());
+  document.getElementById('newWorkspaceBtn').addEventListener('click',(ev)=>{ev.stopPropagation();openWorkspaceModal(null)});
+  document.getElementById('workspaceModalClose').addEventListener('click',closeWorkspaceModal);
+  document.getElementById('wsCancelBtn').addEventListener('click',closeWorkspaceModal);
+  document.getElementById('wsSaveBtn').addEventListener('click',saveWorkspace);
+  document.getElementById('wsDeleteBtn').addEventListener('click',deleteWorkspace);
+  document.getElementById('workspaceModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeWorkspaceModal()});
+  document.querySelectorAll('#wsColorRow .ws-color-swatch').forEach(s=>{
+    s.addEventListener('click',()=>setWorkspaceColor(s.dataset.color));
+  });
+  document.getElementById('wsNameInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveWorkspace()}});
+  // Active workspace bar actions
+  document.getElementById('wsExitBtn').addEventListener('click',()=>{exitWorkspace();switchView('chat')});
+  document.getElementById('wsEditBtn').addEventListener('click',()=>{if(state.activeWorkspace)openWorkspaceModal(state.activeWorkspace.id)});
+  document.getElementById('wsViewMemoryBtn').addEventListener('click',openMemoryModal);
+  // Vista de proyecto (workspace view)
+  document.getElementById('wsvNewChat').addEventListener('click',newChatInWorkspace);
+  document.getElementById('wsvEditBtn').addEventListener('click',()=>{if(state.activeWorkspace)openWorkspaceModal(state.activeWorkspace.id)});
+  document.getElementById('wsvMemBtn').addEventListener('click',()=>switchWsTab('memoria'));
+  document.getElementById('wsvMemManage').addEventListener('click',openMemoryModal);
+  document.querySelectorAll('.wsv-tab').forEach(t=>t.addEventListener('click',()=>switchWsTab(t.dataset.wstab)));
+  // Menú contextual: cerrar al clickear afuera, con Escape, al scrollear o al redimensionar.
+  document.addEventListener('click',e=>{if(!e.target.closest('#ctxMenu'))closeCtxMenu()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCtxMenu()});
+  window.addEventListener('resize',closeCtxMenu);
+  els.chatHistory.addEventListener('scroll',closeCtxMenu,{passive:true});
+  const _pc=document.getElementById('pageContainer');if(_pc)_pc.addEventListener('scroll',closeCtxMenu,{passive:true});
+  const _sub=document.getElementById('workspacesSubnav');if(_sub)_sub.addEventListener('scroll',closeCtxMenu,{passive:true});
+  // Mi perfil
+  document.getElementById('openProfileBtn').addEventListener('click',openProfileModal);
+  document.getElementById('profileModalClose').addEventListener('click',closeProfileModal);
+  document.getElementById('profileModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProfileModal()});
+  document.getElementById('profileAddBtn').addEventListener('click',addProfileItem);
+  // Workspace memory modal
+  document.getElementById('memoryModalClose').addEventListener('click',closeMemoryModal);
+  document.getElementById('memoryModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeMemoryModal()});
+  document.getElementById('memoryAddBtn').addEventListener('click',addMemoryItem);
+  document.querySelectorAll('.mem-export-btn').forEach(b=>b.addEventListener('click',()=>exportWorkspaceMemory(b.dataset.fmt,b)));
   $$('.export-option').forEach(b=>b.addEventListener('click',()=>exportConversation(b.dataset.format)));
   $$('.welcome-card').forEach(c=>c.addEventListener('click',()=>{els.messageInput.value=c.dataset.prompt;sendMessage(c.dataset.prompt)}));
-  $$('.sidebar-nav-item').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
+  $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
   initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();initOnboarding();

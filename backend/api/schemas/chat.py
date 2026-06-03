@@ -87,5 +87,10 @@ class ChatRequest(BaseModel):
     message: CleanText = Field(..., min_length=1, max_length=10000)
     conversation_id: UUID | None = None
     context_type: ChatContextType = "chat"
+    # Workspace ("Proyecto" en la UI) al que va asignado este chat. Solo se
+    # aplica cuando se crea una conversación nueva (cuando conversation_id es
+    # None). Si la conversación ya existe, su workspace lo fija el endpoint
+    # de conversations al moverla/asignarla.
+    workspace_id: UUID | None = None
     # Imágenes adjuntas (planos). Máximo 4 por request.
     attachments: list[ChatAttachment] = Field(default_factory=list, max_length=4)

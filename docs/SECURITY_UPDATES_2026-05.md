@@ -61,8 +61,11 @@ versión segura sin breaking changes esperados en runtime:
 | `starlette` | 0.46.2 (transitive) | 0.49.1 (explicit pin) | PYSEC-2026-161, CVE-2025-54121, CVE-2025-62727 |
 
 Starlette se pineó explícito en `requirements.txt` porque la versión
-vulnerable venía como dep transitiva de `fastapi==0.115.12`. El rango
-de fastapi acepta `starlette<0.50`, así que `0.49.1` queda dentro.
+vulnerable venía como dep transitiva de fastapi. El pin original
+fastapi==0.115.12 en realidad exige starlette<0.47.0 (no <0.50 como
+indicaba este doc), por lo que fastapi se bumpeó a `0.121.0` —
+primer release que widena la constraint a `starlette<0.50` y permite
+mantener `starlette==0.49.1` con sus CVE fixes.
 
 **Pre-deploy check:**
 ```bash

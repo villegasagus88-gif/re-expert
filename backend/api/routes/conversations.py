@@ -6,12 +6,15 @@ conversations only. No user can access another user's data.
 """
 import math
 
+from uuid import UUID
+
 from api.schemas.conversation import (
     ConversationDetailOut,
     ConversationOut,
     CreateConversationRequest,
     MessageOut,
     PaginatedConversations,
+    UpdateConversationRequest,
 )
 from core.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -19,6 +22,7 @@ from models.base import get_db
 from models.conversation import Conversation
 from models.message import Message
 from models.user import User
+from models.workspace import Workspace
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -37,10 +41,28 @@ async def create_conversation(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    workspace_uuid: UUID | None = None
+    if body.workspace_id:
+        try:
+            workspace_uuid = UUID(body.workspace_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="workspace_id inválido",
+            )
+        # Ownership check.
+        ws = await db.get(Workspace, workspace_uuid)
+        if ws is None or ws.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Workspace no encontrado",
+            )
+
     conv = Conversation(
         user_id=current_user.id,
         title=body.title,
         section=body.section,
+        workspace_id=workspace_uuid,
     )
     db.add(conv)
     await db.commit()
@@ -50,6 +72,7 @@ async def create_conversation(
         id=str(conv.id),
         title=conv.title,
         section=conv.section,
+        workspace_id=str(conv.workspace_id) if conv.workspace_id else None,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
         message_count=0,
@@ -68,11 +91,30 @@ async def list_conversations(
     page: int = Query(1, ge=1, description="Pagina (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items por pagina"),
     section: str | None = Query(None, description="Filtrar por seccion"),
+    workspace_id: str | None = Query(
+        None,
+        description=(
+            "Filtrar por workspace: UUID = solo chats de ese workspace; "
+            "'none' = solo chats sueltos (sin workspace); omitido = todos"
+        ),
+    ),
 ):
     # Base filter: only this user's conversations
     base_filter = Conversation.user_id == current_user.id
     if section:
         base_filter = base_filter & (Conversation.section == section)
+    if workspace_id is not None:
+        if workspace_id == "none":
+            base_filter = base_filter & Conversation.workspace_id.is_(None)
+        else:
+            try:
+                ws_uuid = UUID(workspace_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="workspace_id inválido",
+                )
+            base_filter = base_filter & (Conversation.workspace_id == ws_uuid)
 
     # Count total
     count_query = select(func.count()).select_from(Conversation).where(base_filter)
@@ -134,6 +176,7 @@ async def list_conversations(
                 id=str(conv.id),
                 title=conv.title,
                 section=conv.section,
+                workspace_id=str(conv.workspace_id) if conv.workspace_id else None,
                 created_at=conv.created_at,
                 updated_at=conv.updated_at,
                 message_count=msg_count,
@@ -194,6 +237,7 @@ async def get_conversation(
         id=str(conv.id),
         title=conv.title,
         section=conv.section,
+        workspace_id=str(conv.workspace_id) if conv.workspace_id else None,
         created_at=conv.created_at,
         updated_at=conv.updated_at,
         messages=[
@@ -206,6 +250,79 @@ async def get_conversation(
             )
             for m in sorted(conv.messages, key=lambda m: m.created_at)
         ],
+    )
+
+
+@router.patch(
+    "/{conversation_id}",
+    response_model=ConversationOut,
+    summary="Renombrar conversación o moverla entre workspaces",
+    responses={
+        404: {"description": "Conversacion no encontrada o no pertenece al usuario"},
+    },
+)
+async def update_conversation(
+    conversation_id: str,
+    body: UpdateConversationRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        conv_uuid = UUID(conversation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversacion no encontrada",
+        )
+
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == conv_uuid,
+            Conversation.user_id == current_user.id,
+        )
+    )
+    conv = result.scalar_one_or_none()
+    if conv is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversacion no encontrada",
+        )
+
+    data = body.model_dump(exclude_unset=True)
+
+    if "title" in data and data["title"]:
+        conv.title = data["title"]
+
+    if "workspace_id" in data:
+        new_ws_id = data["workspace_id"]
+        if new_ws_id is None or new_ws_id == "":
+            conv.workspace_id = None
+        else:
+            try:
+                new_ws_uuid = UUID(new_ws_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="workspace_id inválido",
+                )
+            ws = await db.get(Workspace, new_ws_uuid)
+            if ws is None or ws.user_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Workspace no encontrado",
+                )
+            conv.workspace_id = new_ws_uuid
+
+    await db.commit()
+    await db.refresh(conv)
+
+    return ConversationOut(
+        id=str(conv.id),
+        title=conv.title,
+        section=conv.section,
+        workspace_id=str(conv.workspace_id) if conv.workspace_id else None,
+        created_at=conv.created_at,
+        updated_at=conv.updated_at,
     )
 
 

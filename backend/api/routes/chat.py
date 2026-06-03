@@ -26,6 +26,8 @@ The -N flag disables output buffering so you see tokens in real time.
 import asyncio
 import json
 import logging
+import re
+from datetime import UTC, datetime
 from uuid import UUID
 
 from api.schemas.chat import ChatRequest
@@ -39,12 +41,18 @@ from models.conversation import Conversation
 from models.message import Message
 from models.project import Project
 from models.user import User
+from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
+from services.calculator_tools import (
+    CALCULATOR_TOOL_IMPLS,
+    CALCULATOR_TOOL_SCHEMAS,
+    run_calculator_tool,
+)
 from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
 from services.token_usage_service import log_token_usage
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -84,16 +92,30 @@ async def _get_or_create_conversation(
     user_id: UUID,
     conversation_id: UUID | None,
     first_message: str | None = None,
+    workspace_id: UUID | None = None,
 ) -> Conversation:
     """
     Load an existing conversation (verifying ownership) or create a new one.
 
     When creating, derive the title from `first_message` so the sidebar
     shows something meaningful instead of the "Nueva conversación" default.
+
+    `workspace_id` solo aplica al crear (capa 1B). Si viene, verifica que
+    el workspace pertenezca al usuario antes de asociarlo.
     """
     if conversation_id is None:
         title = _derive_title(first_message or "")
-        conv = Conversation(user_id=user_id, title=title)
+        # Validar ownership del workspace si fue provisto.
+        if workspace_id is not None:
+            ws = await db.get(Workspace, workspace_id)
+            if ws is None or ws.user_id != user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Workspace no encontrado",
+                )
+        conv = Conversation(
+            user_id=user_id, title=title, workspace_id=workspace_id
+        )
         db.add(conv)
         await db.flush()
         return conv
@@ -105,6 +127,209 @@ async def _get_or_create_conversation(
             detail="Conversación no encontrada",
         )
     return conv
+
+
+async def _load_profile_items(
+    db: AsyncSession, user_id: UUID
+) -> list[tuple[str, str]]:
+    """Carga items de perfil global del usuario, ordenados por sort_order."""
+    result = await db.execute(
+        select(UserProfileGlobal)
+        .where(UserProfileGlobal.user_id == user_id)
+        .order_by(
+            UserProfileGlobal.sort_order.asc(),
+            UserProfileGlobal.created_at.asc(),
+        )
+    )
+    return [(i.key, i.value) for i in result.scalars().all()]
+
+
+async def _load_workspace_memory(
+    db: AsyncSession, workspace_id: UUID
+) -> list[tuple[str, str]]:
+    """Carga items de memoria del workspace, ordenados por uso reciente primero."""
+    result = await db.execute(
+        select(WorkspaceMemory)
+        .where(WorkspaceMemory.workspace_id == workspace_id)
+        .order_by(
+            # Items confirmados recientes primero; los viejos al final.
+            WorkspaceMemory.last_used_at.desc().nullslast(),
+            WorkspaceMemory.created_at.asc(),
+        )
+    )
+    return [(i.key, i.value) for i in result.scalars().all()]
+
+
+# ════════════════════════════════════════════════════════════════════
+# Capa 1B — tool `remember`: captura híbrida de memoria desde el chat.
+# El modelo decide CUÁNDO llamarla (reglas en el system prompt). Acá solo
+# persistimos. Best-effort: si algo falla, devolvemos error legible y el
+# chat sigue.
+# ════════════════════════════════════════════════════════════════════
+# Caps (espejo de los de routes/workspaces.py y routes/profile.py).
+_MAX_WORKSPACE_MEM = 200
+_MAX_PROFILE_MEM = 100
+
+REMEMBER_TOOL_SCHEMA: dict = {
+    "name": "remember",
+    "description": (
+        "Guarda un dato DURADERO en la memoria para recordarlo en futuros chats. "
+        "Llamala cuando el usuario comparte información estable y útil a futuro.\n\n"
+        "scope='workspace' → dato del proyecto activo (cliente, monto en "
+        "negociación, dirección/lote, FOT, decisión tomada, dato de una escritura "
+        "analizada). Solo si hay un proyecto activo.\n"
+        "scope='profile' → dato personal del usuario que aplica a TODOS los chats "
+        "(rol, zonas de trabajo, tipología habitual, estructura jurídica preferida).\n\n"
+        "key: identificador corto en snake_case (ej: 'cliente_principal', "
+        "'precio_m2_objetivo', 'rol'). value: el dato concreto y conciso.\n\n"
+        "NO guardes: preguntas, cálculos efímeros, charla trivial, ni datos de pago "
+        "sensibles (CBU, número de tarjeta, contraseñas). Si dudás si el usuario "
+        "quiere recordarlo, preguntale ANTES en vez de llamar esta tool."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "scope": {"type": "string", "enum": ["workspace", "profile"]},
+            "key": {"type": "string", "description": "snake_case corto, máx 80 chars"},
+            "value": {"type": "string", "description": "el dato, máx 1000 chars"},
+            "confidence": {
+                "type": "string",
+                "enum": ["high", "medium", "low"],
+                "description": "qué tan seguro estás del dato",
+            },
+        },
+        "required": ["scope", "key", "value"],
+    },
+}
+
+
+def _norm_mem_key(raw: str) -> str:
+    """Normaliza la key a snake_case seguro (máx 80)."""
+    k = (raw or "").strip().lower()
+    k = re.sub(r"\s+", "_", k)
+    k = re.sub(r"[^a-z0-9_\-\.]", "", k)
+    return k[:80]
+
+
+async def _persist_memory_item(
+    db: AsyncSession,
+    user_id: UUID,
+    workspace_id: UUID | None,
+    inputs: dict,
+) -> dict:
+    """Handler del tool `remember`. Upsert por (scope, key)."""
+    scope = (inputs.get("scope") or "").strip()
+    key = _norm_mem_key(inputs.get("key") or "")
+    value = (inputs.get("value") or "").strip()[:1000]
+    confidence = inputs.get("confidence") or "high"
+    if confidence not in ("high", "medium", "low"):
+        confidence = "high"
+    if not key or not value:
+        return {"error": "key y value son obligatorios", "saved": False}
+
+    now = datetime.now(UTC)
+
+    if scope == "workspace":
+        if workspace_id is None:
+            return {
+                "error": "No hay proyecto activo en este chat; usá scope='profile' "
+                "o pedile al usuario que abra un proyecto.",
+                "saved": False,
+            }
+        existing = await db.execute(
+            select(WorkspaceMemory).where(
+                WorkspaceMemory.workspace_id == workspace_id,
+                WorkspaceMemory.key == key,
+            )
+        )
+        item = existing.scalar_one_or_none()
+        if item is None:
+            n = (
+                await db.execute(
+                    select(func.count())
+                    .select_from(WorkspaceMemory)
+                    .where(WorkspaceMemory.workspace_id == workspace_id)
+                )
+            ).scalar() or 0
+            if n >= _MAX_WORKSPACE_MEM:
+                return {"error": "Memoria del proyecto llena", "saved": False}
+            item = WorkspaceMemory(
+                workspace_id=workspace_id,
+                key=key,
+                value=value,
+                source="auto-silent",
+                confidence=confidence,
+                confirmed_at=now,
+                last_used_at=now,
+            )
+            db.add(item)
+        else:
+            item.value = value
+            item.confidence = confidence
+            item.source = "auto-silent"
+            item.confirmed_at = now
+            item.last_used_at = now
+            item.updated_at = now
+        await db.commit()
+        return {"saved": True, "scope": "workspace", "key": key}
+
+    # scope == profile (default seguro para cualquier otro valor)
+    existing = await db.execute(
+        select(UserProfileGlobal).where(
+            UserProfileGlobal.user_id == user_id,
+            UserProfileGlobal.key == key,
+        )
+    )
+    item = existing.scalar_one_or_none()
+    if item is None:
+        n = (
+            await db.execute(
+                select(func.count())
+                .select_from(UserProfileGlobal)
+                .where(UserProfileGlobal.user_id == user_id)
+            )
+        ).scalar() or 0
+        if n >= _MAX_PROFILE_MEM:
+            return {"error": "Perfil lleno", "saved": False}
+        item = UserProfileGlobal(
+            user_id=user_id,
+            key=key,
+            value=value,
+            source="auto-silent",
+            confidence=confidence,
+            confirmed_at=now,
+            last_used_at=now,
+        )
+        db.add(item)
+    else:
+        item.value = value
+        item.confidence = confidence
+        item.source = "auto-silent"
+        item.confirmed_at = now
+        item.last_used_at = now
+        item.updated_at = now
+    await db.commit()
+    return {"saved": True, "scope": "profile", "key": key}
+
+
+def _make_chat_tool_runner(
+    db: AsyncSession, user_id: UUID, workspace_id: UUID | None
+):
+    """Dispatcher de tools del chat: retrieval (puras) + remember (con contexto)."""
+
+    async def _runner(name: str, inputs: dict) -> dict:
+        if name == "remember":
+            try:
+                return await _persist_memory_item(db, user_id, workspace_id, inputs or {})
+            except Exception as e:  # noqa: BLE001
+                logger.exception("remember tool falló")
+                return {"error": f"No se pudo guardar: {e}", "saved": False}
+        # Calculadoras financieras (Capa 2): tools puras, sin db/red.
+        if name in CALCULATOR_TOOL_IMPLS:
+            return await run_calculator_tool(name, inputs)
+        return await run_retrieval_tool(name, inputs)
+
+    return _runner
 
 
 async def _load_history(
@@ -188,9 +413,14 @@ async def chat(
     rate_limit_headers = await check_user_rate_limit(db, current_user)
 
     # 2. Get or create conversation (verifies ownership).
-    #    If creating new, derive title from the first user message.
+    #    If creating new, derive title from the first user message and
+    #    optionally assign workspace.
     conv = await _get_or_create_conversation(
-        db, current_user.id, body.conversation_id, first_message=body.message
+        db,
+        current_user.id,
+        body.conversation_id,
+        first_message=body.message,
+        workspace_id=body.workspace_id,
     )
 
     # 3. Load prior history
@@ -247,10 +477,31 @@ async def chat(
     project_context = ""
     if body.context_type == "sol":
         project_context = await _build_sol_project_context(db, current_user.id)
+
+    # Capa 1B — perfil global del usuario y memoria del workspace activo.
+    # El perfil viaja siempre. La memoria del workspace solo si la
+    # conversación está vinculada a uno. Best-effort: si algo falla acá,
+    # mejor responder sin memoria que romper el chat.
+    profile_items: list[tuple[str, str]] = []
+    workspace_memory: list[tuple[str, str]] = []
+    workspace_name: str | None = None
+    try:
+        profile_items = await _load_profile_items(db, current_user.id)
+        if conv.workspace_id is not None:
+            workspace_memory = await _load_workspace_memory(db, conv.workspace_id)
+            ws_obj = await db.get(Workspace, conv.workspace_id)
+            if ws_obj is not None:
+                workspace_name = ws_obj.name
+    except Exception:
+        logger.exception("Error cargando memoria (continúa sin memoria)")
+
     system_prompt = await build_system_prompt(
         body.context_type,
         project_context,
         user_message=body.message,
+        profile_items=profile_items,
+        workspace_memory=workspace_memory,
+        workspace_name=workspace_name,
     )
 
     conv_id_str = str(conv.id)
@@ -261,8 +512,19 @@ async def chat(
     use_retrieval_tools = (
         body.context_type == "chat" and not body.attachments
     )
-    tools_arg = RETRIEVAL_TOOL_SCHEMAS if use_retrieval_tools else None
-    tool_runner_arg = run_retrieval_tool if use_retrieval_tools else None
+    # Capa 1B: además de retrieval, exponemos `remember` para que el modelo
+    # guarde memoria durante el chat (captura híbrida). El dispatcher lleva
+    # el contexto (user + workspace de la conversación).
+    if use_retrieval_tools:
+        tools_arg = (
+            RETRIEVAL_TOOL_SCHEMAS + CALCULATOR_TOOL_SCHEMAS + [REMEMBER_TOOL_SCHEMA]
+        )
+        tool_runner_arg = _make_chat_tool_runner(
+            db, current_user.id, conv.workspace_id
+        )
+    else:
+        tools_arg = None
+        tool_runner_arg = None
 
     async def event_stream():
         """

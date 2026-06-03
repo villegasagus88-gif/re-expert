@@ -1,10 +1,12 @@
 # NOTA: bumps de seguridad — ver `docs/SECURITY_UPDATES_2026-05.md`.
 # Cuando upgradés, verificar que tests pasan + smoke test de chat,
 # auth y stripe webhook (los 3 endpoints que más tocan deps actualizadas).
-fastapi==0.115.12
-# starlette es transitiva de fastapi. fastapi 0.115.12 acepta hasta
-# <0.50, así que pineamos a la versión segura más alta dentro del
-# rango compatible.
+# fastapi 0.121.0 es el primer release que widena el pin de starlette
+# a <0.50 — necesario para mantener starlette==0.49.1 con sus CVE fixes
+# (PYSEC-2026-161, CVE-2025-54121, CVE-2025-62727).
+fastapi==0.121.0
+# starlette es transitiva de fastapi. fastapi 0.121.0 acepta
+# starlette>=0.40.0,<0.50.0, así que 0.49.1 queda dentro del rango.
 starlette==0.49.1
 uvicorn[standard]==0.34.2
 pydantic==2.11.3
