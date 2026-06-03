@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RE Expert</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -391,7 +391,7 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .empty-desc{font-size:11.5px;color:var(--text-3);line-height:1.55;max-width:220px;margin:0 auto}
 
 /* Input */
-.input-area{padding:12px 20px 14px;flex-shrink:0;background:var(--bg-0)}
+.input-area{padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));flex-shrink:0;background:var(--bg-0)}
 .input-wrapper{display:flex;align-items:flex-end;gap:6px;max-width:720px;margin:0 auto;background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-xl);padding:5px 5px 5px 16px;box-shadow:var(--shadow-input);transition:box-shadow .2s,border-color .2s}
 .input-wrapper:focus-within{box-shadow:var(--shadow-input-focus);border-color:transparent}
 textarea{flex:1;border:none;outline:none;resize:none;background:transparent;font-family:var(--font);font-size:13.5px;line-height:1.5;color:var(--text-0);padding:7px 0;max-height:140px;min-height:22px}
@@ -809,6 +809,12 @@ select.pay-form-input{cursor:pointer}
   .opinion-grid{grid-template-columns:1fr}
   .sol-actions{grid-template-columns:1fr;max-width:280px}
   .course-grid{grid-template-columns:1fr}
+  /* iOS Safari hace zoom al focusear un input con font-size<16px y descuadra el
+     layout. Forzamos 16px en mobile en todos los campos de texto. !important
+     para ganarle a los estilos inline del authModal y a reglas con clase. */
+  input,textarea,select{font-size:16px!important}
+  /* Touch targets de navegación >=44px (Apple HIG) en el topbar. */
+  .topbar .btn-icon{width:44px;height:44px}
 }
 
 /* ----- SOL toast: feedback visual de datos cargados/errores ------------ */
