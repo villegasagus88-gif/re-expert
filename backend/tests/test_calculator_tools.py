@@ -92,9 +92,7 @@ def test_tool_flujos_invalidos():
 def test_dispatcher_desconocido():
     import asyncio
 
-    out = asyncio.get_event_loop().run_until_complete(
-        run_calculator_tool("no_existe", {})
-    )
+    out = asyncio.run(run_calculator_tool("no_existe", {}))
     assert "error" in out
 
 

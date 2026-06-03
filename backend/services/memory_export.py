@@ -16,6 +16,7 @@ import csv
 import io
 from datetime import datetime
 from typing import Any
+from xml.sax.saxutils import escape as _xml_escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -33,6 +34,30 @@ _CONF_LABEL = {"high": "Alta", "medium": "Media", "low": "Baja"}
 
 def _esc(v: Any) -> str:
     return "" if v is None else str(v)
+
+
+def _pdf(v: Any) -> str:
+    """Escapa el texto para el mini-markup tipo XML de reportlab Paragraph.
+
+    Sin esto, un value con '<' o '&' rompe el render (lanza excepción → 500)
+    o inyecta formato/tags en el PDF. Escapa &, < y > a entidades.
+    """
+    return _xml_escape(_esc(v))
+
+
+# CSV/formula injection: un campo que arranca con uno de estos caracteres puede
+# ejecutar fórmulas o DDE al abrirse en Excel/LibreOffice/Sheets. El export de
+# memoria está pensado para compartirse ("llevar a una reunión"), así que el
+# archivo cruza una frontera de confianza: lo abre alguien distinto del que lo
+# generó. Prefijamos con apóstrofo para forzar interpretación como texto literal.
+_CSV_FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(v: Any) -> str:
+    s = _esc(v)
+    if s and s[0] in _CSV_FORMULA_TRIGGERS:
+        return "'" + s
+    return s
 
 
 def render_memory_pdf(project_name: str, items: list[dict[str, Any]]) -> bytes:
@@ -57,7 +82,7 @@ def render_memory_pdf(project_name: str, items: list[dict[str, Any]]) -> bytes:
     )
 
     story: list[Any] = []
-    story.append(Paragraph(f"Memoria del proyecto: {_esc(project_name)}", h1))
+    story.append(Paragraph(f"Memoria del proyecto: {_pdf(project_name)}", h1))
     story.append(
         Paragraph(
             f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} — RE Expert",
@@ -82,11 +107,11 @@ def render_memory_pdf(project_name: str, items: list[dict[str, Any]]) -> bytes:
         ]
     ]
     for it in items:
-        key = _esc(it.get("key")).replace("_", " ")
+        key = _pdf(it.get("key")).replace("_", " ")
         rows.append(
             [
                 Paragraph(key, cell),
-                Paragraph(_esc(it.get("value")), cell),
+                Paragraph(_pdf(it.get("value")), cell),
                 Paragraph(_CONF_LABEL.get(it.get("confidence"), "—"), cell),
                 Paragraph(_SOURCE_LABEL.get(it.get("source"), "—"), cell),
             ]
@@ -124,15 +149,15 @@ def render_memory_csv(project_name: str, items: list[dict[str, Any]]) -> bytes:
     """Genera el CSV (UTF-8 con BOM para que Excel muestre acentos)."""
     sio = io.StringIO()
     w = csv.writer(sio)
-    w.writerow(["Proyecto", project_name])
+    w.writerow(["Proyecto", _csv_safe(project_name)])
     w.writerow(["Generado", datetime.now().strftime("%d/%m/%Y %H:%M")])
     w.writerow([])
     w.writerow(["Dato", "Valor", "Confianza", "Origen"])
     for it in items:
         w.writerow(
             [
-                _esc(it.get("key")),
-                _esc(it.get("value")),
+                _csv_safe(it.get("key")),
+                _csv_safe(it.get("value")),
                 _CONF_LABEL.get(it.get("confidence"), ""),
                 _SOURCE_LABEL.get(it.get("source"), ""),
             ]
