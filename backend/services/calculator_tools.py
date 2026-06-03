@@ -192,6 +192,126 @@ def _tool_analizar_inversion(
 
 
 # ════════════════════════════════════════════════════════════════════
+# Tool: factibilidad_rapida
+# ════════════════════════════════════════════════════════════════════
+_FACTOR_VENDIBLE_DEFAULT = 0.85  # eficiencia vendible/construible típica
+
+
+def _tool_factibilidad_rapida(
+    precio_venta_m2: float | None = None,
+    costo_construccion_m2: float | None = None,
+    m2_vendibles: float | None = None,
+    superficie_terreno_m2: float | None = None,
+    fot: float | None = None,
+    factor_vendible: float | None = None,
+    costo_terreno: float | None = None,
+    incidencia_terreno_m2: float | None = None,
+    comisiones_pct: float | None = None,
+    gastos_generales_pct: float | None = None,
+    impuestos_pct: float | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Factibilidad rápida de un terreno/proyecto:
+      ingresos = m² vendibles × precio_venta_m2
+      costos   = terreno + obra + gastos generales + comisiones + impuestos
+      margen   = ingresos − costos
+    """
+    notas: list[str] = []
+
+    def _num(x):
+        return None if x is None else float(x)
+
+    try:
+        precio_venta_m2 = _num(precio_venta_m2)
+        costo_construccion_m2 = _num(costo_construccion_m2)
+    except (TypeError, ValueError):
+        return {"error": "precio_venta_m2 y costo_construccion_m2 deben ser números.", "ok": False}
+
+    if not precio_venta_m2 or not costo_construccion_m2:
+        return {
+            "error": "Necesito al menos precio_venta_m2 y costo_construccion_m2.",
+            "ok": False,
+        }
+
+    fv = float(factor_vendible) if factor_vendible else _FACTOR_VENDIBLE_DEFAULT
+
+    # ── Determinar m² construibles y vendibles ──
+    m2_construibles = None
+    if m2_vendibles:
+        m2_vendibles = float(m2_vendibles)
+        m2_construibles = m2_vendibles / fv if factor_vendible else m2_vendibles
+        if not factor_vendible:
+            notas.append("Asumí m² construibles = m² vendibles (no se dio factor_vendible).")
+    elif superficie_terreno_m2 and fot:
+        m2_construibles = float(superficie_terreno_m2) * float(fot)
+        m2_vendibles = m2_construibles * fv
+        notas.append(f"m² vendibles estimados como construibles × {fv} (factor_vendible).")
+    else:
+        return {
+            "error": "Dame m2_vendibles, o bien superficie_terreno_m2 + fot para estimarlos.",
+            "ok": False,
+        }
+
+    # ── Ingresos ──
+    ingresos = m2_vendibles * precio_venta_m2
+
+    # ── Costos ──
+    costo_obra = m2_construibles * costo_construccion_m2
+
+    if costo_terreno is not None:
+        costo_terreno = float(costo_terreno)
+    elif incidencia_terreno_m2 is not None:
+        costo_terreno = float(incidencia_terreno_m2) * m2_vendibles
+        notas.append("Costo de terreno estimado por incidencia × m² vendibles.")
+    else:
+        costo_terreno = 0.0
+        notas.append("No se incluyó costo de terreno (no se dio costo_terreno ni incidencia).")
+
+    g_pct = float(gastos_generales_pct) if gastos_generales_pct else 0.0
+    c_pct = float(comisiones_pct) if comisiones_pct else 0.0
+    i_pct = float(impuestos_pct) if impuestos_pct else 0.0
+    if not gastos_generales_pct:
+        notas.append("Gastos generales (soft costs) en 0% — agregá gastos_generales_pct si aplica.")
+    if not comisiones_pct:
+        notas.append("Comisiones en 0% — agregá comisiones_pct (ej 4) si vendés vía inmobiliaria.")
+
+    gastos_generales = costo_obra * g_pct / 100.0
+    comisiones = ingresos * c_pct / 100.0
+    impuestos = ingresos * i_pct / 100.0
+
+    inversion_dura = costo_terreno + costo_obra + gastos_generales
+    costo_total = inversion_dura + comisiones + impuestos
+    margen = ingresos - costo_total
+
+    return {
+        "ok": True,
+        "m2_construibles": _r2(m2_construibles),
+        "m2_vendibles": _r2(m2_vendibles),
+        "ingresos_por_venta": _r2(ingresos),
+        "costo_terreno": _r2(costo_terreno),
+        "costo_obra": _r2(costo_obra),
+        "gastos_generales": _r2(gastos_generales),
+        "comisiones": _r2(comisiones),
+        "impuestos": _r2(impuestos),
+        "inversion_total": _r2(inversion_dura),
+        "costo_total": _r2(costo_total),
+        "margen": _r2(margen),
+        "margen_sobre_ventas_pct": _r2(margen / ingresos * 100) if ingresos else None,
+        "markup_sobre_costo_pct": _r2(margen / costo_total * 100) if costo_total else None,
+        "roi_sobre_inversion_pct": _r2(margen / inversion_dura * 100) if inversion_dura else None,
+        "supuestos": {
+            "factor_vendible": fv,
+            "comisiones_pct": c_pct,
+            "gastos_generales_pct": g_pct,
+            "impuestos_pct": i_pct,
+        },
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+# ════════════════════════════════════════════════════════════════════
 # Schemas (formato Anthropic tool_use)
 # ════════════════════════════════════════════════════════════════════
 CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -238,7 +358,35 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
             "required": ["flujos"],
         },
-    }
+    },
+    {
+        "name": "factibilidad_rapida",
+        "description": (
+            "Factibilidad rápida de un terreno o proyecto inmobiliario: calcula "
+            "ingresos por venta (m² vendibles × precio), costos (terreno + obra + "
+            "gastos generales + comisiones + impuestos), margen y rentabilidad "
+            "(margen sobre ventas, markup sobre costo, ROI sobre inversión). Usala "
+            "cuando el usuario evalúe si un terreno/negocio 'cierra'. Podés pasar "
+            "m2_vendibles directo, o superficie_terreno_m2 + fot para estimarlos."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "precio_venta_m2": {"type": "number", "description": "USD por m² vendible."},
+                "costo_construccion_m2": {"type": "number", "description": "USD por m² construible (costo de obra)."},
+                "m2_vendibles": {"type": "number", "description": "m² vendibles. Si se da, se usa directo."},
+                "superficie_terreno_m2": {"type": "number", "description": "Superficie del terreno (alternativa para estimar m²)."},
+                "fot": {"type": "number", "description": "Factor de Ocupación Total (edificabilidad). m² construibles = terreno × FOT."},
+                "factor_vendible": {"type": "number", "description": "Eficiencia vendible/construible (ej 0.85). Default 0.85 al estimar."},
+                "costo_terreno": {"type": "number", "description": "Costo total del terreno en USD."},
+                "incidencia_terreno_m2": {"type": "number", "description": "USD de terreno por m² vendible (alternativa a costo_terreno)."},
+                "comisiones_pct": {"type": "number", "description": "Comisión de venta en % sobre ingresos (ej 4)."},
+                "gastos_generales_pct": {"type": "number", "description": "Gastos generales/soft costs en % sobre el costo de obra (ej 12)."},
+                "impuestos_pct": {"type": "number", "description": "Impuestos en % sobre ingresos (ej 3)."},
+            },
+            "required": ["precio_venta_m2", "costo_construccion_m2"],
+        },
+    },
 ]
 
 
@@ -247,6 +395,7 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
 # ════════════════════════════════════════════════════════════════════
 CALCULATOR_TOOL_IMPLS = {
     "analizar_inversion": _tool_analizar_inversion,
+    "factibilidad_rapida": _tool_factibilidad_rapida,
 }
 
 

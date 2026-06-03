@@ -8,6 +8,7 @@ from services.calculator_tools import (
     _npv,
     _payback,
     _tool_analizar_inversion,
+    _tool_factibilidad_rapida,
     run_calculator_tool,
 )
 
@@ -87,6 +88,57 @@ def test_tool_flujos_invalidos():
     r = _tool_analizar_inversion(flujos=[-1000])
     assert r.get("ok") is False
     assert "error" in r
+
+
+def test_factibilidad_m2_directo():
+    # 1000 m² vendibles × 2500 − obra(1000×1000) − terreno(500000) = 2.5M − 1M − 0.5M = 1.0M
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=2500,
+        costo_construccion_m2=1000,
+        m2_vendibles=1000,
+        costo_terreno=500000,
+    )
+    assert r["ok"] is True
+    assert r["ingresos_por_venta"] == 2500000.0
+    assert r["costo_obra"] == 1000000.0
+    assert r["costo_terreno"] == 500000.0
+    assert r["margen"] == 1000000.0
+    assert r["margen_sobre_ventas_pct"] == 40.0  # 1M / 2.5M
+
+
+def test_factibilidad_desde_terreno_fot():
+    # terreno 500 × fot 2 = 1000 construibles; vendibles = 1000 × 0.85 = 850
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=3000,
+        costo_construccion_m2=1200,
+        superficie_terreno_m2=500,
+        fot=2,
+    )
+    assert r["ok"] is True
+    assert r["m2_construibles"] == 1000.0
+    assert r["m2_vendibles"] == 850.0
+    assert r["supuestos"]["factor_vendible"] == 0.85
+
+
+def test_factibilidad_con_comisiones_y_gastos():
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=2000,
+        costo_construccion_m2=900,
+        m2_vendibles=1000,
+        costo_terreno=300000,
+        comisiones_pct=4,
+        gastos_generales_pct=10,
+    )
+    # ingresos 2M; obra 900k; gg 90k; comis 80k; terreno 300k → costo 1.37M → margen 630k
+    assert r["comisiones"] == 80000.0
+    assert r["gastos_generales"] == 90000.0
+    assert r["costo_total"] == 1370000.0
+    assert r["margen"] == 630000.0
+
+
+def test_factibilidad_faltan_datos():
+    r = _tool_factibilidad_rapida(precio_venta_m2=2000, costo_construccion_m2=900)
+    assert r.get("ok") is False  # sin m2 ni terreno+fot
 
 
 def test_dispatcher_desconocido():
