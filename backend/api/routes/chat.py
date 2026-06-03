@@ -45,6 +45,11 @@ from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
+from services.calculator_tools import (
+    CALCULATOR_TOOL_IMPLS,
+    CALCULATOR_TOOL_SCHEMAS,
+    run_calculator_tool,
+)
 from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
 from services.token_usage_service import log_token_usage
 from sqlalchemy import func, select
@@ -319,6 +324,9 @@ def _make_chat_tool_runner(
             except Exception as e:  # noqa: BLE001
                 logger.exception("remember tool falló")
                 return {"error": f"No se pudo guardar: {e}", "saved": False}
+        # Calculadoras financieras (Capa 2): tools puras, sin db/red.
+        if name in CALCULATOR_TOOL_IMPLS:
+            return await run_calculator_tool(name, inputs)
         return await run_retrieval_tool(name, inputs)
 
     return _runner
@@ -508,7 +516,9 @@ async def chat(
     # guarde memoria durante el chat (captura híbrida). El dispatcher lleva
     # el contexto (user + workspace de la conversación).
     if use_retrieval_tools:
-        tools_arg = RETRIEVAL_TOOL_SCHEMAS + [REMEMBER_TOOL_SCHEMA]
+        tools_arg = (
+            RETRIEVAL_TOOL_SCHEMAS + CALCULATOR_TOOL_SCHEMAS + [REMEMBER_TOOL_SCHEMA]
+        )
         tool_runner_arg = _make_chat_tool_runner(
             db, current_user.id, conv.workspace_id
         )
