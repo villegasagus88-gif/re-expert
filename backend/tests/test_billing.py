@@ -44,7 +44,7 @@ async def test_create_pro_checkout_503_when_stripe_not_configured():
     from fastapi import HTTPException
     from services.stripe_service import create_pro_checkout_session
 
-    user = type("U", (), {"plan": "free", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
+    user = type("U", (), {"plan": "trial", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
 
     with patch("services.stripe_service.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = ""
@@ -75,7 +75,7 @@ async def test_create_pro_checkout_503_when_price_not_configured():
     from fastapi import HTTPException
     from services.stripe_service import create_pro_checkout_session
 
-    user = type("U", (), {"plan": "free", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
+    user = type("U", (), {"plan": "trial", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
 
     with patch("services.stripe_service.settings") as mock_settings:
         mock_settings.STRIPE_SECRET_KEY = "sk_test_xxx"
@@ -92,7 +92,7 @@ async def test_create_pro_checkout_returns_session_url():
     """Happy path — Stripe returns a session, helper returns {url, session_id}."""
     from services.stripe_service import create_pro_checkout_session
 
-    user = type("U", (), {"plan": "free", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
+    user = type("U", (), {"plan": "trial", "email": "x@y.com", "id": "00000000-0000-0000-0000-000000000001"})()
 
     fake_session = type("S", (), {"url": "https://checkout.stripe.com/c/pay/cs_test_xxx", "id": "cs_test_xxx"})()
 

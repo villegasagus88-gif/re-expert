@@ -4,10 +4,11 @@ Auth service — standalone authentication with bcrypt + JWT.
 Handles: password hashing, credential validation, token generation,
 user registration, and session refresh. No external auth provider needed.
 """
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import bcrypt
+from config.plans import TRIAL_DAYS
 from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.user import User
@@ -63,7 +64,8 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
             password_hash=_hash_password(password),
             full_name=full_name,
             role="user",
-            plan="free",
+            plan="trial",
+            trial_ends_at=datetime.now(UTC) + timedelta(days=TRIAL_DAYS),
             last_login=datetime.now(UTC),
         )
         db.add(user)

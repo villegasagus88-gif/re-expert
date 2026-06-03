@@ -1,69 +1,70 @@
 """
 Single source of truth for plan tiers, limits, features and pricing.
 
+RE Expert es **pago-only** (no existe tier free). Estados del campo `plan`:
+  - "trial"    → evaluación de 7 días, acceso completo.
+  - "pro"      → suscripción paga activa, acceso completo.
+  - "inactive" → trial vencido o suscripción cancelada/caída → sin acceso (paywall).
 
+El acceso se resuelve en `core/plan_gate.has_access()`. Acá viven los límites de
+rate y las features: `trial` y `pro` son equivalentes en capacidades (la única
+diferencia es el cobro). El monto se cobra vía Mercado Pago (configurado en el
+panel de MP); ver docs/MODELO_PAGO.md.
 
-Both `services/rate_limit_service.py` and any future plan-gating logic
-should import from here so that changing a limit in one place updates
-the whole app (and the frontend pricing copy is documented next to it).
-
-If you change anything here, also update:
-    - frontend/pricing.html      (visible copy)
-    - docs/PLANS.md              (comparative table)
+Si cambiás algo acá, actualizá también:
+    - frontend/pricing.html      (copy visible)
+    - docs/MODELO_PAGO.md        (spec)
 """
 from __future__ import annotations
 
 from typing import Literal
 
-PlanName = Literal["free", "pro"]
+PlanName = Literal["trial", "pro", "inactive"]
 
-# Hard rate-limits enforced by services/rate_limit_service.py.
-# Keep keys in sync with the service: it reads PLAN_LIMITS[plan]["per_hour"|"per_day"].
+# Duración del trial en días. Configurable; ver register_user.
+TRIAL_DAYS = 7
+
+# Rate-limits por plan CON acceso. trial == pro (no friccionar la evaluación).
+# Un usuario "inactive" no llega al rate limit: el gate de acceso lo corta antes.
 PLAN_LIMITS: dict[str, dict[str, int]] = {
-    "free": {"per_hour": 5, "per_day": 20},
+    "trial": {"per_hour": 50, "per_day": 200},
     "pro": {"per_hour": 50, "per_day": 200},
 }
 
-# Feature flags per plan. True = included, False = gated/upsell.
-# Read by gating logic and by the frontend (via /api/billing/status).
+# Capacidades. trial y pro son equivalentes (la diferencia es el cobro).
+_FULL_FEATURES: dict[str, bool] = {
+    "chat": True,
+    "knowledge_read": True,
+    "history_full": True,
+    "sol_assistant": True,
+    "project_dashboard": True,
+    "indicators_cpi_spi": True,
+    "data_ingest": True,
+    "export": True,
+    "priority_support": True,
+}
 PLAN_FEATURES: dict[str, dict[str, bool]] = {
-    "free": {
-        "chat": True,
-        "knowledge_read": True,        # Materiales / Noticias (lectura)
-        "history_full": False,         # solo últimas 3 conversaciones
-        "sol_assistant": False,        # asistente de obra con contexto del proyecto
-        "project_dashboard": False,    # presupuesto, hitos, materiales
-        "indicators_cpi_spi": False,
-        "data_ingest": False,          # POST /api/data/ingest (vía SOL)
-        "export": False,               # CSV / PDF
-        "priority_support": False,
-    },
-    "pro": {
-        "chat": True,
-        "knowledge_read": True,
-        "history_full": True,
-        "sol_assistant": True,
-        "project_dashboard": True,
-        "indicators_cpi_spi": True,
-        "data_ingest": True,
-        "export": True,
-        "priority_support": True,
-    },
+    "trial": dict(_FULL_FEATURES),
+    "pro": dict(_FULL_FEATURES),
 }
 
-# Pricing (USD). Mostrado en pricing.html y usado para validar consistencia
-# con el Stripe Price configurado en STRIPE_PRICE_ID_PRO.
+# Plan sin acceso (inactive / desconocido): todas las features en False.
+_NO_FEATURES: dict[str, bool] = dict.fromkeys(_FULL_FEATURES, False)
+
+# Precio del plan pago. Monto FINAL a definir y configurar en Mercado Pago (ARS).
 PLAN_PRICING: dict[str, dict[str, float | str]] = {
-    "free": {"amount": 0.0, "currency": "USD", "period": "mes"},
-    "pro": {"amount": 19.0, "currency": "USD", "period": "mes"},
+    "pro": {"amount": 0.0, "currency": "ARS", "period": "mes"},  # TODO: monto final
 }
+
+# Límite mínimo para planes sin acceso (no debería usarse: el gate corta antes).
+_MIN_LIMITS: dict[str, int] = {"per_hour": 0, "per_day": 0}
 
 
 def has_feature(plan: str, feature: str) -> bool:
-    """True if `plan` includes `feature`. Defaults to free if plan unknown."""
-    return PLAN_FEATURES.get(plan, PLAN_FEATURES["free"]).get(feature, False)
+    """True si `plan` incluye `feature`. Plan sin acceso/desconocido → False."""
+    return PLAN_FEATURES.get(plan, _NO_FEATURES).get(feature, False)
 
 
 def limits_for(plan: str) -> dict[str, int]:
-    """Per-hour / per-day caps for a plan. Defaults to free if unknown."""
-    return PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+    """Caps per-hour/per-day del plan. Plan sin acceso/desconocido → mínimo."""
+    return PLAN_LIMITS.get(plan, _MIN_LIMITS)

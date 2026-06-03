@@ -396,16 +396,8 @@ async def chat(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Gate: SOL context requires Pro plan
-    if body.context_type == "sol" and current_user.plan != "pro":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "El Asistente SOL requiere el plan Pro.",
-                "plan_required": "pro",
-                "upgrade_url": "/pricing.html",
-            },
-        )
+    # SOL ya no tiene gate propio: el router de chat exige `require_access`
+    # (modelo pago-only), y el trial habilita SOL igual que pro.
 
     # 1. Per-user rate limit check (raises 429 with Retry-After if exceeded).
     #    Must run BEFORE persisting the user message so the current request

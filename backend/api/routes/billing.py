@@ -17,6 +17,7 @@ from functools import partial
 import stripe
 from config.settings import settings
 from core.auth import get_current_user
+from core.plan_gate import has_access
 from fastapi import APIRouter, Depends
 from models.user import User
 from services.stripe_service import (
@@ -45,6 +46,9 @@ async def billing_status(user: User = Depends(get_current_user)):
     result: dict = {
         "plan": user.plan,
         "is_pro": user.plan == "pro",
+        "is_trial": user.plan == "trial",
+        "has_access": has_access(user),
+        "trial_ends_at": user.trial_ends_at.isoformat() if user.trial_ends_at else None,
         "email": user.email,
         "full_name": user.full_name,
         "stripe_configured": bool(settings.STRIPE_SECRET_KEY),

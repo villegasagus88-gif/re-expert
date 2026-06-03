@@ -232,11 +232,11 @@ async def _activate_pro(
     return user_id_str
 
 
-async def _downgrade_to_free(
+async def _downgrade_to_inactive(
     db: AsyncSession, data_obj: dict[str, Any], reason: str
 ) -> str | None:
     """
-    Handle subscription.deleted / paused / payment_failed → user.plan='free'.
+    Handle subscription.deleted / paused / payment_failed → user.plan='inactive'.
     Looked up by stripe_customer_id. Returns user_id if found.
     """
     customer_id = data_obj.get("customer")
@@ -255,9 +255,9 @@ async def _downgrade_to_free(
         )
         return None
 
-    db_user.plan = "free"
+    db_user.plan = "inactive"
     logger.info(
-        "stripe webhook: downgraded user %s to Free (reason=%s)",
+        "stripe webhook: downgraded user %s to inactive (reason=%s)",
         db_user.id,
         reason,
     )
@@ -298,9 +298,9 @@ async def handle_webhook_event(
     if event_type == "checkout.session.completed":
         await _activate_pro(db, data_obj)
     elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
-        await _downgrade_to_free(db, data_obj, reason=event_type)
+        await _downgrade_to_inactive(db, data_obj, reason=event_type)
     elif event_type == "invoice.payment_failed":
-        await _downgrade_to_free(db, data_obj, reason="invoice.payment_failed")
+        await _downgrade_to_inactive(db, data_obj, reason="invoice.payment_failed")
     else:
         logger.info("stripe webhook: ignored event type %s", event_type)
         await db.commit()

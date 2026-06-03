@@ -1,27 +1,54 @@
 """
-Plan-based access control.
+Access control para el modelo pago-only.
 
-`require_pro` is a FastAPI dependency that raises 403 with a structured
-error body when the authenticated user does not have the 'pro' plan.
+`has_access(user)` decide si un usuario puede usar el producto:
+  - plan "pro"   → siempre.
+  - plan "trial" → mientras now() < trial_ends_at.
+  - "inactive" / vencido / desconocido → no (paywall).
 
-The structured detail lets the frontend show a targeted upgrade prompt
-instead of a generic error.
+`require_access` es la dependency de FastAPI que se aplica a los routers de
+producto; devuelve 403 con un detalle estructurado para que el frontend muestre
+el paywall (no un error genérico).
 """
+from datetime import UTC, datetime
+
 from core.auth import get_current_user
 from fastapi import Depends, HTTPException, status
 from models.user import User
 
-_PRO_REQUIRED = {
-    "message": "Esta función requiere el plan Pro.",
-    "plan_required": "pro",
+_PAYWALL_BASE = {
+    "message": "Necesitás una suscripción activa para usar RE Expert.",
+    "reason": "no_subscription",
     "upgrade_url": "/pricing.html",
 }
 
 
-def require_pro(user: User = Depends(get_current_user)) -> User:
-    if user.plan != "pro":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=_PRO_REQUIRED,
-        )
+def has_access(user: User) -> bool:
+    """True si el usuario tiene acceso: 'pro', o 'trial' aún vigente."""
+    if user.plan == "pro":
+        return True
+    if user.plan == "trial" and user.trial_ends_at is not None:
+        ends = user.trial_ends_at
+        if ends.tzinfo is None:  # normalizar naive → aware por las dudas
+            ends = ends.replace(tzinfo=UTC)
+        return datetime.now(UTC) < ends
+    return False
+
+
+def require_access(user: User = Depends(get_current_user)) -> User:
+    """Dependency: 403 con detalle de paywall si el usuario no tiene acceso."""
+    if not has_access(user):
+        detail = dict(_PAYWALL_BASE)
+        if user.plan == "trial":  # tenía trial pero venció
+            detail["reason"] = "trial_expired"
+            detail["message"] = (
+                "Tu período de prueba terminó. Suscribite para seguir usando RE Expert."
+            )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
     return user
+
+
+# Alias deprecado: en el modelo pago-only "requiere pro" pasa a ser "requiere
+# acceso" (el trial también habilita). Se mantiene para no romper imports
+# mientras se migran los usos a require_access.
+require_pro = require_access

@@ -30,7 +30,7 @@ from models.user import User
 # Helpers
 # ─────────────────────────────────────────────────────────────
 
-def _make_user(plan: str = "free") -> MagicMock:
+def _make_user(plan: str = "pro") -> MagicMock:
     user = MagicMock(spec=User)
     user.id = uuid4()
     user.email = "test@example.com"
@@ -48,7 +48,7 @@ def _parse_sse(content: bytes) -> list[dict]:
     return events
 
 
-async def _fake_stream_chat(messages, system, max_tokens=4096, tools=None, tool_runner=None):
+async def _fake_stream_chat(messages, system, max_tokens=4096, tools=None, tool_runner=None, model=None):
     """Fake Claude stream: two deltas then usage totals."""
     yield {"type": "delta", "text": "Hola"}
     yield {"type": "delta", "text": " mundo"}
@@ -427,9 +427,9 @@ def test_accessing_nonexistent_conversation_returns_404():
 # 7. Plan gating (SOL context)
 # ─────────────────────────────────────────────────────────────
 
-def test_sol_context_blocked_for_free_user():
-    """context_type='sol' returns 403 for users on the free plan."""
-    user = _make_user(plan="free")
+def test_sol_context_blocked_for_user_without_access():
+    """context_type='sol' → 403 (paywall) para usuarios sin acceso (inactive)."""
+    user = _make_user(plan="inactive")
     mock_db = _MockDB()
 
     async def _get_user():
@@ -455,7 +455,6 @@ def test_sol_context_blocked_for_free_user():
 
     assert resp.status_code == 403
     body = resp.json()
-    assert body["detail"]["plan_required"] == "pro"
     assert "upgrade_url" in body["detail"]
 
 
@@ -474,8 +473,8 @@ def test_sol_context_allowed_for_pro_user():
     assert any(e["type"] == "done" for e in events)
 
 
-def test_chat_context_allowed_for_free_user():
-    """Default context_type='chat' is available to free-plan users."""
-    with _chat_client(user=_make_user(plan="free")) as (client, _, _mock_log):
+def test_chat_context_allowed_for_user_with_access():
+    """El chat está disponible para usuarios con acceso (trial/pro)."""
+    with _chat_client(user=_make_user(plan="pro")) as (client, _, _mock_log):
         resp = client.post("/api/chat", json={"message": "hola"})
     assert resp.status_code == 200

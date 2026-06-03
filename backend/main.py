@@ -20,8 +20,9 @@ from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
 from api.routes.workspaces import router as workspaces_router
 from config.settings import settings
+from core.plan_gate import require_access
 from core.rate_limit import limiter
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from services.scheduler_service import start_scheduler, stop_scheduler
@@ -207,31 +208,34 @@ if not settings.DEBUG:
     app.add_middleware(_HTTPSRedirectExceptHealth)
     app.add_middleware(_HSTSMiddleware)
 
-# Routes
+# Routes SIN gate de acceso: necesarias para entrar, pagar y operar la cuenta.
 app.include_router(auth_router)
 app.include_router(billing_router)
-app.include_router(conversations_router)
-app.include_router(chat_router)
-app.include_router(knowledge_router)
-app.include_router(materials_router)
-app.include_router(academia_router)
-app.include_router(payments_router)
-app.include_router(project_router)
-app.include_router(profile_router)
 app.include_router(stripe_router)
 app.include_router(usage_router)
-app.include_router(ingest_router)
-app.include_router(news_router)
-app.include_router(workspaces_router)
+
+# Routes de PRODUCTO: requieren suscripción activa (trial vigente o pro).
+# Modelo pago-only — un usuario sin acceso recibe 403 (paywall) en cualquiera.
+_paid = [Depends(require_access)]
+app.include_router(conversations_router, dependencies=_paid)
+app.include_router(chat_router, dependencies=_paid)
+app.include_router(knowledge_router, dependencies=_paid)
+app.include_router(materials_router, dependencies=_paid)
+app.include_router(academia_router, dependencies=_paid)
+app.include_router(payments_router, dependencies=_paid)
+app.include_router(project_router, dependencies=_paid)
+app.include_router(profile_router, dependencies=_paid)
+app.include_router(ingest_router, dependencies=_paid)
+app.include_router(news_router, dependencies=_paid)
+app.include_router(workspaces_router, dependencies=_paid)
 # SOL agent + reminders + channels
-app.include_router(agent_router)
-app.include_router(reminders_router)
-app.include_router(channels_router)
-app.include_router(contacts_router)
+app.include_router(agent_router, dependencies=_paid)
+app.include_router(reminders_router, dependencies=_paid)
+app.include_router(channels_router, dependencies=_paid)
+app.include_router(contacts_router, dependencies=_paid)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
-import os as _os
 from pathlib import Path as _Path
 
 _reports_dir = _Path(__file__).resolve().parent / "data" / "reports"
@@ -260,8 +264,8 @@ async def health_ready():
     Útil para Kubernetes-style readiness; en Railway hoy usamos solo
     `/health`, pero este endpoint queda disponible para futuros LBs.
     """
-    from sqlalchemy import text as _sa_text
     from models.base import get_session_factory
+    from sqlalchemy import text as _sa_text
 
     try:
         async with get_session_factory()() as db:

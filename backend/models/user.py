@@ -26,11 +26,16 @@ class User(Base):
     role: Mapped[str] = mapped_column(
         String(20), default="user", server_default="user", nullable=False
     )
+    # Modelo pago-only: "trial" (evaluación) | "pro" (paga) | "inactive" (sin acceso).
     plan: Mapped[str] = mapped_column(
-        String(20), default="free", server_default="free", nullable=False
+        String(20), default="trial", server_default="trial", nullable=False
     )
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Fin del trial de evaluación. NULL para usuarios "pro" o "inactive".
+    trial_ends_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
     onboarding_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false", nullable=False

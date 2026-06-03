@@ -21,7 +21,7 @@ from api.schemas.chat import ChatRequest
 from config.settings import settings
 from core.auth import get_current_user
 from core.rate_limit import limiter
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
@@ -98,18 +98,8 @@ async def sol_agent(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # En dev (DEBUG=True) no gateamos para no friccionar el testing local.
-    # En prod sigue requiriendo plan Pro.
-    if current_user.plan != "pro" and not settings.DEBUG:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "El Asistente SOL requiere el plan Pro.",
-                "plan_required": "pro",
-                "upgrade_url": "/pricing.html",
-            },
-        )
-
+    # SOL no tiene gate propio: el router exige `require_access` (modelo
+    # pago-only) y el trial habilita SOL igual que pro.
     rate_limit_headers = await check_user_rate_limit(db, current_user)
     conv = await _get_or_create_conv(
         db, current_user.id, body.conversation_id, body.message
