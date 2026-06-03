@@ -39,7 +39,7 @@ def _compute_indicators(project: Project) -> ProjectIndicators:
 
     cpi = round(ev / ac, 3) if ac > 0 else None
     spi = round(ev / pv, 3) if pv > 0 else None
-    eac_val = pb / cpi if cpi and cpi > 0 else None
+    eac_val = (pb * ac / ev) if (ev > 0 and ac > 0) else None  # EAC exacto (BAC/CPI sin arrastrar el redondeo del CPI)
     desvio = round(eac_val - pb, 2) if eac_val is not None else None
     pct_ejecutado = round(ac / pb * 100, 1) if pb > 0 else 0.0
 

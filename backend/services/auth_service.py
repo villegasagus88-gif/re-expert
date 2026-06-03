@@ -44,6 +44,7 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
     Returns dict with access_token, refresh_token, and user data.
     Raises 409 if email already exists.
     """
+    email = email.strip().lower()  # emails son case-insensitive: evita cuentas duplicadas
     async with get_session_factory()() as db:
         # Check if email already exists
         result = await db.execute(select(User).where(User.email == email))
@@ -86,6 +87,7 @@ async def login_user(email: str, password: str) -> dict:
     Returns dict with access_token, refresh_token, and user data.
     Raises 401 if credentials are invalid.
     """
+    email = email.strip().lower()  # matchea el normalizado en register_user
     async with get_session_factory()() as db:
         # Find user by email
         result = await db.execute(select(User).where(User.email == email))

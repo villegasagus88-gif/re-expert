@@ -117,7 +117,8 @@ async def update_me(
         new_password=body.new_password,
     )
 
-    # Reload user data for response
+    # Response consistente con GET /me: incluir phone y automation_prefs
+    # (si no, el cliente los recibe como null tras un update).
     return UserOut(
         id=str(current_user.id),
         email=current_user.email,
@@ -125,6 +126,8 @@ async def update_me(
         role=current_user.role,
         plan=current_user.plan,
         onboarding_completed=current_user.onboarding_completed,
+        phone=current_user.phone,
+        automation_prefs=current_user.automation_prefs,
     )
 
 

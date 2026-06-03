@@ -3513,13 +3513,19 @@ function solAppendToolChip(toolName, status, result){
   const wrap = document.createElement('div');
   wrap.className = 'sol-tool-chip-wrap';
   let tail = '';
-  const escAttr = u => String(u).replace(/"/g,'&quot;');
+  const escAttr = u => {
+    const s = String(u).trim();
+    // Defensa en profundidad: bloquear esquemas peligrosos (javascript:, data:, …).
+    // Las URLs las genera el backend (wa.me/t.me/tg:/PDF firmado), pero validamos igual.
+    if (!/^(https?:|tel:|mailto:|tg:|whatsapp:)/i.test(s)) return '#';
+    return s.replace(/"/g,'&quot;');
+  };
   if (status === 'done' && result && !result.error){
     // share_pdf_with_contact / compose_message_to_contact: WhatsApp + Telegram links
     if (result.whatsapp_link || result.telegram_link){
       const links = [];
       if (result.whatsapp_link){
-        links.push(`<a href="${escAttr(result.whatsapp_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#25D366">📱 WhatsApp a ${result.contact && result.contact.name || 'contacto'}</a>`);
+        links.push(`<a href="${escAttr(result.whatsapp_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#25D366">📱 WhatsApp a ${escapeHtml(result.contact && result.contact.name || 'contacto')}</a>`);
       }
       if (result.telegram_link){
         links.push(`<a href="${escAttr(result.telegram_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#229ED9">✈️ Telegram</a>`);
@@ -3531,11 +3537,11 @@ function solAppendToolChip(toolName, status, result){
     }
     else if (result.url){
       const fname = result.filename || 'archivo';
-      tail = ` <a href="${escAttr(result.url)}" target="_blank" rel="noopener" class="sol-tool-link">📥 ${fname}</a>`;
+      tail = ` <a href="${escAttr(result.url)}" target="_blank" rel="noopener" class="sol-tool-link">📥 ${escapeHtml(fname)}</a>`;
     } else if (result.deep_link){
       tail = ` <a href="${escAttr(result.deep_link)}" target="_blank" rel="noopener" class="sol-tool-link">Abrir Telegram</a>`;
     } else if (result.found === true && result.name){
-      tail = ` · ${result.name}${result.phone?' '+result.phone:''}`;
+      tail = ` · ${escapeHtml(result.name)}${result.phone?' '+escapeHtml(result.phone):''}`;
     } else if (result.already_exists){
       tail = ` · ya existía`;
     } else if (result.ok && result.id){
@@ -3544,7 +3550,7 @@ function solAppendToolChip(toolName, status, result){
       tail = ` · ${result.items.length} resultado(s)`;
     }
   } else if (status === 'done' && result && result.error){
-    tail = ` <span class="sol-tool-err">❌ ${String(result.error).slice(0,80)}</span>`;
+    tail = ` <span class="sol-tool-err">❌ ${escapeHtml(String(result.error).slice(0,80))}</span>`;
   }
   wrap.innerHTML = `<span class="sol-tool-chip ${status}">${cfg.icon} ${cfg.label}${status==='running'?'…':''}${tail}</span>`;
   m.appendChild(wrap);

@@ -23,6 +23,11 @@ PRICING: dict[str, dict[str, Decimal]] = {
         "input": Decimal("3.00"),
         "output": Decimal("15.00"),
     },
+    # Alias sin fecha — es lo que devuelve pick_model() (settings.ANTHROPIC_MODEL).
+    "claude-sonnet-4-6": {
+        "input": Decimal("3.00"),
+        "output": Decimal("15.00"),
+    },
     "claude-sonnet-4-5": {
         "input": Decimal("3.00"),
         "output": Decimal("15.00"),
@@ -34,6 +39,12 @@ PRICING: dict[str, dict[str, Decimal]] = {
     },
     # Claude Haiku 4.x family
     "claude-haiku-4-5-20251001": {
+        "input": Decimal("1.00"),
+        "output": Decimal("5.00"),
+    },
+    # Alias sin fecha — es lo que devuelve pick_model() (settings.ANTHROPIC_MODEL_FAST).
+    # Sin esta key, Haiku caía a DEFAULT_PRICING (Sonnet) y se cobraba 3x de más.
+    "claude-haiku-4-5": {
         "input": Decimal("1.00"),
         "output": Decimal("5.00"),
     },

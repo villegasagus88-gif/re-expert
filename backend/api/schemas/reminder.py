@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
+from core.sanitize import SanitizedOptStr, SanitizedStr
 from pydantic import BaseModel, Field
 
 ReminderChannel = Literal["in_app", "email", "telegram", "whatsapp", "push"]
@@ -10,16 +11,16 @@ ReminderStatus = Literal["pending", "sent", "failed", "cancelled"]
 
 
 class CreateReminderRequest(BaseModel):
-    title: str = Field(..., min_length=1, max_length=300)
-    body: str | None = Field(None, max_length=4000)
+    title: SanitizedStr = Field(..., min_length=1, max_length=300)
+    body: SanitizedOptStr = Field(None, max_length=4000)
     due_at: datetime
     channel: ReminderChannel = "in_app"
     meta: dict | None = None
 
 
 class UpdateReminderRequest(BaseModel):
-    title: str | None = Field(None, min_length=1, max_length=300)
-    body: str | None = Field(None, max_length=4000)
+    title: SanitizedOptStr = Field(None, min_length=1, max_length=300)
+    body: SanitizedOptStr = Field(None, max_length=4000)
     due_at: datetime | None = None
     channel: ReminderChannel | None = None
     status: Literal["pending", "cancelled"] | None = None

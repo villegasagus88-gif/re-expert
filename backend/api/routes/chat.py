@@ -43,13 +43,13 @@ from models.project import Project
 from models.user import User
 from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 from services.anthropic_service import build_system_prompt, stream_chat
-from services.model_selector import pick_model
-from services.rate_limit_service import check_user_rate_limit
 from services.calculator_tools import (
     CALCULATOR_TOOL_IMPLS,
     CALCULATOR_TOOL_SCHEMAS,
     run_calculator_tool,
 )
+from services.model_selector import pick_model
+from services.rate_limit_service import check_user_rate_limit
 from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
 from services.token_usage_service import log_token_usage
 from sqlalchemy import func, select
@@ -450,8 +450,13 @@ async def chat(
     #    El history se manda como texto (los attachments no se persisten).
     #    El mensaje actual lleva content blocks (image + text) si hay
     #    attachments, o solo string si no hay.
+    # Filtramos mensajes con content vacío: Anthropic rechaza bloques de texto
+    # vacíos con 400. Defensa para historiales que puedan tener un mensaje
+    # assistant vacío persistido (ver guard al persistir, más abajo).
     api_messages: list[dict] = [
-        {"role": m.role, "content": m.content} for m in history
+        {"role": m.role, "content": m.content}
+        for m in history
+        if m.content and m.content.strip()
     ]
     if body.attachments:
         content_blocks: list[dict] = [
@@ -621,20 +626,25 @@ async def chat(
             yield _sse({"type": "error", "message": msg})
             return
 
-        # Persist assistant message (with token count if available)
+        # Persist assistant message (con token count si lo hay).
+        # Guard anti-vacío: si el modelo no produjo texto (p.ej. el loop de
+        # tool-use terminó sin prosa), NO persistimos. Un content "" se
+        # re-enviaría en el próximo turno y Anthropic rechaza bloques de texto
+        # vacíos con 400 → dejaría la conversación inutilizable para siempre.
         assistant_msg_id = None
-        try:
-            assistant_msg = Message(
-                conversation_id=conv.id,
-                role="assistant",
-                content=full_response,
-                tokens_used=tokens_used,
-            )
-            db.add(assistant_msg)
-            await db.commit()
-            assistant_msg_id = assistant_msg.id
-        except Exception as e:
-            logger.exception("Error guardando assistant message: %s", e)
+        if full_response.strip():
+            try:
+                assistant_msg = Message(
+                    conversation_id=conv.id,
+                    role="assistant",
+                    content=full_response,
+                    tokens_used=tokens_used,
+                )
+                db.add(assistant_msg)
+                await db.commit()
+                assistant_msg_id = assistant_msg.id
+            except Exception as e:
+                logger.exception("Error guardando assistant message: %s", e)
 
         # Log token usage for billing/analytics (best-effort; never blocks reply).
         if input_tokens is not None and output_tokens is not None:
