@@ -312,6 +312,179 @@ def _tool_factibilidad_rapida(
 
 
 # ════════════════════════════════════════════════════════════════════
+# Tools impositivas (AR) — paramétricas: la alícuota entra por parámetro
+# (con default referencial) para que no quede vieja. La tool encierra la
+# LÓGICA correcta; el valor de la tasa lo confirma el modelo/usuario.
+# ════════════════════════════════════════════════════════════════════
+_IVA_GENERAL = 21.0
+_SELLOS_REFERENCIAL = 3.6   # CABA/PBA total aprox; varía por jurisdicción
+_ITI_PCT = 1.5             # Imp. Transferencia de Inmuebles (personas físicas, pre-2018)
+_GANANCIAS_INMUEBLE_PCT = 15.0  # cedular sobre la ganancia (adquiridos desde 2018)
+
+
+def _tool_calcular_iva(
+    monto: float | None = None,
+    alicuota_pct: float | None = None,
+    modo: str = "extraer",
+    **_ignore: Any,
+) -> dict:
+    """
+    IVA neto/bruto.
+      modo='extraer' → `monto` es BRUTO (con IVA); calcula neto e IVA contenido.
+      modo='agregar' → `monto` es NETO (sin IVA); le suma el IVA.
+    """
+    try:
+        monto = float(monto)
+    except (TypeError, ValueError):
+        return {"error": "monto debe ser un número.", "ok": False}
+    alic = float(alicuota_pct) if alicuota_pct else _IVA_GENERAL
+    modo = (modo or "extraer").strip().lower()
+    notas = []
+    if not alicuota_pct:
+        notas.append(f"Usé IVA {alic}% (general). Para obra puede aplicar 10,5%; pasá alicuota_pct.")
+    if modo == "agregar":
+        neto = monto
+        iva = monto * alic / 100.0
+        bruto = neto + iva
+    else:
+        bruto = monto
+        neto = monto / (1 + alic / 100.0)
+        iva = bruto - neto
+    return {
+        "ok": True,
+        "modo": modo,
+        "alicuota_pct": alic,
+        "neto": _r2(neto),
+        "iva": _r2(iva),
+        "bruto": _r2(bruto),
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+def _tool_calcular_sellos(
+    monto: float | None = None,
+    valuacion_fiscal: float | None = None,
+    alicuota_pct: float | None = None,
+    jurisdiccion: str | None = None,
+    reparto: str = "ambos",
+    vivienda_unica: bool = False,
+    tope_exencion: float | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Impuesto de Sellos sobre una compraventa.
+      base = max(monto de la operación, valuación fiscal)
+      impuesto = base × alícuota; se reparte según `reparto`.
+    """
+    try:
+        monto = float(monto)
+    except (TypeError, ValueError):
+        return {"error": "monto (valor de la operación) es obligatorio y numérico.", "ok": False}
+
+    notas = []
+    base = monto
+    if valuacion_fiscal is not None:
+        base = max(monto, float(valuacion_fiscal))
+        if base != monto:
+            notas.append("Base = valuación fiscal (mayor que el precio declarado).")
+
+    alic = float(alicuota_pct) if alicuota_pct else _SELLOS_REFERENCIAL
+    if not alicuota_pct:
+        notas.append(
+            f"Alícuota {alic}% es REFERENCIAL (CABA/PBA aprox). Sellos varía por "
+            "jurisdicción — verificá la vigente y pasá alicuota_pct."
+        )
+
+    exento = False
+    if vivienda_unica and tope_exencion is not None and base <= float(tope_exencion):
+        exento = True
+        notas.append("Exento por vivienda única dentro del tope (verificá condiciones locales).")
+
+    impuesto = 0.0 if exento else base * alic / 100.0
+
+    reparto = (reparto or "ambos").strip().lower()
+    if reparto == "comprador":
+        comprador, vendedor = impuesto, 0.0
+    elif reparto == "vendedor":
+        comprador, vendedor = 0.0, impuesto
+    else:
+        comprador = vendedor = impuesto / 2.0
+        reparto = "ambos"
+
+    return {
+        "ok": True,
+        "jurisdiccion": jurisdiccion,
+        "base_imponible": _r2(base),
+        "alicuota_pct": alic,
+        "exento": exento,
+        "impuesto_total": _r2(impuesto),
+        "paga_comprador": _r2(comprador),
+        "paga_vendedor": _r2(vendedor),
+        "reparto": reparto,
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+def _tool_calcular_impuesto_transferencia(
+    precio_venta: float | None = None,
+    costo_adquisicion: float | None = None,
+    adquirido_post_2018: bool | None = None,
+    alicuota_iti_pct: float | None = None,
+    alicuota_ganancias_pct: float | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Impuesto que paga el VENDEDOR (persona física) al transferir un inmueble:
+      - Adquirido ANTES de 2018 → ITI (1,5% sobre el precio).
+      - Adquirido DESDE 2018    → Ganancias cedular (15% sobre la ganancia).
+    Si no se sabe la fecha, devuelve ambos escenarios.
+    """
+    try:
+        precio_venta = float(precio_venta)
+    except (TypeError, ValueError):
+        return {"error": "precio_venta es obligatorio y numérico.", "ok": False}
+
+    iti_pct = float(alicuota_iti_pct) if alicuota_iti_pct else _ITI_PCT
+    gan_pct = float(alicuota_ganancias_pct) if alicuota_ganancias_pct else _GANANCIAS_INMUEBLE_PCT
+    notas = ["Aplica a personas físicas. Verificá vigencia y exenciones (vivienda única, etc.)."]
+
+    iti = precio_venta * iti_pct / 100.0
+
+    costo = float(costo_adquisicion) if costo_adquisicion is not None else None
+    ganancia = max(0.0, precio_venta - costo) if costo is not None else None
+    ganancias_imp = ganancia * gan_pct / 100.0 if ganancia is not None else None
+    if costo is None:
+        notas.append("Para Ganancias necesito costo_adquisicion (sin él no calculo la ganancia real).")
+
+    if adquirido_post_2018 is True:
+        aplica = "Ganancias (cedular)"
+        impuesto = ganancias_imp
+    elif adquirido_post_2018 is False:
+        aplica = "ITI"
+        impuesto = iti
+    else:
+        aplica = "indeterminado (falta fecha de adquisición)"
+        impuesto = None
+        notas.append("Decime si el inmueble se adquirió antes o desde 2018 para definir el impuesto.")
+
+    return {
+        "ok": True,
+        "aplica": aplica,
+        "impuesto": _r2(impuesto) if impuesto is not None else None,
+        "escenario_iti": {"alicuota_pct": iti_pct, "impuesto": _r2(iti)},
+        "escenario_ganancias": {
+            "alicuota_pct": gan_pct,
+            "ganancia": _r2(ganancia) if ganancia is not None else None,
+            "impuesto": _r2(ganancias_imp) if ganancias_imp is not None else None,
+        },
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+# ════════════════════════════════════════════════════════════════════
 # Schemas (formato Anthropic tool_use)
 # ════════════════════════════════════════════════════════════════════
 CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
@@ -387,6 +560,66 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": ["precio_venta_m2", "costo_construccion_m2"],
         },
     },
+    {
+        "name": "calcular_iva",
+        "description": (
+            "Convierte entre neto y bruto de IVA. modo='extraer': el monto es BRUTO "
+            "(con IVA) y devuelve el neto + IVA contenido. modo='agregar': el monto "
+            "es NETO y le suma el IVA. alícuota default 21% (general); en obra puede "
+            "aplicar 10,5%."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "monto": {"type": "number", "description": "Importe a procesar."},
+                "alicuota_pct": {"type": "number", "description": "IVA en % (default 21)."},
+                "modo": {"type": "string", "enum": ["extraer", "agregar"], "default": "extraer"},
+            },
+            "required": ["monto"],
+        },
+    },
+    {
+        "name": "calcular_sellos",
+        "description": (
+            "Impuesto de Sellos de una compraventa: base = máx(precio, valuación "
+            "fiscal) × alícuota, repartido entre comprador y vendedor. OJO: la "
+            "alícuota varía por jurisdicción; pasá alicuota_pct con la vigente de la "
+            "provincia/CABA. Soporta exención por vivienda única con tope."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "monto": {"type": "number", "description": "Valor de la operación."},
+                "valuacion_fiscal": {"type": "number", "description": "Valuación fiscal (la base es el mayor entre esta y el precio)."},
+                "alicuota_pct": {"type": "number", "description": "Alícuota de Sellos en % de la jurisdicción (ej CABA ~3.6 total)."},
+                "jurisdiccion": {"type": "string", "description": "Provincia/CABA, para el detalle."},
+                "reparto": {"type": "string", "enum": ["ambos", "comprador", "vendedor"], "default": "ambos"},
+                "vivienda_unica": {"type": "boolean", "description": "Si es vivienda única (puede haber exención)."},
+                "tope_exencion": {"type": "number", "description": "Tope de valor para la exención de vivienda única."},
+            },
+            "required": ["monto"],
+        },
+    },
+    {
+        "name": "calcular_impuesto_transferencia",
+        "description": (
+            "Impuesto que paga el VENDEDOR persona física al transferir un inmueble: "
+            "ITI 1,5% sobre el precio si lo adquirió ANTES de 2018, o Ganancias "
+            "cedular 15% sobre la ganancia si lo adquirió DESDE 2018. Si no se sabe "
+            "la fecha, devuelve ambos escenarios."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "precio_venta": {"type": "number", "description": "Precio de venta del inmueble."},
+                "costo_adquisicion": {"type": "number", "description": "Costo al que se compró (para la ganancia, si aplica Ganancias)."},
+                "adquirido_post_2018": {"type": "boolean", "description": "true si se adquirió desde 2018 (Ganancias), false si antes (ITI)."},
+                "alicuota_iti_pct": {"type": "number", "description": "Alícuota ITI en % (default 1.5)."},
+                "alicuota_ganancias_pct": {"type": "number", "description": "Alícuota Ganancias cedular en % (default 15)."},
+            },
+            "required": ["precio_venta"],
+        },
+    },
 ]
 
 
@@ -396,6 +629,9 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
 CALCULATOR_TOOL_IMPLS = {
     "analizar_inversion": _tool_analizar_inversion,
     "factibilidad_rapida": _tool_factibilidad_rapida,
+    "calcular_iva": _tool_calcular_iva,
+    "calcular_sellos": _tool_calcular_sellos,
+    "calcular_impuesto_transferencia": _tool_calcular_impuesto_transferencia,
 }
 
 

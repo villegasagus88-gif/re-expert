@@ -8,6 +8,9 @@ from services.calculator_tools import (
     _npv,
     _payback,
     _tool_analizar_inversion,
+    _tool_calcular_impuesto_transferencia,
+    _tool_calcular_iva,
+    _tool_calcular_sellos,
     _tool_factibilidad_rapida,
     run_calculator_tool,
 )
@@ -139,6 +142,64 @@ def test_factibilidad_con_comisiones_y_gastos():
 def test_factibilidad_faltan_datos():
     r = _tool_factibilidad_rapida(precio_venta_m2=2000, costo_construccion_m2=900)
     assert r.get("ok") is False  # sin m2 ni terreno+fot
+
+
+def test_iva_extraer():
+    # 12100 bruto con 21% → neto 10000, iva 2100.
+    r = _tool_calcular_iva(monto=12100, alicuota_pct=21, modo="extraer")
+    assert r["ok"] is True
+    assert r["neto"] == 10000.0
+    assert r["iva"] == 2100.0
+
+
+def test_iva_agregar():
+    r = _tool_calcular_iva(monto=10000, alicuota_pct=21, modo="agregar")
+    assert r["bruto"] == 12100.0
+    assert r["iva"] == 2100.0
+
+
+def test_sellos_base_valuacion_y_reparto():
+    # precio 100000, valuación 120000 → base 120000; alícuota 3.6 → 4320; ambos → 2160 c/u.
+    r = _tool_calcular_sellos(monto=100000, valuacion_fiscal=120000, alicuota_pct=3.6)
+    assert r["base_imponible"] == 120000.0
+    assert r["impuesto_total"] == 4320.0
+    assert r["paga_comprador"] == 2160.0
+    assert r["paga_vendedor"] == 2160.0
+
+
+def test_sellos_exencion_vivienda_unica():
+    r = _tool_calcular_sellos(
+        monto=80000, alicuota_pct=3.6, vivienda_unica=True, tope_exencion=100000
+    )
+    assert r["exento"] is True
+    assert r["impuesto_total"] == 0.0
+
+
+def test_transferencia_iti_pre2018():
+    r = _tool_calcular_impuesto_transferencia(precio_venta=200000, adquirido_post_2018=False)
+    assert r["aplica"] == "ITI"
+    assert r["impuesto"] == 3000.0  # 1.5% de 200000
+
+
+def test_transferencia_ganancias_post2018():
+    r = _tool_calcular_impuesto_transferencia(
+        precio_venta=200000, costo_adquisicion=150000, adquirido_post_2018=True
+    )
+    assert r["aplica"] == "Ganancias (cedular)"
+    assert r["impuesto"] == 7500.0  # 15% de (200000-150000)
+
+
+def test_transferencia_indeterminado_da_ambos():
+    r = _tool_calcular_impuesto_transferencia(precio_venta=200000)
+    assert r["impuesto"] is None
+    assert r["escenario_iti"]["impuesto"] == 3000.0
+
+
+def test_dispatcher_calc_impositiva():
+    import asyncio
+
+    out = asyncio.run(run_calculator_tool("calcular_iva", {"monto": 1210, "alicuota_pct": 21}))
+    assert out["ok"] is True
 
 
 def test_dispatcher_desconocido():
