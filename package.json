@@ -11,6 +11,7 @@
     "lint": "ruff check backend/",
     "lint:fix": "ruff check --fix backend/",
     "test": "cd backend && pytest -v",
+    "test:smoke": "cd backend && python tests/smoke_prod.py",
     "clean": "rm -rf node_modules"
   },
   "keywords": [

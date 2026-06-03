@@ -252,10 +252,45 @@ Etiquetas sugeridas: `e2e`, `bug`, prioridad (`p0`/`p1`/`p2`), área (`auth`/`ch
 
 ---
 
-## Próxima evolución (no parte de #49)
+## Automatización
 
-Cuando se quiera automatizar este guion, candidatos:
+### Ya automatizado — smoke de producción (read-only)
 
-- **Playwright** para los pasos 1–5 y 7 (UI determinista).
-- **Stripe CLI** (`stripe listen --forward-to localhost:8000/api/stripe/webhook` + `stripe trigger checkout.session.completed`) para el paso 6 sin un browser real.
-- Correr el set automatizado en CI nightly contra un staging dedicado con DB efímera.
+`backend/tests/smoke_prod.py` verifica, sin crear datos ni gastar tokens, que el
+deploy está sano y la auth enforced. Corre post-deploy:
+
+```bash
+npm run test:smoke
+# o con override de URLs (staging):
+RE_BACKEND_URL=https://staging-api... RE_FRONTEND_URL=https://staging... python backend/tests/smoke_prod.py
+```
+
+Chequea: `/health`, `/health/db`, `/health/ready`, que `/openapi.json` exponga los
+endpoints clave, que los protegidos (`/api/workspaces`, `/api/profile`,
+`/api/conversations`, `/api/usage`) devuelvan **401 sin token**, y que el frontend
+sirva la build al día. Exit code != 0 si algo falla → enchufable a CI.
+
+### Pendiente — flujos E2E con browser (Playwright)
+
+Los pasos 1–7 de este guion (que **crean datos**: registro, chat, pagos, Stripe)
+NO se automatizan todavía porque **requieren un entorno con DB efímera**. Regla
+dura: **nunca correrlos contra prod** — ensucian la DB real y gastan tokens de
+Anthropic/Stripe. Cuando exista staging con DB descartable, el scaffold es:
+
+```
+e2e/
+  playwright.config.ts     # baseURL = process.env.E2E_BASE_URL (staging), no default a prod
+  auth.spec.ts             # pasos 1-2: register -> login -> me -> refresh
+  chat.spec.ts             # paso 3: enviar mensaje -> recibir stream -> persiste tras reload
+  payments.spec.ts         # pasos 4-5: crear pago -> marcar pagado -> verificar en sección
+```
+
+- **Pasos 1–5 y 7:** Playwright (UI determinista) apuntando a `E2E_BASE_URL`.
+- **Paso 6 (Stripe):** Stripe CLI sin browser —
+  `stripe listen --forward-to <staging>/api/stripe/webhook` +
+  `stripe trigger checkout.session.completed`.
+- **CI:** nightly contra el staging dedicado, con teardown que limpia los usuarios
+  `e2e+*` creados.
+
+Setup (cuando haya staging): `npm i -D @playwright/test && npx playwright install chromium`.
+Hasta entonces, el camino feliz se valida con el guion manual de arriba + `test:smoke`.
