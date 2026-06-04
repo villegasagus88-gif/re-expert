@@ -12,6 +12,8 @@ from services.calculator_tools import (
     _tool_calcular_iva,
     _tool_calcular_sellos,
     _tool_factibilidad_rapida,
+    _tool_tasacion_comparables,
+    _tool_valor_residual_terreno,
     run_calculator_tool,
 )
 
@@ -223,6 +225,54 @@ def test_sellos_exencion_vivienda_unica():
     )
     assert r["exento"] is True
     assert r["impuesto_total"] == 0.0
+
+
+def test_tasacion_comparables_mediana_y_valor():
+    # comparables USD/m²: 2000, 2200, 2400 → mediana 2200; m2 100 → 220000.
+    r = _tool_tasacion_comparables(comparables=[2000, 2200, 2400], m2_objetivo=100)
+    assert r["ok"] is True
+    assert r["usd_m2_mediana"] == 2200.0
+    assert r["usd_m2_referencia"] == 2200.0  # sin descuento ni ajuste
+    assert r["valor_estimado"] == 220000.0
+
+
+def test_tasacion_comparables_descuento_publicacion():
+    # mediana 2000 con -10% → ref 1800; m2 50 → 90000.
+    r = _tool_tasacion_comparables(
+        comparables=[1900, 2000, 2100], m2_objetivo=50, descuento_publicacion_pct=10
+    )
+    assert r["usd_m2_referencia"] == 1800.0
+    assert r["valor_estimado"] == 90000.0
+
+
+def test_tasacion_comparables_objetos_y_confianza():
+    # objetos {precio_total, m2}; muy dispersos → confianza baja.
+    r = _tool_tasacion_comparables(
+        comparables=[{"precio_total": 100000, "m2": 50}, {"precio_total": 600000, "m2": 100}]
+    )
+    assert r["ok"] is True
+    assert r["confianza"] == "baja"  # n<3 y/o dispersión alta
+
+
+def test_valor_residual_terreno():
+    # m2_vend=1000, precio 2500 → ingresos 2.5M; obra 1000@1000=1M; util 20% de ventas=500k.
+    # residual = 2.5M - 1M - 0 - 0 - 500k = 1.0M; incidencia/m2_vend = 1000.
+    r = _tool_valor_residual_terreno(
+        precio_venta_m2=2500, costo_construccion_m2=1000, m2_vendibles=1000,
+        utilidad_objetivo_pct=20,
+    )
+    assert r["valor_residual_terreno"] == 1000000.0
+    assert r["incidencia_m2_vendible"] == 1000.0
+
+
+def test_valor_residual_negativo():
+    # precio bajo + util alta → residual negativo.
+    r = _tool_valor_residual_terreno(
+        precio_venta_m2=1000, costo_construccion_m2=1200, m2_vendibles=1000,
+        utilidad_objetivo_pct=20,
+    )
+    assert r["valor_residual_terreno"] < 0
+    assert "NEGATIVO" in (r["notas"] or "")
 
 
 def test_sellos_tramos_aplica_tramo_bajo():

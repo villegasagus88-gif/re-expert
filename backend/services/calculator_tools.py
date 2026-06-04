@@ -95,6 +95,15 @@ def _r2(x: float | None, nd: int = 2) -> float | None:
     return round(x, nd)
 
 
+def _median(xs: list[float]) -> float | None:
+    s = sorted(xs)
+    n = len(s)
+    if n == 0:
+        return None
+    mid = n // 2
+    return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2.0
+
+
 # ════════════════════════════════════════════════════════════════════
 # Tool: analizar_inversion
 # ════════════════════════════════════════════════════════════════════
@@ -370,6 +379,177 @@ def _tool_factibilidad_rapida(
             "gastos_generales_pct": g_pct,
             "gastos_base": g_base,
             "impuestos_pct": i_pct,
+        },
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+# ════════════════════════════════════════════════════════════════════
+# Tools de tasación / valuación
+# ════════════════════════════════════════════════════════════════════
+def _tool_tasacion_comparables(
+    comparables: list | None = None,
+    m2_objetivo: float | None = None,
+    descuento_publicacion_pct: float | None = None,
+    ajuste_pct: float | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Valuación por comparables de mercado. `comparables` es una lista de
+    USD/m² (números) o de objetos {precio_total, m2}. Devuelve estadística
+    robusta (mediana), un valor de referencia ajustado (publicación→cierre y
+    ajuste por diferencias) y un nivel de confianza según la dispersión.
+    """
+    if not isinstance(comparables, list) or len(comparables) < 1:
+        return {"error": "Pasá al menos un comparable (USD/m² o {precio_total, m2}).", "ok": False}
+
+    vals: list[float] = []
+    for c in comparables:
+        try:
+            if isinstance(c, (int, float)):
+                vals.append(float(c))
+            elif isinstance(c, dict):
+                p = c.get("precio_total", c.get("precio"))
+                m = c.get("m2", c.get("superficie"))
+                if p and m:
+                    vals.append(float(p) / float(m))
+        except (TypeError, ValueError, ZeroDivisionError):
+            continue
+    vals = [v for v in vals if v > 0]
+    if not vals:
+        return {"error": "No pude interpretar los comparables.", "ok": False}
+
+    n = len(vals)
+    prom = sum(vals) / n
+    med = _median(vals)
+    mn, mx = min(vals), max(vals)
+    std = (sum((v - prom) ** 2 for v in vals) / n) ** 0.5
+    disp = (std / prom * 100) if prom else 0.0
+
+    notas: list[str] = []
+    desc = float(descuento_publicacion_pct) if descuento_publicacion_pct else 0.0
+    aj = float(ajuste_pct) if ajuste_pct else 0.0
+    if not descuento_publicacion_pct:
+        notas.append(
+            "Sin descuento publicación→cierre: estos valores son de PUBLICACIÓN; "
+            "el cierre real suele ser 5–15% menor. Pasá descuento_publicacion_pct."
+        )
+    factor = (1 - desc / 100.0) * (1 + aj / 100.0)
+    ref = med * factor
+
+    if n < 3:
+        conf = "baja"
+        notas.append("Pocos comparables (<3): confianza baja, conseguí más.")
+    elif disp > 25:
+        conf = "baja"
+        notas.append("Comparables muy dispersos (>25%): revisá que sean misma zona/tipología/estado.")
+    elif disp > 12:
+        conf = "media"
+    else:
+        conf = "alta"
+
+    out = {
+        "ok": True,
+        "n": n,
+        "usd_m2_min": _r2(mn),
+        "usd_m2_max": _r2(mx),
+        "usd_m2_promedio": _r2(prom),
+        "usd_m2_mediana": _r2(med),
+        "usd_m2_referencia": _r2(ref),
+        "dispersion_pct": _r2(disp),
+        "confianza": conf,
+    }
+    if m2_objetivo:
+        m2o = float(m2_objetivo)
+        out["m2_objetivo"] = m2o
+        out["valor_estimado"] = _r2(ref * m2o)
+        out["rango_estimado"] = [_r2(mn * factor * m2o), _r2(mx * factor * m2o)]
+    out["supuestos"] = {"descuento_publicacion_pct": desc, "ajuste_pct": aj}
+    out["notas"] = " ".join(notas) if notas else None
+    out["source"] = "calc"
+    return out
+
+
+def _tool_valor_residual_terreno(
+    precio_venta_m2: float | None = None,
+    costo_construccion_m2: float | None = None,
+    m2_vendibles: float | None = None,
+    superficie_terreno_m2: float | None = None,
+    fot: float | None = None,
+    factor_vendible: float | None = None,
+    gastos_generales_pct: float | None = None,
+    gastos_base: str = "obra",
+    comisiones_pct: float | None = None,
+    utilidad_objetivo_pct: float | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Valor residual del terreno: cuánto se puede pagar como MÁXIMO por el suelo
+    para lograr una utilidad objetivo, dado el producto terminado.
+      residual = ingresos − obra − gastos − comisiones − utilidad_objetivo
+    """
+    try:
+        precio_venta_m2 = float(precio_venta_m2)
+        costo_construccion_m2 = float(costo_construccion_m2)
+    except (TypeError, ValueError):
+        return {"error": "precio_venta_m2 y costo_construccion_m2 son obligatorios y numéricos.", "ok": False}
+
+    notas: list[str] = []
+    fv = float(factor_vendible) if factor_vendible else _FACTOR_VENDIBLE_DEFAULT
+    if m2_vendibles:
+        m2_vend = float(m2_vendibles)
+        m2_constr = m2_vend / fv if factor_vendible else m2_vend
+    elif superficie_terreno_m2 and fot:
+        m2_constr = float(superficie_terreno_m2) * float(fot)
+        m2_vend = m2_constr * fv
+        notas.append(f"m² vendibles estimados como construibles × {fv}.")
+    else:
+        return {"error": "Dame m2_vendibles o superficie_terreno_m2 + fot.", "ok": False}
+
+    g_pct = float(gastos_generales_pct) if gastos_generales_pct else 0.0
+    c_pct = float(comisiones_pct) if comisiones_pct else 0.0
+    u_pct = float(utilidad_objetivo_pct) if utilidad_objetivo_pct else 0.0
+    g_base = (gastos_base or "obra").strip().lower()
+    if g_base not in ("obra", "ventas"):
+        g_base = "obra"
+    if not utilidad_objetivo_pct:
+        notas.append(
+            "utilidad_objetivo_pct en 0%: esto es el máximo a pagar SIN ganancia "
+            "(break-even del terreno). Pasá tu utilidad objetivo (ej 20)."
+        )
+
+    ingresos = m2_vend * precio_venta_m2
+    costo_obra = m2_constr * costo_construccion_m2
+    gastos = (ingresos if g_base == "ventas" else costo_obra) * g_pct / 100.0
+    comisiones = ingresos * c_pct / 100.0
+    utilidad = ingresos * u_pct / 100.0
+    residual = ingresos - costo_obra - gastos - comisiones - utilidad
+
+    if residual < 0:
+        notas.append(
+            "Valor residual NEGATIVO: ni con el terreno gratis se logra esa "
+            "utilidad a ese precio/costo. Revisá precio de venta o costo de obra."
+        )
+
+    return {
+        "ok": True,
+        "valor_residual_terreno": _r2(residual),
+        "incidencia_m2_vendible": _r2(residual / m2_vend) if m2_vend else None,
+        "incidencia_m2_terreno": _r2(residual / float(superficie_terreno_m2)) if superficie_terreno_m2 else None,
+        "m2_vendibles": _r2(m2_vend),
+        "m2_construibles": _r2(m2_constr),
+        "ingresos_por_venta": _r2(ingresos),
+        "costo_obra": _r2(costo_obra),
+        "gastos_generales": _r2(gastos),
+        "comisiones": _r2(comisiones),
+        "utilidad_objetivo": _r2(utilidad),
+        "supuestos": {
+            "factor_vendible": fv,
+            "gastos_generales_pct": g_pct,
+            "gastos_base": g_base,
+            "comisiones_pct": c_pct,
+            "utilidad_objetivo_pct": u_pct,
         },
         "notas": " ".join(notas) if notas else None,
         "source": "calc",
@@ -662,6 +842,58 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "tasacion_comparables",
+        "description": (
+            "Valúa un inmueble por comparables de mercado. Primero conseguí los "
+            "comparables con search_web (Zonaprop/Reporte Inmobiliario/Properati del "
+            "barrio y tipología, últimos 30–60 días) y pasalos acá. Devuelve mediana "
+            "y rango de USD/m², un valor de referencia ajustado (publicación→cierre y "
+            "ajuste por diferencias), nivel de confianza por dispersión, y el valor "
+            "estimado total si das m2_objetivo. Presentá SIEMPRE un rango con fuentes "
+            "y fecha, no un número puntual."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "comparables": {
+                    "type": "array",
+                    "description": "Lista de USD/m² (números) o de {precio_total, m2}.",
+                    "items": {"type": ["number", "object"]},
+                },
+                "m2_objetivo": {"type": "number", "description": "m² del inmueble a valuar (para el valor total)."},
+                "descuento_publicacion_pct": {"type": "number", "description": "Ajuste publicación→cierre en % a descontar (ej 8 = -8%)."},
+                "ajuste_pct": {"type": "number", "description": "Ajuste por diferencias del inmueble vs comparables (+ mejor, - peor)."},
+            },
+            "required": ["comparables"],
+        },
+    },
+    {
+        "name": "valor_residual_terreno",
+        "description": (
+            "Cuánto se puede pagar como MÁXIMO por un terreno para lograr una "
+            "utilidad objetivo, dado el producto terminado (residual = ingresos − "
+            "obra − gastos − comisiones − utilidad objetivo). Devuelve el valor "
+            "residual del terreno y la incidencia por m² vendible y por m² de "
+            "terreno. La tool clave para decidir la compra de suelo."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "precio_venta_m2": {"type": "number", "description": "USD/m² vendible del producto terminado."},
+                "costo_construccion_m2": {"type": "number", "description": "USD/m² construible (costo de obra)."},
+                "m2_vendibles": {"type": "number", "description": "m² vendibles (o usá superficie_terreno_m2 + fot)."},
+                "superficie_terreno_m2": {"type": "number", "description": "Superficie del terreno."},
+                "fot": {"type": "number", "description": "FOT (m² construibles = terreno × FOT)."},
+                "factor_vendible": {"type": "number", "description": "Eficiencia vendible/construible (default 0.85)."},
+                "gastos_generales_pct": {"type": "number", "description": "Gastos generales en % (base según gastos_base)."},
+                "gastos_base": {"type": "string", "enum": ["obra", "ventas"], "default": "obra"},
+                "comisiones_pct": {"type": "number", "description": "Comisión de venta en % sobre ingresos."},
+                "utilidad_objetivo_pct": {"type": "number", "description": "Utilidad objetivo en % sobre ventas (ej 20)."},
+            },
+            "required": ["precio_venta_m2", "costo_construccion_m2"],
+        },
+    },
+    {
         "name": "calcular_iva",
         "description": (
             "Convierte entre neto y bruto de IVA. modo='extraer': el monto es BRUTO "
@@ -741,6 +973,8 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
 CALCULATOR_TOOL_IMPLS = {
     "analizar_inversion": _tool_analizar_inversion,
     "factibilidad_rapida": _tool_factibilidad_rapida,
+    "tasacion_comparables": _tool_tasacion_comparables,
+    "valor_residual_terreno": _tool_valor_residual_terreno,
     "calcular_iva": _tool_calcular_iva,
     "calcular_sellos": _tool_calcular_sellos,
     "calcular_impuesto_transferencia": _tool_calcular_impuesto_transferencia,
