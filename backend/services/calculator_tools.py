@@ -431,6 +431,7 @@ def _tool_calcular_sellos(
     monto: float | None = None,
     valuacion_fiscal: float | None = None,
     alicuota_pct: float | None = None,
+    tramos: list | None = None,
     jurisdiccion: str | None = None,
     reparto: str = "ambos",
     vivienda_unica: bool = False,
@@ -441,6 +442,11 @@ def _tool_calcular_sellos(
     Impuesto de Sellos sobre una compraventa.
       base = max(monto de la operación, valuación fiscal)
       impuesto = base × alícuota; se reparte según `reparto`.
+
+    `tramos` permite alícuotas escalonadas (muchas jurisdicciones cambian la
+    tasa según el monto): lista de {"hasta": X, "alicuota_pct": Y}. Se aplica
+    la del primer tramo cuyo `hasta` ≥ base; usá hasta=null para el tramo
+    superior. La base y los topes deben estar en la MISMA moneda.
     """
     try:
         monto = float(monto)
@@ -454,11 +460,26 @@ def _tool_calcular_sellos(
         if base != monto:
             notas.append("Base = valuación fiscal (mayor que el precio declarado).")
 
-    alic = float(alicuota_pct) if alicuota_pct else _SELLOS_REFERENCIAL
-    if not alicuota_pct:
+    # Alícuota: por tramos (escalonada) > plana > referencial.
+    if tramos and isinstance(tramos, list):
+        def _tope(t):
+            h = t.get("hasta")
+            return float("inf") if h in (None, "") else float(h)
+        ordenados = sorted(tramos, key=_tope)
+        elegido = next((t for t in ordenados if base <= _tope(t)), ordenados[-1])
+        alic = float(elegido.get("alicuota_pct"))
+        _h = elegido.get("hasta")
+        notas.append(
+            f"Tramo aplicado: {alic}% (base {_r2(base)} {'≤ ' + str(_h) if _h not in (None, '') else 'en el tramo superior'})."
+        )
+    elif alicuota_pct:
+        alic = float(alicuota_pct)
+    else:
+        alic = _SELLOS_REFERENCIAL
         notas.append(
             f"Alícuota {alic}% es REFERENCIAL (CABA/PBA aprox). Sellos varía por "
-            "jurisdicción — verificá la vigente y pasá alicuota_pct."
+            "jurisdicción y suele tener tramos por monto — verificá la vigente y pasá "
+            "alicuota_pct o tramos."
         )
 
     exento = False
@@ -671,7 +692,18 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "properties": {
                 "monto": {"type": "number", "description": "Valor de la operación."},
                 "valuacion_fiscal": {"type": "number", "description": "Valuación fiscal (la base es el mayor entre esta y el precio)."},
-                "alicuota_pct": {"type": "number", "description": "Alícuota de Sellos en % de la jurisdicción (ej CABA ~3.6 total)."},
+                "alicuota_pct": {"type": "number", "description": "Alícuota plana de Sellos en % (ej CABA ~3.6 total). Usá tramos si la tasa cambia por monto."},
+                "tramos": {
+                    "type": "array",
+                    "description": "Alícuotas escalonadas por monto: [{\"hasta\": 226100000, \"alicuota_pct\": 2.7}, {\"hasta\": null, \"alicuota_pct\": 3.5}]. La base y los topes deben estar en la misma moneda (convertí USD→ARS si hace falta).",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "hasta": {"type": ["number", "null"], "description": "Tope superior del tramo (null = sin tope)."},
+                            "alicuota_pct": {"type": "number"},
+                        },
+                    },
+                },
                 "jurisdiccion": {"type": "string", "description": "Provincia/CABA, para el detalle."},
                 "reparto": {"type": "string", "enum": ["ambos", "comprador", "vendedor"], "default": "ambos"},
                 "vivienda_unica": {"type": "boolean", "description": "Si es vivienda única (puede haber exención)."},

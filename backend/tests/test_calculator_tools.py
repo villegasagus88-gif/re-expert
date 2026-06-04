@@ -225,6 +225,21 @@ def test_sellos_exencion_vivienda_unica():
     assert r["impuesto_total"] == 0.0
 
 
+def test_sellos_tramos_aplica_tramo_bajo():
+    # base 219.000.000 ≤ 226.100.000 → 2.7%.
+    tramos = [{"hasta": 226100000, "alicuota_pct": 2.7}, {"hasta": None, "alicuota_pct": 3.5}]
+    r = _tool_calcular_sellos(monto=219000000, tramos=tramos)
+    assert r["alicuota_pct"] == 2.7
+    assert r["impuesto_total"] == _tool_calcular_sellos(monto=219000000, alicuota_pct=2.7)["impuesto_total"]
+
+
+def test_sellos_tramos_aplica_tramo_alto():
+    # base 300.000.000 > 226.100.000 → 3.5% (tramo superior, hasta=null).
+    tramos = [{"hasta": 226100000, "alicuota_pct": 2.7}, {"hasta": None, "alicuota_pct": 3.5}]
+    r = _tool_calcular_sellos(monto=300000000, tramos=tramos)
+    assert r["alicuota_pct"] == 3.5
+
+
 def test_transferencia_pre2018_sin_impuesto():
     # ITI derogado (Ley 27.743): adquirido antes de 2018 → $0 nacional.
     r = _tool_calcular_impuesto_transferencia(precio_venta=200000, adquirido_post_2018=False)
