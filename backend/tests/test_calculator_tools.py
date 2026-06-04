@@ -8,6 +8,7 @@ from services.calculator_tools import (
     _npv,
     _payback,
     _tool_analizar_inversion,
+    _tool_flujo_fondos_desarrollo,
     _tool_calcular_impuesto_transferencia,
     _tool_calcular_iva,
     _tool_calcular_sellos,
@@ -225,6 +226,43 @@ def test_sellos_exencion_vivienda_unica():
     )
     assert r["exento"] is True
     assert r["impuesto_total"] == 0.0
+
+
+def test_flujo_arrays_explicitos():
+    # egresos=[100,0,0], ingresos=[0,0,150] → neto=[-100,0,150]; acum=[-100,-100,50]
+    r = _tool_flujo_fondos_desarrollo(
+        egresos_por_periodo=[100, 0, 0], ingresos_por_periodo=[0, 0, 150], periodicidad="anual"
+    )
+    assert r["ok"] is True
+    assert r["flujo_neto_por_periodo"] == [-100.0, 0.0, 150.0]
+    assert r["acumulado_por_periodo"] == [-100.0, -100.0, 50.0]
+    assert r["capital_maximo_requerido"] == 100.0
+    assert r["periodo_pico_exposicion"] == 0
+    assert r["resultado_neto"] == 50.0
+    # TIR: -100 + 150/(1+r)^2 = 0 → (1+r)^2=1.5 → r≈22.47% por período (anual).
+    assert abs(r["tir_anual_pct"] - 22.47) < 0.1
+
+
+def test_flujo_constructor_pico_y_resultado():
+    # terreno 100 en t0, obra 60 repartida en 2 períodos (1-2), ingreso total 200
+    # con 50% preventa durante obra y saldo a la entrega (período 3).
+    r = _tool_flujo_fondos_desarrollo(
+        periodos=3, periodicidad="trimestral",
+        costo_terreno=100, costo_obra_total=60, obra_inicio=1, obra_duracion=2,
+        ingresos_total=200, preventa_pct=50, entrega_periodo=3,
+    )
+    assert r["ok"] is True
+    # total egresos 160, ingresos 200, resultado 40.
+    assert r["total_egresos"] == 160.0
+    assert r["total_ingresos"] == 200.0
+    assert r["resultado_neto"] == 40.0
+    # debe necesitar capital (pico negativo) en algún momento antes de la entrega.
+    assert r["capital_maximo_requerido"] > 0
+
+
+def test_flujo_requiere_datos():
+    r = _tool_flujo_fondos_desarrollo(periodos=0)
+    assert r.get("ok") is False
 
 
 def test_tasacion_comparables_mediana_y_valor():

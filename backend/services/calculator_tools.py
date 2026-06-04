@@ -104,6 +104,17 @@ def _median(xs: list[float]) -> float | None:
     return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2.0
 
 
+def _spread(total: float, start: int, dur: int, length: int) -> list[float]:
+    """Reparte `total` linealmente en los períodos [start, start+dur-1]."""
+    arr = [0.0] * length
+    if total and dur and dur > 0:
+        por = total / dur
+        for t in range(start, min(start + dur, length)):
+            if 0 <= t < length:
+                arr[t] += por
+    return arr
+
+
 # ════════════════════════════════════════════════════════════════════
 # Tool: analizar_inversion
 # ════════════════════════════════════════════════════════════════════
@@ -557,6 +568,143 @@ def _tool_valor_residual_terreno(
 
 
 # ════════════════════════════════════════════════════════════════════
+# Tool: flujo de fondos del desarrollo (cashflow período a período)
+# ════════════════════════════════════════════════════════════════════
+_PPA = {"anual": 1, "mensual": 12, "trimestral": 4}
+
+
+def _tool_flujo_fondos_desarrollo(
+    periodos: int | None = None,
+    periodicidad: str = "mensual",
+    costo_terreno: float | None = None,
+    costo_obra_total: float | None = None,
+    obra_inicio: int | None = None,
+    obra_duracion: int | None = None,
+    gastos_generales_total: float | None = None,
+    ingresos_total: float | None = None,
+    preventa_pct: float | None = None,
+    entrega_periodo: int | None = None,
+    comisiones_pct: float | None = None,
+    tasa_descuento_anual: float | None = None,
+    egresos_por_periodo: list | None = None,
+    ingresos_por_periodo: list | None = None,
+    **_ignore: Any,
+) -> dict:
+    """
+    Construye el flujo de fondos período a período de un desarrollo y calcula
+    métricas dinámicas: flujo neto y acumulado por período, MÁXIMA EXPOSICIÓN
+    (pico de capital a fondear y cuándo), TIR, VAN y repago.
+
+    Dos modos:
+      - Explícito: pasá `egresos_por_periodo` e `ingresos_por_periodo` (listas;
+        índice 0 = hoy).
+      - Constructor: pasá totales + distribución (terreno en t0, obra repartida
+        en [obra_inicio, +obra_duracion), pre-venta durante la obra y el saldo
+        en `entrega_periodo`).
+    """
+    notas: list[str] = []
+    periodicidad = (periodicidad or "mensual").strip().lower()
+    if periodicidad not in _PPA:
+        notas.append(f"periodicidad '{periodicidad}' no reconocida; uso 'mensual'.")
+        periodicidad = "mensual"
+
+    # ── Modo explícito ──
+    if isinstance(egresos_por_periodo, list) and isinstance(ingresos_por_periodo, list):
+        try:
+            eg = [float(x) for x in egresos_por_periodo]
+            ing = [float(x) for x in ingresos_por_periodo]
+        except (TypeError, ValueError):
+            return {"error": "egresos/ingresos por período deben ser números.", "ok": False}
+        L = max(len(eg), len(ing))
+        eg += [0.0] * (L - len(eg))
+        ing += [0.0] * (L - len(ing))
+    else:
+        # ── Modo constructor ──
+        try:
+            P = int(periodos)
+        except (TypeError, ValueError):
+            P = 0
+        if P < 1:
+            return {"error": "Pasá `periodos` (cantidad de períodos) o los arrays de flujo.", "ok": False}
+        if ingresos_total is None:
+            return {"error": "Pasá `ingresos_total` (o los arrays de flujo).", "ok": False}
+        L = P + 1
+        obra_ini = int(obra_inicio) if obra_inicio else 1
+        obra_dur = int(obra_duracion) if obra_duracion else P
+        ent = int(entrega_periodo) if entrega_periodo is not None else P
+        ent = max(0, min(ent, L - 1))
+
+        eg = [0.0] * L
+        eg[0] += float(costo_terreno or 0)
+        obra = _spread(float(costo_obra_total or 0), obra_ini, obra_dur, L)
+        gg = _spread(float(gastos_generales_total or 0), obra_ini, obra_dur, L)
+        for t in range(L):
+            eg[t] += obra[t] + gg[t]
+
+        it = float(ingresos_total)
+        pv = float(preventa_pct or 0) / 100.0
+        preventa_total = it * pv
+        pv_arr = _spread(preventa_total, obra_ini, obra_dur, L)
+        ing = [0.0] * L
+        for t in range(L):
+            ing[t] += pv_arr[t]
+        ing[ent] += it - preventa_total  # saldo a la entrega
+
+        c_pct = float(comisiones_pct or 0) / 100.0
+        if c_pct:
+            for t in range(L):
+                eg[t] += ing[t] * c_pct
+        if not preventa_pct:
+            notas.append("Sin pre-venta: todo el ingreso entra a la entrega. Pasá preventa_pct si vendés en pozo.")
+
+    # ── Métricas ──
+    L = len(eg)
+    neto = [ing[t] - eg[t] for t in range(L)]
+    acum: list[float] = []
+    s = 0.0
+    for v in neto:
+        s += v
+        acum.append(round(s, 2))
+
+    min_acum = min(acum)
+    capital_max = -min_acum if min_acum < 0 else 0.0
+    periodo_pico = acum.index(min_acum)
+
+    tir_periodo = _irr_bisect(neto)
+    ppa = _PPA[periodicidad]
+    tir_anual = (1.0 + tir_periodo) ** ppa - 1.0 if tir_periodo is not None else None
+
+    van = None
+    if tasa_descuento_anual is not None:
+        try:
+            ta = float(tasa_descuento_anual) / 100.0
+            tp = (1.0 + ta) ** (1.0 / ppa) - 1.0
+            van = _npv(tp, neto)
+        except (TypeError, ValueError):
+            notas.append("tasa_descuento_anual inválida; se ignora.")
+
+    repago = _payback(neto)
+
+    return {
+        "ok": True,
+        "periodicidad": periodicidad,
+        "periodos": L - 1,
+        "flujo_neto_por_periodo": [round(x, 2) for x in neto],
+        "acumulado_por_periodo": acum,
+        "capital_maximo_requerido": round(capital_max, 2),
+        "periodo_pico_exposicion": periodo_pico,
+        "total_ingresos": round(sum(ing), 2),
+        "total_egresos": round(sum(eg), 2),
+        "resultado_neto": round(sum(neto), 2),
+        "tir_anual_pct": _r2(tir_anual * 100) if tir_anual is not None else None,
+        "van": _r2(van) if van is not None else None,
+        "repago_periodos": repago,
+        "notas": " ".join(notas) if notas else None,
+        "source": "calc",
+    }
+
+
+# ════════════════════════════════════════════════════════════════════
 # Tools impositivas (AR) — paramétricas: la alícuota entra por parámetro
 # (con default referencial) para que no quede vieja. La tool encierra la
 # LÓGICA correcta; el valor de la tasa lo confirma el modelo/usuario.
@@ -842,6 +990,37 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "flujo_fondos_desarrollo",
+        "description": (
+            "Arma el flujo de fondos período a período de un desarrollo y devuelve "
+            "métricas DINÁMICAS: flujo neto y acumulado por período, CAPITAL MÁXIMO "
+            "a fondear (pico de exposición) y en qué período ocurre, TIR, VAN y "
+            "repago. Usala cuando el usuario quiera ver el cashflow en el tiempo, "
+            "cuánta plata necesita y cuándo, o pasar de la factibilidad estática al "
+            "rendimiento real. Modo constructor (totales + distribución) o explícito "
+            "(arrays). Convención: índice 0 = hoy."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "periodos": {"type": "integer", "description": "Cantidad de períodos del proyecto (sin contar t0)."},
+                "periodicidad": {"type": "string", "enum": ["mensual", "trimestral", "anual"], "default": "mensual"},
+                "costo_terreno": {"type": "number", "description": "Costo del terreno (se paga en t0)."},
+                "costo_obra_total": {"type": "number", "description": "Costo total de obra (se reparte en el período de construcción)."},
+                "obra_inicio": {"type": "integer", "description": "Período en que arranca la obra (default 1)."},
+                "obra_duracion": {"type": "integer", "description": "Cantidad de períodos de obra (default: todo el proyecto)."},
+                "gastos_generales_total": {"type": "number", "description": "Gastos generales totales (se reparten en la obra)."},
+                "ingresos_total": {"type": "number", "description": "Ingresos totales por ventas."},
+                "preventa_pct": {"type": "number", "description": "% de los ingresos cobrado en pozo durante la obra; el resto entra en la entrega."},
+                "entrega_periodo": {"type": "integer", "description": "Período de entrega/escritura donde entra el saldo (default: último)."},
+                "comisiones_pct": {"type": "number", "description": "Comisión de venta en % (se imputa cuando entra cada ingreso)."},
+                "tasa_descuento_anual": {"type": "number", "description": "Tasa anual en % para el VAN."},
+                "egresos_por_periodo": {"type": "array", "items": {"type": "number"}, "description": "Modo explícito: egresos por período (índice 0 = hoy)."},
+                "ingresos_por_periodo": {"type": "array", "items": {"type": "number"}, "description": "Modo explícito: ingresos por período (índice 0 = hoy)."},
+            },
+        },
+    },
+    {
         "name": "tasacion_comparables",
         "description": (
             "Valúa un inmueble por comparables de mercado. Primero conseguí los "
@@ -973,6 +1152,7 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
 CALCULATOR_TOOL_IMPLS = {
     "analizar_inversion": _tool_analizar_inversion,
     "factibilidad_rapida": _tool_factibilidad_rapida,
+    "flujo_fondos_desarrollo": _tool_flujo_fondos_desarrollo,
     "tasacion_comparables": _tool_tasacion_comparables,
     "valor_residual_terreno": _tool_valor_residual_terreno,
     "calcular_iva": _tool_calcular_iva,
