@@ -318,7 +318,7 @@ def _tool_factibilidad_rapida(
 # ════════════════════════════════════════════════════════════════════
 _IVA_GENERAL = 21.0
 _SELLOS_REFERENCIAL = 3.6   # CABA/PBA total aprox; varía por jurisdicción
-_ITI_PCT = 1.5             # Imp. Transferencia de Inmuebles (personas físicas, pre-2018)
+# ITI derogado por Ley 27.743 (8/7/2024). Solo queda la cedular para post-2018.
 _GANANCIAS_INMUEBLE_PCT = 15.0  # cedular sobre la ganancia (adquiridos desde 2018)
 
 
@@ -431,53 +431,64 @@ def _tool_calcular_impuesto_transferencia(
     precio_venta: float | None = None,
     costo_adquisicion: float | None = None,
     adquirido_post_2018: bool | None = None,
-    alicuota_iti_pct: float | None = None,
     alicuota_ganancias_pct: float | None = None,
     **_ignore: Any,
 ) -> dict:
     """
-    Impuesto que paga el VENDEDOR (persona física) al transferir un inmueble:
-      - Adquirido ANTES de 2018 → ITI (1,5% sobre el precio).
-      - Adquirido DESDE 2018    → Ganancias cedular (15% sobre la ganancia).
-    Si no se sabe la fecha, devuelve ambos escenarios.
+    Impuesto NACIONAL que paga el VENDEDOR (persona física no habitualista) al
+    transferir un inmueble:
+      - Adquirido ANTES de 2018 → $0. El ITI fue DEROGADO (Ley 27.743, vigente
+        desde 8/7/2024) y la cedular no aplica a adquisiciones pre-2018.
+      - Adquirido DESDE 2018    → Ganancias cedular (15% sobre la ganancia real).
+    Si no se sabe la fecha, devuelve ambos escenarios. NO incluye sellos
+    provinciales, escribanía ni comisión.
     """
     try:
         precio_venta = float(precio_venta)
     except (TypeError, ValueError):
         return {"error": "precio_venta es obligatorio y numérico.", "ok": False}
 
-    iti_pct = float(alicuota_iti_pct) if alicuota_iti_pct else _ITI_PCT
     gan_pct = float(alicuota_ganancias_pct) if alicuota_ganancias_pct else _GANANCIAS_INMUEBLE_PCT
-    notas = ["Aplica a personas físicas. Verificá vigencia y exenciones (vivienda única, etc.)."]
-
-    iti = precio_venta * iti_pct / 100.0
+    notas = [
+        "El ITI fue derogado (Ley 27.743, desde 8/7/2024): ya no se paga.",
+        "Aplica a personas físicas no habitualistas. Verificá vigencia y exenciones.",
+        "Es impuesto NACIONAL; aparte van sellos provinciales, escribanía y comisión.",
+    ]
 
     costo = float(costo_adquisicion) if costo_adquisicion is not None else None
     ganancia = max(0.0, precio_venta - costo) if costo is not None else None
-    ganancias_imp = ganancia * gan_pct / 100.0 if ganancia is not None else None
+    cedular = ganancia * gan_pct / 100.0 if ganancia is not None else None
     if costo is None:
-        notas.append("Para Ganancias necesito costo_adquisicion (sin él no calculo la ganancia real).")
+        notas.append(
+            "Para la cedular necesito costo_adquisicion (actualizable) para la ganancia real."
+        )
 
     if adquirido_post_2018 is True:
-        aplica = "Ganancias (cedular)"
-        impuesto = ganancias_imp
+        aplica = "Ganancias cedular (adquirido desde 2018)"
+        impuesto = cedular
     elif adquirido_post_2018 is False:
-        aplica = "ITI"
-        impuesto = iti
+        aplica = "Sin impuesto nacional (adquirido antes de 2018: ITI derogado y la cedular no aplica)"
+        impuesto = 0.0
     else:
         aplica = "indeterminado (falta fecha de adquisición)"
         impuesto = None
-        notas.append("Decime si el inmueble se adquirió antes o desde 2018 para definir el impuesto.")
+        notas.append(
+            "Decime si lo adquiriste antes o desde 2018: antes → $0 nacional; "
+            "desde 2018 → cedular 15% sobre la ganancia."
+        )
 
     return {
         "ok": True,
         "aplica": aplica,
         "impuesto": _r2(impuesto) if impuesto is not None else None,
-        "escenario_iti": {"alicuota_pct": iti_pct, "impuesto": _r2(iti)},
-        "escenario_ganancias": {
+        "escenario_pre_2018": {
+            "impuesto": 0.0,
+            "motivo": "ITI derogado y cedular no aplica a adquisiciones pre-2018.",
+        },
+        "escenario_post_2018": {
             "alicuota_pct": gan_pct,
             "ganancia": _r2(ganancia) if ganancia is not None else None,
-            "impuesto": _r2(ganancias_imp) if ganancias_imp is not None else None,
+            "impuesto": _r2(cedular) if cedular is not None else None,
         },
         "notas": " ".join(notas) if notas else None,
         "source": "calc",
@@ -603,18 +614,18 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "calcular_impuesto_transferencia",
         "description": (
-            "Impuesto que paga el VENDEDOR persona física al transferir un inmueble: "
-            "ITI 1,5% sobre el precio si lo adquirió ANTES de 2018, o Ganancias "
-            "cedular 15% sobre la ganancia si lo adquirió DESDE 2018. Si no se sabe "
-            "la fecha, devuelve ambos escenarios."
+            "Impuesto NACIONAL del VENDEDOR persona física al transferir un inmueble. "
+            "El ITI fue DEROGADO (Ley 27.743, desde 8/7/2024). Hoy: si lo adquirió "
+            "ANTES de 2018 → $0 nacional (ni ITI ni cedular); si lo adquirió DESDE "
+            "2018 → Ganancias cedular 15% sobre la ganancia. No incluye sellos, "
+            "escribanía ni comisión. Si no se sabe la fecha, devuelve ambos escenarios."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "precio_venta": {"type": "number", "description": "Precio de venta del inmueble."},
-                "costo_adquisicion": {"type": "number", "description": "Costo al que se compró (para la ganancia, si aplica Ganancias)."},
-                "adquirido_post_2018": {"type": "boolean", "description": "true si se adquirió desde 2018 (Ganancias), false si antes (ITI)."},
-                "alicuota_iti_pct": {"type": "number", "description": "Alícuota ITI en % (default 1.5)."},
+                "costo_adquisicion": {"type": "number", "description": "Costo de compra (para la ganancia, si aplica cedular)."},
+                "adquirido_post_2018": {"type": "boolean", "description": "true si se adquirió desde 2018 (cedular), false si antes (sin impuesto nacional)."},
                 "alicuota_ganancias_pct": {"type": "number", "description": "Alícuota Ganancias cedular en % (default 15)."},
             },
             "required": ["precio_venta"],
