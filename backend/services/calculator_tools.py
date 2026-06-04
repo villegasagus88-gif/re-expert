@@ -208,6 +208,7 @@ def _tool_factibilidad_rapida(
     incidencia_terreno_m2: float | None = None,
     comisiones_pct: float | None = None,
     gastos_generales_pct: float | None = None,
+    gastos_base: str = "obra",
     impuestos_pct: float | None = None,
     **_ignore: Any,
 ) -> dict:
@@ -216,6 +217,11 @@ def _tool_factibilidad_rapida(
       ingresos = m² vendibles × precio_venta_m2
       costos   = terreno + obra + gastos generales + comisiones + impuestos
       margen   = ingresos − costos
+
+    Incluye precio de equilibrio (break-even), veredicto y análisis de
+    sensibilidad por eficiencia vendible y por precio.
+    `gastos_base`: 'obra' (% sobre el costo de obra, default) o 'ventas'
+    (% sobre los ingresos) — convención distinta, cambia el resultado.
     """
     notas: list[str] = []
 
@@ -271,39 +277,98 @@ def _tool_factibilidad_rapida(
     g_pct = float(gastos_generales_pct) if gastos_generales_pct else 0.0
     c_pct = float(comisiones_pct) if comisiones_pct else 0.0
     i_pct = float(impuestos_pct) if impuestos_pct else 0.0
+    g_base = (gastos_base or "obra").strip().lower()
+    if g_base not in ("obra", "ventas"):
+        g_base = "obra"
     if not gastos_generales_pct:
         notas.append("Gastos generales (soft costs) en 0% — agregá gastos_generales_pct si aplica.")
+    else:
+        notas.append(f"Gastos generales = {g_pct}% sobre {'los ingresos' if g_base == 'ventas' else 'el costo de obra'}.")
     if not comisiones_pct:
         notas.append("Comisiones en 0% — agregá comisiones_pct (ej 4) si vendés vía inmobiliaria.")
 
-    gastos_generales = costo_obra * g_pct / 100.0
-    comisiones = ingresos * c_pct / 100.0
-    impuestos = ingresos * i_pct / 100.0
+    # Helper de margen reutilizable para los escenarios de sensibilidad.
+    def _calc(m2_vend: float, precio: float) -> dict:
+        ing = m2_vend * precio
+        gg = (ing if g_base == "ventas" else costo_obra) * g_pct / 100.0
+        com = ing * c_pct / 100.0
+        imp = ing * i_pct / 100.0
+        inv = costo_terreno + costo_obra + gg
+        ct = inv + com + imp
+        m = ing - ct
+        return {
+            "ingresos": ing, "gastos_generales": gg, "comisiones": com,
+            "impuestos": imp, "inversion": inv, "costo_total": ct, "margen": m,
+            "margen_sobre_ventas_pct": (m / ing * 100) if ing else None,
+        }
 
-    inversion_dura = costo_terreno + costo_obra + gastos_generales
-    costo_total = inversion_dura + comisiones + impuestos
-    margen = ingresos - costo_total
+    base = _calc(m2_vendibles, precio_venta_m2)
+
+    # Precio de venta de equilibrio (margen = 0), por m² vendible.
+    var_pct = c_pct + i_pct + (g_pct if g_base == "ventas" else 0.0)
+    fixed_cost = costo_terreno + costo_obra + (0.0 if g_base == "ventas" else costo_obra * g_pct / 100.0)
+    denom = m2_vendibles * (1 - var_pct / 100.0)
+    precio_equilibrio = fixed_cost / denom if denom > 0 else None
+
+    # Veredicto por margen sobre ventas.
+    msv = base["margen_sobre_ventas_pct"]
+    if msv is None:
+        veredicto = None
+    elif msv >= 25:
+        veredicto = "verde"
+    elif msv >= 15:
+        veredicto = "amarillo"
+    else:
+        veredicto = "rojo"
+
+    # Sensibilidad por eficiencia vendible (sobre m² construibles).
+    sens_efic = []
+    for frac in (0.80, 0.85, 0.90):
+        mv = m2_construibles * frac
+        s = _calc(mv, precio_venta_m2)
+        sens_efic.append({
+            "factor_vendible": frac,
+            "m2_vendibles": _r2(mv),
+            "margen": _r2(s["margen"]),
+            "margen_sobre_ventas_pct": _r2(s["margen_sobre_ventas_pct"]),
+        })
+
+    # Sensibilidad por precio de venta (−10% / base / +10%).
+    sens_precio = []
+    for factor in (0.90, 1.00, 1.10):
+        p = precio_venta_m2 * factor
+        s = _calc(m2_vendibles, p)
+        sens_precio.append({
+            "precio_venta_m2": _r2(p),
+            "margen": _r2(s["margen"]),
+            "margen_sobre_ventas_pct": _r2(s["margen_sobre_ventas_pct"]),
+        })
 
     return {
         "ok": True,
+        "veredicto": veredicto,
         "m2_construibles": _r2(m2_construibles),
         "m2_vendibles": _r2(m2_vendibles),
-        "ingresos_por_venta": _r2(ingresos),
+        "ingresos_por_venta": _r2(base["ingresos"]),
         "costo_terreno": _r2(costo_terreno),
         "costo_obra": _r2(costo_obra),
-        "gastos_generales": _r2(gastos_generales),
-        "comisiones": _r2(comisiones),
-        "impuestos": _r2(impuestos),
-        "inversion_total": _r2(inversion_dura),
-        "costo_total": _r2(costo_total),
-        "margen": _r2(margen),
-        "margen_sobre_ventas_pct": _r2(margen / ingresos * 100) if ingresos else None,
-        "markup_sobre_costo_pct": _r2(margen / costo_total * 100) if costo_total else None,
-        "roi_sobre_inversion_pct": _r2(margen / inversion_dura * 100) if inversion_dura else None,
+        "gastos_generales": _r2(base["gastos_generales"]),
+        "comisiones": _r2(base["comisiones"]),
+        "impuestos": _r2(base["impuestos"]),
+        "inversion_total": _r2(base["inversion"]),
+        "costo_total": _r2(base["costo_total"]),
+        "margen": _r2(base["margen"]),
+        "margen_sobre_ventas_pct": _r2(msv),
+        "markup_sobre_costo_pct": _r2(base["margen"] / base["costo_total"] * 100) if base["costo_total"] else None,
+        "roi_sobre_inversion_pct": _r2(base["margen"] / base["inversion"] * 100) if base["inversion"] else None,
+        "precio_equilibrio_m2": _r2(precio_equilibrio) if precio_equilibrio is not None else None,
+        "sensibilidad_eficiencia": sens_efic,
+        "sensibilidad_precio": sens_precio,
         "supuestos": {
             "factor_vendible": fv,
             "comisiones_pct": c_pct,
             "gastos_generales_pct": g_pct,
+            "gastos_base": g_base,
             "impuestos_pct": i_pct,
         },
         "notas": " ".join(notas) if notas else None,
@@ -549,9 +614,12 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
             "Factibilidad rápida de un terreno o proyecto inmobiliario: calcula "
             "ingresos por venta (m² vendibles × precio), costos (terreno + obra + "
             "gastos generales + comisiones + impuestos), margen y rentabilidad "
-            "(margen sobre ventas, markup sobre costo, ROI sobre inversión). Usala "
-            "cuando el usuario evalúe si un terreno/negocio 'cierra'. Podés pasar "
-            "m2_vendibles directo, o superficie_terreno_m2 + fot para estimarlos."
+            "(margen sobre ventas, markup sobre costo, ROI). Además devuelve el "
+            "PRECIO DE EQUILIBRIO (break-even) por m², un VEREDICTO (verde/amarillo/"
+            "rojo) y SENSIBILIDAD por eficiencia vendible (80/85/90%) y por precio "
+            "(±10%). Usala cuando el usuario evalúe si un terreno 'cierra'. Podés "
+            "pasar m2_vendibles directo, o superficie_terreno_m2 + fot para estimar. "
+            "Presentá la sensibilidad y el break-even, no solo el caso base."
         ),
         "input_schema": {
             "type": "object",
@@ -565,7 +633,8 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "costo_terreno": {"type": "number", "description": "Costo total del terreno en USD."},
                 "incidencia_terreno_m2": {"type": "number", "description": "USD de terreno por m² vendible (alternativa a costo_terreno)."},
                 "comisiones_pct": {"type": "number", "description": "Comisión de venta en % sobre ingresos (ej 4)."},
-                "gastos_generales_pct": {"type": "number", "description": "Gastos generales/soft costs en % sobre el costo de obra (ej 12)."},
+                "gastos_generales_pct": {"type": "number", "description": "Gastos generales/soft costs en % (ej 12). La base la define gastos_base."},
+                "gastos_base": {"type": "string", "enum": ["obra", "ventas"], "default": "obra", "description": "Base de los gastos generales: 'obra' (% sobre costo de obra) o 'ventas' (% sobre ingresos). Cambia el resultado; confirmá con el usuario si no está claro."},
                 "impuestos_pct": {"type": "number", "description": "Impuestos en % sobre ingresos (ej 3)."},
             },
             "required": ["precio_venta_m2", "costo_construccion_m2"],

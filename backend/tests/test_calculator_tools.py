@@ -144,6 +144,56 @@ def test_factibilidad_faltan_datos():
     assert r.get("ok") is False  # sin m2 ni terreno+fot
 
 
+def test_factibilidad_break_even():
+    # m2_vend=1000, obra 1000@1000=1M, terreno 500k, sin comis/imp/gastos.
+    # break-even precio = (terreno+obra)/m2_vend = 1.5M/1000 = 1500.
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=2500, costo_construccion_m2=1000, m2_vendibles=1000, costo_terreno=500000
+    )
+    assert r["precio_equilibrio_m2"] == 1500.0
+    assert r["veredicto"] == "verde"  # margen 40% sobre ventas
+
+
+def test_factibilidad_break_even_con_comision():
+    # con comisión 4%, break-even = (terreno+obra)/(m2*(1-0.04)) = 1.5M/960 = 1562.5
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=2500, costo_construccion_m2=1000, m2_vendibles=1000,
+        costo_terreno=500000, comisiones_pct=4,
+    )
+    assert r["precio_equilibrio_m2"] == 1562.5
+
+
+def test_factibilidad_sensibilidad():
+    r = _tool_factibilidad_rapida(
+        precio_venta_m2=3000, costo_construccion_m2=1200,
+        superficie_terreno_m2=500, fot=2, costo_terreno=400000,
+    )
+    # 3 escenarios de eficiencia y 3 de precio.
+    assert len(r["sensibilidad_eficiencia"]) == 3
+    assert len(r["sensibilidad_precio"]) == 3
+    # eficiencia 0.90 debe dar más m² vendibles y más margen que 0.80.
+    e80 = r["sensibilidad_eficiencia"][0]
+    e90 = r["sensibilidad_eficiencia"][2]
+    assert e90["m2_vendibles"] > e80["m2_vendibles"]
+    assert e90["margen"] > e80["margen"]
+
+
+def test_factibilidad_gastos_base_ventas():
+    # gastos 12% sobre VENTAS (no sobre obra) deben ser mayores aquí.
+    r_obra = _tool_factibilidad_rapida(
+        precio_venta_m2=2000, costo_construccion_m2=900, m2_vendibles=1000,
+        costo_terreno=300000, gastos_generales_pct=12, gastos_base="obra",
+    )
+    r_ventas = _tool_factibilidad_rapida(
+        precio_venta_m2=2000, costo_construccion_m2=900, m2_vendibles=1000,
+        costo_terreno=300000, gastos_generales_pct=12, gastos_base="ventas",
+    )
+    # ventas: 12% de 2.0M = 240k; obra: 12% de 900k = 108k.
+    assert r_ventas["gastos_generales"] == 240000.0
+    assert r_obra["gastos_generales"] == 108000.0
+    assert r_ventas["margen"] < r_obra["margen"]
+
+
 def test_iva_extraer():
     # 12100 bruto con 21% → neto 10000, iva 2100.
     r = _tool_calcular_iva(monto=12100, alicuota_pct=21, modo="extraer")
