@@ -711,8 +711,11 @@ def _tool_flujo_fondos_desarrollo(
 # ════════════════════════════════════════════════════════════════════
 _IVA_GENERAL = 21.0
 _SELLOS_REFERENCIAL = 3.6   # CABA/PBA total aprox; varía por jurisdicción
-# ITI derogado por Ley 27.743 (8/7/2024). Solo queda la cedular para post-2018.
-_GANANCIAS_INMUEBLE_PCT = 15.0  # cedular sobre la ganancia (adquiridos desde 2018)
+# ITI derogado por Ley 27.743 (8/7/2024).
+# Cedular 15% sobre venta de inmuebles: EXENTO para personas físicas NO
+# habitualistas en ventas desde el 1/1/2026 (Ley 27.802 + Decreto 406/2026,
+# vigente 1/6/2026). El 15% queda solo como referencia histórica.
+_GANANCIAS_INMUEBLE_PCT = 15.0
 
 
 def _tool_calcular_iva(
@@ -845,17 +848,23 @@ def _tool_calcular_impuesto_transferencia(
     precio_venta: float | None = None,
     costo_adquisicion: float | None = None,
     adquirido_post_2018: bool | None = None,
+    vendedor_habitualista: bool = False,
     alicuota_ganancias_pct: float | None = None,
     **_ignore: Any,
 ) -> dict:
     """
-    Impuesto NACIONAL que paga el VENDEDOR (persona física no habitualista) al
-    transferir un inmueble:
-      - Adquirido ANTES de 2018 → $0. El ITI fue DEROGADO (Ley 27.743, vigente
-        desde 8/7/2024) y la cedular no aplica a adquisiciones pre-2018.
-      - Adquirido DESDE 2018    → Ganancias cedular (15% sobre la ganancia real).
-    Si no se sabe la fecha, devuelve ambos escenarios. NO incluye sellos
-    provinciales, escribanía ni comisión.
+    Impuesto NACIONAL del VENDEDOR al transferir un inmueble, marco vigente 2026:
+
+      - Persona física NO habitualista, venta desde 1/1/2026 → $0 (EXENTO).
+        El cedular del 15% fue EXIMIDO por la Ley 27.802 (reglamentada por Decreto
+        406/2026, vigente 1/6/2026), y el ITI ya estaba DEROGADO (Ley 27.743).
+        La fecha de adquisición ya no cambia el resultado para este caso.
+      - VENDEDOR HABITUALISTA (desarrollador / compraventa habitual / sociedad) →
+        NO aplica la exención: tributa Ganancias por régimen general (requiere
+        liquidación completa; no se resuelve con una alícuota plana).
+
+    NO incluye sellos provinciales, escribanía ni comisión. Verificá siempre la
+    vigencia/reglamentación: la normativa fiscal AR cambió fuerte en 2024-2026.
     """
     try:
         precio_venta = float(precio_venta)
@@ -863,48 +872,42 @@ def _tool_calcular_impuesto_transferencia(
         return {"error": "precio_venta es obligatorio y numérico.", "ok": False}
 
     gan_pct = float(alicuota_ganancias_pct) if alicuota_ganancias_pct else _GANANCIAS_INMUEBLE_PCT
-    notas = [
-        "El ITI fue derogado (Ley 27.743, desde 8/7/2024): ya no se paga.",
-        "Aplica a personas físicas no habitualistas. Verificá vigencia y exenciones.",
-        "Es impuesto NACIONAL; aparte van sellos provinciales, escribanía y comisión.",
-    ]
-
     costo = float(costo_adquisicion) if costo_adquisicion is not None else None
     ganancia = max(0.0, precio_venta - costo) if costo is not None else None
-    cedular = ganancia * gan_pct / 100.0 if ganancia is not None else None
-    if costo is None:
-        notas.append(
-            "Para la cedular necesito costo_adquisicion (actualizable) para la ganancia real."
-        )
+    cedular_historico = ganancia * gan_pct / 100.0 if ganancia is not None else None
 
-    if adquirido_post_2018 is True:
-        aplica = "Ganancias cedular (adquirido desde 2018)"
-        impuesto = cedular
-    elif adquirido_post_2018 is False:
-        aplica = "Sin impuesto nacional (adquirido antes de 2018: ITI derogado y la cedular no aplica)"
-        impuesto = 0.0
-    else:
-        aplica = "indeterminado (falta fecha de adquisición)"
-        impuesto = None
-        notas.append(
-            "Decime si lo adquiriste antes o desde 2018: antes → $0 nacional; "
-            "desde 2018 → cedular 15% sobre la ganancia."
+    notas = [
+        "ITI derogado (Ley 27.743, 8/7/2024).",
+        "Cedular 15% sobre venta de inmuebles: EXENTO para personas físicas no "
+        "habitualistas en ventas desde el 1/1/2026 (Ley 27.802 + Decreto 406/2026).",
+        "Es impuesto NACIONAL; aparte van sellos provinciales, escribanía y comisión.",
+        "Verificá vigencia/reglamentación con tu contador (normativa cambió en 2024-2026).",
+    ]
+
+    if vendedor_habitualista:
+        aplica = (
+            "Vendedor habitualista: tributa Ganancias por régimen general "
+            "(no aplica la exención de venta ocasional). Requiere liquidación completa."
         )
+        impuesto = None
+        situacion = "ganancias_general"
+    else:
+        aplica = (
+            "Persona física no habitualista (venta 2026+): EXENTO de impuesto "
+            "nacional a la ganancia (Ley 27.802). ITI derogado. → $0 nacional."
+        )
+        impuesto = 0.0
+        situacion = "exento_2026"
 
     return {
         "ok": True,
         "aplica": aplica,
         "impuesto": _r2(impuesto) if impuesto is not None else None,
-        "escenario_pre_2018": {
-            "impuesto": 0.0,
-            "motivo": "ITI derogado y cedular no aplica a adquisiciones pre-2018.",
-        },
-        "escenario_post_2018": {
-            "alicuota_pct": gan_pct,
-            "ganancia": _r2(ganancia) if ganancia is not None else None,
-            "impuesto": _r2(cedular) if cedular is not None else None,
-        },
-        "notas": " ".join(notas) if notas else None,
+        "iti": 0.0,
+        "cedular_situacion": situacion,
+        "ganancia": _r2(ganancia) if ganancia is not None else None,
+        "referencia_cedular_historica": _r2(cedular_historico) if cedular_historico is not None else None,
+        "notas": " ".join(notas),
         "source": "calc",
     }
 
@@ -1126,19 +1129,21 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "calcular_impuesto_transferencia",
         "description": (
-            "Impuesto NACIONAL del VENDEDOR persona física al transferir un inmueble. "
-            "El ITI fue DEROGADO (Ley 27.743, desde 8/7/2024). Hoy: si lo adquirió "
-            "ANTES de 2018 → $0 nacional (ni ITI ni cedular); si lo adquirió DESDE "
-            "2018 → Ganancias cedular 15% sobre la ganancia. No incluye sellos, "
-            "escribanía ni comisión. Si no se sabe la fecha, devuelve ambos escenarios."
+            "Impuesto NACIONAL del VENDEDOR al transferir un inmueble (marco 2026). "
+            "Persona física NO habitualista, venta desde 2026 → $0: el cedular 15% fue "
+            "EXIMIDO (Ley 27.802 + Decreto 406/2026) y el ITI ya estaba derogado (Ley "
+            "27.743). Vendedor HABITUALISTA (developer/compraventa habitual) → Ganancias "
+            "régimen general (no exento). No incluye sellos, escribanía ni comisión. "
+            "OJO: normativa fiscal volátil — confirmá vigencia con search_web."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "precio_venta": {"type": "number", "description": "Precio de venta del inmueble."},
-                "costo_adquisicion": {"type": "number", "description": "Costo de compra (para la ganancia, si aplica cedular)."},
-                "adquirido_post_2018": {"type": "boolean", "description": "true si se adquirió desde 2018 (cedular), false si antes (sin impuesto nacional)."},
-                "alicuota_ganancias_pct": {"type": "number", "description": "Alícuota Ganancias cedular en % (default 15)."},
+                "costo_adquisicion": {"type": "number", "description": "Costo de compra (para la ganancia histórica de referencia)."},
+                "adquirido_post_2018": {"type": "boolean", "description": "Contexto (ya no cambia el resultado para no habitualistas: igual queda exento)."},
+                "vendedor_habitualista": {"type": "boolean", "description": "true si es developer/compraventa habitual/sociedad (NO aplica la exención; va por Ganancias general)."},
+                "alicuota_ganancias_pct": {"type": "number", "description": "Alícuota cedular histórica en % (default 15, solo referencia)."},
             },
             "required": ["precio_venta"],
         },

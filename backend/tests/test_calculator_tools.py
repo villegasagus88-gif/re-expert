@@ -328,26 +328,32 @@ def test_sellos_tramos_aplica_tramo_alto():
     assert r["alicuota_pct"] == 3.5
 
 
-def test_transferencia_pre2018_sin_impuesto():
-    # ITI derogado (Ley 27.743): adquirido antes de 2018 → $0 nacional.
+def test_transferencia_pre2018_exento():
+    # Persona física no habitualista → exento (Ley 27.802) sin importar la fecha.
     r = _tool_calcular_impuesto_transferencia(precio_venta=200000, adquirido_post_2018=False)
     assert r["impuesto"] == 0.0
-    assert "Sin impuesto nacional" in r["aplica"]
+    assert r["cedular_situacion"] == "exento_2026"
+    assert "EXENTO" in r["aplica"]
 
 
-def test_transferencia_ganancias_post2018():
+def test_transferencia_post2018_no_habitualista_exento():
+    # Comprado 2020, vendido 2026, no habitualista → $0 (la cedular fue eximida).
     r = _tool_calcular_impuesto_transferencia(
-        precio_venta=200000, costo_adquisicion=150000, adquirido_post_2018=True
+        precio_venta=180000, costo_adquisicion=120000, adquirido_post_2018=True
     )
-    assert "Ganancias cedular" in r["aplica"]
-    assert r["impuesto"] == 7500.0  # 15% de (200000-150000)
+    assert r["impuesto"] == 0.0
+    assert r["cedular_situacion"] == "exento_2026"
+    # La cedular histórica (15% de 60.000) queda como referencia, no como impuesto.
+    assert r["referencia_cedular_historica"] == 9000.0
 
 
-def test_transferencia_indeterminado_da_ambos():
-    r = _tool_calcular_impuesto_transferencia(precio_venta=200000, costo_adquisicion=150000)
-    assert r["impuesto"] is None
-    assert r["escenario_pre_2018"]["impuesto"] == 0.0
-    assert r["escenario_post_2018"]["impuesto"] == 7500.0
+def test_transferencia_habitualista_ganancias_general():
+    r = _tool_calcular_impuesto_transferencia(
+        precio_venta=200000, costo_adquisicion=150000, vendedor_habitualista=True
+    )
+    assert r["impuesto"] is None  # requiere liquidación de Ganancias general
+    assert r["cedular_situacion"] == "ganancias_general"
+    assert "habitualista" in r["aplica"].lower()
 
 
 def test_dispatcher_calc_impositiva():
