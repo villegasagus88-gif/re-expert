@@ -439,6 +439,19 @@ def _tool_tasacion_comparables(
     disp = (std / prom * 100) if prom else 0.0
 
     notas: list[str] = []
+    # Guard de plausibilidad: un USD/m² urbano en AR ronda ~500–8000. Si la
+    # mediana cae muy por debajo, casi seguro se pasaron PRECIOS TOTALES (o en
+    # miles) en vez de USD/m². No devolvemos una valuación absurda en silencio.
+    if med is not None and med < 300:
+        return {
+            "error": (
+                f"USD/m² mediano = {_r2(med)}, implausible para un inmueble urbano "
+                "(lo normal es ~500–8000/m²). Seguramente pasaste precios TOTALES o "
+                "en miles en vez de USD/m². Pasá USD/m² = precio ÷ m², o usá objetos "
+                "{precio_total, m2} para que la tool divida."
+            ),
+            "ok": False,
+        }
     desc = float(descuento_publicacion_pct) if descuento_publicacion_pct else 0.0
     aj = float(ajuste_pct) if ajuste_pct else 0.0
     if not descuento_publicacion_pct:

@@ -283,6 +283,14 @@ def test_tasacion_comparables_descuento_publicacion():
     assert r["valor_estimado"] == 90000.0
 
 
+def test_tasacion_comparables_guard_totales():
+    # Si pasan precios totales (en miles) como USD/m², la mediana queda implausible
+    # (<300) → la tool corta con error en vez de devolver una valuación absurda.
+    r = _tool_tasacion_comparables(comparables=[64, 110, 158], m2_objetivo=45)
+    assert r.get("ok") is False
+    assert "implausible" in r["error"].lower()
+
+
 def test_tasacion_comparables_objetos_y_confianza():
     # objetos {precio_total, m2}; muy dispersos → confianza baja.
     r = _tool_tasacion_comparables(
