@@ -51,9 +51,11 @@ PLAN_FEATURES: dict[str, dict[str, bool]] = {
 # Plan sin acceso (inactive / desconocido): todas las features en False.
 _NO_FEATURES: dict[str, bool] = dict.fromkeys(_FULL_FEATURES, False)
 
-# Precio del plan pago. Monto FINAL a definir y configurar en Mercado Pago (ARS).
+# Precio del plan pago (ARS). Anclado a ~USD 45/mes al dólar financiero
+# (MEP/CCL ~1500); redondeado a un valor comercial. Revisar si el dólar se mueve
+# fuerte. Configurar el mismo monto en el plan de suscripción de Mercado Pago.
 PLAN_PRICING: dict[str, dict[str, float | str]] = {
-    "pro": {"amount": 0.0, "currency": "ARS", "period": "mes"},  # TODO: monto final
+    "pro": {"amount": 69900.0, "currency": "ARS", "period": "mes"},  # ~USD 45
 }
 
 # Límite mínimo para planes sin acceso (no debería usarse: el gate corta antes).
