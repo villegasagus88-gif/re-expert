@@ -839,6 +839,9 @@ select.pay-form-input{cursor:pointer}
 .sol-toast-link:hover{color:#d97706}
 .sol-toast-close{flex-shrink:0;background:none;border:none;color:var(--text-1);cursor:pointer;padding:2px;font-size:16px;line-height:1;opacity:.6;transition:opacity .15s}
 .sol-toast-close:hover{opacity:1}
+/* Banner de prueba (modelo pago-only) */
+.trial-banner{background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;font-size:12.5px;text-align:center;padding:7px 14px;flex-shrink:0}
+.trial-banner a{color:#fff;font-weight:700;text-decoration:underline;margin-left:2px}
   </style>
 </head>
 <body>
@@ -1823,6 +1826,10 @@ const state = {
 };
 const historyMeta = {page:0, totalPages:1, loading:false};
 let userPlan = 'free';
+// Estado de acceso (modelo pago-only). hasAccess arranca optimista: el backend
+// (require_access) es la fuente de verdad y corta con 403 si no corresponde.
+let accessState = { loaded:false, plan:'free', hasAccess:true, isTrial:false, trialEndsAt:null, daysLeft:null };
+function hasAccess(){ return accessState.hasAccess; }
 
 const els = {
   sidebar:$('#sidebar'), sidebarToggle:$('#sidebarToggle'), sidebarClose:$('#sidebarClose'),
@@ -2525,8 +2532,13 @@ function updatePlanBadge(){
     badge.textContent='⭐ Pro';badge.className='plan-badge plan-badge-pro';
     if(upgradeLink)upgradeLink.style.display='none';
     if(counter)counter.style.display='none';
+  }else if(userPlan==='trial'){
+    const d=accessState.daysLeft;
+    badge.textContent=(d!=null)?`Prueba · ${d}d`:'Prueba';
+    badge.className='plan-badge plan-badge-free';
+    if(upgradeLink)upgradeLink.style.display='';
   }else{
-    badge.textContent='Free';badge.className='plan-badge plan-badge-free';
+    badge.textContent='Sin plan';badge.className='plan-badge plan-badge-free';
     if(upgradeLink)upgradeLink.style.display='';
   }
 }
@@ -2541,6 +2553,9 @@ function hideUpgradeModal(){
   const modal=document.getElementById('upgradeModal');
   if(modal)modal.style.display='none';
 }
+// Paywall centralizado: cualquier 403 con detalle de suscripción (emitido por
+// authFetch) dispara el modal de upgrade. Cubre todas las secciones pago-only.
+window.addEventListener('re:paywall', ()=>showUpgradeModal());
 
 function updateDailyCounter(remaining,total){
   const el=document.getElementById('dailyMsgsCounter');
@@ -2548,6 +2563,42 @@ function updateDailyCounter(remaining,total){
   el.style.display='';
   el.textContent=`${remaining}/${total} msgs hoy`;
   el.style.color=remaining<=3?'#ef4444':remaining<=7?'#f59e0b':'var(--text-sidebar-muted)';
+}
+
+// Carga el estado de suscripción (trial/pro/inactive) desde el backend.
+async function loadAccessState(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/billing/status');
+    if(!r.ok)return;
+    const s=await r.json();
+    accessState.loaded=true;
+    accessState.plan=s.plan||'free';
+    accessState.hasAccess=s.has_access!==false;
+    accessState.isTrial=!!s.is_trial;
+    accessState.trialEndsAt=s.trial_ends_at||null;
+    if(s.trial_ends_at){
+      const ms=new Date(s.trial_ends_at)-new Date();
+      accessState.daysLeft=Math.max(0,Math.ceil(ms/86400000));
+    }
+    userPlan=s.plan||userPlan;
+    updatePlanBadge();
+    renderTrialBanner();
+  }catch(e){/* optimista: el backend corta con 403 si hace falta */}
+}
+
+// Banner de prueba: "te quedan N días". Se crea dinámico arriba del contenido.
+function renderTrialBanner(){
+  let b=document.getElementById('trialBanner');
+  if(accessState.isTrial && accessState.daysLeft!=null){
+    if(!b){
+      b=document.createElement('div'); b.id='trialBanner'; b.className='trial-banner';
+      const main=document.getElementById('main');
+      if(main){ main.insertBefore(b, main.firstChild); } else { return; }
+    }
+    const d=accessState.daysLeft;
+    b.innerHTML=`Te queda${d===1?'':'n'} <b>${d} día${d===1?'':'s'}</b> de prueba · <a href="/pricing.html">Suscribite</a>`;
+    b.style.display='';
+  }else if(b){ b.style.display='none'; }
 }
 
 async function sendMessage(text,opts){
@@ -4466,6 +4517,7 @@ async function onUserLoggedIn(user){
   updatePlanBadge();
   // Cargar proyectos y perfil global en paralelo con conversaciones sueltas
   await Promise.all([
+    loadAccessState(),
     loadWorkspaces(),
     loadProfile(),
     loadConversationsFromCloud(),
@@ -4504,7 +4556,7 @@ function init(){
   els.sendBtn.addEventListener('click',()=>sendMessage(els.messageInput.value));
   els.themeToggle.addEventListener('click',()=>applyTheme(state.theme==='dark'?'light':'dark'));
   els.exportBtn.addEventListener('click',()=>{
-    if(userPlan!=='pro'){showUpgradeModal('Exportar conversación');return;}
+    if(!hasAccess()){showUpgradeModal('Exportar conversación');return;}
     els.exportModal.classList.add('active');
   });
   els.exportModalClose.addEventListener('click',()=>els.exportModal.classList.remove('active'));

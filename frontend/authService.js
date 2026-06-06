@@ -204,6 +204,18 @@
       resp = await fetch(url, buildInit(token));
     }
 
+    // Modelo pago-only: un 403 con detalle de paywall (trial vencido / sin
+    // suscripción) avisa a la UI vía evento, sin romper el flujo del caller.
+    if (resp.status === 403) {
+      try {
+        const body = await resp.clone().json();
+        const d = body && body.detail;
+        if (d && (d.upgrade_url || d.reason)) {
+          window.dispatchEvent(new CustomEvent('re:paywall', { detail: d }));
+        }
+      } catch (_) { /* no era JSON de paywall */ }
+    }
+
     return resp;
   }
 
