@@ -311,14 +311,17 @@
       document.getElementById('accountContent').style.display = '';
 
       const isPro = data.is_pro;
+      const isTrial = data.is_trial;
+      let trialDays = null;
+      if (isTrial && data.trial_ends_at) trialDays = Math.max(0, Math.ceil((new Date(data.trial_ends_at) - new Date()) / 86400000));
 
-      // Upgrade CTA for free users
+      // CTA de suscripción para quien no es Pro (trial o inactivo)
       if (!isPro) document.getElementById('upgradeSection').style.display = '';
 
       // Plan card
       const pill = document.getElementById('planPillCard');
       pill.className = 'plan-pill ' + (isPro ? 'plan-pill-pro' : 'plan-pill-free');
-      pill.innerHTML = isPro ? '⭐ Pro' : 'Free';
+      pill.innerHTML = isPro ? '⭐ Pro' : (isTrial ? ('Prueba' + (trialDays != null ? ' · ' + trialDays + 'd' : '')) : 'Sin plan');
 
       const planRows = document.getElementById('planRows');
       planRows.innerHTML = `
@@ -332,7 +335,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Plan</span>
-          <span class="detail-value">${isPro ? 'RE Expert Pro' : 'RE Expert Free'}</span>
+          <span class="detail-value">${isPro ? 'RE Expert Pro' : (isTrial ? 'RE Expert · Prueba' + (trialDays != null ? ' (' + trialDays + 'd)' : '') : 'Sin suscripción')}</span>
         </div>
       `;
 
@@ -347,7 +350,7 @@
       } else {
         planBtnRow.innerHTML = `
           <a href="pricing.html" class="btn-primary-sm">
-            <span class="btn-label">⭐ Upgrade a Pro</span>
+            <span class="btn-label">${isTrial ? '⭐ Suscribirme' : '⭐ Suscribirme a Pro'}</span>
           </a>`;
       }
 
