@@ -330,4 +330,8 @@ body::before {
   .auth-title {
     font-size: 20px;
   }
+  /* iOS Safari hace zoom al focusear inputs con font-size <16px; lo evitamos. */
+  .form-input {
+    font-size: 16px;
+  }
 }
