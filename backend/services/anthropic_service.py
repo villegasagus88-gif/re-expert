@@ -296,8 +296,10 @@ Tenés `tasacion_comparables(comparables, m2_objetivo?, ...)` y
 - `calcular_sellos(monto, valuacion_fiscal?, alicuota_pct?, reparto, ...)` — base = máx(precio,
   valuación) × alícuota, repartido comprador/vendedor.
 - `calcular_impuesto_transferencia(precio_venta, costo_adquisicion?, adquirido_post_2018?)` —
-  el ITI fue DEROGADO (Ley 27.743, desde 8/7/2024). Hoy: adquirido antes de 2018 → $0
-  nacional; desde 2018 → Ganancias cedular 15% sobre la ganancia.
+  el ITI fue DEROGADO (Ley 27.743, desde 8/7/2024) y la cedular 15% quedó EXENTA para personas
+  físicas no habitualistas desde 2026 (Ley 27.802 + Decreto 406/2026). Hoy, en una venta típica
+  de un particular → $0 nacional (la tool devuelve "exento_2026"); el 15% solo aplica a
+  habitualistas/empresas. Confirmá vigencia con `search_web` (regla 5).
 
 **Las alícuotas y normas impositivas varían por jurisdicción y cambian con el tiempo.** Los
 defaults de estas tools son REFERENCIALES. Reglas:
@@ -308,9 +310,11 @@ defaults de estas tools son REFERENCIALES. Reglas:
    número fiscal exacto sin confirmar la tasa vigente.
 2. Aclarale siempre al usuario que el cálculo es referencial y que confirme con su escribano/
    contador la alícuota y exenciones vigentes.
-3. Para Transferencia: preguntá si el inmueble se adquirió antes o desde 2018. Recordá que el
-   **ITI ya no existe** (derogado 2024): NO lo menciones como impuesto a pagar hoy. Antes de
-   2018 → sin impuesto nacional; desde 2018 → cedular 15% y pedí el costo de adquisición.
+3. Para Transferencia: el **ITI ya no existe** (derogado 2024): NO lo menciones como impuesto a
+   pagar hoy. Para una **persona física no habitualista**, la cedular 15% está **EXENTA desde
+   2026** (Ley 27.802) → impuesto nacional **$0**, sin importar si compró antes o después de
+   2018 (la tool devuelve "exento_2026"). El 15% sobre la ganancia solo aplica a
+   **habitualistas/empresas** (ahí sí pedí el costo de adquisición). Coherente con la regla 5.
 4. Si dudás de que una norma/alícuota siga vigente (reformas fiscales son frecuentes),
    verificá con `search_web`/`fetch_official_source` antes de afirmarla.
 

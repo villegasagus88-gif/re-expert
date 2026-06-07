@@ -105,13 +105,25 @@ def _median(xs: list[float]) -> float | None:
 
 
 def _spread(total: float, start: int, dur: int, length: int) -> list[float]:
-    """Reparte `total` linealmente en los períodos [start, start+dur-1]."""
+    """Reparte `total` linealmente en `dur` períodos desde `start`.
+
+    CONSERVA el total: si parte del rango cae fuera de [0, length) (p.ej. la obra
+    dura más que el horizonte), ese remanente NO se descarta — se imputa al
+    período válido más cercano (clamp al último/primer índice). Antes el remanente
+    se perdía en silencio y subvaluaba los egresos (inflaba margen/TIR).
+    """
     arr = [0.0] * length
-    if total and dur and dur > 0:
+    if total and dur and dur > 0 and length > 0:
         por = total / dur
-        for t in range(start, min(start + dur, length)):
-            if 0 <= t < length:
-                arr[t] += por
+        for k in range(dur):
+            t = start + k
+            if t < 0:
+                idx = 0
+            elif t >= length:
+                idx = length - 1
+            else:
+                idx = t
+            arr[idx] += por
     return arr
 
 
@@ -646,6 +658,12 @@ def _tool_flujo_fondos_desarrollo(
         obra_dur = int(obra_duracion) if obra_duracion else P
         ent = int(entrega_periodo) if entrega_periodo is not None else P
         ent = max(0, min(ent, L - 1))
+        if obra_ini + obra_dur > L:
+            notas.append(
+                "La obra/gastos exceden el horizonte de períodos: el remanente "
+                "se imputó al último período (revisá obra_inicio/obra_duracion "
+                "vs `periodos`)."
+            )
 
         eg = [0.0] * L
         eg[0] += float(costo_terreno or 0)
