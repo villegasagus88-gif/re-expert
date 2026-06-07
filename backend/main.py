@@ -20,6 +20,7 @@ from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
 from api.routes.workspaces import router as workspaces_router
 from config.settings import settings
+from core.auth import require_admin
 from core.plan_gate import require_access
 from core.rate_limit import limiter
 from fastapi import Depends, FastAPI
@@ -219,7 +220,9 @@ app.include_router(usage_router)
 _paid = [Depends(require_access)]
 app.include_router(conversations_router, dependencies=_paid)
 app.include_router(chat_router, dependencies=_paid)
-app.include_router(knowledge_router, dependencies=_paid)
+# Knowledge base: solo administradores (gestión del KB global). Cierra el agujero
+# de escritura/borrado del KB por cualquier usuario autenticado.
+app.include_router(knowledge_router, dependencies=[Depends(require_admin)])
 app.include_router(materials_router, dependencies=_paid)
 app.include_router(academia_router, dependencies=_paid)
 app.include_router(payments_router, dependencies=_paid)

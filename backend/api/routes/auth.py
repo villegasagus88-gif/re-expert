@@ -12,7 +12,7 @@ from api.schemas.auth import (
     UpdateProfileRequest,
     UserOut,
 )
-from core.auth import get_current_user
+from core.auth import get_current_user, is_admin
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, Request
 from models.user import User
@@ -93,6 +93,7 @@ async def me(current_user: User = Depends(get_current_user)):
         onboarding_completed=current_user.onboarding_completed,
         phone=current_user.phone,
         automation_prefs=current_user.automation_prefs,
+        is_admin=is_admin(current_user),
     )
 
 

@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # ===== ADMIN =====
+    # Emails con acceso de administrador (gestión del knowledge base), separados
+    # por coma. Ej: "mati@re-expert.app,agustin@re-expert.app". Vacío = nadie.
+    ADMIN_EMAILS: str = ""
+
     # ===== DB POOL =====
     # Conexiones que mantenemos warm en el pool. Supabase Pooler en
     # transaction mode acepta hasta 15-30 conexiones por cliente.

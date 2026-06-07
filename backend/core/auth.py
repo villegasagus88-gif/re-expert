@@ -106,3 +106,23 @@ async def get_current_user(
         )
 
     return user
+
+
+def is_admin(user: User) -> bool:
+    """True si el email del usuario está en settings.ADMIN_EMAILS (gestión del KB)."""
+    admins = {
+        e.strip().lower()
+        for e in (settings.ADMIN_EMAILS or "").split(",")
+        if e.strip()
+    }
+    return bool(admins) and (user.email or "").lower() in admins
+
+
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Dependency: 403 si el usuario autenticado no es administrador."""
+    if not is_admin(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso de administrador requerido",
+        )
+    return user

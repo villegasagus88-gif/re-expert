@@ -43,6 +43,8 @@ class UserOut(BaseModel):
     # Campos del agente SOL: SOL los lee/escribe vía tools.
     phone: str | None = None
     automation_prefs: dict | None = None
+    # True si el email está en ADMIN_EMAILS (habilita la página /admin.html).
+    is_admin: bool = False
 
 
 class RefreshRequest(BaseModel):

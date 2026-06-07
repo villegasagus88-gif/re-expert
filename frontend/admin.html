@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin — Knowledge Base · RE Expert</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="auth.css">
+  <script src="config.js"></script>
+  <style>
+    body { display:block; min-height:100dvh; background:var(--bg-0); color:var(--text-0); font-family:var(--font); }
+    .admin-wrap { max-width: 920px; margin: 0 auto; padding: 24px 18px 60px; }
+    .admin-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+    .admin-title { font-size:20px; font-weight:700; }
+    .admin-sub { font-size:13px; color:var(--text-2); margin-bottom:22px; }
+    .admin-link { font-size:13px; color:var(--accent-brand); text-decoration:none; }
+    .card { background:var(--bg-card); border:1px solid var(--border-0); border-radius:12px; padding:16px 18px; margin-bottom:18px; }
+    .card-title { font-size:14px; font-weight:600; margin-bottom:12px; }
+    .upload-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .upload-row input[type=text] { flex:1; min-width:200px; background:var(--bg-input); border:1px solid var(--border-0); border-radius:8px; padding:9px 12px; color:var(--text-0); font-size:14px; font-family:var(--font); box-sizing:border-box; }
+    .btn { background:var(--accent-brand); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    .btn:hover { opacity:.9; }
+    .btn-sm { padding:5px 10px; font-size:12px; }
+    .btn-ghost { background:var(--bg-1); color:var(--text-1); border:1px solid var(--border-0); }
+    .btn-danger { background:#dc2626; }
+    .file-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-0); font-size:13px; }
+    .file-row:last-child { border-bottom:none; }
+    .file-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-0); }
+    .file-meta { color:var(--text-3); font-size:11.5px; flex-shrink:0; }
+    .file-actions { display:flex; gap:6px; flex-shrink:0; }
+    .muted { color:var(--text-3); font-size:13px; }
+    .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; display:none; }
+    .alert.ok { background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); display:block; }
+    .alert.err { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; display:block; }
+    /* Editor modal */
+    .editor-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:50; padding:16px; }
+    .editor-bg.show { display:flex; }
+    .editor { background:var(--bg-card); border:1px solid var(--border-0); border-radius:12px; width:100%; max-width:760px; max-height:88dvh; display:flex; flex-direction:column; overflow:hidden; }
+    .editor-head { padding:14px 18px; border-bottom:1px solid var(--border-0); font-weight:600; font-size:14px; }
+    .editor textarea { flex:1; min-height:50dvh; border:none; outline:none; resize:none; background:var(--bg-input); color:var(--text-0); font-family:ui-monospace,monospace; font-size:13px; line-height:1.5; padding:14px 18px; }
+    .editor-foot { padding:12px 18px; border-top:1px solid var(--border-0); display:flex; gap:8px; justify-content:flex-end; }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap" id="adminWrap" style="display:none">
+    <div class="admin-head">
+      <div class="admin-title">🗂️ Knowledge Base — Admin</div>
+      <a href="app.html" class="admin-link">← Volver a la app</a>
+    </div>
+    <div class="admin-sub">Gestión de los archivos del knowledge base (compartido por todos los usuarios). Cambios acá afectan las respuestas del chat.</div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="card">
+      <div class="card-title">Subir archivo</div>
+      <div class="upload-row">
+        <input type="text" id="uploadPath" placeholder="ruta destino, ej: 05-fiscal/iva-2026.md">
+        <input type="file" id="uploadFile">
+        <button class="btn" id="uploadBtn">Subir</button>
+      </div>
+      <div class="muted" style="margin-top:8px">Permitidos: .md .pdf .txt .csv .json .docx .xlsx · máx 10 MB. Si la ruta ya existe, se sobrescribe.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Archivos (<span id="fileCount">0</span>)</div>
+      <div id="fileList"><div class="muted">Cargando…</div></div>
+    </div>
+  </div>
+
+  <!-- Editor modal -->
+  <div class="editor-bg" id="editorBg">
+    <div class="editor">
+      <div class="editor-head" id="editorTitle">Editar</div>
+      <textarea id="editorText" spellcheck="false"></textarea>
+      <div class="editor-foot">
+        <button class="btn btn-ghost" id="editorCancel">Cancelar</button>
+        <button class="btn" id="editorSave">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="authService.js"></script>
+  <script>
+  const apiBase = () => (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+  const $ = s => document.querySelector(s);
+  const EDITABLE = /\.(md|txt|csv|json)$/i;
+
+  function showAlert(msg, ok) {
+    const el = $('#alert');
+    el.className = 'alert ' + (ok ? 'ok' : 'err');
+    el.textContent = msg;
+    if (ok) setTimeout(() => { el.className = 'alert'; }, 4000);
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmtSize(n) { n = +n || 0; return n < 1024 ? n + ' B' : n < 1048576 ? (n/1024).toFixed(0) + ' KB' : (n/1048576).toFixed(1) + ' MB'; }
+
+  async function loadFiles() {
+    const list = $('#fileList');
+    try {
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/knowledge/files');
+      if (!r.ok) throw new Error('Error ' + r.status);
+      const files = await r.json();
+      files.sort((a, b) => (a.path || '').localeCompare(b.path || ''));
+      $('#fileCount').textContent = files.length;
+      if (!files.length) { list.innerHTML = '<div class="muted">No hay archivos.</div>'; return; }
+      list.innerHTML = files.map(f => {
+        const p = esc(f.path);
+        const canEdit = EDITABLE.test(f.path);
+        return `<div class="file-row">
+          <span class="file-name" title="${p}">${p}</span>
+          <span class="file-meta">${fmtSize(f.size)}</span>
+          <span class="file-actions">
+            ${canEdit ? `<button class="btn btn-sm btn-ghost" data-edit="${p}">Editar</button>` : ''}
+            <button class="btn btn-sm btn-danger" data-del="${p}">Borrar</button>
+          </span>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = '<div class="alert err">No se pudieron cargar los archivos: ' + esc(e.message) + '</div>';
+    }
+  }
+
+  async function uploadFile() {
+    const path = $('#uploadPath').value.trim();
+    const file = $('#uploadFile').files[0];
+    if (!path || !file) { showAlert('Indicá la ruta destino y elegí un archivo.', false); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/knowledge/files/' + encodeURI(path), { method: 'POST', body: fd });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || ('Error ' + r.status));
+      showAlert('Archivo subido: ' + path, true);
+      $('#uploadPath').value = ''; $('#uploadFile').value = '';
+      loadFiles();
+    } catch (e) { showAlert('No se pudo subir: ' + e.message, false); }
+  }
+
+  async function deleteFile(path) {
+    if (!confirm('¿Borrar "' + path + '" del knowledge base? Afecta el chat de todos los usuarios.')) return;
+    try {
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/knowledge/files/' + encodeURI(path), { method: 'DELETE' });
+      if (!r.ok && r.status !== 204) throw new Error('Error ' + r.status);
+      showAlert('Archivo borrado: ' + path, true);
+      loadFiles();
+    } catch (e) { showAlert('No se pudo borrar: ' + e.message, false); }
+  }
+
+  let _editPath = null;
+  async function editFile(path) {
+    try {
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/knowledge/files/' + encodeURI(path));
+      if (!r.ok) throw new Error('Error ' + r.status);
+      $('#editorText').value = await r.text();
+      $('#editorTitle').textContent = 'Editar — ' + path;
+      _editPath = path;
+      $('#editorBg').classList.add('show');
+    } catch (e) { showAlert('No se pudo abrir: ' + e.message, false); }
+  }
+  async function saveEdit() {
+    if (!_editPath) return;
+    const blob = new Blob([$('#editorText').value], { type: 'text/markdown' });
+    const fd = new FormData();
+    fd.append('file', blob, _editPath.split('/').pop());
+    try {
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/knowledge/files/' + encodeURI(_editPath), { method: 'POST', body: fd });
+      if (!r.ok) throw new Error('Error ' + r.status);
+      $('#editorBg').classList.remove('show');
+      showAlert('Cambios guardados: ' + _editPath, true);
+      _editPath = null;
+    } catch (e) { showAlert('No se pudo guardar: ' + e.message, false); }
+  }
+
+  // Delegación de eventos para editar/borrar.
+  $('#fileList').addEventListener('click', e => {
+    const ed = e.target.closest('[data-edit]'); const del = e.target.closest('[data-del]');
+    if (ed) editFile(ed.getAttribute('data-edit'));
+    if (del) deleteFile(del.getAttribute('data-del'));
+  });
+  $('#uploadBtn').addEventListener('click', uploadFile);
+  $('#editorCancel').addEventListener('click', () => $('#editorBg').classList.remove('show'));
+  $('#editorSave').addEventListener('click', saveEdit);
+
+  // Guard: requiere sesión + ser admin. El backend igual exige require_admin.
+  (async function init() {
+    try {
+      await window.REAuthService.requireAuth();
+      const r = await window.REAuthService.authFetch(apiBase() + '/api/auth/me');
+      const me = r.ok ? await r.json() : {};
+      if (!me.is_admin) { window.location.href = 'app.html'; return; }
+      $('#adminWrap').style.display = '';
+      loadFiles();
+    } catch (e) {
+      window.location.href = 'login.html';
+    }
+  })();
+  </script>
+</body>
+</html>
