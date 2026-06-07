@@ -13,6 +13,7 @@ from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.user import User
 from services.jwt_service import create_token_pair, decode_token
+from services.mercadopago_service import mp_enabled
 from sqlalchemy import select
 
 
@@ -57,6 +58,17 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
                 detail="Ya existe una cuenta con este email",
             )
 
+        # Modelo de acceso al registrarse:
+        #  - Con Mercado Pago activo → tarjeta UPFRONT: el usuario arranca
+        #    "inactive" y debe suscribir (MP otorga el trial de 7 días vía el
+        #    plan). Sin tarjeta no hay acceso.
+        #  - Sin MP (estado actual) → trial de 7 días directo, sin tarjeta.
+        if mp_enabled():
+            plan, trial_ends_at = "inactive", None
+        else:
+            plan = "trial"
+            trial_ends_at = datetime.now(UTC) + timedelta(days=TRIAL_DAYS)
+
         # Create user
         user = User(
             id=uuid4(),
@@ -64,8 +76,8 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
             password_hash=_hash_password(password),
             full_name=full_name,
             role="user",
-            plan="trial",
-            trial_ends_at=datetime.now(UTC) + timedelta(days=TRIAL_DAYS),
+            plan=plan,
+            trial_ends_at=trial_ends_at,
             last_login=datetime.now(UTC),
         )
         db.add(user)

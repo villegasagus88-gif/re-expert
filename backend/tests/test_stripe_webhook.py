@@ -171,7 +171,9 @@ def test_checkout_session_completed_activates_pro():
     assert "evt_checkout_1" in db.seen_event_ids
 
 
-def test_subscription_deleted_downgrades_to_free():
+def test_subscription_deleted_downgrades_to_inactive():
+    # Modelo pago-only: al cancelar la suscripción el plan pasa a "inactive"
+    # (no existe "free"). El gate de acceso lo trata como sin-acceso.
     user = _make_user(plan="pro", customer_id="cus_existing")
     event = {
         "id": "evt_del_1",
@@ -183,11 +185,11 @@ def test_subscription_deleted_downgrades_to_free():
 
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
-    assert user.plan == "free"
+    assert user.plan == "inactive"
 
 
-def test_invoice_payment_failed_downgrades_to_free():
-    """Renewal failure → user loses Pro until they update their card."""
+def test_invoice_payment_failed_downgrades_to_inactive():
+    """Renewal failure → user pierde el acceso (inactive) hasta actualizar la tarjeta."""
     user = _make_user(plan="pro", customer_id="cus_existing")
     event = {
         "id": "evt_fail_1",
@@ -199,7 +201,7 @@ def test_invoice_payment_failed_downgrades_to_free():
 
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
-    assert user.plan == "free"
+    assert user.plan == "inactive"
 
 
 def test_unknown_event_type_is_ignored():

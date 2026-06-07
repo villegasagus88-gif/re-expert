@@ -24,8 +24,13 @@ mock_settings.DATABASE_URL = "postgresql://test:test@localhost/test"
 mock_settings.DEBUG = False
 
 # Patch settings globally before imports
+mock_settings.MP_ACCESS_TOKEN = ""  # MP off → register usa el flujo trial
+mock_settings.MP_PLAN_ID = ""
 sys.modules["config"] = MagicMock()
 sys.modules["config.settings"] = MagicMock(settings=mock_settings)
+# config.plans no se auto-resuelve desde el MagicMock de `config`: stubearlo
+# explícitamente (auth_service hace `from config.plans import TRIAL_DAYS`).
+sys.modules["config.plans"] = MagicMock(TRIAL_DAYS=7)
 
 
 # ===== 1. BCRYPT TESTS =====

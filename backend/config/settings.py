@@ -33,12 +33,22 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
-    # ===== STRIPE =====
+    # ===== STRIPE (legacy — reemplazado por Mercado Pago para AR) =====
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_SUCCESS_URL: str = ""
     STRIPE_CANCEL_URL: str = ""
+
+    # ===== MERCADO PAGO (billing en ARS) =====
+    # Suscripciones (preapproval). Mientras MP_ACCESS_TOKEN + MP_PLAN_ID estén
+    # vacíos, TODO el módulo de MP es inerte y el backend se comporta como antes.
+    # Cargar en Railway cuando Agustín cree el plan en Mercado Pago.
+    MP_ACCESS_TOKEN: str = ""          # access token privado (Bearer). SECRET.
+    MP_PUBLIC_KEY: str = ""            # public key (para MP.js en el front, opcional).
+    MP_WEBHOOK_SECRET: str = ""        # secreto para verificar la firma del webhook.
+    MP_PLAN_ID: str = ""              # id del preapproval_plan (con trial de 7 días).
+    MP_BACK_URL: str = ""             # URL de retorno post-checkout. Default: FRONTEND_URL/app.html
 
     # ===== OPTIONAL =====
     PORT: int = 8000

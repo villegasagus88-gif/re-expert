@@ -18,12 +18,19 @@ import stripe
 from config.settings import settings
 from core.auth import get_current_user
 from core.plan_gate import has_access
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, Request
+from models.base import get_db
 from models.user import User
-from services.stripe_service import (
-    create_billing_portal_session,
-    create_pro_checkout_session,
+from services.mercadopago_service import (
+    handle_webhook as mp_handle_webhook,
 )
+from services.mercadopago_service import (
+    mp_enabled,
+    mp_public_config,
+    start_subscription_checkout,
+)
+from services.stripe_service import create_billing_portal_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +59,7 @@ async def billing_status(user: User = Depends(get_current_user)):
         "email": user.email,
         "full_name": user.full_name,
         "stripe_configured": bool(settings.STRIPE_SECRET_KEY),
+        "mp_enabled": mp_enabled(),
         "has_customer": bool(user.stripe_customer_id),
         "subscription": None,
         "invoices": [],
@@ -111,17 +119,71 @@ async def billing_status(user: User = Depends(get_current_user)):
 
 @router.post(
     "/checkout",
-    summary="Crear sesión de checkout de Stripe para el plan Pro",
+    summary="Crear checkout de suscripción (Mercado Pago, o Stripe legacy)",
     responses={
-        400: {"description": "Usuario ya es Pro"},
+        400: {"description": "Usuario ya tiene suscripción activa"},
         401: {"description": "Token inválido"},
-        502: {"description": "Error en Stripe"},
-        503: {"description": "Stripe no configurado"},
+        502: {"description": "Error en el proveedor de pagos"},
+        503: {"description": "Proveedor de pagos no configurado"},
     },
 )
 async def billing_checkout(user: User = Depends(get_current_user)):
-    """Returns `{url, session_id}` — redirigir el browser a `url`."""
-    return await create_pro_checkout_session(user)
+    """
+    Devuelve `{url, ...}` — redirigir el browser a `url`.
+
+    Despacha al proveedor activo: Mercado Pago si está configurado
+    (MP_ACCESS_TOKEN + MP_PLAN_ID), si no cae a Stripe (legacy).
+    """
+    return await start_subscription_checkout(user)
+
+
+# ── Mercado Pago ─────────────────────────────────────────────────────────────
+@router.get(
+    "/mp/config",
+    summary="Config pública de Mercado Pago (enabled + public_key)",
+)
+async def mp_config():
+    """Público: `{enabled, public_key}`. La public_key es pública por diseño."""
+    return mp_public_config()
+
+
+@router.post(
+    "/mp/webhook",
+    summary="Webhook de Mercado Pago (sin auth JWT — se valida por firma HMAC)",
+    status_code=200,
+    responses={
+        400: {"description": "Firma inválida"},
+        503: {"description": "MP no configurado / falta MP_WEBHOOK_SECRET en prod"},
+    },
+)
+async def mp_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    x_signature: str | None = Header(default=None, alias="x-signature"),
+    x_request_id: str | None = Header(default=None, alias="x-request-id"),
+):
+    """
+    Recibe notificaciones de MP. El `data.id` y `type` vienen por query string
+    (?data.id=...&type=...) y/o en el body JSON. Verifica firma, consulta el
+    preapproval real en MP y aplica el estado al usuario (idempotente).
+    """
+    data_id = request.query_params.get("data.id") or request.query_params.get("id")
+    notif_type = request.query_params.get("type") or request.query_params.get("topic")
+    if not data_id or not notif_type:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if isinstance(body, dict):
+            data_id = data_id or (body.get("data") or {}).get("id") or body.get("id")
+            notif_type = notif_type or body.get("type") or body.get("topic")
+    return await mp_handle_webhook(
+        db,
+        data_id=data_id,
+        notif_type=notif_type,
+        x_signature=x_signature,
+        x_request_id=x_request_id,
+    )
 
 
 @router.post(

@@ -1,0 +1,289 @@
+"""
+Mercado Pago — suscripciones (preapproval) para el modelo pago-only en ARS.
+
+Reemplaza a Stripe para Argentina. El flujo es:
+
+  1. El usuario toca "Suscribirse" → `create_subscription()` crea un preapproval
+     en MP (atado al plan `MP_PLAN_ID`, con período de prueba de 7 días
+     configurado en el plan) y devuelve el `init_point` (checkout hosteado por
+     MP). El frontend redirige ahí.
+  2. El usuario carga su tarjeta en MP y autoriza. MP nos pega un webhook.
+  3. `handle_webhook()` verifica la firma (HMAC-SHA256), consulta el preapproval
+     por su id, y mapea el estado → plan del usuario (authorized → pro,
+     cancelled/paused → inactive). El `external_reference` del preapproval es el
+     user_id, así sabemos a quién actualizar (sin columnas nuevas en la DB).
+
+TODO el módulo es INERTE si no están `MP_ACCESS_TOKEN` + `MP_PLAN_ID`
+(mp_enabled() == False). Hasta que Agustín cargue las credenciales en Railway,
+el backend se comporta exactamente como antes (cae a Stripe / trial sin tarjeta).
+
+NOTA: el detalle exacto de creación del preapproval (init_point vs card_token
+con MP.js) puede necesitar ajuste fino contra el SANDBOX de MP cuando tengamos
+credenciales. Lo que está cubierto por tests y NO depende de la red es lo
+crítico de seguridad: verificación de firma del webhook + mapeo de estados.
+"""
+from __future__ import annotations
+
+import hashlib
+import hmac
+import logging
+from uuid import UUID
+
+import httpx
+from config.settings import settings
+from fastapi import HTTPException
+from models.user import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
+
+MP_API = "https://api.mercadopago.com"
+_TIMEOUT = 20.0
+
+
+# ── Estado de configuración ──────────────────────────────────────────────────
+def mp_enabled() -> bool:
+    """True si MP está configurado (token + plan). Si no, el módulo es inerte."""
+    return bool(settings.MP_ACCESS_TOKEN and settings.MP_PLAN_ID)
+
+
+def mp_public_config() -> dict:
+    """Config NO sensible para el frontend (public_key es pública por diseño)."""
+    return {"enabled": mp_enabled(), "public_key": settings.MP_PUBLIC_KEY or ""}
+
+
+def _require_mp() -> None:
+    if not mp_enabled():
+        raise HTTPException(status_code=503, detail="Mercado Pago no configurado.")
+
+
+def _auth_headers() -> dict:
+    return {"Authorization": f"Bearer {settings.MP_ACCESS_TOKEN}"}
+
+
+def _back_url() -> str:
+    if settings.MP_BACK_URL:
+        return settings.MP_BACK_URL
+    base = (settings.FRONTEND_URL or "https://re-expert.netlify.app").rstrip("/")
+    return f"{base}/app.html"
+
+
+# ── Mapeo estado de preapproval → plan ───────────────────────────────────────
+# Estados de un preapproval de MP:
+#   pending    → todavía no autorizado (no tocar el plan).
+#   authorized → suscripción activa (incluye período de prueba) → acceso.
+#   paused     → suspendida (falló el cobro / pausada) → sin acceso.
+#   cancelled  → cancelada → sin acceso.
+_STATUS_TO_PLAN = {
+    "authorized": "pro",
+    "paused": "inactive",
+    "cancelled": "inactive",
+}
+
+
+def plan_for_status(status: str | None) -> str | None:
+    """Plan a setear para un estado de preapproval, o None si no requiere acción."""
+    if not status:
+        return None
+    return _STATUS_TO_PLAN.get(status.lower())
+
+
+# ── Checkout (crear suscripción) ─────────────────────────────────────────────
+async def create_subscription(user: User) -> dict[str, str]:
+    """
+    Crea un preapproval (suscripción) para el usuario y devuelve
+    `{url, preapproval_id}`. El frontend redirige el browser a `url`.
+
+    Raises:
+        HTTPException(400) si el usuario ya es pro.
+        HTTPException(503) si MP no está configurado.
+        HTTPException(502) si MP falla / no devuelve init_point.
+    """
+    _require_mp()
+    if user.plan == "pro":
+        raise HTTPException(status_code=400, detail="Ya tenés una suscripción activa.")
+
+    payload = {
+        "preapproval_plan_id": settings.MP_PLAN_ID,
+        "payer_email": user.email,
+        "external_reference": str(user.id),  # ← así matcheamos el webhook al user
+        "back_url": _back_url(),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.post(
+                f"{MP_API}/preapproval", json=payload, headers=_auth_headers()
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP create_subscription: error de red — %s", exc)
+        raise HTTPException(
+            status_code=502, detail="No se pudo contactar a Mercado Pago."
+        ) from exc
+
+    if resp.status_code >= 300:
+        logger.warning(
+            "MP create_subscription falló %s — %s", resp.status_code, resp.text[:500]
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="No se pudo iniciar la suscripción en Mercado Pago.",
+        )
+
+    data = resp.json()
+    url = data.get("init_point") or data.get("sandbox_init_point")
+    if not url:
+        logger.error("MP create_subscription: respuesta sin init_point — %s", str(data)[:300])
+        raise HTTPException(
+            status_code=502, detail="Mercado Pago no devolvió un link de pago."
+        )
+    return {"url": url, "preapproval_id": str(data.get("id", ""))}
+
+
+async def start_subscription_checkout(user: User) -> dict[str, str]:
+    """
+    Dispatcher de checkout: usa Mercado Pago si está configurado; si no, cae a
+    Stripe (legacy). Permite que el frontend siga llamando a /api/billing/checkout
+    sin cambios: cuando Agustín cargue las credenciales de MP, se activa solo.
+    """
+    if mp_enabled():
+        return await create_subscription(user)
+    # Import lazy para evitar ciclos y no exigir Stripe si no hace falta.
+    from services.stripe_service import create_pro_checkout_session
+
+    return await create_pro_checkout_session(user)
+
+
+# ── Webhook ──────────────────────────────────────────────────────────────────
+def verify_webhook_signature(
+    x_signature: str | None,
+    x_request_id: str | None,
+    data_id: str | None,
+    secret: str | None,
+) -> bool:
+    """
+    Verifica la firma HMAC-SHA256 del webhook de MP (comparación en tiempo
+    constante).
+
+    MP manda el header `x-signature: ts=<ts>,v1=<hash>`. El string firmado
+    (manifest) es: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
+    donde `data.id` viene del query string (?data.id=...). Devuelve False ante
+    cualquier dato faltante o firma que no matchea.
+    """
+    if not secret or not x_signature:
+        return False
+    parts: dict[str, str] = {}
+    for piece in x_signature.split(","):
+        if "=" in piece:
+            k, v = piece.split("=", 1)
+            parts[k.strip()] = v.strip()
+    ts = parts.get("ts")
+    v1 = parts.get("v1")
+    if not ts or not v1:
+        return False
+    manifest = f"id:{data_id or ''};request-id:{x_request_id or ''};ts:{ts};"
+    expected = hmac.new(secret.encode(), manifest.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, v1)
+
+
+async def fetch_preapproval(preapproval_id: str) -> dict:
+    """Consulta un preapproval por id en MP. Raises 502 si MP falla."""
+    _require_mp()
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get(
+                f"{MP_API}/preapproval/{preapproval_id}", headers=_auth_headers()
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP fetch_preapproval: error de red — %s", exc)
+        raise HTTPException(
+            status_code=502, detail="No se pudo consultar Mercado Pago."
+        ) from exc
+    if resp.status_code >= 300:
+        logger.warning(
+            "MP fetch_preapproval %s falló %s — %s",
+            preapproval_id,
+            resp.status_code,
+            resp.text[:300],
+        )
+        raise HTTPException(status_code=502, detail="Mercado Pago devolvió un error.")
+    return resp.json()
+
+
+async def _apply_status_to_user(
+    db: AsyncSession, external_reference: str, status: str | None
+) -> str | None:
+    """Mapea el estado del preapproval → plan del user (external_reference=user_id)."""
+    new_plan = plan_for_status(status)
+    if new_plan is None:
+        logger.info("MP webhook: estado %r sin acción", status)
+        return None
+    try:
+        uid = UUID(external_reference)
+    except (ValueError, TypeError):
+        logger.warning("MP webhook: external_reference inválido=%r", external_reference)
+        return None
+    db_user = (
+        await db.execute(select(User).where(User.id == uid))
+    ).scalar_one_or_none()
+    if not db_user:
+        logger.warning("MP webhook: usuario %s no encontrado", uid)
+        return None
+    db_user.plan = new_plan
+    if new_plan == "pro":
+        # Ya tiene tarjeta/sub activa (o trial gestionado por MP): el gate
+        # de acceso usa plan=='pro' directo, sin trial_ends_at.
+        db_user.trial_ends_at = None
+    logger.info("MP webhook: user %s → plan %s (status=%s)", uid, new_plan, status)
+    return str(uid)
+
+
+async def handle_webhook(
+    db: AsyncSession,
+    *,
+    data_id: str | None,
+    notif_type: str | None,
+    x_signature: str | None,
+    x_request_id: str | None,
+) -> dict:
+    """
+    Procesa una notificación de webhook de MP.
+
+    1. Verifica la firma (en prod sin MP_WEBHOOK_SECRET → 503; en DEBUG la
+       permite, igual que el webhook de Stripe).
+    2. Si el tipo es de suscripción (preapproval), consulta el estado real en
+       MP y lo aplica al usuario.
+    3. Idempotente: re-setear el mismo plan es un no-op natural.
+
+    Raises HTTPException(400) ante firma inválida, (503) si MP no está
+    configurado, (502) si la consulta a MP falla.
+    """
+    _require_mp()
+
+    # 1. Firma
+    if settings.MP_WEBHOOK_SECRET:
+        if not verify_webhook_signature(
+            x_signature, x_request_id, data_id, settings.MP_WEBHOOK_SECRET
+        ):
+            logger.warning("MP webhook: firma inválida")
+            raise HTTPException(status_code=400, detail="Firma de webhook inválida")
+    elif not settings.DEBUG:
+        logger.error("MP webhook rechazado: falta MP_WEBHOOK_SECRET en producción")
+        raise HTTPException(
+            status_code=503,
+            detail="Webhook no configurado (falta MP_WEBHOOK_SECRET)",
+        )
+
+    # 2. Solo nos interesan notificaciones de suscripción (preapproval).
+    if notif_type and "preapproval" not in notif_type.lower():
+        logger.info("MP webhook: tipo %r ignorado", notif_type)
+        return {"status": "ignored", "type": notif_type}
+    if not data_id:
+        return {"status": "ignored", "reason": "sin data.id"}
+
+    pre = await fetch_preapproval(data_id)
+    status = pre.get("status")
+    ext_ref = pre.get("external_reference") or ""
+    updated = await _apply_status_to_user(db, ext_ref, status)
+    await db.commit()
+    return {"status": "ok" if updated else "noop", "preapproval_status": status}

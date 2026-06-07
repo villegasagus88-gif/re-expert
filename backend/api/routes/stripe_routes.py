@@ -14,9 +14,9 @@ from core.auth import get_current_user
 from fastapi import APIRouter, Depends, Header, Request, status
 from models.base import get_db
 from models.user import User
+from services.mercadopago_service import start_subscription_checkout
 from services.stripe_service import (
     create_billing_portal_session,
-    create_pro_checkout_session,
     handle_webhook_event,
     parse_webhook_event,
 )
@@ -42,7 +42,8 @@ async def get_status(user: User = Depends(get_current_user)):
     },
 )
 async def create_checkout_session(user: User = Depends(get_current_user)):
-    return await create_pro_checkout_session(user)
+    # Despacha al proveedor activo (Mercado Pago, o Stripe legacy).
+    return await start_subscription_checkout(user)
 
 
 @router.post(

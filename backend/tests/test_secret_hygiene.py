@@ -32,11 +32,25 @@ FORBIDDEN_FRONTEND_TOKENS = (
 SKIP_DIR_NAMES = {".git", "node_modules", "__pycache__", ".pytest_cache", ".ruff_cache"}
 
 
+def _is_local_dotenv(path: Path) -> bool:
+    """True para `.env` / `.env.local` etc — secretos LOCALES gitignored.
+
+    Estos archivos contienen las claves reales del dev y nunca se commitean
+    (lo garantiza test_gitignore_protects_env_files). Escanearlos produce
+    falsos positivos en la máquina del dev. `.env.example` (template commiteado)
+    NO se saltea: ese sí debe estar libre de claves reales.
+    """
+    n = path.name
+    return n == ".env" or (n.startswith(".env.") and n != ".env.example")
+
+
 def _walk(root: Path):
     for path in root.rglob("*"):
         if not path.is_file():
             continue
         if any(part in SKIP_DIR_NAMES for part in path.parts):
+            continue
+        if _is_local_dotenv(path):
             continue
         yield path
 
