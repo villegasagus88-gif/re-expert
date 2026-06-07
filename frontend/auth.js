@@ -107,7 +107,7 @@
   // ===== Redirect post-login =====
   // Solo redirige a app.html si el backend confirma que la sesión es válida.
   // No alcanza con que el JWT no esté vencido localmente: la firma puede haber
-  // dejado de ser válida (rotación de JWT_SECRET, deploy nuevo, etc.). Si ese
+  // dejado de ser válida (rotación del secreto de firma, deploy nuevo, etc.). Si ese
   // es el caso, limpiamos los tokens viejos y dejamos al usuario usar la
   // página de login/register normalmente.
   function _clearStaleSession() {

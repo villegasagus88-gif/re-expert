@@ -531,59 +531,6 @@
     <!-- PLANS -->
     <div class="plans-grid">
 
-      <!-- FREE CARD — oculto: modelo pago-only (no hay tier free). Ver docs/MODELO_PAGO.md -->
-      <div class="plan-card" id="freeCard" style="display:none">
-        <div class="plan-name">Free</div>
-        <div class="plan-price">
-          <span class="plan-price-amount">$0</span>
-          <span class="plan-price-period">/ mes</span>
-        </div>
-        <p class="plan-desc">Para explorar y consultas puntuales sobre el mercado inmobiliario.</p>
-        <ul class="plan-features">
-          <li>
-            <span class="feat-icon check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            </span>
-            20 mensajes / día al asistente IA
-          </li>
-          <li>
-            <span class="feat-icon check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            </span>
-            Historial de últimas 3 conversaciones
-          </li>
-          <li>
-            <span class="feat-icon check">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            </span>
-            Consultas básicas de normativa y CABA
-          </li>
-          <li>
-            <span class="feat-icon cross">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </span>
-            <span style="color: var(--text-3)">Presupuestos automáticos</span>
-          </li>
-          <li>
-            <span class="feat-icon cross">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </span>
-            <span style="color: var(--text-3)">Dashboard de proyecto y obra</span>
-          </li>
-          <li>
-            <span class="feat-icon cross">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </span>
-            <span style="color: var(--text-3)">Cálculo de indicadores CPI / SPI</span>
-          </li>
-        </ul>
-        <div id="freeCta">
-          <button class="plan-cta free-cta" onclick="window.location.href = localStorage.getItem('re_access_token') ? 'app.html' : 'register.html'">
-            <span class="btn-label">Empezar gratis</span>
-          </button>
-        </div>
-      </div>
-
       <!-- PRO CARD -->
       <div class="plan-card featured" id="proCard">
         <div class="featured-badge">Más popular</div>
@@ -680,7 +627,7 @@
 
     </div>
 
-    <div class="page-footer">© 2026 RE Expert · Real Estate AI para Argentina · Pagos procesados por Stripe</div>
+    <div class="page-footer">© 2026 RE Expert · Real Estate AI para Argentina · Pagos procesados por Mercado Pago</div>
   </div>
 
   <script src="authService.js"></script>
@@ -714,14 +661,10 @@
     }
 
     function renderPlanState(plan) {
-      const freeCta = document.getElementById('freeCta');
       const proCta = document.getElementById('proCta');
       const manageSection = document.getElementById('manageSection');
 
       if (plan === 'pro') {
-        // Free card: show "Plan actual" pill
-        freeCta.innerHTML = '';
-
         // Pro card: show "Plan actual" pill
         proCta.innerHTML = `
           <div class="current-plan-pill">
