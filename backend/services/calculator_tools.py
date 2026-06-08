@@ -780,6 +780,7 @@ def _tool_calcular_sellos(
     reparto: str = "ambos",
     vivienda_unica: bool = False,
     tope_exencion: float | None = None,
+    gravar_solo_excedente: bool = False,
     **_ignore: Any,
 ) -> dict:
     """
@@ -791,6 +792,10 @@ def _tool_calcular_sellos(
     tasa según el monto): lista de {"hasta": X, "alicuota_pct": Y}. Se aplica
     la del primer tramo cuyo `hasta` ≥ base; usá hasta=null para el tramo
     superior. La base y los topes deben estar en la MISMA moneda.
+
+    Exención vivienda única: si `base <= tope_exencion` → exento total. Si la
+    supera y `gravar_solo_excedente=True` (caso CABA), se grava SOLO el excedente
+    sobre el tope (base − tope), no el total.
     """
     try:
         monto = float(monto)
@@ -827,11 +832,20 @@ def _tool_calcular_sellos(
         )
 
     exento = False
-    if vivienda_unica and tope_exencion is not None and base <= float(tope_exencion):
-        exento = True
-        notas.append("Exento por vivienda única dentro del tope (verificá condiciones locales).")
+    base_gravada = base
+    if vivienda_unica and tope_exencion is not None:
+        tope = float(tope_exencion)
+        if base <= tope:
+            exento = True
+            notas.append("Exento por vivienda única: base ≤ tope (verificá condiciones locales).")
+        elif gravar_solo_excedente:
+            base_gravada = base - tope
+            notas.append(
+                f"Vivienda única: se grava SOLO el excedente sobre el tope "
+                f"({_r2(base)} − {_r2(tope)} = {_r2(base_gravada)})."
+            )
 
-    impuesto = 0.0 if exento else base * alic / 100.0
+    impuesto = 0.0 if exento else base_gravada * alic / 100.0
 
     reparto = (reparto or "ambos").strip().lower()
     if reparto == "comprador":
@@ -846,6 +860,7 @@ def _tool_calcular_sellos(
         "ok": True,
         "jurisdiccion": jurisdiccion,
         "base_imponible": _r2(base),
+        "base_gravada": _r2(base_gravada),
         "alicuota_pct": alic,
         "exento": exento,
         "impuesto_total": _r2(impuesto),
@@ -1134,7 +1149,8 @@ CALCULATOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "jurisdiccion": {"type": "string", "description": "Provincia/CABA, para el detalle."},
                 "reparto": {"type": "string", "enum": ["ambos", "comprador", "vendedor"], "default": "ambos"},
                 "vivienda_unica": {"type": "boolean", "description": "Si es vivienda única (puede haber exención)."},
-                "tope_exencion": {"type": "number", "description": "Tope de valor para la exención de vivienda única."},
+                "tope_exencion": {"type": "number", "description": "Tope de valor para la exención de vivienda única (misma moneda que la base; en CABA ~$226M ARS en 2026, verificá vigente)."},
+                "gravar_solo_excedente": {"type": "boolean", "description": "CABA vivienda única: si la base supera el tope, gravar SOLO el excedente (base − tope), no el total. Default false."},
             },
             "required": ["monto"],
         },

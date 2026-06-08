@@ -321,6 +321,29 @@ def test_valor_residual_negativo():
     assert "NEGATIVO" in (r["notas"] or "")
 
 
+def test_sellos_vivienda_unica_grava_excedente():
+    # CABA: base 233.6M > tope 226.1M; vivienda única gravando solo el excedente
+    # → (233.6M − 226.1M) × 3.5% = 7.5M × 0.035 = 262.500; 50/50 → 131.250 c/u.
+    r = _tool_calcular_sellos(
+        monto=233600000, alicuota_pct=3.5, vivienda_unica=True,
+        tope_exencion=226100000, gravar_solo_excedente=True,
+    )
+    assert r["exento"] is False
+    assert r["base_gravada"] == 7500000.0
+    assert r["impuesto_total"] == 262500.0
+    assert r["paga_comprador"] == 131250.0
+
+
+def test_sellos_vivienda_unica_exento_bajo_tope():
+    # base por debajo del tope → exento total.
+    r = _tool_calcular_sellos(
+        monto=200000000, alicuota_pct=3.5, vivienda_unica=True,
+        tope_exencion=226100000, gravar_solo_excedente=True,
+    )
+    assert r["exento"] is True
+    assert r["impuesto_total"] == 0.0
+
+
 def test_sellos_tramos_aplica_tramo_bajo():
     # base 219.000.000 ≤ 226.100.000 → 2.7%.
     tramos = [{"hasta": 226100000, "alicuota_pct": 2.7}, {"hasta": None, "alicuota_pct": 3.5}]
