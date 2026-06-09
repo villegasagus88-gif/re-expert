@@ -51,6 +51,17 @@ _SONNET_KEYWORDS: Final[frozenset[str]] = frozenset([
     "fideicomiso", "boleto", "escritura", "dominio", "tracto",
     "cadena dominial", "saneamiento", "prescripción", "donación",
     "consorcio", "propiedad horizontal", "uif", "blanqueo",
+    # fiscal / impuestos (precisión + vigencia → Sonnet, NUNCA Haiku)
+    "impuesto", "impuestos", "sellos", "iti", "cedular", "ganancias",
+    "iva", "alícuota", "alicuota", "tributa", "tributo", "afip", "arca",
+    "vivienda única", "vivienda unica", "habitualista", "plusvalía",
+    "plusvalia", "exención", "exencion", "exento", "honorarios", "coti",
+    # tasación / valuación / transacción
+    "tasación", "tasacion", "valuación", "valuacion", "cuánto vale",
+    "cuanto vale", "cuánto pago", "cuanto pago", "cuánto cuesta",
+    "cuanto cuesta", "comparables", "incidencia", "residual",
+    "vendo", "compro", "vender", "comprar", "me alcanza", "me conviene",
+    "cierra", "fot", "preventa", "en pozo",
     # análisis profundo
     "comparar", "comparación", "vs", "diferencia entre",
     "evaluar", "evaluación", "diagnóstico", "estrategia",
