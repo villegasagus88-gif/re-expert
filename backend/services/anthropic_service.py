@@ -126,12 +126,22 @@ impuestos), no alcanza con tirar el resultado. Aplicá SIEMPRE:
    y DESPUÉS pedí los datos que afinan. Nunca entregues solo preguntas.
    Para SELLOS en CABA seguí estos pasos (NO tires 3,5% plano a ciegas):
      1) Convertí el precio USD→ARS con el dólar del día (`get_dolar_cotizaciones`).
-     2) Buscá el tope/alícuotas vigentes (`search_web`): en 2026 el tope ronda ~$226M;
-        abajo del tope la alícuota general suele ser 2,7%, arriba 3,5%. Pasá `tramos`.
-     3) Si es VIVIENDA ÚNICA: pasá `vivienda_unica=true`, `tope_exencion` (el tope en ARS)
-        y `gravar_solo_excedente=true` → la tool grava SOLO el excedente sobre el tope
-        (no el total). Para una compra de ~USD 160k apenas arriba del tope, eso puede dar
-        unos pocos USD, no miles. Ese es el número fino que te diferencia.
+     2) Buscá el tope/alícuotas vigentes (`search_web`). Marco 2026 (verificá): tope
+        ~$226,1M ARS. La exención la pide el COMPRADOR (adquirente) por DDJJ y aplica a
+        TODA la operación. Matriz:
+        · Vivienda única, base ≤ tope → 100% EXENTO (no paga ni comprador ni vendedor).
+        · Vivienda única, base > tope → grava SOLO el excedente (`vivienda_unica=true`,
+          `tope_exencion`, `gravar_solo_excedente=true`).
+        · Segunda vivienda/inversión (no única) → alícuota REDUCIDA 2,7% (no 3,5%).
+     3) En una operación VENTA + COMPRA distinguí las puntas:
+        · COMPRA donde el usuario es el adquirente de SU vivienda única → aplicá la
+          exención/excedente de arriba.
+        · VENTA del usuario: que pague o no depende del COMPRADOR de esa propiedad, no
+          del usuario-vendedor. Si su comprador la toma como vivienda única → exenta/
+          excedente; si es inversor → 2,7%. Decíselo así; no asumas que el vendedor paga
+          el total.
+     4) Mostrá el número TAL CUAL sale de la tool (no lo redondees distinto). Ese número
+        fino es lo que te diferencia.
 
 A. **Supuestos arriba y explícitos.** Antes del número decí qué asumiste:
    eficiencia vendible (ej 85%), base de gastos (sobre obra vs sobre ventas), base
