@@ -48,6 +48,7 @@ from services.calculator_tools import (
     CALCULATOR_TOOL_SCHEMAS,
     run_calculator_tool,
 )
+from services.financial_artifact import DOCUMENT_TOOL_SCHEMA, generar_documento
 from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
 from services.retrieval_tools import RETRIEVAL_TOOL_SCHEMAS, run_retrieval_tool
@@ -327,6 +328,13 @@ def _make_chat_tool_runner(
         # Calculadoras financieras (Capa 2): tools puras, sin db/red.
         if name in CALCULATOR_TOOL_IMPLS:
             return await run_calculator_tool(name, inputs)
+        # Entregable descargable (PDF/Excel + link WhatsApp).
+        if name == "generar_documento_analisis":
+            try:
+                return await generar_documento(**(inputs or {}))
+            except Exception as e:  # noqa: BLE001
+                logger.exception("generar_documento falló")
+                return {"error": f"No se pudo generar el documento: {e}", "ok": False}
         return await run_retrieval_tool(name, inputs)
 
     return _runner
@@ -514,7 +522,9 @@ async def chat(
     # el contexto (user + workspace de la conversación).
     if use_retrieval_tools:
         tools_arg = (
-            RETRIEVAL_TOOL_SCHEMAS + CALCULATOR_TOOL_SCHEMAS + [REMEMBER_TOOL_SCHEMA]
+            RETRIEVAL_TOOL_SCHEMAS
+            + CALCULATOR_TOOL_SCHEMAS
+            + [REMEMBER_TOOL_SCHEMA, DOCUMENT_TOOL_SCHEMA]
         )
         tool_runner_arg = _make_chat_tool_runner(
             db, current_user.id, conv.workspace_id

@@ -29,5 +29,7 @@ stripe==11.4.1
 reportlab==4.2.5
 # DOCX generation (resúmenes editables)
 python-docx==1.1.2
+# XLSX generation (entregables de análisis financiero editables)
+openpyxl==3.1.5
 # ── Monitoring ──────────────────────────────────────────────────────
 sentry-sdk[fastapi]==2.18.0
