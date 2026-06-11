@@ -52,6 +52,28 @@ def test_require_admin_passes_admin(monkeypatch):
     assert require_admin(user=u) is u
 
 
+def test_admin_bypasses_paywall(monkeypatch):
+    # Los fundadores/operadores no quedan paywalled de su propia app: un admin
+    # tiene acceso aunque su plan sea "inactive" o el trial haya vencido.
+    from config import settings as s
+    monkeypatch.setattr(s.settings, "ADMIN_EMAILS", "mati@re.app")
+    from core.plan_gate import has_access
+    u = _user("mati@re.app")
+    u.plan = "inactive"
+    u.trial_ends_at = None
+    assert has_access(u) is True
+
+
+def test_non_admin_inactive_has_no_access(monkeypatch):
+    from config import settings as s
+    monkeypatch.setattr(s.settings, "ADMIN_EMAILS", "mati@re.app")
+    from core.plan_gate import has_access
+    u = _user("otro@x.com")
+    u.plan = "inactive"
+    u.trial_ends_at = None
+    assert has_access(u) is False
+
+
 def _run_all():
     import inspect
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]

@@ -2,6 +2,8 @@
 Access control para el modelo pago-only.
 
 `has_access(user)` decide si un usuario puede usar el producto:
+  - admin (email en ADMIN_EMAILS) → siempre (los fundadores/operadores no
+    quedan paywalled de su propia app cuando vence el trial).
   - plan "pro"   → siempre.
   - plan "trial" → mientras now() < trial_ends_at.
   - "inactive" / vencido / desconocido → no (paywall).
@@ -12,7 +14,7 @@ el paywall (no un error genérico).
 """
 from datetime import UTC, datetime
 
-from core.auth import get_current_user
+from core.auth import get_current_user, is_admin
 from fastapi import Depends, HTTPException, status
 from models.user import User
 
@@ -24,7 +26,9 @@ _PAYWALL_BASE = {
 
 
 def has_access(user: User) -> bool:
-    """True si el usuario tiene acceso: 'pro', o 'trial' aún vigente."""
+    """True si el usuario tiene acceso: admin, 'pro', o 'trial' aún vigente."""
+    if is_admin(user):
+        return True
     if user.plan == "pro":
         return True
     if user.plan == "trial" and user.trial_ends_at is not None:

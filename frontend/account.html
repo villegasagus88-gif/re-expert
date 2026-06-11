@@ -312,6 +312,8 @@
 
       const isPro = data.is_pro;
       const isTrial = data.is_trial;
+      // Suscripción gestionada por Mercado Pago (sin customer de Stripe legacy).
+      const viaMP = !!data.mp_enabled && !data.has_customer;
       let trialDays = null;
       if (isTrial && data.trial_ends_at) trialDays = Math.max(0, Math.ceil((new Date(data.trial_ends_at) - new Date()) / 86400000));
 
@@ -340,7 +342,10 @@
       `;
 
       const planBtnRow = document.getElementById('planBtnRow');
-      if (isPro) {
+      if (isPro && viaMP) {
+        // La acción de baja vive en la card de Suscripción (abajo).
+        planBtnRow.innerHTML = '';
+      } else if (isPro) {
         planBtnRow.innerHTML = `
           <button id="portalBtnPlan" class="btn-secondary-sm" onclick="openPortal('portalBtnPlan')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -383,6 +388,18 @@
             warn.textContent = `Tu suscripción está cancelada y finalizará el ${fmtDate(sub.current_period_end)}. Seguís teniendo acceso Pro hasta esa fecha.`;
             warn.classList.add('visible');
           }
+        } else if (viaMP) {
+          subBadge.className = 'sub-status sub-active';
+          subBadge.textContent = 'Activa';
+          document.getElementById('subRows').innerHTML = `
+            <div class="detail-row">
+              <span class="detail-label">Medio de pago</span>
+              <span class="detail-value">Mercado Pago</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Renovación</span>
+              <span class="detail-value">Mensual · automática</span>
+            </div>`;
         } else {
           subBadge.className = 'sub-status sub-active';
           subBadge.textContent = 'Activa';
@@ -393,7 +410,14 @@
             </div>`;
         }
 
-        document.getElementById('subBtnRow').innerHTML = `
+        document.getElementById('subBtnRow').innerHTML = viaMP
+          ? `
+          <button id="mpCancelBtn" class="btn-secondary-sm" style="color:#fca5a5;border-color:rgba(239,68,68,.35)" onclick="cancelMPSub('mpCancelBtn')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            <span class="btn-label">Cancelar suscripción</span>
+            <span class="btn-spinner"></span>
+          </button>`
+          : `
           <button id="portalBtnSub" class="btn-secondary-sm" onclick="openPortal('portalBtnSub')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             <span class="btn-label">Gestionar / Cancelar</span>
@@ -407,8 +431,9 @@
         invCard.style.display = '';
 
         if (!data.invoices || !data.invoices.length) {
-          document.getElementById('invoicesContent').innerHTML =
-            '<div class="empty-invoices">Sin historial de pagos disponible</div>';
+          document.getElementById('invoicesContent').innerHTML = viaMP
+            ? '<div class="empty-invoices">Tus comprobantes de pago están en tu cuenta de <a href="https://www.mercadopago.com.ar/subscriptions" target="_blank" rel="noopener" style="color:var(--accent-hover)">Mercado Pago</a>.</div>'
+            : '<div class="empty-invoices">Sin historial de pagos disponible</div>';
         } else {
           const rows = data.invoices.map(inv => `
             <tr>
@@ -440,6 +465,31 @@
 
     function esc(t) {
       const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
+    }
+
+    // Botón de baja (Mercado Pago): cancela la suscripción y corta el acceso.
+    async function cancelMPSub(btnId) {
+      if (!confirm('¿Cancelar tu suscripción a RE Expert?\n\nNo se te realizarán más cobros y perdés el acceso. Podés volver a suscribirte cuando quieras.')) return;
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.classList.add('is-loading');
+      btn.disabled = true;
+      try {
+        const resp = await window.REAuthService.authFetch(
+          API + '/api/billing/mp/cancel',
+          { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+        );
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+          window.location.reload();
+          return;
+        }
+        showAlert((typeof data.detail === 'string' && data.detail) || 'No se pudo cancelar la suscripción. Intentá de nuevo en unos minutos.');
+      } catch {
+        showAlert('Error de conexión al cancelar la suscripción.');
+      }
+      btn.classList.remove('is-loading');
+      btn.disabled = false;
     }
 
     async function openPortal(btnId) {

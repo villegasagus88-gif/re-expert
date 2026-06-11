@@ -22,6 +22,9 @@ from fastapi import APIRouter, Depends, Header, Request
 from models.base import get_db
 from models.user import User
 from services.mercadopago_service import (
+    cancel_subscription as mp_cancel_subscription,
+)
+from services.mercadopago_service import (
     handle_webhook as mp_handle_webhook,
 )
 from services.mercadopago_service import (
@@ -145,6 +148,24 @@ async def billing_checkout(user: User = Depends(get_current_user)):
 async def mp_config():
     """Público: `{enabled, public_key}`. La public_key es pública por diseño."""
     return mp_public_config()
+
+
+@router.post(
+    "/mp/cancel",
+    summary="Cancelar la suscripción de Mercado Pago (botón de baja)",
+    responses={
+        400: {"description": "Sin suscripción activa"},
+        404: {"description": "MP no tiene una suscripción viva para este usuario"},
+        502: {"description": "Error en Mercado Pago"},
+        503: {"description": "MP no configurado"},
+    },
+)
+async def mp_cancel(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Baja online (Ley 24.240): cancela el preapproval y corta el acceso."""
+    return await mp_cancel_subscription(db, user)
 
 
 @router.post(

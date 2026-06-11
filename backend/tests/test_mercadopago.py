@@ -137,6 +137,32 @@ def test_create_subscription_400_when_already_pro(monkeypatch):
     asyncio.run(go())
 
 
+# ── cancel_subscription / botón de baja (guards antes de la red) ─────────────
+def test_cancel_503_when_disabled(monkeypatch):
+    _disable_mp(monkeypatch)
+    from services.mercadopago_service import cancel_subscription
+
+    async def go():
+        with pytest.raises(HTTPException) as e:
+            await cancel_subscription(None, _user("pro"))
+        assert e.value.status_code == 503
+
+    asyncio.run(go())
+
+
+def test_cancel_400_when_not_pro(monkeypatch):
+    _enable_mp(monkeypatch)
+    from services.mercadopago_service import cancel_subscription
+
+    async def go():
+        for plan in ("trial", "inactive"):
+            with pytest.raises(HTTPException) as e:
+                await cancel_subscription(None, _user(plan))
+            assert e.value.status_code == 400  # corta antes de tocar la red
+
+    asyncio.run(go())
+
+
 # ── handle_webhook (guards antes de la red) ──────────────────────────────────
 def test_webhook_503_when_disabled(monkeypatch):
     _disable_mp(monkeypatch)

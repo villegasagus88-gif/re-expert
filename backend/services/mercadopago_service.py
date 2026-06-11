@@ -210,6 +210,90 @@ async def fetch_preapproval(preapproval_id: str) -> dict:
     return resp.json()
 
 
+async def cancel_subscription(db: AsyncSession, user: User) -> dict:
+    """
+    Botón de baja (Ley 24.240 — Defensa del Consumidor exige poder darse de
+    baja online): cancela la suscripción de MP del usuario.
+
+    Busca el preapproval por `external_reference` (= user_id), lo cancela en MP
+    y corta el acceso localmente (plan → inactive). El webhook de MP confirma
+    después (idempotente: re-setear inactive es no-op).
+
+    Raises:
+        HTTPException(503) si MP no está configurado.
+        HTTPException(400) si el usuario no tiene plan pro.
+        HTTPException(404) si MP no tiene una suscripción viva para ese user.
+        HTTPException(502) si MP falla.
+    """
+    _require_mp()
+    if user.plan != "pro":
+        raise HTTPException(
+            status_code=400, detail="No tenés una suscripción activa para cancelar."
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get(
+                f"{MP_API}/preapproval/search",
+                params={"external_reference": str(user.id)},
+                headers=_auth_headers(),
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP cancel: error de red buscando preapproval — %s", exc)
+        raise HTTPException(
+            status_code=502, detail="No se pudo contactar a Mercado Pago."
+        ) from exc
+    if resp.status_code >= 300:
+        logger.warning("MP cancel: search falló %s — %s", resp.status_code, resp.text[:300])
+        raise HTTPException(status_code=502, detail="Mercado Pago devolvió un error.")
+
+    results = (resp.json() or {}).get("results") or []
+    vivos = [
+        r for r in results
+        if (r.get("status") or "").lower() in ("authorized", "paused")
+    ]
+    if not vivos:
+        raise HTTPException(
+            status_code=404,
+            detail="No encontramos una suscripción activa en Mercado Pago para tu cuenta.",
+        )
+    pre_id = str(vivos[0].get("id"))
+
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.put(
+                f"{MP_API}/preapproval/{pre_id}",
+                json={"status": "cancelled"},
+                headers=_auth_headers(),
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP cancel: error de red cancelando %s — %s", pre_id, exc)
+        raise HTTPException(
+            status_code=502, detail="No se pudo contactar a Mercado Pago."
+        ) from exc
+    if resp.status_code >= 300:
+        logger.warning(
+            "MP cancel: PUT %s falló %s — %s", pre_id, resp.status_code, resp.text[:300]
+        )
+        raise HTTPException(
+            status_code=502, detail="Mercado Pago no pudo cancelar la suscripción."
+        )
+
+    # Corte local inmediato; el webhook (cancelled → inactive) lo confirma.
+    db_user = (
+        await db.execute(select(User).where(User.id == user.id))
+    ).scalar_one_or_none()
+    if db_user:
+        db_user.plan = "inactive"
+        await db.commit()
+    logger.info("MP cancel: user %s canceló preapproval %s", user.id, pre_id)
+    return {
+        "ok": True,
+        "message": "Suscripción cancelada. No se te realizarán más cobros.",
+        "preapproval_id": pre_id,
+    }
+
+
 async def _apply_status_to_user(
     db: AsyncSession, external_reference: str, status: str | None
 ) -> str | None:
