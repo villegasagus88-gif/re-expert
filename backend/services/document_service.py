@@ -322,8 +322,10 @@ def _render_docx(title: str, scope: str, data: dict[str, Any]) -> bytes:
 # ════════════════════════════════════════════════════════════════════
 # Storage: Supabase si está configurado, sino disco local.
 # ════════════════════════════════════════════════════════════════════
-async def _upload_to_supabase(filename: str, blob: bytes, content_type: str) -> str | None:
-    """Sube a `reports/` y devuelve URL pública firmada por 24h. None si falla."""
+async def _upload_to_supabase(
+    filename: str, blob: bytes, content_type: str, expires_in: int = 24 * 3600
+) -> str | None:
+    """Sube a `reports/` y devuelve URL firmada (default 24h). None si falla."""
     try:
         import httpx
 
@@ -346,7 +348,7 @@ async def _upload_to_supabase(filename: str, blob: bytes, content_type: str) -> 
             if r.status_code >= 400:
                 logger.warning("Supabase upload %s -> %s", r.status_code, r.text[:200])
                 return None
-            # Crear signed URL (24h)
+            # Crear signed URL (expiración configurable).
             sign_url = f"{base}/storage/v1/object/sign/{bucket}/{key}"
             r2 = await cli.post(
                 sign_url,
@@ -355,7 +357,7 @@ async def _upload_to_supabase(filename: str, blob: bytes, content_type: str) -> 
                     "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
                     "Content-Type": "application/json",
                 },
-                json={"expiresIn": 24 * 3600},
+                json={"expiresIn": int(expires_in)},
             )
             if r2.status_code >= 400:
                 logger.warning("Sign URL failed %s", r2.text[:200])

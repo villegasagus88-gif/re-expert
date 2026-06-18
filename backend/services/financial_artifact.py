@@ -260,16 +260,24 @@ def render_analisis_xlsx(
 
 
 # ── orquestación: render + almacenamiento + mensaje ──
+# Vencimiento del link de descarga/compartir para los entregables financieros.
+_SIGNED_URL_TTL = 48 * 3600  # 48 horas
+
+
 async def _store(filename: str, blob: bytes, content_type: str) -> str | None:
-    """Sube a Supabase (signed URL 24h) con fallback a disco. Reusa document_service."""
+    """Sube a Supabase (signed URL 48h) con fallback a disco. Reusa document_service."""
     try:
         from services.document_service import _save_local, _upload_to_supabase
     except Exception as e:  # noqa: BLE001
         logger.exception("storage helpers no disponibles: %s", e)
         return None
-    url = await _upload_to_supabase(filename, blob, content_type)
+    url = await _upload_to_supabase(filename, blob, content_type, expires_in=_SIGNED_URL_TTL)
     if url:
         return url
+    logger.warning(
+        "Supabase no disponible: uso fallback de disco (efímero en Railway, no "
+        "garantiza 24-48h). Configurá SUPABASE_URL/SERVICE_ROLE_KEY + bucket 'reports'."
+    )
     try:
         return _save_local(filename, blob)
     except Exception:  # noqa: BLE001
@@ -354,7 +362,7 @@ async def generar_documento(
         "instruccion": (
             "Mostrá al usuario CADA archivo como un enlace markdown clicleable "
             "([Descargar PDF](url) / [Descargar Excel](url)) y ofrecé el "
-            "mensaje_whatsapp para que lo comparta. Los links vencen en 24h."
+            "mensaje_whatsapp para que lo comparta. Los links vencen en 48h."
         ),
         "notas": "; ".join(errores) if errores else None,
     }

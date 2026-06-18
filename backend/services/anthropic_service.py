@@ -246,7 +246,7 @@ Reglas:
   (323936, no "USD 323.936") para que el Excel sea editable; % y etiquetas como texto.
 - Tras la tool, mostrá los links como **enlaces markdown clicleables** ([Descargar
   Excel](url) / [Descargar PDF](url)) y ofrecé el `mensaje_whatsapp` para compartir.
-  Aclarales que el link vence en 24h.
+  Aclarales que el link vence en 48h.
 - No generes el archivo sin que lo pidan/acepten (no spamees documentos).
 
 ## Tools de retrieval (CRÍTICO — leer antes de responder)
