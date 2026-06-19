@@ -319,13 +319,17 @@
             <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple>
           </div>
           <div id="planosUploaded" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <h3 style="font-size:14px;font-weight:600">Archivos cargados</h3>
-              <button class="btn-primary" id="analyzePlanosBtn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                Analizar con IA
-              </button>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+              <h3 style="font-size:14px;font-weight:600">Archivos cargados <span id="planosSelCount" style="font-weight:400;color:var(--text-3)"></span></h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn-secondary" id="clearPlanosBtn">Limpiar</button>
+                <button class="btn-primary" id="analyzePlanosBtn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  Analizar seleccionados
+                </button>
+              </div>
             </div>
+            <p style="font-size:11.5px;color:var(--text-3);margin:0 0 10px">Marcá solo los planos de la obra que querés analizar. Cada análisis abre un chat nuevo y usa únicamente los seleccionados.</p>
             <div id="fileList"></div>
           </div>
           <div id="planosResults" style="display:none">
@@ -1987,12 +1991,35 @@ const PLANOS_MAX_FILES=4;
 const PLANOS_MAX_BYTES=6*1024*1024; // 6 MB binarios por imagen
 function handleFiles(files){
   if(!files.length)return;
-  state.uploadedFiles=[...state.uploadedFiles,...Array.from(files)];
+  // Cada archivo arranca seleccionado. Guardamos un id estable para el checkbox.
+  const nuevos=Array.from(files).map(f=>{f._planoSel=true;f._planoId=(crypto.randomUUID?crypto.randomUUID():String(Math.random()));return f});
+  state.uploadedFiles=[...state.uploadedFiles,...nuevos];
   $('#planosEmpty').style.display='none';$('#planosUploaded').style.display='';
   renderFileList();
+  // Reseteamos el input para poder volver a elegir el mismo archivo si hace falta.
+  const inp=$('#fileInput');if(inp)inp.value='';
+}
+function updatePlanosSelCount(){
+  const sel=state.uploadedFiles.filter(f=>f._planoSel!==false).length;
+  const el=$('#planosSelCount');if(el)el.textContent=sel?`(${sel} seleccionado${sel!==1?'s':''})`:'(ninguno seleccionado)';
+}
+function clearPlanos(){
+  state.uploadedFiles=[];
+  $('#planosUploaded').style.display='none';
+  $('#planosEmpty').style.display='';
+  $('#fileList').innerHTML='';
 }
 function renderFileList(){
-  $('#fileList').innerHTML=state.uploadedFiles.map((f,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-2);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1">${esc(f.name)}</span><span style="color:var(--text-3)">${(f.size/1024).toFixed(0)} KB</span></div>`).join('');
+  const list=$('#fileList');if(!list)return;
+  list.innerHTML=state.uploadedFiles.map((f,i)=>`<div class="plano-file" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-2);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px"><input type="checkbox" class="plano-check" data-id="${f._planoId}" ${f._planoSel!==false?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--accent-brand)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span><span style="color:var(--text-3);flex-shrink:0">${(f.size/1024).toFixed(0)} KB</span><button class="plano-remove" data-id="${f._planoId}" title="Quitar" style="background:transparent;border:none;color:var(--text-3);cursor:pointer;padding:2px 6px;flex-shrink:0;font-size:16px;line-height:1">×</button></div>`).join('');
+  list.querySelectorAll('.plano-check').forEach(c=>c.addEventListener('change',()=>{
+    const f=state.uploadedFiles.find(x=>x._planoId===c.dataset.id);if(f)f._planoSel=c.checked;updatePlanosSelCount();
+  }));
+  list.querySelectorAll('.plano-remove').forEach(b=>b.addEventListener('click',()=>{
+    state.uploadedFiles=state.uploadedFiles.filter(x=>x._planoId!==b.dataset.id);
+    if(!state.uploadedFiles.length){clearPlanos();}else{renderFileList();}
+  }));
+  updatePlanosSelCount();
 }
 
 // ===== MATERIALES =====
@@ -3468,9 +3495,11 @@ function initProyectoTabs(){
 
 // AI actions for sections
 function initSectionActions(){
+  $('#clearPlanosBtn')?.addEventListener('click',()=>clearPlanos());
   $('#analyzePlanosBtn')?.addEventListener('click',async()=>{
-    const all=state.uploadedFiles;
-    if(!all.length)return;
+    // Solo los archivos SELECCIONADOS (no mezclar con planos de otra obra).
+    const all=state.uploadedFiles.filter(f=>f._planoSel!==false);
+    if(!all.length){alert('Marcá al menos un plano para analizar.');return}
     const images=all.filter(f=>PLANOS_IMG_RE.test(f.type||''));
     const oversized=images.filter(f=>f.size>PLANOS_MAX_BYTES);
     const nonImages=all.filter(f=>!PLANOS_IMG_RE.test(f.type||''));
@@ -3527,6 +3556,12 @@ Por ahora solo puedo analizar planos en formato PNG, JPG, GIF o WEBP. Los PDFs r
 ¿Querés que te oriente sobre cómo convertir tus archivos para que los pueda analizar?`;
     }
 
+    // Cada análisis de planos abre un CHAT LIMPIO (no se mezcla con la conversación
+    // anterior ni con análisis previos de otra obra).
+    if(state.activeWorkspace)exitWorkspace();
+    state.currentConversation=null;state.messages=[];
+    els.messagesEl.innerHTML='';renderHistory();showWelcome();
+    els.exportBtn.style.display='none';
     switchView('chat');
     setTimeout(()=>sendMessage(prompt,{attachments}),100);
   });
