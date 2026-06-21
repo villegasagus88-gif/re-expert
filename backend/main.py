@@ -290,3 +290,48 @@ async def health_db():
     Útil para alerting que monitorea específicamente la DB.
     """
     return await health_ready()
+
+
+@app.get("/health/storage")
+async def health_storage():
+    """Diagnóstico de Supabase Storage (entregables PDF/Excel).
+
+    Hace una PRUEBA REAL: sube un archivo mínimo al bucket `reports` y lo
+    firma. Sirve para confirmar que los links de descarga van a ser durables.
+    NO expone secretos: solo si está configurado y si el test funciona.
+    Abrí esta URL en el navegador después de cargar las variables en Railway.
+    """
+    url_set = bool(settings.SUPABASE_URL)
+    key_set = bool(settings.SUPABASE_SERVICE_ROLE_KEY)
+    out = {"supabase_url_set": url_set, "service_role_set": key_set, "bucket": "reports"}
+
+    if not (url_set and key_set):
+        out["status"] = "no_configurado"
+        out["detalle"] = (
+            "Faltan SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en Railway. "
+            "Mientras tanto los archivos usan disco efímero (no duran 24-48h)."
+        )
+        return out
+
+    try:
+        from services.document_service import _upload_to_supabase
+
+        signed = await _upload_to_supabase("_diag.txt", b"ok", "text/plain", expires_in=600)
+        if signed:
+            from urllib.parse import urlparse
+
+            out["status"] = "ok"
+            out["test_upload"] = "ok"
+            out["signed_url_host"] = urlparse(signed).hostname or ""
+            out["detalle"] = "Supabase Storage funciona: los entregables tendrán links durables (48h)."
+        else:
+            out["status"] = "error"
+            out["test_upload"] = "fallo"
+            out["detalle"] = (
+                "Las variables están pero el upload falló. Verificá que exista el "
+                "bucket 'reports' y que la key sea la service_role (no la anon)."
+            )
+    except Exception as e:  # noqa: BLE001
+        out["status"] = "error"
+        out["detalle"] = f"Excepción en el test: {str(e)[:200]}"
+    return out
