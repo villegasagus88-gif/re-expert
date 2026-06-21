@@ -1648,13 +1648,52 @@ function showMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.displa
 function hideMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='none'}
 function showWelcome(){hideMessagesLoading();els.welcomeScreen.style.display='';els.messagesEl.style.display='none'}
 function showMessages(){hideMessagesLoading();els.welcomeScreen.style.display='none';els.messagesEl.style.display='flex';els.exportBtn.style.display=''}
-function renderMessages(){if(!state.messages.length){showWelcome();return}showMessages();els.messagesEl.innerHTML=state.messages.map(m=>msgHTML(m.role,m.content)).join('');addCopyBtns();scrollBottom()}
+function renderMessages(){if(!state.messages.length){showWelcome();return}showMessages();els.messagesEl.innerHTML=state.messages.map(m=>msgHTML(m.role,m.content)).join('');addCopyBtns();enhanceArtifactLinks();scrollBottom()}
+
+// ===== Compartir entregables (Excel/PDF) por WhatsApp / Mail =====
+function _isArtifactUrl(href){
+  if(!href)return false;
+  return /\/storage\/v1\/object\/sign\/reports\//.test(href)
+    || /\/static\/reports\//.test(href)
+    || /\/reports\/[^?]*\.(pdf|xlsx|csv)(\?|$)/i.test(href);
+}
+function _artifactLabel(href){
+  if(/\.xlsx(\?|$)/i.test(href))return 'Excel';
+  if(/\.pdf(\?|$)/i.test(href))return 'PDF';
+  if(/\.csv(\?|$)/i.test(href))return 'CSV';
+  return 'Archivo';
+}
+function enhanceArtifactLinks(){
+  document.querySelectorAll('#messages .message-assistant .message-text').forEach(mt=>{
+    if(mt.dataset.artShare)return;
+    const anchors=[...mt.querySelectorAll('a[href]')].filter(a=>_isArtifactUrl(a.getAttribute('href')));
+    if(!anchors.length)return;
+    mt.dataset.artShare='1';
+    const items=anchors.map(a=>{a.target='_blank';a.rel='noopener';return {label:_artifactLabel(a.getAttribute('href')),url:a.href}});
+    const titulo='Análisis — RE Expert';
+    const cuerpo=[titulo,...items.map(it=>`${it.label==='Excel'?'📊':it.label==='PDF'?'📄':'📎'} ${it.label}: ${it.url}`),'— vía RE Expert'].join('\n');
+    const wa='https://wa.me/?text='+encodeURIComponent(cuerpo);
+    const mail='mailto:?subject='+encodeURIComponent(titulo)+'&body='+encodeURIComponent(cuerpo);
+    const bar=document.createElement('div');bar.className='artifact-share';
+    bar.innerHTML=`<span class="art-share-label">Compartir:</span>`
+      +`<a class="art-btn art-wa" href="${wa}" target="_blank" rel="noopener"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-1.595z"/></svg>WhatsApp</a>`
+      +`<a class="art-btn art-mail" href="${mail}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>Mail</a>`
+      +`<button class="art-btn art-copy" type="button">Copiar link${items.length>1?'s':''}</button>`;
+    bar.querySelector('.art-copy').addEventListener('click',async()=>{
+      const b=bar.querySelector('.art-copy');const prev=b.textContent;
+      try{await navigator.clipboard.writeText(items.map(it=>it.url).join('\n'));b.textContent='¡Copiado!'}
+      catch(e){b.textContent='No pude copiar'}
+      setTimeout(()=>{b.textContent=prev},1500);
+    });
+    mt.appendChild(bar);
+  });
+}
 
 function msgHTML(role,content){const u=role==='user';return`<div class="message message-${u?'user':'assistant'}"><div class="message-inner"><div class="message-avatar">${u?'TU':'RE'}</div><div class="message-content"><div class="message-sender">${u?'Tu':'RE Expert'}</div><div class="message-text">${u?esc(content):parseMd(content)}</div></div></div></div>`}
 function appendMsg(role,content){showMessages();const d=document.createElement('div');d.innerHTML=msgHTML(role,content);els.messagesEl.appendChild(d.firstElementChild);addCopyBtns();scrollBottom()}
 function appendStreaming(){showMessages();const d=document.createElement('div');d.innerHTML=`<div class="message message-assistant" id="streamMsg"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content"><div class="message-sender">RE Expert</div><div class="tool-trace" style="display:none;font-size:12px;color:var(--text-3);margin-bottom:6px"></div><div class="message-text"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div><span class="typing-label">Generando respuesta…</span></div></div></div></div></div>`;els.messagesEl.appendChild(d.firstElementChild);scrollBottom()}
 function updateStreaming(t){const el=$('#streamMsg');if(el){el.querySelector('.message-text').innerHTML=parseMd(t);scrollBottom()}}
-function finalizeStreaming(){const el=$('#streamMsg');if(el){el.removeAttribute('id');addCopyBtns()}}
+function finalizeStreaming(){const el=$('#streamMsg');if(el){el.removeAttribute('id');addCopyBtns()}enhanceArtifactLinks()}
 
 // Bonita-de-mostrar para el nombre técnico de cada tool de retrieval.
 const TOOL_LABELS={
