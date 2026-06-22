@@ -13,7 +13,7 @@ from api.schemas.auth import (
 )
 from core.auth import get_current_user
 from core.rate_limit import limiter
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from models.user import User
 from services.auth_service import (
     complete_onboarding,
@@ -82,9 +82,16 @@ async def refresh(request: Request, body: RefreshRequest):
     responses={429: {"description": "Demasiados intentos, espera un rato"}},
 )
 @limiter.limit("5/hour")
-async def forgot_password(request: Request, body: ForgotPasswordRequest):
-    await request_password_reset(email=body.email)
-    # Respuesta uniforme: no revela si el email existe (anti-enumeración).
+async def forgot_password(
+    request: Request,
+    body: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+):
+    # El trabajo (SELECT + envío de email) corre en background para que la
+    # respuesta sea de tiempo ~constante exista o no el email: si lo hiciéramos
+    # inline, un email registrado tardaría el round-trip a Resend y filtaría su
+    # existencia por timing, anulando la respuesta uniforme de abajo.
+    background_tasks.add_task(request_password_reset, body.email)
     return {
         "ok": True,
         "message": (

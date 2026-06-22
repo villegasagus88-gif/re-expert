@@ -66,13 +66,10 @@ class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
     _UPLOAD_PREFIXES = ("/api/planos/",)
 
     async def dispatch(self, request: _Request, call_next):
+        is_upload = request.url.path.startswith(self._UPLOAD_PREFIXES)
         cl = request.headers.get("content-length")
         if cl:
-            limit = (
-                self._UPLOAD_MAX_BYTES
-                if request.url.path.startswith(self._UPLOAD_PREFIXES)
-                else self._MAX_BYTES
-            )
+            limit = self._UPLOAD_MAX_BYTES if is_upload else self._MAX_BYTES
             try:
                 too_big = int(cl) > limit
             except ValueError:
@@ -82,6 +79,14 @@ class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
                     {"detail": "Request body too large"},
                     status_code=413,
                 )
+        elif is_upload:
+            # Sin Content-Length no podemos frenar el body antes de leerlo; un
+            # upload chunked saltearía el cap (y haría spool a disco). Los
+            # browsers mandan Content-Length en FormData, así que lo exigimos.
+            return _JSONResponse(
+                {"detail": "Content-Length required for uploads"},
+                status_code=411,
+            )
         return await call_next(request)
 
 

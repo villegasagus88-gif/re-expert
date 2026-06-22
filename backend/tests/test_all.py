@@ -314,7 +314,9 @@ check("conversations_router", "app.include_router(conversations_router)" in main
 check("chat_router", "app.include_router(chat_router)" in main)
 check("knowledge_router", "app.include_router(knowledge_router)" in main)
 check("usage_router", "app.include_router(usage_router)" in main)
-check("11 routers total", main.count("app.include_router(") == 11)
+check("planos_router", "app.include_router(planos_router)" in main)
+# Conteo robusto (>=): registrar un router nuevo no debe romper el test.
+check("at least 16 routers", main.count("app.include_router(") >= 16)
 
 
 # ================================================================

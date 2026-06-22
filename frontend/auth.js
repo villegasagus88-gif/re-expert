@@ -313,13 +313,20 @@
         showAlert(typeof data.detail === 'string' ? data.detail : 'El link venció o ya fue usado. Pedí uno nuevo.');
         return;
       }
+      if (resp.status === 422) {
+        // Password débil según el backend. El detail viene como array (Pydantic),
+        // así que no lo mostramos crudo: mensaje genérico legible.
+        showAlert('La contraseña no cumple los requisitos: mínimo 8 caracteres, una mayúscula y un número.');
+        return;
+      }
       if (resp.status === 429) {
         showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
         return;
       }
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
-        showAlert(data.detail || 'No se pudo restablecer la contraseña. Intentá de nuevo.');
+        const msg = typeof data.detail === 'string' ? data.detail : 'No se pudo restablecer la contraseña. Intentá de nuevo.';
+        showAlert(msg);
         return;
       }
       showAlert('¡Listo! Tu contraseña fue actualizada. Te llevamos al login…', 'success');

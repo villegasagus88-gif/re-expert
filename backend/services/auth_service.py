@@ -6,7 +6,7 @@ user registration, and session refresh. No external auth provider needed.
 """
 import logging
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import bcrypt
 from config.settings import settings
@@ -288,11 +288,18 @@ async def reset_password(token: str, new_password: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El link de recuperación es inválido.",
         )
+    try:
+        uid = UUID(user_id)
+    except (ValueError, TypeError):
+        # sub viene firmado (siempre un UUID real), pero por robustez devolvemos
+        # el mismo 400 que el resto de los paths de token inválido en vez de 500.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El link de recuperación es inválido.",
+        )
 
     async with get_session_factory()() as db:
-        from uuid import UUID
-
-        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        result = await db.execute(select(User).where(User.id == uid))
         user = result.scalar_one_or_none()
 
         if user is None or not user.password_hash:

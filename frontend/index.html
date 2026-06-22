@@ -2739,8 +2739,8 @@ function solAppendToolChip(toolName, status, result){
 async function solSend(text){
   if(!text.trim()||solState.isStreaming)return;
   // Nota: el gate de plan Pro lo aplica el backend (devuelve 403 con detail.upgrade_url
-  // que el handler de abajo intercepta y dispara showUpgradeModal). En DEBUG=true
-  // (dev local) el backend deja pasar a todos para no friccionar el testing.
+  // que el handler de abajo intercepta y dispara showUpgradeModal). SOL es Pro-only
+  // en TODOS los ambientes (ya no hay bypass por DEBUG).
   const msg=text.trim();
   $('#solInput').value='';$('#solInput').style.height='auto';solUpdateSendBtn();
   solState.messages.push({role:'user',content:msg});
