@@ -1,6 +1,6 @@
 # Para Agustín — qué activar para terminar el launch
 
-> Estado al 2026-06-10. En `main` ya está: modelo **pago-only** con trial de
+> Estado al 2026-06-22. En `main` ya está: modelo **pago-only** con trial de
 > 7 días, gate de acceso, **Mercado Pago completo en backend** (inerte hasta
 > tener credenciales; incluye webhook firmado y **botón de baja**), frontend
 > pago-only, KB admin, mobile QA y fixes de seguridad. Lo que falta para lanzar
@@ -36,7 +36,7 @@ Todo esto va en **Railway → Variables** (backend), salvo donde diga frontend.
 
 | Prioridad | Variable | Para qué | Valor / cómo |
 |---|---|---|---|
-| 🔴 Alta | `ADMIN_EMAILS` | (a) Habilita `/admin.html` (gestión del KB). (b) **Bypass del paywall**: los emails listados tienen acceso a la app aunque el trial venza — sin esto, **nuestras propias cuentas quedan bloqueadas HOY 2026-06-10** (vence el trial y MP aún no cobra). | Tu email + el de Mati, separados por coma. Ej: `agustin@...,mati@...` |
+| 🔴 Alta | `ADMIN_EMAILS` | (a) Habilita `/admin.html` (gestión del KB). (b) **Bypass del paywall**: los emails listados tienen acceso a la app aunque el trial venza — sin esto, **nuestras propias cuentas ya quedaron bloqueadas** (el trial venció y MP aún no cobra). Es lo más urgente. | Tu email + el de Mati, separados por coma. Ej: `agustin@...,mati@...` |
 | 🟠 Media | `RESEND_API_KEY` + `RESEND_FROM` | Emails reales (recuperar contraseña). Hoy el link queda solo en logs. | Tu cuenta Resend. `RESEND_FROM=onboarding@resend.dev` para arrancar. |
 | 🟠 Media | `SENTRY_DSN` (Railway) + `SENTRY_DSN` en `frontend/config.js` | Error tracking backend + frontend. Código ya wireado. | Crear 2 proyectos en sentry.io (backend FastAPI, frontend JS). Ver `docs/MONITORING.md`. |
 | 🟡 Baja | `GEMINI_API_KEY` | Fallback gratis si Anthropic falla/sin saldo. | Tu cuenta Google AI Studio. |
@@ -72,9 +72,9 @@ pongas, se enciende solo (el registro pasa a tarjeta-upfront automáticamente).
 **Después de eso:** probamos juntos contra el sandbox de MP antes de anunciar
 (checkout → webhook → acceso → baja). Detalle del diseño: `docs/MODELO_PAGO.md`.
 
-> ⏰ **Importante:** el trial de las cuentas actuales vence **HOY 2026-06-10**
-> (corte seco). Hasta que MP esté activo, la única vía de acceso es el bypass
-> de `ADMIN_EMAILS` (punto 1) — cargalo primero.
+> ⏰ **Importante:** el trial de las cuentas actuales **ya venció** (corte seco).
+> Hasta que MP esté activo, la única vía de acceso es el bypass de `ADMIN_EMAILS`
+> (punto 1) — cargalo primero.
 
 ---
 
