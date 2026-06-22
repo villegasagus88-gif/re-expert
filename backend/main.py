@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path as _Path
 
 from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
@@ -12,6 +13,7 @@ from api.routes.knowledge import router as knowledge_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
 from api.routes.payments import router as payments_router
+from api.routes.planos import router as planos_router
 from api.routes.project import router as project_router
 from api.routes.reminders import router as reminders_router
 from api.routes.stripe_routes import router as stripe_router
@@ -53,16 +55,33 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose Content-Length exceeds 1 MB before they are read."""
+    """Reject oversized request bodies before they are read.
+
+    Default cap is 1 MB for the JSON APIs. Multimodal upload routes (planos)
+    need more room, so paths under those prefixes get a higher cap — the
+    handler still validates per-file and total size.
+    """
     _MAX_BYTES = 1_048_576  # 1 MB
+    _UPLOAD_MAX_BYTES = 16_777_216  # 16 MB
+    _UPLOAD_PREFIXES = ("/api/planos/",)
 
     async def dispatch(self, request: _Request, call_next):
         cl = request.headers.get("content-length")
-        if cl and int(cl) > self._MAX_BYTES:
-            return _JSONResponse(
-                {"detail": "Request body too large (max 1 MB)"},
-                status_code=413,
+        if cl:
+            limit = (
+                self._UPLOAD_MAX_BYTES
+                if request.url.path.startswith(self._UPLOAD_PREFIXES)
+                else self._MAX_BYTES
             )
+            try:
+                too_big = int(cl) > limit
+            except ValueError:
+                too_big = False
+            if too_big:
+                return _JSONResponse(
+                    {"detail": "Request body too large"},
+                    status_code=413,
+                )
         return await call_next(request)
 
 
@@ -84,6 +103,7 @@ app.include_router(chat_router)
 app.include_router(knowledge_router)
 app.include_router(materials_router)
 app.include_router(payments_router)
+app.include_router(planos_router)
 app.include_router(project_router)
 app.include_router(stripe_router)
 app.include_router(usage_router)
@@ -97,9 +117,6 @@ app.include_router(contacts_router)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
-import os as _os
-from pathlib import Path as _Path
-
 _reports_dir = _Path(__file__).resolve().parent / "data" / "reports"
 _reports_dir.mkdir(parents=True, exist_ok=True)
 app.mount(

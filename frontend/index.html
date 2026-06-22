@@ -2052,6 +2052,91 @@ async function sendMessage(text){
   state.isStreaming=false;updateSendBtn();els.messageInput.focus();
 }
 
+// Analiza los planos subidos mandando los BYTES reales al backend (Claude vision)
+// vía multipart, y streamea la respuesta dentro de la vista de chat. Antes esto
+// solo mandaba los nombres de archivo como texto (no-op multimodal).
+async function analyzePlanos(){
+  const files=state.uploadedFiles||[];
+  if(!files.length){alert('Subí al menos un plano antes de analizar.');return}
+  if(state.isStreaming)return;
+  if(!window.REAuthService||!window.REAuthService.authFetch){alert('Sesion no inicializada');return}
+  const MAX_FILES=8,MAX_FILE=5*1024*1024,MAX_TOTAL=12*1024*1024;
+  if(files.length>MAX_FILES){alert('Máximo '+MAX_FILES+' archivos por análisis.');return}
+  let total=0;
+  for(const f of files){
+    total+=f.size;
+    if(f.size>MAX_FILE){alert('"'+f.name+'" supera el máximo de 5 MB.');return}
+  }
+  if(total>MAX_TOTAL){alert('El total de archivos supera el máximo de 12 MB.');return}
+
+  const names=files.map(f=>f.name).join(', ');
+  const userMsg='Analizá estos planos y estimá los materiales necesarios para la obra.\n\n📎 '+names;
+  switchView('chat');
+  const isNewConv=!state.currentConversation;
+  state.messages.push({role:'user',content:userMsg});appendMsg('user',userMsg);
+  state.isStreaming=true;els.sendBtn.disabled=true;appendStreaming();let full='';
+  try{
+    const fd=new FormData();
+    files.forEach(f=>fd.append('files',f,f.name));
+    if(state.currentConversation?.id)fd.append('conversation_id',state.currentConversation.id);
+    // Sin Content-Type manual: el browser pone el boundary del multipart.
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/planos/analyze',{
+      method:'POST',
+      headers:{'Accept':'text/event-stream'},
+      body:fd
+    });
+    const rlRemaining=parseInt(r.headers.get('X-RateLimit-Remaining-Day')||'-1');
+    const rlLimit=parseInt(r.headers.get('X-RateLimit-Limit-Day')||'-1');
+    if(rlRemaining>=0&&rlLimit>0)updateDailyCounter(rlRemaining,rlLimit);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(r.status===403){
+      const e=await r.json().catch(()=>({}));
+      const msg=typeof e.detail==='object'?e.detail.message:(e.detail||'Esta función requiere el plan Pro');
+      updateStreaming('');finalizeStreaming();state.messages.pop();renderMessages();
+      showUpgradeModal(msg);state.isStreaming=false;updateSendBtn();return;
+    }
+    if(r.status===429){
+      const ra=r.headers.get('Retry-After');
+      throw new Error('Límite de análisis alcanzado'+(ra?' (reintentá en '+ra+'s)':''));
+    }
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      const msg=typeof e.detail==='object'?(e.detail.message||JSON.stringify(e.detail)):(e.detail||'Error del servidor ('+r.status+')');
+      throw new Error(msg);
+    }
+    const reader=r.body.getReader(),dec=new TextDecoder();let buf='';
+    outer: while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop()||'';
+      for(const l of lines){
+        if(!l.startsWith('data: '))continue;
+        const d=l.slice(6).trim();
+        if(!d)continue;
+        try{
+          const ev=JSON.parse(d);
+          if(ev.type==='start'&&ev.conversation_id){
+            if(isNewConv){
+              const title='Análisis de planos';
+              const newConv={id:ev.conversation_id,title,messages:[],createdAt:new Date().toISOString()};
+              state.currentConversation=newConv;state.conversations.unshift(newConv);
+              els.topbarTitle.textContent=title;renderHistory();
+            }else{state.currentConversation.id=ev.conversation_id}
+          }else if(ev.type==='delta'&&ev.text){full+=ev.text;updateStreaming(full)}
+          else if(ev.type==='error'){throw new Error(ev.message||'Error del backend')}
+          else if(ev.type==='done'){break outer}
+        }catch(parseErr){
+          if(parseErr instanceof SyntaxError)continue;
+          throw parseErr;
+        }
+      }
+    }
+    state.messages.push({role:'assistant',content:full});finalizeStreaming();
+  }catch(e){updateStreaming('Error: '+e.message);finalizeStreaming()}
+  state.isStreaming=false;updateSendBtn();els.messageInput.focus();
+}
+
 function updateSendBtn(){els.sendBtn.disabled=!els.messageInput.value.trim()||state.isStreaming}
 function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px'}
 
@@ -2518,35 +2603,9 @@ function initAcademiaTabs(){
 }
 
 // SOL Assistant
-const SOL_PROMPT = `Eres SOL, asistente de carga de datos del sistema RE Expert. Tu rol es recibir información en lenguaje natural del usuario y:
-
-1. ANALIZAR qué tipo de dato es (pago, avance de obra, precio de material, proveedor, hito, gasto extra, etc.)
-2. Si falta información crítica, hacer MÁXIMO 1-2 preguntas cortas y simples para completar el dato.
-3. Confirmar el dato estructurado y decir en qué sección se cargó.
-
-## Secciones del sistema donde puedes rutear datos:
-- **Pagos** → pagos realizados, pendientes, montos, proveedores, fechas
-- **Cronograma** → hitos, fechas, avances de etapa, retrasos, entregas
-- **Materiales** → precios actualizados, cotizaciones, variaciones
-- **Costos** → gastos presupuestados o extra, desvíos, rubros
-- **Proveedores** → datos de contacto, rubros, condiciones
-
-## Reglas:
-- Responde en español, tono amigable pero profesional
-- Sé MUY concisa: respuestas cortas y claras
-- Cuando confirmes un dato cargado, indica la sección destino con este formato exacto: [CARGADO→Sección]
-- Si el usuario quiere conversar o preguntar algo (no cargar datos), respondé normalmente usando tu conocimiento del proyecto y del sector
-- Usa Markdown simple, sin exceso
-- No hagas preguntas innecesarias si el dato ya está completo
-- Siempre confirma el dato antes de "cargarlo"
-
-## Datos actuales del proyecto (contexto):
-- Presupuesto base: $6.430.000
-- Costo real: $4.250.000 (66% ejecutado)
-- Avance de obra: 58% (vs 66% programado)
-- Plazo: 14/18 meses
-- Etapa actual: Instalaciones (eléctrica completada, sanitaria en ejecución)
-- Alertas: sobrecosto estructura +13.8%, retraso instalaciones 18 días`;
+// El system prompt de SOL vive en el backend (services/anthropic_service.py →
+// SOL_SYSTEM_PROMPT) y los datos reales del proyecto se inyectan en runtime vía
+// /api/chat (context_type='sol'). No hardcodear el prompt ni números acá.
 
 const solState = {messages:[], isStreaming:false};
 
@@ -3140,11 +3199,7 @@ function initProyectoTabs(){
 
 // AI actions for sections
 function initSectionActions(){
-  $('#analyzePlanosBtn')?.addEventListener('click',()=>{
-    const names=state.uploadedFiles.map(f=>f.name).join(', ');
-    switchView('chat');
-    setTimeout(()=>sendMessage(`Analiza estos planos y estima los materiales necesarios para la obra: ${names}. Dame un desglose detallado con cantidades estimadas de cada material.`),100);
-  });
+  $('#analyzePlanosBtn')?.addEventListener('click',analyzePlanos);
   $('#refreshPricesBtn')?.addEventListener('click',()=>loadMateriales(true));
   $('#deepAnalysisBtn')?.addEventListener('click',()=>{
     switchView('chat');
