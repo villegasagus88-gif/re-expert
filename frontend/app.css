@@ -829,7 +829,10 @@ select.pay-form-input{cursor:pointer}
 .cred-summary-inner{background:linear-gradient(135deg,rgba(99,102,241,.10),rgba(139,92,246,.06));border:1px solid rgba(99,102,241,.22);border-radius:var(--radius-xl);padding:16px 18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .cred-summary-empty .cred-summary-why{margin-top:4px}
 .cred-summary-label{font-size:11px;font-weight:700;color:var(--accent-brand);text-transform:uppercase;letter-spacing:.4px}
-.cred-summary-bank{font-size:16px;font-weight:700;margin-top:5px}
+.cred-summary-bank{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;margin-top:6px}
+.cred-summary-bank>span{font-weight:600;color:var(--text-1)}
+#credModalTitle{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cred-modal-cn{font-size:15px;font-weight:600}
 .cred-summary-why{font-size:12.5px;color:var(--text-1);margin-top:3px;max-width:420px;line-height:1.5}
 .cred-summary-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .cred-chip{background:var(--bg-card);border:1px solid var(--border-0);border-radius:10px;padding:6px 11px;min-width:120px}
@@ -850,11 +853,9 @@ select.pay-form-input{cursor:pointer}
 .cred-card.nivel-alta::before{background:#22c55e}
 .cred-card.nivel-media::before{background:#f59e0b}
 .cred-card.nivel-baja::before{background:#ef4444}
-.cred-card-top{display:flex;align-items:flex-start;gap:10px}
-.cred-bank-emoji{font-size:24px;line-height:1;flex-shrink:0}
-.cred-bank-info{flex:1;min-width:0}
-.cred-bank-name{font-size:13px;font-weight:700}
-.cred-credit-name{font-size:11.5px;color:var(--text-2);margin-top:1px}
+.cred-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cred-logo{display:inline-flex;align-items:center;height:26px;padding:0 11px;border-radius:7px;color:#fff;font-weight:800;font-size:12px;letter-spacing:.3px;line-height:1;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.cred-credit-name{font-size:12.5px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cred-badge{font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:100px;white-space:nowrap;flex-shrink:0}
 .badge-alta{background:rgba(34,197,94,.12);color:#16a34a}
 .badge-media{background:rgba(245,158,11,.14);color:#d97706}
@@ -866,8 +867,16 @@ select.pay-form-input{cursor:pointer}
 .cred-spec{display:flex;flex-direction:column;gap:1px}
 .cred-spec span{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px}
 .cred-spec b{font-size:13px;font-weight:700}
-.cred-analysis{display:flex;flex-direction:row;flex-wrap:wrap;gap:14px;border-top:1px solid var(--border-1);padding-top:11px}
+.cred-analysis{display:flex;flex-direction:row;flex-wrap:wrap;gap:11px;border-top:1px solid var(--border-1);padding-top:11px}
 .cred-analysis>.cred-spec{display:inline-flex}
+.cred-cuota{flex-basis:100%;display:flex;flex-direction:column;gap:2px;background:var(--bg-2);border-radius:9px;padding:9px 12px}
+.cred-cuota span{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px}
+.cred-cuota b{font-size:19px;font-weight:800;letter-spacing:-.5px;color:var(--text-0)}
+.cred-cuota small{font-size:11px;font-weight:500;color:var(--text-3)}
+.cred-analysis-row{flex-basis:100%;display:flex;gap:20px}
+.cred-spec b.rel-ok{color:#16a34a}
+.cred-spec b.rel-mid{color:#d97706}
+.cred-spec b.rel-bad{color:#dc2626}
 .cred-prob{flex-basis:100%;display:flex;align-items:center;gap:8px}
 .cred-prob-bar{flex:1;height:6px;background:var(--bg-2);border-radius:100px;overflow:hidden}
 .cred-prob-bar i{display:block;height:100%;background:linear-gradient(90deg,#6366f1,#22c55e);border-radius:100px}

@@ -2773,6 +2773,24 @@ async function loadAcademia(force=false){
 // ===== CRÉDITOS (asesor hipotecario) =====
 const creditosState={items:[],updatedAt:'',disclaimer:'',loaded:false,loading:false,situacion:null,audience:'comprador',sort:'compat'};
 
+// Marca de cada banco: color oficial + wordmark. Minimalista y confiable
+// (no dependemos de imágenes externas que se rompan).
+const BANK_BRANDS={
+  'Banco Nación':{bg:'#0a5ca8',label:'NACIÓN'},
+  'Banco Ciudad':{bg:'#00a0a8',label:'Ciudad'},
+  'BBVA':{bg:'#1464a5',label:'BBVA'},
+  'Santander':{bg:'#ec0000',label:'Santander'},
+  'ICBC':{bg:'#c8102e',label:'ICBC'},
+  'Banco de Córdoba (Bancor)':{bg:'#00833e',label:'Bancor'},
+  'Banco Provincia':{bg:'#00843d',label:'Provincia'},
+  'Banco Galicia':{bg:'#f5821f',label:'Galicia'},
+  'Banco Macro':{bg:'#00387b',label:'Macro'}
+};
+function bankLogoHTML(name){
+  const b=BANK_BRANDS[name]||{bg:'#475569',label:(name||'Banco')};
+  return `<span class="cred-logo" style="background:${b.bg}" title="${esc(name||'')}">${esc(b.label)}</span>`;
+}
+
 async function loadCreditos(force=false){
   if(creditosState.loading)return;
   if(creditosState.loaded&&!force){renderCreditos();return}
@@ -2899,14 +2917,17 @@ function renderCreditos(){
 function credCardHTML(c,a){
   const tna=c.interest_rate_tna!=null?`${(''+c.interest_rate_tna).replace('.',',')}%`:'Variable';
   const badge=a?`<span class="cred-badge badge-${a.nivel}">${a.nivel==='alta'?'✓ ':a.nivel==='baja'?'✕ ':'! '}${_NIVEL_LABEL[a.nivel]}</span>`:'';
+  const relClass=a&&a.relacion!=null?(a.relacion<=20?'rel-ok':a.relacion<=25?'rel-mid':'rel-bad'):'';
   let analysisBlock='';
   if(a){
     if(a.compatible){
       analysisBlock=`<div class="cred-analysis">
-        ${a.cuotaARS?`<div class="cred-spec"><span>Cuota inicial est.</span><b>$${credFmt(a.cuotaARS)}/mes</b></div>`:''}
-        ${a.relacion!=null?`<div class="cred-spec"><span>De tu ingreso</span><b>${a.relacion.toFixed(0)}%</b></div>`:''}
-        <div class="cred-spec"><span>Anticipo mínimo</span><b>USD ${credFmt(a.anticipoMinUSD)}</b></div>
-        <div class="cred-prob"><div class="cred-prob-bar"><i style="width:${a.prob}%"></i></div><span>${a.prob}% prob. estimada</span></div>
+        ${a.cuotaARS?`<div class="cred-cuota"><span>Cuota inicial estimada</span><b>$${credFmt(a.cuotaARS)} <small>/mes</small></b></div>`:''}
+        <div class="cred-analysis-row">
+          ${a.relacion!=null?`<div class="cred-spec"><span>De tu ingreso</span><b class="${relClass}">${a.relacion.toFixed(0)}%</b></div>`:''}
+          <div class="cred-spec"><span>Anticipo mín.</span><b>USD ${credFmt(a.anticipoMinUSD)}</b></div>
+        </div>
+        <div class="cred-prob"><div class="cred-prob-bar"><i style="width:${a.prob}%"></i></div><span>${a.prob}% prob.</span></div>
       </div>`;
     }else{
       analysisBlock=`<div class="cred-analysis cred-analysis-no"><div class="cred-incompat">⚠️ ${esc(a.motivos[0]||'No compatible con tu situación.')}</div></div>`;
@@ -2918,10 +2939,10 @@ function credCardHTML(c,a){
   }
   return `<div class="cred-card ${a?'nivel-'+a.nivel:''}" data-id="${esc(c.id)}">
     <div class="cred-card-top">
-      <span class="cred-bank-emoji">${esc(c.bank_emoji||'🏦')}</span>
-      <div class="cred-bank-info"><div class="cred-bank-name">${esc(c.bank_name)}</div><div class="cred-credit-name">${esc(c.credit_name)}</div></div>
+      ${bankLogoHTML(c.bank_name)}
       ${badge}
     </div>
+    <div class="cred-credit-name">${esc(c.credit_name)}</div>
     <div class="cred-rate"><span class="cred-rate-num">${esc(tna)}</span><span class="cred-rate-type">${esc(c.rate_type)}${c.interest_rate_tna!=null?' TNA':''} · ${esc(c.province)}</span></div>
     <div class="cred-specs">
       <div class="cred-spec"><span>Plazo máx.</span><b>${c.max_term_years} años</b></div>
@@ -2951,7 +2972,7 @@ function renderCredSummary(analyzed){
   box.innerHTML=`<div class="cred-summary-inner">
     <div class="cred-summary-best">
       <span class="cred-summary-label">★ Mejor opción para vos</span>
-      <div class="cred-summary-bank">${esc(best.c.bank_emoji)} ${esc(best.c.bank_name)} — ${esc(best.c.credit_name)}</div>
+      <div class="cred-summary-bank">${bankLogoHTML(best.c.bank_name)} <span>${esc(best.c.credit_name)}</span></div>
       <div class="cred-summary-why">Tasa ${(''+best.c.interest_rate_tna).replace('.',',')}% ${esc(best.c.rate_type)}, ${best.a.prob}% de probabilidad estimada${best.a.cuotaARS?`, cuota inicial ~$${credFmt(best.a.cuotaARS)}/mes`:''}.</div>
     </div>
     <div class="cred-summary-chips">
@@ -2966,7 +2987,7 @@ function renderCredSummary(analyzed){
 function openCredModal(id){
   const c=creditosState.items.find(x=>x.id===id);if(!c)return;
   const sit=creditosState.situacion;const a=(sit&&c.audience==='comprador')?analizarCredito(c,sit):null;
-  $('#credModalTitle').textContent=`${c.bank_emoji||'🏦'} ${c.bank_name} — ${c.credit_name}`;
+  $('#credModalTitle').innerHTML=`${bankLogoHTML(c.bank_name)} <span class="cred-modal-cn">${esc(c.credit_name)}</span>`;
   const list=(title,arr,cls)=>arr&&arr.length?`<div class="cred-modal-block"><h4>${title}</h4><ul class="cred-modal-list ${cls||''}">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
   let analysisHtml='';
   if(a){
