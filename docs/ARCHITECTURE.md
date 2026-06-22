@@ -2,18 +2,25 @@
 
 Visión general del sistema.
 
+> **⚠️ Estado real (este doc fue quedando atrás del código — verificar contra el código ante la duda):**
+> - **Auth**: NO usa Supabase Auth. Es **bcrypt + JWT HS256 propio** (`core/auth.py`, `services/auth_service.py`, `services/jwt_service.py`). Incluye forgot-password con token de un solo uso.
+> - **AI**: capa **dual-provider** (`services/llm_providers.py`): Gemini (free) o Anthropic, seleccionado por `LLM_PROVIDER`. El agente SOL hace tool-use.
+> - **Pagos**: **Stripe** integrado (checkout/portal/webhook) — `api/routes/stripe_routes.py`, `billing.py`. (Docs viejos decían "sin Stripe".)
+> - **Notificaciones**: Telegram + email (Resend) + WhatsApp (Twilio) + in_app; scheduler de recordatorios con claim atómico.
+
 ## Stack
 
 | Capa | Tecnología | Hosting |
 |---|---|---|
 | **Frontend** | HTML + vanilla JS + CSS (dark premium) | Netlify |
 | **Backend API** | Python 3.12 + FastAPI + uvicorn (Docker) | Railway |
-| **Database** | PostgreSQL (Supabase) con Row Level Security | Supabase |
-| **Auth** | Supabase Auth (email + password, JWT) | Supabase |
-| **File storage** | Supabase Storage — bucket `knowledge` (archivos .md de conocimiento) | Supabase |
-| **AI** | Anthropic Claude Sonnet 4.6 vía `anthropic` Python SDK | Anthropic API |
+| **Database** | PostgreSQL (Supabase); ownership scoping en código (no RLS) | Supabase |
+| **Auth** | bcrypt + JWT HS256 propio (NO Supabase Auth) | Backend |
+| **File storage** | Supabase Storage — buckets `knowledge` (.md) y `reports` (PDF/DOCX) | Supabase |
+| **AI** | Dual-provider: Google Gemini (free) o Anthropic Claude, vía `LLM_PROVIDER` | Gemini / Anthropic |
+| **Pagos** | Stripe (checkout + portal + webhook) | Stripe |
 | **Migraciones DB** | Alembic (async) | Railway (preDeployCommand) |
-| **CI/CD** | GitHub Actions (ruff + pytest) + auto-deploy vía integraciones | GitHub |
+| **CI/CD** | GitHub Actions (ruff + pytest sobre Postgres) + auto-deploy Railway | GitHub |
 
 ## Estructura del repo
 

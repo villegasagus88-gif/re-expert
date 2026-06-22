@@ -27,6 +27,30 @@ jobs:
   test:
     name: Tests (pytest)
     runs-on: ubuntu-latest
+
+    # Postgres real para que la suite corra contra el schema verdadero (antes
+    # corría sin DB: cualquier test de round-trip era imposible).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/postgres
+      JWT_SECRET: ci-test-secret-not-for-prod
+      DEBUG: "true"
+      SCHEDULER_ENABLED: "false"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +65,15 @@ jobs:
         working-directory: backend
         run: pip install -r requirements-dev.txt
 
+      - name: Bootstrap Postgres (extensions + auth stub)
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d postgres -f scripts/db-init/01-extensions.sql
+
+      - name: Run migrations (alembic upgrade head)
+        working-directory: backend
+        run: alembic upgrade head
+
       - name: Run pytest
         working-directory: backend
         run: pytest -v
@@ -53,6 +86,10 @@ jobs:
     steps:
       - name: Notify deploy
         run: |
-          echo "Railway auto-deploys from main via GitHub integration."
-          echo "No action needed here - Railway detected this push and is deploying."
-          echo "Watch progress at: https://railway.com"
+          echo "lint + test pasaron en este push a main."
+          echo ""
+          echo "IMPORTANTE: Railway auto-deploya desde main vía su integración con"
+          echo "GitHub, que es INDEPENDIENTE de este workflow. Para que un build rojo"
+          echo "NO llegue a producción, configurar en Railway:"
+          echo "  Settings > Deploys > 'Wait for CI' (Check Status before deploy)"
+          echo "y/o branch protection en main exigiendo los checks 'lint' y 'test'."
