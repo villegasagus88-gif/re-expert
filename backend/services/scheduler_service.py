@@ -13,6 +13,12 @@ Recién después de claimear, disparamos y pasamos a sent/failed.
 Recuperación de crash: si un worker claimea (status='sending') y muere antes de
 enviar, el recordatorio quedaría trabado. Por eso el claim también re-toma filas
 'sending' cuyo `updated_at` quedó más viejo que STALE_CLAIM_AFTER_SECONDS.
+
+LIMITACIÓN CONOCIDA (entrega at-least-once): si el worker crashea/el commit falla
+JUSTO entre el envío externo y el commit de status='sent', la fila queda 'sending'
+y la stale-recovery la re-dispara → posible doble envío. Aceptable para
+recordatorios (mejor doble que perdido); el fix definitivo (idempotencia: message
+id / claimed_by, o rutear stale a needs_review) queda como follow-up.
 """
 from __future__ import annotations
 
@@ -125,9 +131,23 @@ async def _process_due_reminders(db: AsyncSession) -> int:
             fired += 1
         except Exception as e:
             logger.exception("Reminder %s dispatch failed", r.id)
-            r.status = "failed"
-            r.last_error = str(e)
-            await db.commit()
+            # La sesión puede haber quedado en estado fallido (ej. el commit de
+            # arriba reventó): rollback primero, re-fetch la fila (quedó expirada)
+            # y persistir el fallo en SU PROPIA transacción, para que un row
+            # envenenado no aborte el resto del batch (PendingRollbackError).
+            try:
+                await db.rollback()
+                r2 = await db.get(Reminder, r.id)
+                if r2 is not None:
+                    r2.status = "failed"
+                    r2.last_error = str(e)[:1000]
+                    await db.commit()
+            except Exception:
+                logger.exception("No se pudo marcar 'failed' el reminder %s", r.id)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
     return fired
 
 

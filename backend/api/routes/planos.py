@@ -227,7 +227,7 @@ async def analyze_planos(
         except Exception:
             logger.exception("guardar análisis de planos falló")
 
-        if in_tok and out_tok:
+        if in_tok or out_tok:
             await log_token_usage(
                 db,
                 user_id=current_user.id,

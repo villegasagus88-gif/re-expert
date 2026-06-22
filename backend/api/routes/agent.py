@@ -151,7 +151,7 @@ async def sol_agent(
             logger.exception("save agent reply failed")
             assistant_id = None
 
-        if in_tok and out_tok:
+        if in_tok or out_tok:
             await log_token_usage(
                 db,
                 user_id=current_user.id,

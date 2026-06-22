@@ -80,21 +80,25 @@ async def set_webhook() -> dict[str, Any]:
 async def send_message(chat_id: str, text: str) -> dict[str, Any]:
     if not is_configured():
         return {"error": "telegram_not_configured"}
-    try:
+
+    base = {"chat_id": chat_id, "text": text, "disable_web_page_preview": False}
+
+    async def _post(payload: dict) -> dict:
         async with httpx.AsyncClient(timeout=10) as cli:
-            r = await cli.post(
-                _api_url("sendMessage"),
-                json={
-                    "chat_id": chat_id,
-                    "text": text,
-                    "parse_mode": "Markdown",
-                    "disable_web_page_preview": False,
-                },
-            )
-            data = r.json()
+            r = await cli.post(_api_url("sendMessage"), json=payload)
+            return r.json()
+
+    try:
+        data = await _post({**base, "parse_mode": "Markdown"})
+        if not data.get("ok"):
+            desc = str(data.get("description", "")).lower()
+            # Texto libre con Markdown inválido (ej. "USD 1_000", "3*4 m2") tira
+            # 400 "can't parse entities" → reintentamos en texto plano.
+            if "can't parse" in desc or "parse entities" in desc:
+                data = await _post(base)
             if not data.get("ok"):
                 return {"error": "telegram_send_failed", "detail": data}
-            return {"ok": True, "message_id": data["result"]["message_id"]}
+        return {"ok": True, "message_id": data["result"]["message_id"]}
     except Exception as e:
         logger.exception("Telegram send_message failed")
         return {"error": str(e)}

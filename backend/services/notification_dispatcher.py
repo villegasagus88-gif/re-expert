@@ -32,15 +32,20 @@ logger = logging.getLogger(__name__)
 async def _get_channel(
     db: AsyncSession, user_id, channel: str
 ) -> UserChannel | None:
+    # .first() (no scalar_one_or_none): si por algún motivo hay 2 canales
+    # verified del mismo tipo, no queremos MultipleResultsFound — tomamos el
+    # más reciente de forma determinística.
     return (
         await db.execute(
-            select(UserChannel).where(
+            select(UserChannel)
+            .where(
                 UserChannel.user_id == user_id,
                 UserChannel.channel == channel,
                 UserChannel.verified.is_(True),
             )
+            .order_by(UserChannel.created_at.desc())
         )
-    ).scalar_one_or_none()
+    ).scalars().first()
 
 
 async def dispatch(
@@ -73,9 +78,22 @@ async def dispatch(
                 "reason": "channel_not_connected",
             }
         result = await telegram_service.send_message(ch.address, text)
-        if attachment_url and result.get("ok"):
-            await telegram_service.send_document(ch.address, attachment_url, caption=title)
-        return {"ok": result.get("ok", False), "channel": "telegram", "detail": result}
+        if not result.get("ok"):
+            # Telegram conectado pero el envío falló → fallback a in_app (igual que
+            # email/whatsapp). Sin esto, el scheduler marcaba el reminder 'failed'
+            # y se perdía, aunque in_app siempre está disponible.
+            logger.info(
+                "telegram a %s falló (%s), fallback a in_app",
+                user.id,
+                result.get("error") or result.get("detail"),
+            )
+            return {"ok": True, "channel": "in_app", "fallback_from": "telegram",
+                    "reason": result.get("error") or result.get("detail")}
+        if attachment_url:
+            doc = await telegram_service.send_document(ch.address, attachment_url, caption=title)
+            if not doc.get("ok"):
+                logger.warning("telegram send_document a %s falló: %s", user.id, doc)
+        return {"ok": True, "channel": "telegram", "detail": result}
 
     if channel == "email":
         if not user.email:
