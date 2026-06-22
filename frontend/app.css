@@ -806,3 +806,94 @@ select.pay-form-input{cursor:pointer}
 .art-wa{color:#1ebe5d;border-color:rgba(30,190,93,.32)}
 .art-wa:hover{border-color:#1ebe5d;background:rgba(30,190,93,.08)}
 .art-mail{color:var(--accent-brand)}
+
+/* ===== CRÉDITOS (asesor hipotecario) ===== */
+.cred-view{max-width:920px}
+.cred-beta{font-size:11px;font-weight:600;color:var(--accent-brand);background:var(--accent-brand-light);padding:2px 9px;border-radius:100px;vertical-align:middle;margin-left:8px}
+/* Form */
+.cred-form{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-xl);padding:18px 20px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.cred-form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.cred-form-head h3{font-size:15px;font-weight:700;margin:0}
+.cred-form-sub{font-size:12px;color:var(--text-2);margin:3px 0 0}
+.cred-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.cred-field{display:flex;flex-direction:column;gap:5px}
+.cred-field>span{font-size:11.5px;font-weight:600;color:var(--text-1)}
+.cred-field input,.cred-field select{background:var(--bg-input,var(--bg-1));border:1px solid var(--border-0);border-radius:9px;padding:9px 11px;font-size:13px;color:var(--text-0);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
+.cred-field input:focus,.cred-field select:focus{border-color:var(--accent-brand)}
+.cred-field-usd>span{color:var(--text-3)}
+.cred-form-actions{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.cred-analizar{display:inline-flex;align-items:center;gap:7px}
+.cred-form-hint{font-size:11px;color:var(--text-3)}
+/* Summary */
+.cred-summary{margin-bottom:16px}
+.cred-summary-inner{background:linear-gradient(135deg,rgba(99,102,241,.10),rgba(139,92,246,.06));border:1px solid rgba(99,102,241,.22);border-radius:var(--radius-xl);padding:16px 18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.cred-summary-empty .cred-summary-why{margin-top:4px}
+.cred-summary-label{font-size:11px;font-weight:700;color:var(--accent-brand);text-transform:uppercase;letter-spacing:.4px}
+.cred-summary-bank{font-size:16px;font-weight:700;margin-top:5px}
+.cred-summary-why{font-size:12.5px;color:var(--text-1);margin-top:3px;max-width:420px;line-height:1.5}
+.cred-summary-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.cred-chip{background:var(--bg-card);border:1px solid var(--border-0);border-radius:10px;padding:6px 11px;min-width:120px}
+.cred-chip span{display:block;font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px}
+.cred-chip b{font-size:12px;font-weight:700}
+/* Controls */
+.cred-controls{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.cred-tabs{margin:0;border-bottom:none}
+.cred-sort{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cred-sort-label{font-size:11.5px;color:var(--text-3)}
+.cred-sort-btn{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:100px;border:1px solid var(--border-0);background:var(--bg-1);color:var(--text-1);cursor:pointer;font-family:inherit}
+.cred-sort-btn.active{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff}
+/* Grid + cards */
+.cred-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.cred-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-xl);padding:16px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .12s}
+.cred-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.cred-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--border-0)}
+.cred-card.nivel-alta::before{background:#22c55e}
+.cred-card.nivel-media::before{background:#f59e0b}
+.cred-card.nivel-baja::before{background:#ef4444}
+.cred-card-top{display:flex;align-items:flex-start;gap:10px}
+.cred-bank-emoji{font-size:24px;line-height:1;flex-shrink:0}
+.cred-bank-info{flex:1;min-width:0}
+.cred-bank-name{font-size:13px;font-weight:700}
+.cred-credit-name{font-size:11.5px;color:var(--text-2);margin-top:1px}
+.cred-badge{font-size:9.5px;font-weight:700;padding:3px 7px;border-radius:100px;white-space:nowrap;flex-shrink:0}
+.badge-alta{background:rgba(34,197,94,.12);color:#16a34a}
+.badge-media{background:rgba(245,158,11,.14);color:#d97706}
+.badge-baja{background:rgba(239,68,68,.12);color:#dc2626}
+.cred-rate{display:flex;align-items:baseline;gap:8px}
+.cred-rate-num{font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--text-0)}
+.cred-rate-type{font-size:11px;color:var(--text-3)}
+.cred-specs{display:flex;gap:18px}
+.cred-spec{display:flex;flex-direction:column;gap:1px}
+.cred-spec span{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px}
+.cred-spec b{font-size:13px;font-weight:700}
+.cred-analysis{display:flex;flex-direction:row;flex-wrap:wrap;gap:14px;border-top:1px solid var(--border-1);padding-top:11px}
+.cred-analysis>.cred-spec{display:inline-flex}
+.cred-prob{flex-basis:100%;display:flex;align-items:center;gap:8px}
+.cred-prob-bar{flex:1;height:6px;background:var(--bg-2);border-radius:100px;overflow:hidden}
+.cred-prob-bar i{display:block;height:100%;background:linear-gradient(90deg,#6366f1,#22c55e);border-radius:100px}
+.cred-prob span{font-size:11px;color:var(--text-2);font-weight:600;white-space:nowrap}
+.cred-analysis-no{border-top:1px solid var(--border-1);padding-top:11px}
+.cred-incompat{font-size:11.5px;color:#dc2626;line-height:1.45}
+.cred-card-hint{font-size:11.5px;color:var(--text-3);border-top:1px solid var(--border-1);padding-top:11px;line-height:1.45}
+.cred-card-actions{margin-top:auto}
+.cred-card-actions .btn-secondary{width:100%;justify-content:center;font-size:12px}
+.cred-disclaimer{font-size:10.5px;color:var(--text-3);line-height:1.5;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-1)}
+/* Modal */
+.cred-modal .modal-body{max-height:70vh;overflow-y:auto}
+.cred-modal-analysis{font-size:12.5px;line-height:1.5;padding:11px 13px;border-radius:10px;margin-bottom:14px}
+.cred-modal-analysis.ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+.cred-modal-analysis.no{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2)}
+.cred-modal-rate{display:flex;gap:22px;padding:12px 0;border-bottom:1px solid var(--border-1);margin-bottom:12px}
+.cred-modal-rate span{display:block;font-size:10px;color:var(--text-3);text-transform:uppercase}
+.cred-modal-rate b{font-size:15px;font-weight:700}
+.cred-modal-note{font-size:12px;color:var(--text-1);line-height:1.5;margin:0 0 10px}
+.cred-modal-block{margin:14px 0}
+.cred-modal-block h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text-2);margin:0 0 7px}
+.cred-modal-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.cred-modal-list li{font-size:12.5px;line-height:1.45;color:var(--text-1)}
+.cred-pros li::marker{content:'✓ '}
+.cred-cons li::marker{content:'✕ '}
+.cred-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+.cred-modal-updated{font-size:11px;color:var(--text-3)}
+.cred-modal-disclaimer{font-size:10.5px;color:var(--text-3);line-height:1.5;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-1)}
+@media(max-width:640px){.cred-summary-inner{flex-direction:column}.cred-controls{flex-direction:column;align-items:stretch}}

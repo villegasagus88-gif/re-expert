@@ -6,6 +6,7 @@ from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
 from api.routes.channels import router as channels_router
 from api.routes.chat import router as chat_router
+from api.routes.creditos import router as creditos_router
 from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
 from api.routes.ingest import router as ingest_router
@@ -225,6 +226,7 @@ app.include_router(chat_router, dependencies=_paid)
 app.include_router(knowledge_router, dependencies=[Depends(require_admin)])
 app.include_router(materials_router, dependencies=_paid)
 app.include_router(academia_router, dependencies=_paid)
+app.include_router(creditos_router, dependencies=_paid)
 app.include_router(payments_router, dependencies=_paid)
 app.include_router(project_router, dependencies=_paid)
 app.include_router(profile_router, dependencies=_paid)

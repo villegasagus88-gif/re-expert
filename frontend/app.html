@@ -161,6 +161,10 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
         Academia
       </button>
+      <button class="sidebar-nav-item" data-view="creditos">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+        Créditos
+      </button>
 
       <button class="sidebar-nav-item sidebar-nav-expandable" id="navProyectos" aria-expanded="false">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
@@ -553,6 +557,77 @@
         </div>
       </div>
 
+      <!-- CREDITOS VIEW -->
+      <div class="view" id="viewCreditos">
+        <div class="section-view cred-view">
+          <div class="section-header">
+            <h2>Créditos <span class="cred-beta">Asesor hipotecario</span></h2>
+            <p>Mirá qué créditos hay en el mercado, cuál te conviene y si calificás — en segundos, sin recorrer banco por banco.</p>
+          </div>
+
+          <!-- Formulario de situación -->
+          <div class="cred-form">
+            <div class="cred-form-head">
+              <div>
+                <h3>Tu situación</h3>
+                <p class="cred-form-sub">Completá tus datos y te decimos qué créditos aplican para vos y cuál te conviene.</p>
+              </div>
+              <button class="btn-secondary cred-form-toggle" id="credFormToggle" style="display:none">Editar</button>
+            </div>
+            <div class="cred-form-grid" id="credFormGrid">
+              <label class="cred-field"><span>Ingreso mensual neto (del grupo familiar)</span><input type="number" id="credIngreso" inputmode="numeric" placeholder="Ej: 2.500.000"></label>
+              <label class="cred-field"><span>Valor de la propiedad (USD)</span><input type="number" id="credValor" inputmode="numeric" placeholder="Ej: 120000"></label>
+              <label class="cred-field"><span>Ahorro disponible (USD)</span><input type="number" id="credAhorro" inputmode="numeric" placeholder="Ej: 40000"></label>
+              <label class="cred-field"><span>Plazo deseado (años)</span><input type="number" id="credPlazo" inputmode="numeric" placeholder="Ej: 20" value="20"></label>
+              <label class="cred-field"><span>Edad</span><input type="number" id="credEdad" inputmode="numeric" placeholder="Ej: 38"></label>
+              <label class="cred-field"><span>Provincia</span><select id="credProvincia">
+                <option value="CABA">CABA</option><option value="Buenos Aires">Buenos Aires</option><option value="Córdoba">Córdoba</option><option value="Santa Fe">Santa Fe</option><option value="Mendoza">Mendoza</option><option value="Otra">Otra</option>
+              </select></label>
+              <label class="cred-field"><span>Tipo de empleo</span><select id="credEmpleo">
+                <option value="dependencia">Relación de dependencia</option><option value="monotributo">Monotributista</option><option value="autonomo">Autónomo</option><option value="informal">Informal / sin recibo</option>
+              </select></label>
+              <label class="cred-field"><span>Antigüedad laboral</span><select id="credAntiguedad">
+                <option value="0">Menos de 1 año</option><option value="12" selected>1 a 2 años</option><option value="24">2 a 5 años</option><option value="60">Más de 5 años</option>
+              </select></label>
+              <label class="cred-field"><span>¿Tenés deudas/créditos activos?</span><select id="credDeudas">
+                <option value="no">No</option><option value="poca">Alguna chica</option><option value="si">Sí, varias</option>
+              </select></label>
+              <label class="cred-field cred-field-usd"><span>Cotización USD (para convertir a $)</span><input type="number" id="credDolar" inputmode="numeric" placeholder="Ej: 1460" value="1460"></label>
+            </div>
+            <div class="cred-form-actions">
+              <button class="btn-primary cred-analizar" id="credAnalizarBtn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                Analizar mi situación
+              </button>
+              <span class="cred-form-hint">No prometemos aprobación: es una estimación según requisitos públicos.</span>
+            </div>
+          </div>
+
+          <!-- Resumen / mejores opciones (post-análisis) -->
+          <div class="cred-summary" id="credSummary" style="display:none"></div>
+
+          <!-- Tabs de público + orden -->
+          <div class="cred-controls">
+            <div class="section-tabs cred-tabs">
+              <button class="section-tab active" data-cred-aud="comprador">Para comprar</button>
+              <button class="section-tab" data-cred-aud="desarrollador">Desarrolladores / obra</button>
+            </div>
+            <div class="cred-sort" id="credSort" style="display:none">
+              <span class="cred-sort-label">Ordenar:</span>
+              <button class="cred-sort-btn active" data-sort="compat">Mejor para vos</button>
+              <button class="cred-sort-btn" data-sort="tasa">Menor tasa</button>
+              <button class="cred-sort-btn" data-sort="cuota">Menor cuota</button>
+              <button class="cred-sort-btn" data-sort="anticipo">Menor anticipo</button>
+            </div>
+          </div>
+
+          <!-- Catálogo -->
+          <div class="cards-grid cred-grid" id="credGrid"></div>
+
+          <p class="cred-disclaimer" id="credDisclaimer"></p>
+        </div>
+      </div>
+
       <!-- NOTICIAS VIEW -->
       <div class="view" id="viewNoticias">
         <div class="section-view">
@@ -715,6 +790,17 @@
         </button>
       </div>
       <div class="input-footer">RE Expert puede cometer errores. Verifica la informacion importante.</div>
+    </div>
+
+    <!-- Crédito detalle Modal -->
+    <div class="modal-overlay" id="credModal">
+      <div class="modal modal-wide cred-modal">
+        <div class="modal-header">
+          <h3 id="credModalTitle">Detalle del crédito</h3>
+          <button class="btn-icon" id="credModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body" id="credModalBody"></div>
+      </div>
     </div>
 
     <!-- Export Modal -->
@@ -1065,7 +1151,7 @@ function switchView(v){
   $$('.sidebar-nav-item').forEach(el=>{if(el.dataset.view)el.classList.toggle('active',el.dataset.view===v)});
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
-  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia'};
+  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
   if(v==='workspace')els.topbarTitle.textContent=state.activeWorkspace?.name||'Proyecto';
   else els.topbarTitle.textContent=titles[v]||'';
   if(typeof updateWsActiveBar==='function')updateWsActiveBar();
@@ -1074,6 +1160,7 @@ function switchView(v){
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
   if(v==='academia')loadAcademia();
+  if(v==='creditos')loadCreditos();
   if(v==='noticias'){
     // Re-disparar la tab activa por si cambió desde la última visita.
     const activeNewsTab=document.querySelector('[data-news-tab].active');
@@ -2683,6 +2770,256 @@ async function loadAcademia(force=false){
 }
 
 // Academia tabs & level filters
+// ===== CRÉDITOS (asesor hipotecario) =====
+const creditosState={items:[],updatedAt:'',disclaimer:'',loaded:false,loading:false,situacion:null,audience:'comprador',sort:'compat'};
+
+async function loadCreditos(force=false){
+  if(creditosState.loading)return;
+  if(creditosState.loaded&&!force){renderCreditos();return}
+  const grid=$('#credGrid');
+  if(grid)grid.innerHTML='<div class="stat-card"><div class="skeleton" style="height:120px;border-radius:10px"></div></div>'.repeat(4);
+  creditosState.loading=true;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/creditos');
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('Error cargando créditos ('+r.status+')');
+    const data=await r.json();
+    creditosState.items=data.items||[];
+    creditosState.updatedAt=data.updated_at||'';
+    creditosState.disclaimer=data.disclaimer||'';
+    creditosState.loaded=true;
+    const dd=$('#credDisclaimer');if(dd)dd.textContent=(creditosState.disclaimer||'')+(creditosState.updatedAt?` · Última actualización: ${creditosState.updatedAt}.`:'');
+    renderCreditos();
+  }catch(e){
+    if(grid)grid.innerHTML='<div class="empty-state">No se pudieron cargar los créditos. '+esc(e.message)+'</div>';
+  }finally{creditosState.loading=false}
+}
+
+function credNum(id){const el=$('#'+id);const v=parseFloat((el?.value||'').replace(/[^0-9.]/g,''));return isNaN(v)?0:v}
+function credVal(id){return $('#'+id)?.value||''}
+function getCredSituacion(){
+  return {
+    ingreso:credNum('credIngreso'),        // ARS / mes
+    valorUSD:credNum('credValor'),          // USD
+    ahorroUSD:credNum('credAhorro'),        // USD
+    plazo:credNum('credPlazo')||20,         // años
+    edad:credNum('credEdad'),
+    provincia:credVal('credProvincia'),
+    empleo:credVal('credEmpleo'),
+    antiguedad:credNum('credAntiguedad'),   // meses
+    deudas:credVal('credDeudas'),
+    dolar:credNum('credDolar')||1460
+  };
+}
+function frenchCuota(loan,tnaPct,months){
+  if(!loan||!months)return 0;
+  const r=(tnaPct/100)/12;
+  if(r===0)return loan/months;
+  const f=Math.pow(1+r,months);
+  return loan*(r*f)/(f-1);
+}
+const _nivelRank={alta:3,media:2,baja:1};
+function _peor(a,b){return _nivelRank[a]<=_nivelRank[b]?a:b}
+
+function analizarCredito(c,s){
+  const motivos=[];let nivel='alta';let compatible=true;
+  let termYears=Math.min(s.plazo||c.max_term_years,c.max_term_years);
+  // Edad
+  if(c.max_age){const porEdad=c.max_age-s.edad;if(porEdad<5){compatible=false;motivos.push(`Por tu edad, el plazo máximo sería ${Math.max(0,porEdad)} años (muy corto para este crédito).`);}else if(porEdad<termYears){termYears=porEdad;nivel=_peor(nivel,'media');motivos.push(`Por edad, el plazo se acota a ${termYears} años.`);}}
+  const termMonths=termYears*12;
+  // Financiación / anticipo
+  const maxFinUSD=s.valorUSD*c.max_financing_percent/100;
+  const anticipoMinUSD=Math.max(0,s.valorUSD-maxFinUSD);
+  const loanUSD=Math.min(Math.max(0,s.valorUSD-s.ahorroUSD),maxFinUSD);
+  if(s.valorUSD>0&&s.ahorroUSD<anticipoMinUSD-1){compatible=false;motivos.push(`Necesitás un anticipo de al menos USD ${credFmt(anticipoMinUSD)} (financia hasta ${c.max_financing_percent}%). Tenés USD ${credFmt(s.ahorroUSD)}.`);}
+  // Valor máximo de propiedad
+  if(c.property_value_limit_ars&&s.valorUSD*s.dolar>c.property_value_limit_ars){compatible=false;motivos.push(`La propiedad supera el valor máximo financiable de este crédito ($${credFmt(c.property_value_limit_ars)}).`);}
+  // Cuota / relación
+  let cuotaARS=null,relacion=null;
+  if(c.interest_rate_tna!=null&&loanUSD>0){
+    cuotaARS=frenchCuota(loanUSD*s.dolar,c.interest_rate_tna,termMonths);
+    if(s.ingreso>0){relacion=cuotaARS/s.ingreso*100;
+      const tope=c.relacion_cuota_ingreso_max||25;
+      if(relacion>tope){compatible=false;motivos.push(`La cuota inicial (~$${credFmt(cuotaARS)}) sería el ${relacion.toFixed(0)}% de tu ingreso; el banco exige que no supere el ${tope}%.`);}
+      else if(relacion>tope*0.85){nivel=_peor(nivel,'media');motivos.push('La relación cuota/ingreso queda algo justa.');}
+    }
+  }
+  // Ingreso mínimo
+  if(c.min_income_ars&&s.ingreso>0&&s.ingreso<c.min_income_ars){compatible=false;motivos.push(`Pide un ingreso mínimo de $${credFmt(c.min_income_ars)}; declaraste $${credFmt(s.ingreso)}.`);}
+  // Empleo informal
+  if(s.empleo==='informal'){compatible=false;motivos.push('Sin recibo o comprobante de ingresos, los bancos no aprueban. Primero hay que formalizar los ingresos.');}
+  // Antigüedad
+  if(c.min_employment_seniority_months&&s.antiguedad<c.min_employment_seniority_months){nivel=_peor(nivel,'media');motivos.push('Tu antigüedad laboral puede quedar corta para este banco.');}
+  // Provincia
+  if(c.province!=='Nacional'&&c.province!==s.provincia){nivel=_peor(nivel,'media');motivos.push(`Es de ${c.province}; desde ${s.provincia} puede no aplicar o tener otras condiciones.`);}
+  // Deudas
+  if(s.deudas==='si'){nivel=_peor(nivel,'media');motivos.push('Tener varias deudas activas baja tu scoring crediticio.');}
+  // Probabilidad estimada
+  let prob;
+  if(!compatible)prob=8;
+  else{prob=90;
+    if(relacion!=null)prob-=Math.max(0,relacion-12)*1.6;
+    if(c.min_employment_seniority_months&&s.antiguedad<c.min_employment_seniority_months)prob-=15;
+    if(s.empleo==='monotributo'||s.empleo==='autonomo')prob-=8;
+    if(s.deudas==='si')prob-=18;else if(s.deudas==='poca')prob-=7;
+    if(c.province!=='Nacional'&&c.province!==s.provincia)prob-=22;
+    prob=Math.max(15,Math.min(95,Math.round(prob)));
+    if(prob<55)nivel=_peor(nivel,'media');
+  }
+  return {compatible,nivel:compatible?nivel:'baja',motivos,cuotaARS,relacion,anticipoMinUSD,loanUSD,termYears,prob};
+}
+
+function credFmt(n){return Number(Math.round(n)).toLocaleString('es-AR')}
+const _NIVEL_LABEL={alta:'Compatibilidad alta',media:'Compatibilidad media',baja:'No compatible'};
+
+function renderCreditos(){
+  const grid=$('#credGrid');if(!grid)return;
+  const sit=creditosState.situacion;
+  let items=creditosState.items.filter(c=>creditosState.audience==='desarrollador'?(c.audience==='desarrollador'||c.audience==='constructor'):(c.audience==='comprador'));
+  // Analizar + ordenar (solo compradores con situación cargada).
+  let analyzed=items.map(c=>({c,a:(sit&&creditosState.audience==='comprador')?analizarCredito(c,sit):null}));
+  if(sit&&creditosState.audience==='comprador'){
+    const s=creditosState.sort;
+    analyzed.sort((x,y)=>{
+      const ax=x.a,ay=y.a;
+      if(s==='tasa')return (x.c.interest_rate_tna??999)-(y.c.interest_rate_tna??999);
+      if(s==='cuota')return (ax.cuotaARS||Infinity)-(ay.cuotaARS||Infinity);
+      if(s==='anticipo')return (ax.anticipoMinUSD||Infinity)-(ay.anticipoMinUSD||Infinity);
+      // compat: compatibles primero, luego por prob desc
+      if(ax.compatible!==ay.compatible)return ax.compatible?-1:1;
+      return (ay.prob||0)-(ax.prob||0);
+    });
+  }
+  if(!analyzed.length){grid.innerHTML='<div class="empty-state">No hay créditos en esta categoría.</div>';return}
+  grid.innerHTML=analyzed.map(({c,a})=>credCardHTML(c,a)).join('');
+  grid.querySelectorAll('.cred-detail-btn').forEach(b=>b.addEventListener('click',()=>openCredModal(b.dataset.id)));
+  renderCredSummary(analyzed);
+}
+
+function credCardHTML(c,a){
+  const tna=c.interest_rate_tna!=null?`${(''+c.interest_rate_tna).replace('.',',')}%`:'Variable';
+  const badge=a?`<span class="cred-badge badge-${a.nivel}">${a.nivel==='alta'?'✓ ':a.nivel==='baja'?'✕ ':'! '}${_NIVEL_LABEL[a.nivel]}</span>`:'';
+  let analysisBlock='';
+  if(a){
+    if(a.compatible){
+      analysisBlock=`<div class="cred-analysis">
+        ${a.cuotaARS?`<div class="cred-spec"><span>Cuota inicial est.</span><b>$${credFmt(a.cuotaARS)}/mes</b></div>`:''}
+        ${a.relacion!=null?`<div class="cred-spec"><span>De tu ingreso</span><b>${a.relacion.toFixed(0)}%</b></div>`:''}
+        <div class="cred-spec"><span>Anticipo mínimo</span><b>USD ${credFmt(a.anticipoMinUSD)}</b></div>
+        <div class="cred-prob"><div class="cred-prob-bar"><i style="width:${a.prob}%"></i></div><span>${a.prob}% prob. estimada</span></div>
+      </div>`;
+    }else{
+      analysisBlock=`<div class="cred-analysis cred-analysis-no"><div class="cred-incompat">⚠️ ${esc(a.motivos[0]||'No compatible con tu situación.')}</div></div>`;
+    }
+  }else if(creditosState.audience==='comprador'){
+    analysisBlock=`<div class="cred-card-hint">Cargá tu situación arriba para ver tu cuota y si calificás.</div>`;
+  }else{
+    analysisBlock=`<div class="cred-card-hint">Evaluación empresarial: requiere antecedentes, proyecto y garantías.</div>`;
+  }
+  return `<div class="cred-card ${a?'nivel-'+a.nivel:''}" data-id="${esc(c.id)}">
+    <div class="cred-card-top">
+      <span class="cred-bank-emoji">${esc(c.bank_emoji||'🏦')}</span>
+      <div class="cred-bank-info"><div class="cred-bank-name">${esc(c.bank_name)}</div><div class="cred-credit-name">${esc(c.credit_name)}</div></div>
+      ${badge}
+    </div>
+    <div class="cred-rate"><span class="cred-rate-num">${esc(tna)}</span><span class="cred-rate-type">${esc(c.rate_type)}${c.interest_rate_tna!=null?' TNA':''} · ${esc(c.province)}</span></div>
+    <div class="cred-specs">
+      <div class="cred-spec"><span>Plazo máx.</span><b>${c.max_term_years} años</b></div>
+      <div class="cred-spec"><span>Financia</span><b>${(''+c.max_financing_percent).replace('.',',')}%</b></div>
+    </div>
+    ${analysisBlock}
+    <div class="cred-card-actions"><button class="btn-secondary cred-detail-btn" data-id="${esc(c.id)}">Ver detalle</button></div>
+  </div>`;
+}
+
+function renderCredSummary(analyzed){
+  const box=$('#credSummary');if(!box)return;
+  if(!creditosState.situacion||creditosState.audience!=='comprador'){box.style.display='none';return}
+  const compat=analyzed.filter(x=>x.a&&x.a.compatible);
+  box.style.display='';
+  if(!compat.length){
+    const top=analyzed[0]?.a?.motivos?.[0]||'Faltan datos.';
+    box.innerHTML=`<div class="cred-summary-inner cred-summary-empty"><div><div class="cred-summary-label">Con estos datos, todavía no calificás del todo</div><div class="cred-summary-why">Lo que más pesa: ${esc(top)} Probá subir el anticipo, estirar el plazo, o consultá con el asistente cómo mejorar tu perfil.</div></div></div>`;
+    return;
+  }
+  const byProb=[...compat].sort((a,b)=>b.a.prob-a.a.prob);
+  const byTasa=[...compat].sort((a,b)=>(a.c.interest_rate_tna??999)-(b.c.interest_rate_tna??999));
+  const byCuota=[...compat].filter(x=>x.a.cuotaARS).sort((a,b)=>a.a.cuotaARS-b.a.cuotaARS);
+  const byAnt=[...compat].sort((a,b)=>a.a.anticipoMinUSD-b.a.anticipoMinUSD);
+  const best=byProb[0];
+  const chip=(lbl,x,val)=>x?`<div class="cred-chip"><span>${lbl}</span><b>${esc(x.c.bank_name)} · ${val}</b></div>`:'';
+  box.innerHTML=`<div class="cred-summary-inner">
+    <div class="cred-summary-best">
+      <span class="cred-summary-label">★ Mejor opción para vos</span>
+      <div class="cred-summary-bank">${esc(best.c.bank_emoji)} ${esc(best.c.bank_name)} — ${esc(best.c.credit_name)}</div>
+      <div class="cred-summary-why">Tasa ${(''+best.c.interest_rate_tna).replace('.',',')}% ${esc(best.c.rate_type)}, ${best.a.prob}% de probabilidad estimada${best.a.cuotaARS?`, cuota inicial ~$${credFmt(best.a.cuotaARS)}/mes`:''}.</div>
+    </div>
+    <div class="cred-summary-chips">
+      ${chip('Menor tasa',byTasa[0],(''+byTasa[0].c.interest_rate_tna).replace('.',',')+'%')}
+      ${byCuota[0]?chip('Menor cuota',byCuota[0],'$'+credFmt(byCuota[0].a.cuotaARS)):''}
+      ${chip('Menor anticipo',byAnt[0],'USD '+credFmt(byAnt[0].a.anticipoMinUSD))}
+      ${chip('Más probable',byProb[0],byProb[0].a.prob+'%')}
+    </div>
+  </div>`;
+}
+
+function openCredModal(id){
+  const c=creditosState.items.find(x=>x.id===id);if(!c)return;
+  const sit=creditosState.situacion;const a=(sit&&c.audience==='comprador')?analizarCredito(c,sit):null;
+  $('#credModalTitle').textContent=`${c.bank_emoji||'🏦'} ${c.bank_name} — ${c.credit_name}`;
+  const list=(title,arr,cls)=>arr&&arr.length?`<div class="cred-modal-block"><h4>${title}</h4><ul class="cred-modal-list ${cls||''}">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
+  let analysisHtml='';
+  if(a){
+    analysisHtml=a.compatible
+      ?`<div class="cred-modal-analysis ok"><b>✓ Compatible según requisitos públicos.</b> ${a.cuotaARS?`Cuota inicial estimada ~$${credFmt(a.cuotaARS)}/mes (${a.relacion?a.relacion.toFixed(0)+'% de tu ingreso':'—'}).`:''} Anticipo mínimo USD ${credFmt(a.anticipoMinUSD)}. Probabilidad estimada ${a.prob}%. <em>Requiere validación final del banco.</em>${a.motivos.length?'<br>Atención: '+esc(a.motivos.join(' ')):''}</div>`
+      :`<div class="cred-modal-analysis no"><b>✕ No compatible con tu situación actual.</b><br>${esc(a.motivos.join(' '))}</div>`;
+  }
+  $('#credModalBody').innerHTML=`
+    ${analysisHtml}
+    <div class="cred-modal-rate"><div><span>Tasa</span><b>${c.interest_rate_tna!=null?(''+c.interest_rate_tna).replace('.',',')+'% TNA':'Variable'} · ${esc(c.rate_type)}</b></div><div><span>Plazo máx.</span><b>${c.max_term_years} años</b></div><div><span>Financia</span><b>${(''+c.max_financing_percent).replace('.',',')}%</b></div></div>
+    ${c.interest_rate_note?`<p class="cred-modal-note">${esc(c.interest_rate_note)}</p>`:''}
+    ${c.required_savings_note?`<p class="cred-modal-note"><b>Anticipo:</b> ${esc(c.required_savings_note)}</p>`:''}
+    ${list('Requisitos',c.requirements)}
+    ${list('Documentación necesaria',c.documents)}
+    ${list('Pros',c.pros,'cred-pros')}
+    ${list('Contras',c.cons,'cred-cons')}
+    ${list('Costos adicionales',c.extra_costs)}
+    <div class="cred-modal-foot">
+      ${c.official_url?`<a class="btn-primary" href="${esc(c.official_url)}" target="_blank" rel="noopener">Ir al sitio oficial →</a>`:''}
+      <span class="cred-modal-updated">Actualizado: ${esc(c.last_updated_at||creditosState.updatedAt)}</span>
+    </div>
+    <p class="cred-modal-disclaimer">${esc(creditosState.disclaimer)}</p>`;
+  $('#credModal').classList.add('active');
+}
+function closeCredModal(){$('#credModal').classList.remove('active')}
+
+function initCreditos(){
+  $('#credAnalizarBtn')?.addEventListener('click',()=>{
+    const s=getCredSituacion();
+    if(!s.ingreso||!s.valorUSD){alert('Cargá al menos tu ingreso mensual y el valor de la propiedad.');return}
+    creditosState.situacion=s;
+    $('#credSort').style.display='';
+    const tgl=$('#credFormToggle');if(tgl)tgl.style.display='';
+    renderCreditos();
+    $('#credSummary')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+  });
+  $('#credFormToggle')?.addEventListener('click',()=>{
+    const g=$('#credFormGrid');if(g)g.style.display=g.style.display==='none'?'':'none';
+  });
+  $$('[data-cred-aud]').forEach(t=>t.addEventListener('click',()=>{
+    $$('[data-cred-aud]').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+    creditosState.audience=t.dataset.credAud;
+    $('#credSort').style.display=(creditosState.audience==='comprador'&&creditosState.situacion)?'':'none';
+    renderCreditos();
+  }));
+  $$('.cred-sort-btn').forEach(b=>b.addEventListener('click',()=>{
+    $$('.cred-sort-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    creditosState.sort=b.dataset.sort;renderCreditos();
+  }));
+  $('#credModalClose')?.addEventListener('click',closeCredModal);
+  $('#credModal')?.addEventListener('click',e=>{if(e.target.id==='credModal')closeCredModal()});
+}
+
 function initAcademiaTabs(){
   $$('[data-acad-tab]').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -3886,7 +4223,7 @@ function init(){
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initSol();initSectionActions();initOnboarding();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
 
   // Swipe-derecha-vuelve-atrás (gesto tipo iOS desde el borde izquierdo).
