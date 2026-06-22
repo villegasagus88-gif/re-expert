@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from config.settings import settings
 from models.base import get_session_factory
@@ -92,7 +92,7 @@ async def _claim_due_reminders(db: AsyncSession, now: datetime) -> list[Reminder
 
 async def _process_due_reminders(db: AsyncSession) -> int:
     """Procesa hasta SCHEDULER_BATCH_SIZE recordatorios vencidos. Devuelve cuántos disparó."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     rows = await _claim_due_reminders(db, now)
     if not rows:
         return 0
@@ -116,7 +116,7 @@ async def _process_due_reminders(db: AsyncSession) -> int:
             )
             if result.get("ok"):
                 r.status = "sent"
-                r.sent_at = datetime.now(timezone.utc)
+                r.sent_at = datetime.now(UTC)
                 r.last_error = None
             else:
                 r.status = "failed"
@@ -147,7 +147,7 @@ async def _scheduler_loop():
             logger.exception("Scheduler tick error: %s", e)
         try:
             await asyncio.wait_for(_stop_event.wait(), timeout=interval)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
     logger.info("Scheduler detenido")
 
@@ -178,7 +178,7 @@ async def stop_scheduler() -> None:
     if _task:
         try:
             await asyncio.wait_for(_task, timeout=5)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _task.cancel()
     _task = None
     _stop_event = None

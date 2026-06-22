@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -153,7 +153,7 @@ async def create_pairing(db: AsyncSession, user_id) -> dict[str, Any]:
         }
 
     token = secrets.token_urlsafe(24)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    expires_at = datetime.now(UTC) + timedelta(hours=1)
 
     # Crear (o actualizar) un placeholder pending
     placeholder = (
@@ -223,7 +223,7 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
                 return {"ok": True, "matched": False}
             if (
                 row.pairing_token_expires_at
-                and row.pairing_token_expires_at < datetime.now(timezone.utc)
+                and row.pairing_token_expires_at < datetime.now(UTC)
             ):
                 await send_message(chat_id, "⌛ Token expirado. Pedí un link nuevo desde la app.")
                 return {"ok": True, "matched": False, "expired": True}

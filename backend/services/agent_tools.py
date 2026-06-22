@@ -28,8 +28,8 @@ Catálogo de herramientas:
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from datetime import date as Date
-from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -666,8 +666,8 @@ async def _tool_schedule_reminder(db: AsyncSession, user: User, **inputs: Any) -
         due_at_raw = inputs["due_at"]
         due_at = datetime.fromisoformat(due_at_raw.replace("Z", "+00:00"))
         if due_at.tzinfo is None:
-            due_at = due_at.replace(tzinfo=timezone.utc)
-        if due_at <= datetime.now(timezone.utc):
+            due_at = due_at.replace(tzinfo=UTC)
+        if due_at <= datetime.now(UTC):
             return {"error": "due_at tiene que estar en el futuro."}
         r = Reminder(
             user_id=user.id,

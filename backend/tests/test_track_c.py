@@ -9,7 +9,11 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from config.settings import settings
+# Importamos `settings` desde un módulo de servicio (no desde config.settings):
+# test_auth_standalone.py reemplaza sys.modules["config.settings"] por un mock,
+# así que `from config.settings import settings` da el mock en la suite completa.
+# El singleton real lo comparten todos los servicios que ya lo importaron.
+from services.telegram_service import settings
 from services.token_usage_service import (
     DEFAULT_PRICING,
     GEMINI_DEFAULT_PRICING,

@@ -7,14 +7,13 @@ the database URL from backend/config/settings.py (which reads backend/.env).
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
-
 # Import the FULL models package so EVERY table registers on Base.metadata.
 # This must stay exhaustive: any model missing from models/__init__.py is
 # invisible to `target_metadata`, so `alembic revision --autogenerate` would
 # emit a DROP TABLE for it. Importing the package (not individual names)
 # guarantees we pick up whatever __init__.py exposes.
 import models  # noqa: F401, E402
+from alembic import context
 from models.base import Base, get_engine  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncEngine
 

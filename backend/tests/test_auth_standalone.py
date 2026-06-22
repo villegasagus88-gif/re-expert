@@ -15,17 +15,10 @@ from uuid import UUID, uuid4
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-# Mock settings before importing anything that uses them
-mock_settings = MagicMock()
-mock_settings.JWT_SECRET = "test-secret-key-for-unit-tests-only-32chars!"
-mock_settings.ACCESS_TOKEN_EXPIRE_MINUTES = 15
-mock_settings.REFRESH_TOKEN_EXPIRE_DAYS = 7
-mock_settings.DATABASE_URL = "postgresql://test:test@localhost/test"
-mock_settings.DEBUG = False
-
-# Patch settings globally before imports
-sys.modules["config"] = MagicMock()
-sys.modules["config.settings"] = MagicMock(settings=mock_settings)
+# Nota: NO pisar sys.modules["config.settings"] con un mock. conftest.py ya
+# setea env vars dummy (JWT_SECRET, etc.), así que el settings real carga bien.
+# El hack global rompía la suite completa (pisaba config.settings para TODOS los
+# tests colectados después).
 
 
 # ===== 1. BCRYPT TESTS =====
@@ -158,7 +151,11 @@ class TestJWT:
             "iat": datetime.now(timezone.utc) - timedelta(hours=1),
             "exp": datetime.now(timezone.utc) - timedelta(minutes=30),
         }
-        token = pyjwt.encode(payload, mock_settings.JWT_SECRET, algorithm="HS256")
+        # Firmar con el MISMO secret que usa decode_token (el real, vía conftest),
+        # sino PyJWT verifica la firma antes que la expiración y tira otro error.
+        from config.settings import settings
+
+        token = pyjwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
         try:
             from services.jwt_service import decode_token
             decode_token(token)

@@ -7,7 +7,7 @@ Endpoints:
   PATCH  /api/reminders/{id}       (cambia título/cuerpo/due_at/canal/cancela)
   DELETE /api/reminders/{id}       (cancela; preferimos soft delete)
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from api.schemas.reminder import (
@@ -17,7 +17,7 @@ from api.schemas.reminder import (
     UpdateReminderRequest,
 )
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from models.base import get_db
 from models.reminder import Reminder
 from models.user import User
@@ -65,8 +65,8 @@ async def create_reminder(
 ):
     due_at = body.due_at
     if due_at.tzinfo is None:
-        due_at = due_at.replace(tzinfo=timezone.utc)
-    if due_at <= datetime.now(timezone.utc):
+        due_at = due_at.replace(tzinfo=UTC)
+    if due_at <= datetime.now(UTC):
         raise HTTPException(400, "due_at debe estar en el futuro")
     r = Reminder(
         user_id=current_user.id,
@@ -99,7 +99,7 @@ async def update_reminder(
     if body.due_at is not None:
         due_at = body.due_at
         if due_at.tzinfo is None:
-            due_at = due_at.replace(tzinfo=timezone.utc)
+            due_at = due_at.replace(tzinfo=UTC)
         r.due_at = due_at
     if body.channel is not None:
         r.channel = body.channel

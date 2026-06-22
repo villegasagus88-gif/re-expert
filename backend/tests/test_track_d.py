@@ -12,7 +12,10 @@ from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from config.settings import settings
+# settings desde un servicio (no config.settings): test_auth_standalone pisa
+# sys.modules["config.settings"] con un mock; el singleton real lo comparten los
+# servicios ya importados (telegram_service.settings IS stripe_routes.settings).
+from services.telegram_service import settings
 from core.auth import get_current_user
 from fastapi.testclient import TestClient
 from main import app

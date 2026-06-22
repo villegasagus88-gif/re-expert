@@ -29,8 +29,8 @@ from typing import Any
 
 from docx import Document
 from docx.shared import Pt
-from models.payment import Payment
 from models.milestone import Milestone
+from models.payment import Payment
 from models.project import Project
 from models.user import User
 from reportlab.lib import colors
@@ -326,7 +326,6 @@ async def _upload_to_supabase(filename: str, blob: bytes, content_type: str) -> 
     """Sube a `reports/` y devuelve URL pública firmada por 24h. None si falla."""
     try:
         import httpx
-
         from config.settings import settings
 
         if not (settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY):

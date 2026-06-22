@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from models.user import User
 from services.agent_tools import TOOL_IMPLS, TOOL_SCHEMAS, run_tool
@@ -114,7 +114,7 @@ Sos un AGENTE de verdad: tomás iniciativa, hacés preguntas, recordás cosas, m
 
 
 def _system_prompt() -> str:
-    today = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M %Z")
+    today = datetime.now(UTC).astimezone().strftime("%Y-%m-%d %H:%M %Z")
     # Usamos replace en vez de .format() para evitar conflicto con {} literales en el prompt.
     return SOL_AGENT_SYSTEM_PROMPT_TEMPLATE.replace("__TODAY__", today)
 
@@ -242,7 +242,7 @@ async def run_agent(
 # el backend valida y ejecuta.
 # ════════════════════════════════════════════════════════════════════
 PUBLIC_TOOL_INDEX = [
-    {"name": n, "schema": s}
-    for n, s in zip([t["name"] for t in TOOL_SCHEMAS], TOOL_SCHEMAS)
+    {"name": s["name"], "schema": s}
+    for s in TOOL_SCHEMAS
 ]
 __all__ = ["run_agent", "PUBLIC_TOOL_INDEX", "TOOL_IMPLS"]
