@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     # ===== AUTH / JWT =====
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Vigencia del link de recuperación de contraseña (forgot-password).
+    RESET_TOKEN_EXPIRE_MINUTES: int = 30
 
     # ===== ANTHROPIC =====
     # Usamos el alias (sin fecha) que siempre apunta al último snapshot

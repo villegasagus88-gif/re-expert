@@ -16,12 +16,13 @@ Uso típico desde scheduler_service o agent_tools.send_message_now:
 """
 from __future__ import annotations
 
+import html as _html
 import logging
 from typing import Any
 
 from models.user import User
 from models.user_channel import UserChannel
-from services import telegram_service
+from services import email_service, telegram_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -77,12 +78,36 @@ async def dispatch(
         return {"ok": result.get("ok", False), "channel": "telegram", "detail": result}
 
     if channel == "email":
-        # Stub — implementación cuando se configure RESEND_API_KEY
-        return {
-            "ok": False,
-            "channel": "email",
-            "detail": "email_not_implemented_yet",
-        }
+        if not user.email:
+            return {"ok": True, "channel": "in_app", "fallback_from": "email",
+                    "reason": "no_email_on_file"}
+        safe_body = _html.escape(body).replace("\n", "<br>")
+        html_body = (
+            "<div style=\"font-family:Inter,Arial,sans-serif;color:#1f2937\">"
+            + (f"<h3 style=\"color:#4f46e5\">{_html.escape(title)}</h3>" if title else "")
+            + f"<div>{safe_body}</div>"
+            + (
+                f"<p><a href=\"{attachment_url}\">Ver adjunto</a></p>"
+                if attachment_url
+                else ""
+            )
+            + "</div>"
+        )
+        result = await email_service.send_email(
+            to=user.email,
+            subject=title or "Notificación — RE Expert",
+            html=html_body,
+            text=body,
+        )
+        if not result.get("ok"):
+            logger.info(
+                "email a %s falló (%s), fallback a in_app",
+                user.email,
+                result.get("detail"),
+            )
+            return {"ok": True, "channel": "in_app", "fallback_from": "email",
+                    "reason": result.get("detail")}
+        return {"ok": True, "channel": "email", "detail": result}
 
     if channel == "whatsapp":
         return {

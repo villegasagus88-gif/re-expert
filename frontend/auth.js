@@ -241,11 +241,94 @@
   }
 
   // ===== FORGOT PASSWORD =====
-  async function handleForgotPassword() {
-    showAlert(
-      'La recuperación de contraseña estará disponible próximamente. Contactá al soporte si necesitás acceso urgente.',
-      'success'
-    );
+  // Desde el login: navega a la página de recuperación.
+  function handleForgotPassword(event) {
+    if (event) event.preventDefault();
+    window.location.href = 'forgot-password.html';
+  }
+
+  // Página forgot-password.html: pide el email y dispara el envío del link.
+  // La respuesta es uniforme exista o no el email (anti-enumeración).
+  async function handleForgotPasswordRequest(event) {
+    event.preventDefault();
+    clearAllErrors('forgot-form');
+
+    const email = byId('email').value.trim();
+    const emailErr = validateEmail(email);
+    if (emailErr) { setInputError('email', emailErr); return; }
+
+    setLoading('submit-btn', true);
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
+      }
+      showAlert(
+        'Si el email está registrado, te enviamos un link para restablecer la contraseña. Revisá tu casilla (y la carpeta de spam).',
+        'success'
+      );
+      byId('forgot-form').reset();
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading('submit-btn', false);
+    }
+  }
+
+  // Página reset-password.html: toma el token del querystring y setea la nueva
+  // contraseña.
+  async function handleResetPassword(event) {
+    event.preventDefault();
+    clearAllErrors('reset-form');
+
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    const password = byId('password').value;
+    const confirm = byId('password2').value;
+
+    if (!token) {
+      showAlert('El link es inválido o está incompleto. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".');
+      return;
+    }
+    const passErr = validatePasswordStrength(password);
+    if (passErr) { setInputError('password', passErr); return; }
+    if (password !== confirm) {
+      setInputError('password2', 'Las contraseñas no coinciden');
+      return;
+    }
+
+    setLoading('submit-btn', true);
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: password }),
+      });
+      if (resp.status === 400) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(typeof data.detail === 'string' ? data.detail : 'El link venció o ya fue usado. Pedí uno nuevo.');
+        return;
+      }
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos antes de volver a probar.');
+        return;
+      }
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        showAlert(data.detail || 'No se pudo restablecer la contraseña. Intentá de nuevo.');
+        return;
+      }
+      showAlert('¡Listo! Tu contraseña fue actualizada. Te llevamos al login…', 'success');
+      setTimeout(() => window.location.replace('login.html'), 1800);
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading('submit-btn', false);
+    }
   }
 
   // Exports
@@ -253,6 +336,8 @@
     handleLogin,
     handleRegister,
     handleForgotPassword,
+    handleForgotPasswordRequest,
+    handleResetPassword,
     redirectIfAuthenticated,
     clearAllErrors,
   };

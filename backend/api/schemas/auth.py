@@ -49,6 +49,24 @@ class RefreshRequest(BaseModel):
     refresh_token: str = Field(..., min_length=1)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Debe contener al menos una letra mayúscula")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Debe contener al menos un número")
+        return v
+
+
 class UpdateProfileRequest(BaseModel):
     full_name: SanitizedOptStr = Field(None, min_length=1, max_length=255)
     new_password: str | None = Field(None, min_length=8, max_length=128)

@@ -4,15 +4,25 @@ Auth service — standalone authentication with bcrypt + JWT.
 Handles: password hashing, credential validation, token generation,
 user registration, and session refresh. No external auth provider needed.
 """
+import logging
 from datetime import UTC, datetime
 from uuid import uuid4
 
 import bcrypt
+from config.settings import settings
 from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.user import User
-from services.jwt_service import create_token_pair, decode_token
+from services.email_service import send_email
+from services.jwt_service import (
+    create_reset_token,
+    create_token_pair,
+    decode_token,
+    password_fingerprint,
+)
 from sqlalchemy import select
+
+logger = logging.getLogger(__name__)
 
 
 def _hash_password(password: str) -> str:
@@ -187,6 +197,119 @@ async def complete_onboarding(user_id: str) -> None:
         if user and not user.onboarding_completed:
             user.onboarding_completed = True
             await db.commit()
+
+
+def _reset_link(token: str) -> str:
+    """Construye el link absoluto a la página de reset del frontend."""
+    base = (settings.FRONTEND_URL or "http://localhost:5173").rstrip("/")
+    return f"{base}/reset-password.html?token={token}"
+
+
+async def request_password_reset(email: str) -> None:
+    """
+    Inicia el flujo de recuperación de contraseña.
+
+    Si existe un usuario con ese email (y tiene password), genera un token de
+    reset de un solo uso y le manda el link por email. NO revela si el email
+    existe: siempre retorna None sin error (anti-enumeración). El caller (la
+    ruta) responde siempre 200 con un mensaje uniforme.
+    """
+    async with get_session_factory()() as db:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+    if user is None or not user.password_hash:
+        logger.info("forgot-password: email sin cuenta/sin password (%s)", email)
+        return
+
+    token = create_reset_token(user.id, user.password_hash)
+    link = _reset_link(token)
+    mins = settings.RESET_TOKEN_EXPIRE_MINUTES
+    subject = "Restablecé tu contraseña — RE Expert"
+    html = (
+        "<div style=\"font-family:Inter,Arial,sans-serif;max-width:480px;margin:auto;"
+        "color:#1f2937\">"
+        "<h2 style=\"color:#4f46e5\">RE Expert</h2>"
+        "<p>Recibimos un pedido para restablecer tu contraseña.</p>"
+        f"<p style=\"margin:24px 0\"><a href=\"{link}\" "
+        "style=\"background:#4f46e5;color:#fff;padding:12px 20px;border-radius:8px;"
+        "text-decoration:none;display:inline-block\">Restablecer contraseña</a></p>"
+        f"<p style=\"color:#6b7280;font-size:13px\">El link vence en {mins} minutos. "
+        "Si no lo pediste, ignorá este mensaje: tu contraseña no cambia.</p>"
+        f"<p style=\"color:#9ca3af;font-size:12px\">Si el botón no funciona, copiá este "
+        f"link:<br>{link}</p>"
+        "</div>"
+    )
+    text = (
+        f"Restablecé tu contraseña entrando a:\n{link}\n\n"
+        f"El link vence en {mins} minutos. Si no lo pediste, ignorá este mensaje."
+    )
+    result = await send_email(user.email, subject, html, text)
+    if not result.get("ok"):
+        # No fallamos la request: logueamos para diagnóstico (p.ej. key faltante).
+        logger.warning(
+            "forgot-password: email a %s no entregado (%s)",
+            user.email,
+            result.get("detail"),
+        )
+
+
+async def reset_password(token: str, new_password: str) -> None:
+    """
+    Completa el reset: valida el token de un solo uso y setea la nueva contraseña.
+
+    Raises 400 si el token es inválido, expiró, o ya fue usado (el fingerprint
+    del password embebido no matchea el hash actual).
+    """
+    import jwt as pyjwt
+
+    try:
+        payload = decode_token(token)
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El link de recuperación venció. Pedí uno nuevo.",
+        )
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El link de recuperación es inválido.",
+        )
+
+    if payload.get("type") != "reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El link de recuperación es inválido.",
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El link de recuperación es inválido.",
+        )
+
+    async with get_session_factory()() as db:
+        from uuid import UUID
+
+        result = await db.execute(select(User).where(User.id == UUID(user_id)))
+        user = result.scalar_one_or_none()
+
+        if user is None or not user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El link de recuperación es inválido.",
+            )
+
+        # Single-use: el fingerprint del token debe coincidir con el hash actual.
+        if payload.get("pwf") != password_fingerprint(user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El link ya fue usado o venció. Pedí uno nuevo.",
+            )
+
+        user.password_hash = _hash_password(new_password)
+        await db.commit()
 
 
 async def update_profile(

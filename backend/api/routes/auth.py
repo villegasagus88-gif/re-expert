@@ -3,9 +3,11 @@ Auth routes: register, login, refresh, and me (protected).
 """
 from api.schemas.auth import (
     AuthResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     UpdateProfileRequest,
     UserOut,
 )
@@ -18,6 +20,8 @@ from services.auth_service import (
     login_user,
     refresh_session,
     register_user,
+    request_password_reset,
+    reset_password,
     update_profile,
 )
 
@@ -69,6 +73,40 @@ async def login(request: Request, body: LoginRequest):
 @limiter.limit("30/minute")
 async def refresh(request: Request, body: RefreshRequest):
     return await refresh_session(refresh_token=body.refresh_token)
+
+
+@router.post(
+    "/forgot-password",
+    summary="Solicitar link de recuperación de contraseña",
+    status_code=200,
+    responses={429: {"description": "Demasiados intentos, espera un rato"}},
+)
+@limiter.limit("5/hour")
+async def forgot_password(request: Request, body: ForgotPasswordRequest):
+    await request_password_reset(email=body.email)
+    # Respuesta uniforme: no revela si el email existe (anti-enumeración).
+    return {
+        "ok": True,
+        "message": (
+            "Si el email está registrado, te enviamos un link para "
+            "restablecer la contraseña."
+        ),
+    }
+
+
+@router.post(
+    "/reset-password",
+    summary="Restablecer contraseña con token de recuperación",
+    status_code=200,
+    responses={
+        400: {"description": "Token inválido, expirado o ya usado"},
+        429: {"description": "Demasiados intentos"},
+    },
+)
+@limiter.limit("10/hour")
+async def reset_password_route(request: Request, body: ResetPasswordRequest):
+    await reset_password(token=body.token, new_password=body.new_password)
+    return {"ok": True, "message": "Contraseña actualizada. Ya podés iniciar sesión."}
 
 
 @router.get(
