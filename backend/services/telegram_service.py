@@ -38,6 +38,45 @@ def is_configured() -> bool:
     return bool(settings.TELEGRAM_BOT_TOKEN)
 
 
+def webhook_url() -> str | None:
+    """URL pública del webhook, o None si falta TELEGRAM_WEBHOOK_BASE_URL."""
+    base = (settings.TELEGRAM_WEBHOOK_BASE_URL or "").rstrip("/")
+    if not base:
+        return None
+    return f"{base}/api/channels/telegram/webhook"
+
+
+async def set_webhook() -> dict[str, Any]:
+    """
+    Registra el webhook del bot apuntando a nuestro endpoint público.
+
+    Se llama en el arranque (lifespan de FastAPI). Sin esto, Telegram nunca
+    pega el webhook y el pairing no funciona en un deploy nuevo. Best-effort:
+    si falta TELEGRAM_BOT_TOKEN o TELEGRAM_WEBHOOK_BASE_URL, no hace nada.
+    Pasa el secret (X-Telegram-Bot-Api-Secret-Token) que valida channels.py.
+    """
+    if not is_configured():
+        return {"skipped": "telegram_not_configured"}
+    url = webhook_url()
+    if not url:
+        return {"skipped": "no_webhook_base_url"}
+    body: dict[str, Any] = {"url": url, "allowed_updates": ["message"]}
+    if settings.TELEGRAM_WEBHOOK_SECRET:
+        body["secret_token"] = settings.TELEGRAM_WEBHOOK_SECRET
+    try:
+        async with httpx.AsyncClient(timeout=10) as cli:
+            r = await cli.post(_api_url("setWebhook"), json=body)
+            data = r.json()
+        if not data.get("ok"):
+            logger.error("Telegram setWebhook falló: %s", data)
+            return {"error": "setwebhook_failed", "detail": data}
+        logger.info("Telegram webhook registrado en %s", url)
+        return {"ok": True, "url": url}
+    except Exception as e:
+        logger.exception("Telegram setWebhook exception")
+        return {"error": str(e)}
+
+
 async def send_message(chat_id: str, text: str) -> dict[str, Any]:
     if not is_configured():
         return {"error": "telegram_not_configured"}

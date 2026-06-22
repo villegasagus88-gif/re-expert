@@ -117,6 +117,7 @@ async def sol_agent(
         full_text = ""
         in_tok = 0
         out_tok = 0
+        used_model = settings.ANTHROPIC_MODEL
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
                 async for ev in run_agent(db, current_user, history, body.message):
@@ -125,6 +126,7 @@ async def sol_agent(
                     if ev["type"] == "done":
                         in_tok = ev.get("input_tokens", 0)
                         out_tok = ev.get("output_tokens", 0)
+                        used_model = ev.get("model") or used_model
                     yield _sse(ev)
         except TimeoutError:
             yield _sse({"type": "error", "message": "Timeout SOL agent"})
@@ -155,7 +157,7 @@ async def sol_agent(
                 user_id=current_user.id,
                 conversation_id=conv.id,
                 message_id=assistant_id,
-                model=settings.ANTHROPIC_MODEL,
+                model=used_model,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
             )

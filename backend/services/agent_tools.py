@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date as Date
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -382,8 +382,11 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "find_contact",
         "description": (
-            "Busca UN contacto por nombre (fuzzy). Usar antes de send_pdf_to_contact "
-            "para resolver 'Carlos' → ID + datos. Devuelve null si no encuentra."
+            "Busca un contacto por nombre (fuzzy). Usar antes de "
+            "share_pdf_with_contact/compose_message_to_contact para resolver "
+            "'Carlos' → id + datos. Si devuelve found=false, no existe. Si "
+            "devuelve ambiguous=true, NO uses ningún id: mostrale los "
+            "`candidates` al usuario y pedile que aclare cuál."
         ),
         "input_schema": {
             "type": "object",
@@ -933,19 +936,42 @@ async def _tool_find_contact(db: AsyncSession, user: User, **inputs: Any) -> dic
     )
     if not rows:
         return {"found": False}
-    # Match más exacto: el primero (Postgres ordena alfabéticamente; igualmente el LLM puede pedir otro)
-    best = rows[0]
+
+    def _brief(r: Contact) -> dict:
+        return {
+            "id": str(r.id),
+            "name": r.name,
+            "phone": r.phone,
+            "email": r.email,
+            "role": r.role,
+        }
+
+    # Un match exacto (case-insensitive) gana aunque haya otros substring-match.
+    exact = [r for r in rows if (r.name or "").strip().lower() == name.lower()]
+    if len(exact) == 1:
+        best = exact[0]
+    elif len(rows) == 1:
+        best = rows[0]
+    else:
+        # Varios coinciden y ninguno es único-exacto → NO elegimos por el LLM.
+        # Devolvemos los candidatos SIN un id de nivel superior para que el
+        # agente pregunte cuál antes de mandarle nada a la persona equivocada.
+        return {
+            "found": True,
+            "ambiguous": True,
+            "message": (
+                f"Hay {len(rows)} contactos que coinciden con '{name}'. "
+                "Mostrale los candidatos al usuario y pedile que aclare cuál "
+                "antes de usar ningún id."
+            ),
+            "candidates": [_brief(r) for r in rows],
+        }
+
     return {
         "found": True,
-        "id": str(best.id),
-        "name": best.name,
-        "phone": best.phone,
-        "email": best.email,
-        "role": best.role,
-        "alternatives": [
-            {"id": str(r.id), "name": r.name, "phone": r.phone}
-            for r in rows[1:]
-        ],
+        "ambiguous": False,
+        **_brief(best),
+        "alternatives": [_brief(r) for r in rows if r.id != best.id],
     }
 
 

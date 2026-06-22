@@ -16,9 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-# Precio por 1M tokens (USD). Fuente: https://www.anthropic.com/pricing
+# Precio por 1M tokens (USD).
+# Anthropic: https://www.anthropic.com/pricing  ·  Gemini: https://ai.google.dev/pricing
 PRICING: dict[str, dict[str, Decimal]] = {
-    # Claude Sonnet 4.x family
+    # Claude Sonnet 4.x family (incluye el alias sin fecha = modelo por defecto)
+    "claude-sonnet-4-6": {
+        "input": Decimal("3.00"),
+        "output": Decimal("15.00"),
+    },
     "claude-sonnet-4-6-20250514": {
         "input": Decimal("3.00"),
         "output": Decimal("15.00"),
@@ -37,13 +42,38 @@ PRICING: dict[str, dict[str, Decimal]] = {
         "input": Decimal("1.00"),
         "output": Decimal("5.00"),
     },
+    # Google Gemini (free tier = $0 real, pero costeamos al rate pago para
+    # analytics; sin esto el uso de Gemini se cobraba como Claude Sonnet).
+    "gemini-2.5-flash": {
+        "input": Decimal("0.30"),
+        "output": Decimal("2.50"),
+    },
+    "gemini-2.0-flash": {
+        "input": Decimal("0.10"),
+        "output": Decimal("0.40"),
+    },
+    "gemini-2.5-pro": {
+        "input": Decimal("1.25"),
+        "output": Decimal("10.00"),
+    },
 }
 
 # Fallback si el modelo no está en PRICING (usamos Sonnet como conservador).
 DEFAULT_PRICING = PRICING["claude-sonnet-4-6-20250514"]
+# Fallback para modelos Gemini desconocidos (no costear Gemini como Claude).
+GEMINI_DEFAULT_PRICING = PRICING["gemini-2.5-flash"]
 
 _ONE_MILLION = Decimal("1000000")
 _CENT_PRECISION = Decimal("0.000001")  # 6 decimales = $0.000001
+
+
+def _pricing_for(model: str) -> dict[str, Decimal]:
+    """Resuelve el pricing de un modelo, con fallback provider-aware."""
+    if model in PRICING:
+        return PRICING[model]
+    if (model or "").lower().startswith("gemini"):
+        return GEMINI_DEFAULT_PRICING
+    return DEFAULT_PRICING
 
 
 def calculate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> Decimal:
@@ -53,7 +83,7 @@ def calculate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> Dec
     Devuelve un Decimal con 6 decimales de precisión (suficiente para
     llamadas chicas; una request de 100 tokens output cuesta $0.0015).
     """
-    pricing = PRICING.get(model, DEFAULT_PRICING)
+    pricing = _pricing_for(model)
     input_cost = (Decimal(input_tokens) * pricing["input"]) / _ONE_MILLION
     output_cost = (Decimal(output_tokens) * pricing["output"]) / _ONE_MILLION
     total = input_cost + output_cost

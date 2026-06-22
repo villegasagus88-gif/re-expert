@@ -27,9 +27,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
-from typing import Any
 
-from config.settings import settings
 from models.user import User
 from services.agent_tools import TOOL_IMPLS, TOOL_SCHEMAS, run_tool
 from services.llm_providers import get_provider
@@ -233,6 +231,8 @@ async def run_agent(
         "output_tokens": total_output,
         "tokens_used": total_input + total_output,
         "final_text": full_text,
+        # Modelo realmente usado (Gemini o Claude) para costear bien el uso.
+        "model": provider.model,
     }
 
 

@@ -65,6 +65,10 @@ class AnthropicProvider:
         self._client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         self._model = settings.ANTHROPIC_MODEL
 
+    @property
+    def model(self) -> str:
+        return self._model
+
     async def generate(
         self,
         system: str,
@@ -206,6 +210,10 @@ class GeminiProvider:
             raise RuntimeError("GEMINI_API_KEY not configured")
         self._api_key = settings.GEMINI_API_KEY
         self._model = settings.GEMINI_MODEL or "gemini-2.5-flash"
+
+    @property
+    def model(self) -> str:
+        return self._model
 
     async def generate(
         self,

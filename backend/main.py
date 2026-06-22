@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path as _Path
 
@@ -30,11 +31,25 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as _Request
 from starlette.responses import JSONResponse as _JSONResponse
 
+_log = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # Startup: arrancar el scheduler de recordatorios
     start_scheduler()
+    # Registrar el webhook de Telegram (best-effort: si no está configurado o
+    # falla, logueamos y seguimos — no debe tumbar el arranque).
+    try:
+        from services import telegram_service
+
+        result = await telegram_service.set_webhook()
+        if result.get("skipped"):
+            _log.info("Telegram setWebhook omitido: %s", result["skipped"])
+        elif result.get("error"):
+            _log.warning("Telegram setWebhook con error: %s", result.get("detail") or result["error"])
+    except Exception:
+        _log.exception("Telegram setWebhook lanzó una excepción inesperada")
     try:
         yield
     finally:
