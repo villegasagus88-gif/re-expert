@@ -922,22 +922,17 @@ select.pay-form-input{cursor:pointer}
             </div>
           </div>
           <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
-            <table class="data-table">
-              <thead><tr><th>Material</th><th>Ene</th><th>Feb</th><th>Mar</th><th>Variacion</th></tr></thead>
-              <tbody>
-                <tr><td>Cemento Portland</td><td>$7.200</td><td>$7.850</td><td>$8.450</td><td><span class="stat-card-trend trend-up">+17.4%</span></td></tr>
-                <tr><td>Hierro 10mm</td><td>$11.200</td><td>$12.100</td><td>$12.800</td><td><span class="stat-card-trend trend-up">+14.3%</span></td></tr>
-                <tr><td>Ladrillo hueco</td><td>$175</td><td>$180</td><td>$185</td><td><span class="stat-card-trend trend-stable">+5.7%</span></td></tr>
-                <tr><td>Arena gruesa</td><td>$29.000</td><td>$29.200</td><td>$28.500</td><td><span class="stat-card-trend trend-down">-1.7%</span></td></tr>
-              </tbody>
-            </table>
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+              <p>Seguimiento de precios en preparacion</p>
+              <small>Aca vas a ver la evolucion mensual de cada material a medida que se registren precios. Por ahora consulta los <b>Precios actuales</b> o pedi un analisis con IA.</small>
+            </div>
           </div>
           <div id="matTabPronosticos" class="mat-tab-content" style="display:none">
-            <div class="cards-grid">
-              <div class="stat-card"><div class="stat-card-label">Cemento — Pronostico Abr</div><div class="stat-card-value">$8.900</div><div class="stat-card-sub">Tendencia alcista por costos energeticos</div><div class="stat-card-trend trend-up">+5.3% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Hierro — Pronostico Abr</div><div class="stat-card-value">$13.200</div><div class="stat-card-sub">Presion por demanda estacional</div><div class="stat-card-trend trend-up">+3.1% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Arena — Pronostico Abr</div><div class="stat-card-value">$28.200</div><div class="stat-card-sub">Estable, oferta sostenida</div><div class="stat-card-trend trend-down">-1.1% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Ladrillo — Pronostico Abr</div><div class="stat-card-value">$190</div><div class="stat-card-sub">Leve ajuste por inflacion</div><div class="stat-card-trend trend-stable">+2.7% estimado</div></div>
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M3 3v18h18"/><polyline points="19 9 12 15 8 11 3 16"/></svg>
+              <p>Pronosticos a demanda</p>
+              <small>Genera un pronostico de precios para los proximos meses (inflacion, tipo de cambio y demanda del sector). Lo arma la IA con el contexto de tu obra.</small>
             </div>
             <div style="margin-top:16px">
               <button class="btn-primary" id="deepAnalysisBtn">
@@ -3062,7 +3057,7 @@ function initNoticiasTabs(){
   if(loadMoreBtn){
     loadMoreBtn.addEventListener('click',()=>loadNews({append:true}));
   }
-  loadNews({append:false}).catch(()=>{ /* mantiene mock si falla */ });
+  loadNews({append:false}).catch(()=>{ /* loadNews ya maneja su propio estado vacío */ });
 }
 
 // Estado de paginación de Noticias.
@@ -3104,6 +3099,13 @@ function _escape(s){
   return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function _newsLoadingState(){
+  return `<div class="mat-loading"><div class="mat-loading-spinner"></div></div>`;
+}
+function _newsEmptyState(){
+  return `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2z"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg><p>No hay noticias por ahora</p><small>Cuando se publiquen novedades de real estate y construccion en Argentina, van a aparecer aca.</small></div>`;
+}
+
 async function loadNews({append=false}={}){
   if(_newsState.loading)return;
   if(!window.REAuthService||!window.REAuthService.authFetch)return; // sin auth listo, no rompemos UX
@@ -3112,6 +3114,9 @@ async function loadNews({append=false}={}){
   if(!feed)return;
   _newsState.loading=true;
   if(btn)btn.disabled=true;
+  // En la primera carga limpiamos el placeholder estático: a partir de acá el
+  // feed muestra SOLO datos reales del backend (o un estado vacío honesto).
+  if(!append)feed.innerHTML=_newsLoadingState();
   try{
     const nextPage=append?_newsState.page+1:1;
     const apiBase=(window.RE_CONFIG&&window.RE_CONFIG.API_BASE)||'';
@@ -3119,10 +3124,9 @@ async function loadNews({append=false}={}){
     if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     if(!append){
-      // Solo reemplazamos el mock si el backend devolvió contenido real.
-      if(data.items&&data.items.length>0){
-        feed.innerHTML=data.items.map(_newsRenderItem).join('');
-      }
+      feed.innerHTML=(data.items&&data.items.length>0)
+        ? data.items.map(_newsRenderItem).join('')
+        : _newsEmptyState();
     }else if(data.items&&data.items.length>0){
       feed.insertAdjacentHTML('beforeend',data.items.map(_newsRenderItem).join(''));
     }
@@ -3139,6 +3143,8 @@ async function loadNews({append=false}={}){
     }
   }catch(e){
     console.warn('No se pudieron cargar noticias del backend:',e);
+    // En primera carga mostramos estado vacío en vez de dejar el mock estático.
+    if(!append&&feed)feed.innerHTML=_newsEmptyState();
   }finally{
     _newsState.loading=false;
     if(btn)btn.disabled=false;
