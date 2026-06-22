@@ -9,6 +9,7 @@ from models.material import Material
 from models.message import Message
 from models.milestone import Milestone
 from models.payment import Payment
+from models.project import Project, ProjectMilestone
 from models.reminder import Reminder
 from models.token_usage import TokenUsage
 from models.user import User
@@ -27,6 +28,8 @@ __all__ = [
     "Milestone",
     "Material",
     "Budget",
+    "Project",
+    "ProjectMilestone",
     "Reminder",
     "UserChannel",
     "Contact",

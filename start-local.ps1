@@ -14,7 +14,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$root = "C:\Users\matia\OneDrive\Escritorio\re-expert"
+# Raíz del repo = carpeta de este script (no hardcodear rutas de una máquina).
+$root = $PSScriptRoot
 $venvPy = "$root\backend\.venv\Scripts\python.exe"
 
 # Pisar las env vars vacías que setea Claude Code

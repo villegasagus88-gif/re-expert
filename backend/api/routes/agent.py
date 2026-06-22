@@ -19,9 +19,9 @@ import logging
 
 from api.schemas.chat import ChatRequest
 from config.settings import settings
-from core.auth import get_current_user
+from core.plan_gate import require_pro
 from core.rate_limit import limiter
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
@@ -95,21 +95,12 @@ async def _load_history(db: AsyncSession, conv_id, limit: int = MAX_HISTORY_MESS
 async def sol_agent(
     request: Request,
     body: ChatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_pro),
     db: AsyncSession = Depends(get_db),
 ):
-    # En dev (DEBUG=True) no gateamos para no friccionar el testing local.
-    # En prod sigue requiriendo plan Pro.
-    if current_user.plan != "pro" and not settings.DEBUG:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "El Asistente SOL requiere el plan Pro.",
-                "plan_required": "pro",
-                "upgrade_url": "/pricing.html",
-            },
-        )
-
+    # SOL agent es Pro-only en todos los ambientes (require_pro lo gatea de
+    # punta a punta). Sin bypass por DEBUG: dejaba el tool-use gratis para
+    # cualquiera en deploys con DEBUG=True.
     rate_limit_headers = await check_user_rate_limit(db, current_user)
     conv = await _get_or_create_conv(
         db, current_user.id, body.conversation_id, body.message

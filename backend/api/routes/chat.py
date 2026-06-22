@@ -31,6 +31,7 @@ from uuid import UUID
 from api.schemas.chat import ChatRequest
 from config.settings import settings
 from core.auth import get_current_user
+from core.plan_gate import ensure_pro
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -169,16 +170,9 @@ async def chat(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Gate: SOL context requires Pro plan
-    if body.context_type == "sol" and current_user.plan != "pro":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "El Asistente SOL requiere el plan Pro.",
-                "plan_required": "pro",
-                "upgrade_url": "/pricing.html",
-            },
-        )
+    # Gate: SOL context requires Pro plan (shared body with /api/sol/agent)
+    if body.context_type == "sol":
+        ensure_pro(current_user)
 
     # 1. Per-user rate limit check (raises 429 with Retry-After if exceeded).
     #    Must run BEFORE persisting the user message so the current request
@@ -257,15 +251,13 @@ async def chat(
             )
             return
         except Exception as e:
+            # Detalle completo al log del servidor; al cliente sólo un mensaje
+            # genérico (no filtrar tipo/mensaje de excepción: puede exponer
+            # internals del provider o de la DB).
             logger.exception("Error en stream_chat: %s", e)
-            # Diagnóstico temporal: exponemos el tipo + mensaje truncado del
-            # error para destrabar el debug en producción. Volver a un mensaje
-            # genérico una vez resuelto.
-            err_type = type(e).__name__
-            err_msg = (str(e) or "").splitlines()[0][:240] if str(e) else ""
             yield _sse({
                 "type": "error",
-                "message": f"Error generando respuesta [{err_type}: {err_msg}]",
+                "message": "Error generando la respuesta. Probá de nuevo en unos segundos.",
             })
             return
 
