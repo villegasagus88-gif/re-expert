@@ -22,7 +22,7 @@ from typing import Any
 
 from models.user import User
 from models.user_channel import UserChannel
-from services import email_service, telegram_service
+from services import email_service, telegram_service, whatsapp_service
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -110,17 +110,24 @@ async def dispatch(
         return {"ok": True, "channel": "email", "detail": result}
 
     if channel == "whatsapp":
-        return {
-            "ok": False,
-            "channel": "whatsapp",
-            "detail": "whatsapp_not_implemented_yet",
-        }
+        if not user.phone:
+            return {"ok": True, "channel": "in_app", "fallback_from": "whatsapp",
+                    "reason": "no_phone_on_file"}
+        result = await whatsapp_service.send_whatsapp(user.phone, text)
+        if not result.get("ok"):
+            logger.info(
+                "whatsapp a %s falló (%s), fallback a in_app",
+                user.phone,
+                result.get("detail"),
+            )
+            return {"ok": True, "channel": "in_app", "fallback_from": "whatsapp",
+                    "reason": result.get("detail")}
+        return {"ok": True, "channel": "whatsapp", "detail": result}
 
     if channel == "push":
-        return {
-            "ok": False,
-            "channel": "push",
-            "detail": "push_not_implemented_yet",
-        }
+        # Push (FCM) no está implementado todavía — degradamos a in_app en vez
+        # de fallar en silencio (el usuario igual lo ve en la app).
+        return {"ok": True, "channel": "in_app", "fallback_from": "push",
+                "reason": "push_not_implemented"}
 
     return {"ok": False, "error": f"canal desconocido: {channel}"}

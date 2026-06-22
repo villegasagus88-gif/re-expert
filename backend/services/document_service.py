@@ -372,6 +372,16 @@ async def _upload_to_supabase(filename: str, blob: bytes, content_type: str) -> 
         return None
 
 
+_LOCAL_HOSTS = ("localhost", "127.0.0.1", "0.0.0.0")
+
+
+def _is_publicly_reachable(url: str) -> bool:
+    """Un link sólo sirve para mandarle a OTRA persona si no apunta a localhost:
+    los reports en disco local no son alcanzables desde el celular del destinatario."""
+    u = (url or "").lower()
+    return bool(u) and not any(h in u for h in _LOCAL_HOSTS)
+
+
 def _save_local(filename: str, blob: bytes) -> str:
     """Guarda el PDF en disco y devuelve URL ABSOLUTA (necesario para que el
     link funcione cuando se manda por WhatsApp/Telegram al destinatario)."""
@@ -380,7 +390,14 @@ def _save_local(filename: str, blob: bytes) -> str:
     p = REPORTS_DIR / filename
     p.write_bytes(blob)
     base = settings.BACKEND_PUBLIC_URL.rstrip("/") if settings.BACKEND_PUBLIC_URL else ""
-    return f"{base}/static/reports/{filename}"
+    url = f"{base}/static/reports/{filename}"
+    if not settings.DEBUG and not _is_publicly_reachable(url):
+        logger.warning(
+            "Report guardado local con URL no pública (%s): no será alcanzable "
+            "para compartir. Configurá Supabase Storage o BACKEND_PUBLIC_URL público.",
+            url,
+        )
+    return url
 
 
 async def generate_report(
@@ -413,17 +430,27 @@ async def generate_report(
     filename = f"{scope}-{today}-{uuid.uuid4().hex[:8]}.{ext}"
 
     url = await _upload_to_supabase(filename, blob, ct)
+    from_supabase = url is not None
     if not url:
         url = _save_local(filename, blob)
 
+    reachable = from_supabase or _is_publicly_reachable(url)
     share_msg = (
         f"Hola, te comparto el {title.lower()} generado desde RE Expert:\n{url}"
     )
-    return {
+    result: dict[str, Any] = {
         "ok": True,
         "url": url,
         "filename": filename,
         "format": fmt,
         "scope": scope,
         "share_message": share_msg,
+        "publicly_reachable": reachable,
     }
+    if not reachable:
+        result["warning"] = (
+            "El documento quedó en disco local (BACKEND_PUBLIC_URL apunta a "
+            "localhost): este link NO le va a funcionar a quien se lo mandes. "
+            "Para compartir, configurá Supabase Storage o un BACKEND_PUBLIC_URL público."
+        )
+    return result

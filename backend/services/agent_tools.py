@@ -1055,7 +1055,7 @@ async def _tool_share_pdf_with_contact(db: AsyncSession, user: User, **inputs: A
     wa = _wa_link(contact.phone, full_text)
     tg = _tg_share_link(full_text)
 
-    return {
+    result = {
         "ok": True,
         "contact": {"id": str(contact.id), "name": contact.name, "phone": contact.phone},
         "pdf_url": pdf_url,
@@ -1066,6 +1066,14 @@ async def _tool_share_pdf_with_contact(db: AsyncSession, user: User, **inputs: A
         "preferred_channel": "whatsapp" if wa else "telegram",
         "instructions": "Abrí el link de WhatsApp (o Telegram) — se abre la app con el mensaje listo. Solo tenés que tocar 'Enviar'.",
     }
+    # Si el PDF quedó en localhost, el link no le sirve al destinatario: avisá.
+    if pdf.get("publicly_reachable") is False:
+        result["warning"] = (
+            "OJO: el PDF se generó en disco local y el link NO es alcanzable para "
+            "el destinatario. Avisale al usuario que para compartir hay que "
+            "configurar Supabase Storage o un BACKEND_PUBLIC_URL público."
+        )
+    return result
 
 
 async def _tool_compose_message_to_contact(db: AsyncSession, user: User, **inputs: Any) -> dict:
