@@ -470,7 +470,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 def _serialize_decimal(v: Any) -> Any:
     if isinstance(v, Decimal):
         return float(v)
-    if isinstance(v, (datetime, Date)):
+    if isinstance(v, datetime | Date):
         return v.isoformat()
     if isinstance(v, UUID):
         return str(v)
