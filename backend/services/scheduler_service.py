@@ -4,45 +4,96 @@ Reminder scheduler.
 Background task que arranca con la app (lifespan) y poll cada N segundos
 los `reminders` con status='pending' y due_at <= now().
 
-Para evitar dobles envíos en caso de múltiples workers (Railway por defecto
-1, pero por las dudas), usamos UPDATE … WHERE status='pending' RETURNING
-con un `claim` atómico que cambia status='claiming:<worker_id>' antes de
-disparar. Si en el medio crash, otro tick lo recupera tras `STALE_CLAIM_AFTER_SECONDS`.
+Para evitar dobles envíos con múltiples workers/réplicas, el claim es ATÓMICO:
+un único `UPDATE reminders SET status='sending' WHERE id IN (SELECT ... FOR
+UPDATE SKIP LOCKED LIMIT n) RETURNING id`. El SKIP LOCKED hace que workers
+concurrentes tomen subconjuntos disjuntos (nadie dispara el mismo recordatorio).
+Recién después de claimear, disparamos y pasamos a sent/failed.
 
-Para MVP, usamos una versión más simple sin claim distribuido: un solo
-worker, un loop. Si en el futuro hay multi-worker, agregar PG advisory locks.
+Recuperación de crash: si un worker claimea (status='sending') y muere antes de
+enviar, el recordatorio quedaría trabado. Por eso el claim también re-toma filas
+'sending' cuyo `updated_at` quedó más viejo que STALE_CLAIM_AFTER_SECONDS.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from config.settings import settings
 from models.base import get_session_factory
 from models.reminder import Reminder
 from models.user import User
 from services.notification_dispatcher import dispatch
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+# Filas que quedaron 'sending' más tiempo que esto se consideran de un worker
+# crasheado y se vuelven a claimear.
+STALE_CLAIM_AFTER_SECONDS = 300
 
 _task: asyncio.Task | None = None
 _stop_event: asyncio.Event | None = None
 
 
+def _build_claim_stmt(now: datetime):
+    """UPDATE atómico que claimea un batch de recordatorios disparables.
+
+    Toma 'pending' vencidos + 'sending' stale (worker crasheado), los lockea con
+    FOR UPDATE SKIP LOCKED (workers concurrentes los saltean) y los pasa a
+    'sending'. Devuelve los ids claimeados (RETURNING)."""
+    stale_before = now - timedelta(seconds=STALE_CLAIM_AFTER_SECONDS)
+    claimable = (
+        select(Reminder.id)
+        .where(
+            Reminder.due_at <= now,
+            or_(
+                Reminder.status == "pending",
+                and_(
+                    Reminder.status == "sending",
+                    Reminder.updated_at < stale_before,
+                ),
+            ),
+        )
+        .order_by(Reminder.due_at.asc())
+        .limit(settings.SCHEDULER_BATCH_SIZE)
+        .with_for_update(skip_locked=True)
+    )
+    return (
+        update(Reminder)
+        .where(Reminder.id.in_(claimable.scalar_subquery()))
+        .values(status="sending", updated_at=now)
+        .returning(Reminder.id)
+        .execution_options(synchronize_session=False)
+    )
+
+
+async def _claim_due_reminders(db: AsyncSession, now: datetime) -> list[Reminder]:
+    """Claimea atómicamente un batch y devuelve las filas Reminder a disparar."""
+    ids = [row[0] for row in (await db.execute(_build_claim_stmt(now))).all()]
+    await db.commit()
+    if not ids:
+        return []
+    return list(
+        (
+            await db.execute(
+                select(Reminder)
+                .where(Reminder.id.in_(ids))
+                .order_by(Reminder.due_at.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
 async def _process_due_reminders(db: AsyncSession) -> int:
     """Procesa hasta SCHEDULER_BATCH_SIZE recordatorios vencidos. Devuelve cuántos disparó."""
     now = datetime.now(timezone.utc)
-    q = (
-        select(Reminder)
-        .where(Reminder.status == "pending", Reminder.due_at <= now)
-        .order_by(Reminder.due_at.asc())
-        .limit(settings.SCHEDULER_BATCH_SIZE)
-    )
-    rows = list((await db.execute(q)).scalars().all())
+    rows = await _claim_due_reminders(db, now)
     if not rows:
         return 0
 
@@ -110,8 +161,8 @@ def start_scheduler() -> None:
     # Evitar arranque doble en hot-reload
     if _task and not _task.done():
         return
-    # Single-worker safety: si hay múltiples workers, solo el de pid menor corre
-    # (el resto skippea). Heurística simple para Railway con 1 worker.
+    # El claim atómico (FOR UPDATE SKIP LOCKED) hace seguro correr el scheduler
+    # en varias réplicas a la vez. DISABLE_SCHEDULER=1 es un opt-out manual.
     if os.environ.get("DISABLE_SCHEDULER") == "1":
         logger.info("Scheduler skipped por DISABLE_SCHEDULER=1")
         return
