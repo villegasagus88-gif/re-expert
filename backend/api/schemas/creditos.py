@@ -68,3 +68,71 @@ class CreditosResponse(BaseModel):
     disclaimer: str = ""
     relacion_cuota_ingreso_max_default: float = 25
     items: list[CreditItem]
+
+
+# ── Admin (Fase 2): cola de validación, monitoreo e historial ──
+ProposalStatus = Literal["pending_review", "approved", "rejected"]
+ChangeType = Literal["field_update", "new_credit", "discontinued"]
+
+
+class MonitorRequest(BaseModel):
+    """Disparo del monitor. Sin credit_ids = escanea todo el catálogo activo."""
+    credit_ids: list[str] | None = None
+
+
+class MonitorSummary(BaseModel):
+    checked: int = 0
+    fetched: int = 0
+    proposals_created: int = 0
+    skipped_low_confidence: int = 0
+    errors: list[dict[str, Any]] = []
+    details: list[dict[str, Any]] = []
+
+
+class ProposalItem(BaseModel):
+    id: str
+    credit_id: str | None = None
+    credit_name: str = ""
+    bank_name: str = ""
+    change_type: ChangeType = "field_update"
+    field: str = ""
+    old_value: str | None = None
+    new_value: str | None = None
+    source_url: str = ""
+    confidence: float | None = None
+    rationale: str | None = None
+    status: ProposalStatus = "pending_review"
+    detected_at: str = ""
+
+
+class ProposalsResponse(BaseModel):
+    items: list[ProposalItem]
+    count: int = 0
+
+
+class ReviewRequest(BaseModel):
+    note: str | None = None
+
+
+class ReviewResult(BaseModel):
+    ok: bool = True
+    proposal_id: str
+    status: ProposalStatus
+    applied: bool = False
+    message: str = ""
+
+
+class ChangeLogItem(BaseModel):
+    id: str
+    credit_id: str
+    field: str = ""
+    old_value: str | None = None
+    new_value: str | None = None
+    source: str = ""
+    change_type: str = ""
+    changed_at: str = ""
+
+
+class HistoryResponse(BaseModel):
+    credit_id: str
+    items: list[ChangeLogItem]
