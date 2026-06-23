@@ -11,6 +11,7 @@ La fuente de verdad pasa a ser la DB; el JSON queda como semilla + config.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from functools import lru_cache
@@ -136,9 +137,76 @@ async def resync_from_json(db: AsyncSession) -> dict:
     return {"updated": updated, "inserted": inserted}
 
 
+_synced_hash: str | None = None
+
+
+def _seed_hash(items: list) -> str:
+    blob = json.dumps(items, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+async def _stored_seed_hash(db: AsyncSession) -> str | None:
+    return (await db.scalars(
+        select(CreditChangeLog.new_value)
+        .where(CreditChangeLog.field == "_seed_hash")
+        .order_by(CreditChangeLog.changed_at.desc())
+        .limit(1)
+    )).first()
+
+
+async def ensure_catalog(db: AsyncSession) -> dict:
+    """Garantiza que la DB refleje el JSON curado, sin pasos manuales:
+      - tabla vacía → siembra;
+      - el JSON cambió desde la última sync (hash distinto) → UPSERT;
+      - sin cambios → no-op (con cache en proceso para no pegarle a la DB).
+
+    Propaga correcciones del seed a la DB en el próximo deploy/GET. NO borra
+    créditos ausentes del JSON. El hash sólo cambia al editar el JSON
+    deliberadamente, así que los cambios aplicados entre ediciones se preservan;
+    al re-editar el seed, el catálogo curado vuelve a ser la fuente de verdad.
+    """
+    global _synced_hash
+    data = _load_seed_json()
+    items = data.get("items", []) if isinstance(data, dict) else []
+    if not items:
+        return {"action": "no_seed"}
+    h = _seed_hash(items)
+    if _synced_hash == h:
+        return {"action": "cached"}
+    if await _stored_seed_hash(db) == h:
+        _synced_hash = h
+        return {"action": "in_sync"}
+    updated = inserted = 0
+    for item in items:
+        if not isinstance(item, dict) or not item.get("id"):
+            continue
+        kw = item_to_kwargs(item)
+        existing = await db.get(Credit, item["id"])
+        if existing:
+            for k, v in kw.items():
+                if k != "id":
+                    setattr(existing, k, v)
+            updated += 1
+        else:
+            db.add(Credit(**kw))
+            inserted += 1
+    db.add(CreditChangeLog(
+        credit_id="_catalog", field="_seed_hash", new_value=h,
+        source="seed", change_type="seed_sync",
+    ))
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        return {"action": "race"}
+    _synced_hash = h
+    logger.info("Catálogo sincronizado desde JSON: %d actualizados, %d nuevos", updated, inserted)
+    return {"action": "synced", "updated": updated, "inserted": inserted}
+
+
 async def list_public(db: AsyncSession, audience: str | None = None) -> list[dict]:
     """Items publicables (approved + active), opcionalmente por público."""
-    await seed_if_empty(db)
+    await ensure_catalog(db)
     stmt = (
         select(Credit)
         .where(Credit.validation_status == "approved", Credit.status == "active")
