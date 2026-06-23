@@ -619,7 +619,18 @@ async def chat(
             # que puede filtrar prompts, API key parcial, o info de
             # rate-limit que sirve para reconnaissance. En DEBUG sí
             # exponemos para facilitar dev.
-            if settings.DEBUG:
+            # Mapear fallos de upstream (LLM) a mensajes prolijos de "no
+            # disponible" en vez de un error feo. Cubre: saldo de API agotado
+            # (400 "credit balance"), auth/permiso (401/403), rate limit (429)
+            # y caídas/saturación (5xx/529). El error real ya quedó logueado
+            # arriba; al usuario NO le filtramos detalle.
+            status_code = getattr(e, "status_code", None)
+            emsg = (str(e) or "").lower()
+            if "credit balance" in emsg or "billing" in emsg or status_code in (401, 402, 403):
+                msg = "El asistente no está disponible en este momento. Reintentá en unos minutos."
+            elif status_code in (429, 500, 502, 503, 529) or "overloaded" in emsg or "rate limit" in emsg:
+                msg = "El asistente está con mucha demanda ahora. Probá de nuevo en un minuto."
+            elif settings.DEBUG:
                 err_type = type(e).__name__
                 err_msg = (str(e) or "").splitlines()[0][:240] if str(e) else ""
                 msg = f"Error generando respuesta [{err_type}: {err_msg}]"
