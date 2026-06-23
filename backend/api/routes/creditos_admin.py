@@ -70,6 +70,16 @@ async def monitor(
     return MonitorSummary(**summary)
 
 
+@router.post("/resync", summary="Re-sincronizar catálogo desde el JSON base (UPSERT)")
+async def resync(
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Empuja la data curada del JSON a la DB aunque ya esté sembrada. Corrige
+    valores viejos sin borrar nada. Pensado para aplicar una corrección manual."""
+    return await creditos_repo.resync_from_json(db)
+
+
 @router.get("/proposals", response_model=ProposalsResponse, summary="Cola de propuestas")
 async def list_proposals(
     status_filter: str = Query("pending_review", alias="status"),

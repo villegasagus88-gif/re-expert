@@ -85,6 +85,7 @@
       <div class="muted">Baja las páginas oficiales de cada crédito, extrae los términos vigentes con IA y compara contra lo publicado. Genera propuestas para revisar.</div>
       <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
         <button class="btn" id="monitorBtn">🔄 Revisar fuentes ahora</button>
+        <button class="btn btn-ghost" id="resyncBtn">⤓ Re-sincronizar catálogo base</button>
         <span class="muted" id="monitorStatus"></span>
       </div>
     </div>
@@ -263,7 +264,21 @@
   function syncChips(){ document.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('active', ch.dataset.filter===_filter)); }
 
   // ---- Eventos ----
+  async function resyncCatalog(){
+    if(!confirm('¿Re-sincronizar el catálogo desde el archivo base? Sobrescribe los valores actuales con los curados/verificados (no borra nada).')) return;
+    const btn=$('#resyncBtn'); btn.disabled=true; const orig=btn.textContent; btn.textContent='Sincronizando…';
+    try{
+      const r=await window.REAuthService.authFetch(ADMIN+'/resync',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail||('Error '+r.status));
+      showAlert(`Catálogo re-sincronizado: ${d.updated||0} actualizados, ${d.inserted||0} nuevos.`, true);
+      loadCatalog();
+    }catch(e){ showAlert('No se pudo re-sincronizar: '+e.message, false); }
+    finally{ btn.disabled=false; btn.textContent=orig; }
+  }
+
   $('#monitorBtn').addEventListener('click', runMonitor);
+  $('#resyncBtn').addEventListener('click', resyncCatalog);
   document.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click', ()=>{ _filter=ch.dataset.filter; syncChips(); loadProposals(); }));
   $('#propList').addEventListener('click', e=>{
     const a=e.target.closest('[data-approve]'); const rj=e.target.closest('[data-reject]');

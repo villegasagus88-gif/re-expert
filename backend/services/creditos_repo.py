@@ -106,6 +106,36 @@ async def seed_if_empty(db: AsyncSession) -> int:
     return inserted
 
 
+async def resync_from_json(db: AsyncSession) -> dict:
+    """Re-sincroniza el catálogo desde el JSON: UPSERT (corrige aunque ya esté
+    sembrado). Actualiza los campos de cada crédito existente y agrega los
+    nuevos. NO borra créditos que no estén en el JSON. Útil para empujar una
+    corrección curada cuando la tabla ya tenía datos viejos.
+    """
+    _load_seed_json.cache_clear()  # re-lee el archivo (puede haber cambiado)
+    data = _load_seed_json()
+    items = data.get("items", []) if isinstance(data, dict) else []
+    updated = 0
+    inserted = 0
+    for item in items:
+        if not isinstance(item, dict) or not item.get("id"):
+            continue
+        kw = item_to_kwargs(item)
+        existing = await db.get(Credit, item["id"])
+        if existing:
+            for k, v in kw.items():
+                if k == "id":
+                    continue
+                setattr(existing, k, v)
+            updated += 1
+        else:
+            db.add(Credit(**kw))
+            inserted += 1
+    await db.commit()
+    logger.info("Resync créditos desde JSON: %d actualizados, %d nuevos", updated, inserted)
+    return {"updated": updated, "inserted": inserted}
+
+
 async def list_public(db: AsyncSession, audience: str | None = None) -> list[dict]:
     """Items publicables (approved + active), opcionalmente por público."""
     await seed_if_empty(db)
