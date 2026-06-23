@@ -19,6 +19,7 @@ barato: corre esporádicamente sobre pocos créditos.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -215,12 +216,47 @@ async def _pending_fields(db: AsyncSession, credit_id: str) -> set[str]:
     return set(rows)
 
 
+def _url_for(c: Credit) -> str:
+    return c.official_url or (c.source_urls[0] if c.source_urls else "")
+
+
+async def _process_one(c: Credit) -> tuple[Credit, dict | None, str | None]:
+    """Fase de red/LLM (SIN DB): baja + extrae. Devuelve (credit, ext, error)."""
+    url = _url_for(c)
+    if not url:
+        return (c, None, "sin_url")
+    page = await _fetch(url)
+    if page is None:
+        return (c, None, "fetch_failed")
+    ext = await _extract_terms(c, page)
+    if not ext:
+        return (c, None, "extract_failed")
+    return (c, ext, None)
+
+
 async def run_monitor(db: AsyncSession, credit_ids: list[str] | None = None) -> dict:
-    """Escanea créditos, detecta cambios y encola propuestas. Devuelve un resumen."""
+    """Escanea créditos, detecta cambios y encola propuestas. Devuelve un resumen.
+
+    Dos fases para no exceder el timeout del gateway y no usar la sesión de DB
+    de forma concurrente:
+      1) fetch + extracción EN PARALELO (red/LLM, sin tocar la DB).
+      2) escritura de propuestas SECUENCIAL (la AsyncSession no es thread/task-safe).
+    """
     stmt = select(Credit).where(Credit.status != "discontinued")
     if credit_ids:
         stmt = stmt.where(Credit.id.in_(credit_ids))
     credits = (await db.scalars(stmt)).all()
+
+    sem = asyncio.Semaphore(5)  # no martillar las fuentes ni la API
+
+    async def _guarded(c: Credit):
+        async with sem:
+            try:
+                return await asyncio.wait_for(_process_one(c), timeout=60)
+            except Exception as e:  # noqa: BLE001
+                return (c, None, f"error:{type(e).__name__}")
+
+    results = await asyncio.gather(*[_guarded(c) for c in credits])
 
     today = datetime.now().strftime("%Y-%m-%d")
     summary: dict[str, Any] = {
@@ -228,20 +264,13 @@ async def run_monitor(db: AsyncSession, credit_ids: list[str] | None = None) -> 
         "skipped_low_confidence": 0, "errors": [], "details": [],
     }
 
-    for c in credits:
+    for c, ext, err in results:
         summary["checked"] += 1
-        url = c.official_url or (c.source_urls[0] if c.source_urls else "")
-        page = await _fetch(url)
         c.last_checked_at = today  # metadata operativa, no requiere aprobación
-        if page is None:
-            summary["errors"].append({"credit_id": c.id, "error": "fetch_failed", "url": url})
+        if err or ext is None:
+            summary["errors"].append({"credit_id": c.id, "error": err or "extract_failed"})
             continue
         summary["fetched"] += 1
-
-        ext = await _extract_terms(c, page)
-        if not ext:
-            summary["errors"].append({"credit_id": c.id, "error": "extract_failed"})
-            continue
         conf = float(ext.get("confidence") or 0)
         if not ext.get("found") or conf < _MIN_CONFIDENCE:
             summary["skipped_low_confidence"] += 1
@@ -258,7 +287,7 @@ async def run_monitor(db: AsyncSession, credit_ids: list[str] | None = None) -> 
                 field=ch["field"],
                 old_value=None if ch["old"] is None else str(ch["old"]),
                 new_value=None if ch["new"] is None else str(ch["new"]),
-                source_url=url,
+                source_url=_url_for(c),
                 confidence=conf,
                 rationale=(ext.get("rationale") or "")[:500],
             ))

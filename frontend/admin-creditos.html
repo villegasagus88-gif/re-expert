@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin — Créditos · RE Expert</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="auth.css">
+  <script src="config.js"></script>
+  <style>
+    body { display:block; min-height:100dvh; background:var(--bg-0); color:var(--text-0); font-family:var(--font); }
+    .admin-wrap { max-width: 940px; margin: 0 auto; padding: 24px 18px 60px; }
+    .admin-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+    .admin-title { font-size:20px; font-weight:700; }
+    .admin-sub { font-size:13px; color:var(--text-2); margin-bottom:22px; }
+    .admin-links { display:flex; gap:14px; }
+    .admin-link { font-size:13px; color:var(--accent-brand); text-decoration:none; }
+    .card { background:var(--bg-card); border:1px solid var(--border-0); border-radius:12px; padding:16px 18px; margin-bottom:18px; }
+    .card-title { font-size:14px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .btn { background:var(--accent-brand); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    .btn:hover { opacity:.9; }
+    .btn:disabled { opacity:.5; cursor:default; }
+    .btn-sm { padding:5px 11px; font-size:12px; }
+    .btn-ghost { background:var(--bg-1); color:var(--text-1); border:1px solid var(--border-0); }
+    .btn-danger { background:#dc2626; }
+    .muted { color:var(--text-3); font-size:13px; }
+    .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; display:none; }
+    .alert.ok { background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); display:block; }
+    .alert.err { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; display:block; }
+    /* filtros */
+    .filters { display:flex; gap:6px; }
+    .chip { background:var(--bg-1); color:var(--text-2); border:1px solid var(--border-0); border-radius:999px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    .chip.active { background:var(--accent-brand); color:#fff; border-color:transparent; }
+    /* propuesta */
+    .prop { display:flex; gap:14px; align-items:flex-start; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--border-0); }
+    .prop:last-child { border-bottom:none; }
+    .prop-main { min-width:0; flex:1; }
+    .prop-bank { font-size:13px; font-weight:600; color:var(--text-0); margin-bottom:5px; }
+    .prop-change { font-size:13px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .prop-field { background:var(--bg-1); border:1px solid var(--border-0); border-radius:6px; padding:2px 8px; font-size:12px; font-weight:600; }
+    .prop-old { color:var(--text-3); text-decoration:line-through; }
+    .prop-arrow { color:var(--text-3); }
+    .prop-new { color:#22c55e; font-weight:700; }
+    .prop-rationale { font-size:12.5px; color:var(--text-2); margin-top:6px; font-style:italic; }
+    .prop-meta { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:7px; font-size:11.5px; color:var(--text-3); }
+    .prop-meta a { color:var(--accent-brand); text-decoration:none; }
+    .conf { border-radius:999px; padding:1px 8px; font-weight:700; font-size:11px; }
+    .conf-hi { background:rgba(34,197,94,.14); color:#16a34a; }
+    .conf-mid { background:rgba(245,158,11,.16); color:#d97706; }
+    .conf-lo { background:rgba(239,68,68,.14); color:#dc2626; }
+    .prop-actions { display:flex; gap:6px; flex-shrink:0; }
+    .badge { border-radius:999px; padding:1px 9px; font-size:11px; font-weight:700; }
+    .badge-active { background:rgba(34,197,94,.14); color:#16a34a; }
+    .badge-disc { background:rgba(239,68,68,.14); color:#dc2626; }
+    .badge-paused { background:rgba(245,158,11,.16); color:#d97706; }
+    .badge-pending { background:rgba(245,158,11,.16); color:#d97706; }
+    .badge-approved { background:rgba(34,197,94,.14); color:#16a34a; }
+    .badge-rejected { background:var(--bg-1); color:var(--text-3); }
+    /* catálogo */
+    .cat-row { display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-0); font-size:13px; flex-wrap:wrap; }
+    .cat-row:last-child { border-bottom:none; }
+    .cat-name { flex:1; min-width:160px; }
+    .cat-meta { color:var(--text-3); font-size:11.5px; }
+    .hist { background:var(--bg-1); border:1px solid var(--border-0); border-radius:8px; padding:8px 12px; margin:6px 0 10px; font-size:12px; }
+    .hist-row { padding:5px 0; border-bottom:1px dashed var(--border-0); color:var(--text-2); }
+    .hist-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap" id="adminWrap" style="display:none">
+    <div class="admin-head">
+      <div class="admin-title">💳 Créditos — Admin</div>
+      <div class="admin-links">
+        <a href="admin.html" class="admin-link">🗂️ Knowledge Base</a>
+        <a href="app.html" class="admin-link">← Volver a la app</a>
+      </div>
+    </div>
+    <div class="admin-sub">Mantenimiento del catálogo de créditos. El monitor detecta cambios en las fuentes oficiales con IA y los encola acá; <b>nada se publica sin tu aprobación</b>.</div>
+
+    <div id="alert" class="alert"></div>
+
+    <!-- Monitoreo -->
+    <div class="card">
+      <div class="card-title">Monitoreo de fuentes</div>
+      <div class="muted">Baja las páginas oficiales de cada crédito, extrae los términos vigentes con IA y compara contra lo publicado. Genera propuestas para revisar.</div>
+      <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+        <button class="btn" id="monitorBtn">🔄 Revisar fuentes ahora</button>
+        <span class="muted" id="monitorStatus"></span>
+      </div>
+    </div>
+
+    <!-- Cola de propuestas -->
+    <div class="card">
+      <div class="card-title">
+        <span>Cola de propuestas (<span id="propCount">0</span>)</span>
+        <span class="filters">
+          <button class="chip active" data-filter="pending_review">Pendientes</button>
+          <button class="chip" data-filter="approved">Aprobadas</button>
+          <button class="chip" data-filter="rejected">Rechazadas</button>
+        </span>
+      </div>
+      <div id="propList"><div class="muted">Cargando…</div></div>
+    </div>
+
+    <!-- Catálogo -->
+    <div class="card">
+      <div class="card-title"><span>Catálogo (<span id="catCount">0</span>)</span></div>
+      <div id="catList"><div class="muted">Cargando…</div></div>
+    </div>
+  </div>
+
+  <script src="authService.js"></script>
+  <script>
+  const apiBase = () => (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+  const ADMIN = apiBase() + '/api/admin/creditos';
+  const $ = s => document.querySelector(s);
+  let _filter = 'pending_review';
+
+  const FIELD_LABELS = {
+    interest_rate_tna: 'Tasa (TNA)', max_term_years: 'Plazo (años)',
+    max_financing_percent: 'Financiación (%)', min_income_ars: 'Ingreso mínimo',
+    status: 'Estado', '*': 'Crédito',
+  };
+  const STATUS_ES = { active:'Activo', discontinued:'Dado de baja', paused:'Pausado' };
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function showAlert(msg, ok){ const el=$('#alert'); el.className='alert '+(ok?'ok':'err'); el.textContent=msg; if(ok)setTimeout(()=>{el.className='alert';},4500); }
+  function fmtVal(field, raw){
+    if(raw==null||raw==='') return '—';
+    if(field==='status') return STATUS_ES[raw]||raw;
+    if(field==='interest_rate_tna'||field==='max_financing_percent') return String(raw).replace(/\.0+$/,'')+'%';
+    if(field==='max_term_years') return raw+' años';
+    if(field==='min_income_ars'){ const n=+raw; return isNaN(n)?raw:'$'+n.toLocaleString('es-AR')+' ARS'; }
+    return raw;
+  }
+  function confClass(c){ return c>=0.8?'conf-hi':c>=0.6?'conf-mid':'conf-lo'; }
+
+  // ---- Propuestas ----
+  async function loadProposals(){
+    const list=$('#propList');
+    try{
+      const r=await window.REAuthService.authFetch(ADMIN+'/proposals?status='+encodeURIComponent(_filter));
+      if(!r.ok) throw new Error('Error '+r.status);
+      const data=await r.json();
+      const items=data.items||[];
+      $('#propCount').textContent=items.length;
+      if(!items.length){ list.innerHTML='<div class="muted">No hay propuestas '+(_filter==='pending_review'?'pendientes':'en este estado')+'.</div>'; return; }
+      const canAct=_filter==='pending_review';
+      list.innerHTML=items.map(p=>{
+        const fl=FIELD_LABELS[p.field]||p.field;
+        const conf=p.confidence!=null?`<span class="conf ${confClass(p.confidence)}">conf ${Math.round(p.confidence*100)}%</span>`:'';
+        const src=p.source_url?`<a href="${esc(p.source_url)}" target="_blank" rel="noopener">fuente ↗</a>`:'';
+        const rat=p.rationale?`<div class="prop-rationale">“${esc(p.rationale)}”</div>`:'';
+        const date=(p.detected_at||'').slice(0,10);
+        const change=p.change_type==='new_credit'
+          ? `<span class="prop-field">Alta de crédito</span> <span class="prop-new">${esc(p.credit_name||p.credit_id)}</span>`
+          : `<span class="prop-field">${esc(fl)}</span> <span class="prop-old">${esc(fmtVal(p.field,p.old_value))}</span> <span class="prop-arrow">→</span> <span class="prop-new">${esc(fmtVal(p.field,p.new_value))}</span>`;
+        const actions=canAct?`<div class="prop-actions">
+            <button class="btn btn-sm" data-approve="${p.id}">Aprobar</button>
+            <button class="btn btn-sm btn-ghost" data-reject="${p.id}">Rechazar</button>
+          </div>`:`<span class="badge badge-${p.status==='approved'?'approved':'rejected'}">${p.status==='approved'?'Aprobada':'Rechazada'}</span>`;
+        return `<div class="prop" data-id="${p.id}">
+          <div class="prop-main">
+            <div class="prop-bank">🏦 ${esc(p.bank_name||'')}${p.credit_name?' · '+esc(p.credit_name):''}</div>
+            <div class="prop-change">${change}</div>
+            ${rat}
+            <div class="prop-meta">${conf}${src?' '+src:''}${date?` <span class="prop-date">detectado ${esc(date)}</span>`:''}</div>
+          </div>
+          ${actions}
+        </div>`;
+      }).join('');
+    }catch(e){ list.innerHTML='<div class="alert err">No se pudieron cargar las propuestas: '+esc(e.message)+'</div>'; }
+  }
+
+  async function review(id, action){
+    const isApprove=action==='approve';
+    if(isApprove && !confirm('¿Aprobar este cambio? Se aplica al catálogo público de inmediato.')) return;
+    let note=null;
+    if(!isApprove){ note=prompt('Motivo del rechazo (opcional):')||null; }
+    const card=document.querySelector(`.prop[data-id="${id}"]`);
+    card?.querySelectorAll('button').forEach(b=>b.disabled=true);
+    try{
+      const r=await window.REAuthService.authFetch(`${ADMIN}/proposals/${id}/${action}`,{
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note}),
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail||('Error '+r.status));
+      showAlert(d.message||(isApprove?'Propuesta aprobada.':'Propuesta rechazada.'), true);
+      loadProposals();
+      if(isApprove) loadCatalog();
+    }catch(e){
+      showAlert((isApprove?'No se pudo aprobar: ':'No se pudo rechazar: ')+e.message, false);
+      card?.querySelectorAll('button').forEach(b=>b.disabled=false);
+    }
+  }
+
+  // ---- Monitor ----
+  async function runMonitor(){
+    const btn=$('#monitorBtn'); const st=$('#monitorStatus');
+    btn.disabled=true; const orig=btn.textContent; btn.textContent='Revisando…';
+    st.textContent='Bajando fuentes y analizando con IA (puede tardar ~15s)…';
+    try{
+      const r=await window.REAuthService.authFetch(ADMIN+'/monitor',{
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({}),
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(d.detail||('Error '+r.status));
+      const errs=(d.errors||[]).length;
+      st.textContent=`Revisados ${d.checked||0} · descargados ${d.fetched||0} · nuevas propuestas ${d.proposals_created||0}${errs?` · errores ${errs}`:''}.`;
+      showAlert(`Monitoreo listo: ${d.proposals_created||0} propuesta(s) nueva(s).`, true);
+      if(_filter!=='pending_review'){ _filter='pending_review'; syncChips(); }
+      loadProposals(); loadCatalog();
+    }catch(e){ st.textContent=''; showAlert('Falló el monitoreo: '+e.message, false); }
+    finally{ btn.disabled=false; btn.textContent=orig; }
+  }
+
+  // ---- Catálogo + historial ----
+  async function loadCatalog(){
+    const list=$('#catList');
+    try{
+      const r=await window.REAuthService.authFetch(ADMIN+'/catalog');
+      if(!r.ok) throw new Error('Error '+r.status);
+      const data=await r.json();
+      const items=data.items||[];
+      $('#catCount').textContent=items.length;
+      if(!items.length){ list.innerHTML='<div class="muted">Catálogo vacío.</div>'; return; }
+      list.innerHTML=items.map(c=>{
+        const st=c.status||'active';
+        const badge=`<span class="badge badge-${st==='active'?'active':st==='discontinued'?'disc':'paused'}">${STATUS_ES[st]||st}</span>`;
+        const tna=c.interest_rate_tna!=null?String(c.interest_rate_tna).replace(/\.0+$/,'')+'%':'s/ tasa fija';
+        const checked=c.last_checked_at?('revisado '+esc(c.last_checked_at)):'sin revisar';
+        return `<div>
+          <div class="cat-row" data-cat="${esc(c.id)}">
+            <span class="cat-name">🏦 ${esc(c.bank_name)} · ${esc(c.credit_name)} ${badge}</span>
+            <span class="cat-meta">${esc(tna)} · ${checked}</span>
+            <button class="btn btn-sm btn-ghost" data-hist="${esc(c.id)}">Historial</button>
+          </div>
+          <div class="hist" id="hist-${esc(c.id)}" style="display:none"></div>
+        </div>`;
+      }).join('');
+    }catch(e){ list.innerHTML='<div class="alert err">No se pudo cargar el catálogo: '+esc(e.message)+'</div>'; }
+  }
+
+  async function toggleHistory(creditId){
+    const box=document.getElementById('hist-'+creditId);
+    if(!box) return;
+    if(box.style.display!=='none'){ box.style.display='none'; return; }
+    box.style.display='block'; box.innerHTML='<div class="muted">Cargando historial…</div>';
+    try{
+      const r=await window.REAuthService.authFetch(`${ADMIN}/history/${encodeURIComponent(creditId)}`);
+      if(!r.ok) throw new Error('Error '+r.status);
+      const d=await r.json(); const items=d.items||[];
+      if(!items.length){ box.innerHTML='<div class="muted">Sin cambios registrados.</div>'; return; }
+      box.innerHTML=items.map(h=>{
+        const fl=FIELD_LABELS[h.field]||h.field;
+        const when=(h.changed_at||'').slice(0,10);
+        const diff=h.field==='*'?esc(h.new_value||''):`${esc(fmtVal(h.field,h.old_value))} → ${esc(fmtVal(h.field,h.new_value))}`;
+        return `<div class="hist-row"><b>${esc(when)}</b> · ${esc(fl)}: ${diff} <span class="cat-meta">(${esc(h.change_type)})</span></div>`;
+      }).join('');
+    }catch(e){ box.innerHTML='<div class="alert err">No se pudo cargar el historial: '+esc(e.message)+'</div>'; }
+  }
+
+  function syncChips(){ document.querySelectorAll('.chip').forEach(ch=>ch.classList.toggle('active', ch.dataset.filter===_filter)); }
+
+  // ---- Eventos ----
+  $('#monitorBtn').addEventListener('click', runMonitor);
+  document.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click', ()=>{ _filter=ch.dataset.filter; syncChips(); loadProposals(); }));
+  $('#propList').addEventListener('click', e=>{
+    const a=e.target.closest('[data-approve]'); const rj=e.target.closest('[data-reject]');
+    if(a) review(a.getAttribute('data-approve'),'approve');
+    if(rj) review(rj.getAttribute('data-reject'),'reject');
+  });
+  $('#catList').addEventListener('click', e=>{
+    const h=e.target.closest('[data-hist]');
+    if(h) toggleHistory(h.getAttribute('data-hist'));
+  });
+
+  // Guard: requiere sesión + ser admin. El backend igual exige require_admin.
+  (async function init(){
+    try{
+      await window.REAuthService.requireAuth();
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/auth/me');
+      const me=r.ok?await r.json():{};
+      if(!me.is_admin){ window.location.href='app.html'; return; }
+      $('#adminWrap').style.display='';
+      loadProposals(); loadCatalog();
+    }catch(e){ window.location.href='login.html'; }
+  })();
+  </script>
+</body>
+</html>
