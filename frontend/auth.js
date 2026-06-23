@@ -16,10 +16,10 @@
     if (!input) return;
     if (message) {
       setInputInvalid(input, true);
-      if (err) err.textContent = message;
+      if (err) { err.textContent = message; err.classList.add('is-visible'); }
     } else {
       setInputInvalid(input, false);
-      if (err) err.textContent = '';
+      if (err) { err.textContent = ''; err.classList.remove('is-visible'); }
     }
   }
 
@@ -27,7 +27,7 @@
     const form = byId(formId);
     if (!form) return;
     form.querySelectorAll('.form-input.is-invalid').forEach(i => i.classList.remove('is-invalid'));
-    form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; });
+    form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; e.classList.remove('is-visible'); });
     hideAlert();
   }
 
@@ -348,6 +348,44 @@
     } finally {
       setLoading('submit-btn', false);
     }
+  }
+
+  // ===== TOGGLE VER/OCULTAR CONTRASEÑA =====
+  // Inyecta un botón "ojo" en cada input de contraseña (login/register/reset),
+  // sin tener que editar cada HTML. El error sigue mostrándose vía la clase
+  // .is-visible (independiente de la estructura del DOM), así envolver el input
+  // no rompe el mensaje de error.
+  const _EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const _EYE_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-8-10-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+  function _initPasswordToggles() {
+    document.querySelectorAll('input[type="password"]').forEach((input) => {
+      if (input.dataset.pwToggle) return;
+      input.dataset.pwToggle = '1';
+      const wrap = document.createElement('div');
+      wrap.className = 'input-wrap';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pw-toggle';
+      btn.tabIndex = -1;  // no robar el foco del flujo de tabulación del form
+      btn.setAttribute('aria-label', 'Mostrar contraseña');
+      btn.innerHTML = _EYE;
+      wrap.appendChild(btn);
+      btn.addEventListener('click', () => {
+        const show = input.getAttribute('type') === 'password';
+        input.setAttribute('type', show ? 'text' : 'password');
+        btn.innerHTML = show ? _EYE_OFF : _EYE;
+        btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initPasswordToggles);
+  } else {
+    _initPasswordToggles();
   }
 
   // Exports

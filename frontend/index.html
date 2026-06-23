@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- ============== SEO ============== -->
-  <title>RE Expert — Asistente IA para Real Estate en Argentina</title>
-  <meta name="description" content="RE Expert es el asistente con IA para inmobiliarias y desarrolladores en Argentina. Presupuestos, gestión de obra y consultas legales en segundos. Probá 7 días gratis.">
-  <meta name="keywords" content="inmobiliaria argentina, IA real estate, gestión de obra, presupuestos automáticos, asistente IA construcción, software inmobiliario, real estate AI">
+  <title>RE Expert — La plataforma de IA para el real estate argentino</title>
+  <meta name="description" content="RE Expert es la plataforma con IA para inmobiliarias, desarrolladores y constructores en Argentina: chat experto, comparador de créditos hipotecarios, análisis de planos con IA, control de obra (CPI/SPI), precios de materiales en vivo y más. Probá 7 días gratis.">
+  <meta name="keywords" content="inmobiliaria argentina, IA real estate, créditos hipotecarios UVA, análisis de planos IA, gestión de obra, CPI SPI, precios materiales construcción, software inmobiliario, real estate AI">
   <meta name="author" content="RE Expert">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#09090b">
@@ -18,14 +18,14 @@
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_AR">
   <meta property="og:url" content="https://re-expert.app/">
-  <meta property="og:title" content="RE Expert — Asistente IA para Real Estate en Argentina">
-  <meta property="og:description" content="Presupuestos automáticos, gestión de obra y consultas legales con IA. Pensado para el mercado inmobiliario argentino. Probá 7 días gratis.">
+  <meta property="og:title" content="RE Expert — La plataforma de IA para el real estate argentino">
+  <meta property="og:description" content="Chat experto, créditos hipotecarios, análisis de planos con IA, control de obra y precios en vivo. Una sola plataforma para todo tu negocio inmobiliario.">
   <meta property="og:site_name" content="RE Expert">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="RE Expert — Asistente IA para Real Estate">
-  <meta name="twitter:description" content="Asistente con IA para inmobiliarias y desarrolladores en Argentina. Presupuestos, obra y legales en segundos.">
+  <meta name="twitter:title" content="RE Expert — Plataforma de IA para Real Estate">
+  <meta name="twitter:description" content="Chat experto, créditos, análisis de planos con IA, control de obra y precios en vivo. Hecho para el mercado argentino.">
 
   <!-- Structured data -->
   <script type="application/ld+json">
@@ -35,21 +35,19 @@
     "name": "RE Expert",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "description": "Asistente con IA para el mercado inmobiliario argentino. Presupuestos, gestión de obra y consultas legales.",
+    "description": "Plataforma con IA para el mercado inmobiliario argentino: chat experto, créditos hipotecarios, análisis de planos, control de obra y precios de materiales en vivo.",
     "offers": [
-      { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
-      { "@type": "Offer", "name": "Pro",  "price": "19", "priceCurrency": "USD" }
+      { "@type": "Offer", "name": "Pro", "price": "69900", "priceCurrency": "ARS" }
     ]
   }
   </script>
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
 
-  <!-- Fonts: preconnect first, async load. System font stack used until Inter swaps in. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
 
   <script src="config.js"></script>
   <script src="sentry.js"></script>
@@ -59,19 +57,24 @@
       --bg-0: #09090b;
       --bg-1: #0f0f12;
       --bg-card: #111114;
+      --bg-card-2: #16161a;
       --text-0: #fafafa;
       --text-1: #d4d4d8;
       --text-2: #a1a1aa;
       --text-3: #71717a;
       --border-0: #27272a;
+      --border-1: #3f3f46;
       --accent: #6366f1;
       --accent-hover: #818cf8;
+      --accent-2: #a855f7;
       --accent-soft: rgba(99, 102, 241, 0.12);
       --success: #22c55e;
+      --warn: #f59e0b;
       --radius-md: 10px;
       --radius-lg: 14px;
       --radius-xl: 18px;
       --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --maxw: 1140px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -89,399 +92,519 @@
       content: '';
       position: fixed; inset: 0;
       background:
-        radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.15), transparent 50%),
-        radial-gradient(ellipse at 80% 30%, rgba(139, 92, 246, 0.1), transparent 50%);
+        radial-gradient(ellipse 80% 50% at 15% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
+        radial-gradient(ellipse 70% 50% at 90% 5%, rgba(168, 85, 247, 0.12), transparent 55%);
       pointer-events: none; z-index: 0;
     }
     a { color: inherit; text-decoration: none; }
-    .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .container { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 18px; border-radius: var(--radius-md);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: 1px solid transparent; font-family: inherit;
+      transition: transform .12s ease, background .15s, border-color .15s, box-shadow .2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px -4px rgba(99,102,241,0.5); }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 10px 24px -6px rgba(99,102,241,0.6); }
+    .btn-ghost { background: transparent; color: var(--text-1); border-color: var(--border-0); }
+    .btn-ghost:hover { color: var(--text-0); border-color: var(--border-1); background: rgba(255,255,255,0.03); }
+    .btn-lg { padding: 14px 26px; font-size: 15px; }
 
     /* ===== NAV ===== */
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 24px 0;
-      gap: 16px;
-    }
+    .site-header { position: sticky; top: 0; z-index: 50; transition: background .25s, border-color .25s, backdrop-filter .25s; border-bottom: 1px solid transparent; }
+    .site-header.scrolled { background: rgba(9,9,11,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--border-0); }
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand-logo {
       width: 36px; height: 36px; border-radius: 9px;
-      background: linear-gradient(135deg, var(--accent), #a855f7);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 13px; color: white;
+      font-weight: 800; font-size: 13px; color: #fff;
       box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
     }
-    .brand-text { font-weight: 700; font-size: 18px; letter-spacing: -0.3px; }
-    .brand-sub { font-size: 11px; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; margin-top: 2px; }
-    .nav-links { display: flex; align-items: center; gap: 8px; }
-    .nav-link {
-      padding: 8px 14px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-1);
-      transition: background .15s, color .15s;
-    }
-    .nav-link:hover { color: var(--text-0); background: rgba(255,255,255,0.04); }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 18px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: transform .12s ease, background .15s, border-color .15s;
-      font-family: inherit;
-    }
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-      box-shadow: 0 6px 16px -4px rgba(99,102,241,0.5);
-    }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-1);
-      border-color: var(--border-0);
-    }
-    .btn-ghost:hover { color: var(--text-0); border-color: #3f3f46; }
-    .btn-lg { padding: 14px 26px; font-size: 15px; }
+    .brand-text { font-weight: 800; font-size: 18px; letter-spacing: -0.3px; }
+    .brand-sub { font-size: 11px; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; margin-top: 1px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link { padding: 8px 14px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; color: var(--text-1); transition: background .15s, color .15s; }
+    .nav-link:hover { color: var(--text-0); background: rgba(255,255,255,0.05); }
 
     /* ===== HERO ===== */
-    .hero {
-      padding: 60px 0 80px;
-      text-align: center;
-    }
+    .hero { padding: 72px 0 60px; }
+    .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
     .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: var(--accent-soft);
-      color: var(--accent-hover);
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 22px;
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
+      border-radius: 999px; background: var(--accent-soft); color: var(--accent-hover);
+      font-size: 12.5px; font-weight: 600; margin-bottom: 22px; border: 1px solid rgba(99,102,241,0.2);
     }
-    .hero h1 {
-      font-size: clamp(2.2rem, 5vw, 3.6rem);
-      font-weight: 800;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
-      margin-bottom: 22px;
-      max-width: 780px;
-      margin-left: auto;
-      margin-right: auto;
+    .hero h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); font-weight: 900; letter-spacing: -1.6px; line-height: 1.08; margin-bottom: 20px; }
+    .hero h1 .grad {
+      background: linear-gradient(120deg, var(--accent-hover), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
     }
-    .hero h1 span {
-      background: linear-gradient(135deg, var(--accent), #a855f7);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: transparent;
-    }
-    .hero-sub {
-      font-size: clamp(1rem, 1.6vw, 1.15rem);
-      color: var(--text-2);
-      max-width: 620px;
-      margin: 0 auto 36px;
-    }
-    .hero-cta {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .hero-trust {
-      margin-top: 28px;
-      font-size: 13px;
-      color: var(--text-3);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .rotator { display: inline-block; position: relative; color: var(--accent-hover); }
+    .hero-sub { font-size: clamp(1rem, 1.5vw, 1.13rem); color: var(--text-2); max-width: 560px; margin-bottom: 30px; }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .hero-trust { margin-top: 22px; font-size: 13px; color: var(--text-3); display: inline-flex; align-items: center; gap: 7px; }
     .hero-trust svg { color: var(--success); flex-shrink: 0; }
 
-    /* ===== FEATURES ===== */
-    .section { padding: 80px 0; }
-    .section-head { text-align: center; margin-bottom: 48px; }
-    .section-eyebrow {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent-hover);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
+    /* ===== HERO PREVIEW (mockup) ===== */
+    .preview { position: relative; }
+    .preview-card {
+      background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+      border: 1px solid var(--border-0); border-radius: var(--radius-xl);
+      box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02);
+      overflow: hidden;
     }
-    .section-title {
-      font-size: clamp(1.7rem, 3.5vw, 2.4rem);
-      font-weight: 700;
-      letter-spacing: -0.8px;
-      margin-bottom: 12px;
+    .preview-top { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--border-0); }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .preview-title { margin-left: 8px; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+    .preview-body { padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .bubble { max-width: 86%; padding: 11px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
+    .bubble.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
+    .bubble.ai { align-self: flex-start; background: #1c1c21; border: 1px solid var(--border-0); color: var(--text-1); border-bottom-left-radius: 5px; }
+    .bubble.b2 { animation-delay: .5s; }
+    .bubble.b3 { animation-delay: 1.05s; }
+    .bubble .hl { color: var(--accent-hover); font-weight: 700; }
+    .bubble .ok { color: var(--success); font-weight: 700; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    .chip-float {
+      position: absolute; display: flex; align-items: center; gap: 7px;
+      background: rgba(20,20,24,0.92); border: 1px solid var(--border-1);
+      border-radius: 11px; padding: 9px 13px; font-size: 12.5px; font-weight: 600;
+      box-shadow: 0 16px 36px -14px rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+      animation: float 5s ease-in-out infinite;
     }
-    .section-sub {
-      color: var(--text-2);
-      max-width: 580px;
-      margin: 0 auto;
-      font-size: 15px;
-    }
+    .chip-float .ic { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-hover); }
+    .chip-1 { top: -22px; right: 18px; animation-delay: 0s; }
+    .chip-2 { bottom: 64px; left: -34px; animation-delay: 1.4s; }
+    .chip-3 { bottom: -20px; right: 40px; animation-delay: 2.6s; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
 
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 18px;
-    }
+    /* ===== TRUST STRIP ===== */
+    .trust-strip { border-top: 1px solid var(--border-0); border-bottom: 1px solid var(--border-0); padding: 18px 0; }
+    .trust-row { display: flex; align-items: center; justify-content: center; gap: 12px 30px; flex-wrap: wrap; }
+    .trust-row .lbl { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .trust-row .tag { font-size: 13.5px; color: var(--text-2); font-weight: 600; }
+
+    /* ===== SECTIONS ===== */
+    .section { padding: 84px 0; }
+    .section-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
+    .section-eyebrow { font-size: 12px; font-weight: 700; color: var(--accent-hover); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+    .section-title { font-size: clamp(1.7rem, 3.4vw, 2.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; line-height: 1.12; }
+    .section-sub { color: var(--text-2); font-size: 15.5px; }
+
+    /* ===== FEATURES ===== */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 16px; }
     .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-0);
-      border-radius: var(--radius-lg);
-      padding: 28px 24px;
-      transition: border-color .2s, transform .2s;
+      background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg);
+      padding: 26px 22px; transition: border-color .2s, transform .2s, background .2s; position: relative; overflow: hidden;
     }
-    .feature-card:hover { border-color: #3f3f46; transform: translateY(-2px); }
-    .feature-icon {
-      width: 42px; height: 42px;
-      border-radius: 10px;
-      background: var(--accent-soft);
-      color: var(--accent-hover);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 18px;
-    }
-    .feature-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-    .feature-desc { color: var(--text-2); font-size: 14px; line-height: 1.55; }
+    .feature-card::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 70%); opacity: 0; transition: opacity .25s; pointer-events: none; }
+    .feature-card:hover { border-color: var(--border-1); transform: translateY(-3px); }
+    .feature-card:hover::after { opacity: 1; }
+    .feature-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--accent-soft); color: var(--accent-hover); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .feature-title { font-size: 16.5px; font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
+    .feature-title .badge-live { font-size: 9.5px; font-weight: 800; letter-spacing: .5px; color: var(--success); background: rgba(34,197,94,.14); padding: 2px 7px; border-radius: 999px; text-transform: uppercase; }
+    .feature-desc { color: var(--text-2); font-size: 13.8px; line-height: 1.55; }
+
+    /* ===== SEGMENTS ===== */
+    .segments { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    .seg { background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg); padding: 22px; text-align: center; transition: border-color .2s, transform .2s; }
+    .seg:hover { border-color: var(--border-1); transform: translateY(-2px); }
+    .seg .seg-emoji { font-size: 26px; }
+    .seg .seg-name { font-weight: 700; margin-top: 10px; font-size: 15px; }
+    .seg .seg-desc { color: var(--text-3); font-size: 12.5px; margin-top: 5px; }
+
+    /* ===== LIVE SHOWCASE ===== */
+    .live-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-xl); padding: 24px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .panel-title { font-size: 15px; font-weight: 700; }
+    .panel-tag { font-size: 11px; font-weight: 700; color: var(--success); background: rgba(34,197,94,.13); padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+    .panel-tag .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+    .panel-sub { color: var(--text-3); font-size: 12.5px; margin-bottom: 14px; }
+    .chart { width: 100%; height: 170px; }
+    .chart .line { fill: none; stroke: var(--accent-hover); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; transition: stroke-dashoffset 1.8s ease; }
+    .chart .line.fc { stroke: var(--warn); stroke-dasharray: 6 6; opacity: .9; }
+    .reveal.in .chart .line { stroke-dashoffset: 0; }
+    .reveal.in .chart .line.fc { stroke-dasharray: 6 6; }
+    .chart .area { fill: url(#g); opacity: 0; transition: opacity 1s ease .8s; }
+    .reveal.in .chart .area { opacity: .18; }
+    .legend { display: flex; gap: 18px; margin-top: 10px; font-size: 12px; color: var(--text-3); }
+    .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+
+    .credit-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-0); }
+    .credit-row:last-child { border-bottom: none; }
+    .credit-bank { display: flex; align-items: center; gap: 10px; }
+    .bank-pill { font-size: 10.5px; font-weight: 800; color: #fff; padding: 3px 8px; border-radius: 6px; letter-spacing: .3px; }
+    .credit-meta { font-size: 11.5px; color: var(--text-3); }
+    .credit-rate { font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
+    .credit-rate small { font-size: 11px; color: var(--text-3); font-weight: 600; }
+
+    /* ===== STATS ===== */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .stat { text-align: center; padding: 26px 16px; background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg); }
+    .stat-num { font-size: 30px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(120deg, var(--accent-hover), var(--accent-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-lbl { color: var(--text-2); font-size: 13px; margin-top: 6px; }
 
     /* ===== PRICING ===== */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 18px;
-      max-width: 760px;
-      margin: 0 auto;
-    }
-    .price-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-0);
-      border-radius: var(--radius-xl);
-      padding: 32px 28px;
-      position: relative;
-    }
-    .price-card.featured {
-      border-color: var(--accent);
-      box-shadow: 0 20px 50px -20px rgba(99,102,241,0.4);
-    }
-    .price-badge {
-      position: absolute;
-      top: -12px; left: 50%;
-      transform: translateX(-50%);
-      background: var(--accent);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 999px;
-      letter-spacing: 0.4px;
-    }
-    .price-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text-1); }
-    .price-amount { font-size: 40px; font-weight: 800; letter-spacing: -1.5px; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr; gap: 18px; max-width: 420px; margin: 0 auto; }
+    .price-card { background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-xl); padding: 32px 28px; position: relative; box-shadow: 0 24px 60px -24px rgba(99,102,241,0.45); }
+    .price-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 999px; letter-spacing: .4px; }
+    .price-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--accent-hover); }
+    .price-amount { font-size: 42px; font-weight: 900; letter-spacing: -2px; }
     .price-period { color: var(--text-3); font-size: 14px; font-weight: 500; }
-    .price-divider { height: 1px; background: var(--border-0); margin: 22px 0; }
-    .price-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .price-divider { height: 1px; background: var(--border-0); margin: 20px 0; }
+    .price-list { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
     .price-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-1); }
-    .price-list svg { color: var(--success); flex-shrink: 0; margin-top: 2px; }
+    .price-list svg { color: var(--success); flex-shrink: 0; margin-top: 3px; }
     .price-cta { width: 100%; justify-content: center; }
 
+    /* ===== CTA BAND ===== */
+    .cta-band { text-align: center; background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.1)); border: 1px solid rgba(99,102,241,0.25); border-radius: var(--radius-xl); padding: 56px 24px; }
+    .cta-band h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; }
+    .cta-band p { color: var(--text-2); max-width: 520px; margin: 0 auto 26px; font-size: 15px; }
+
     /* ===== FOOTER ===== */
-    footer {
-      border-top: 1px solid var(--border-0);
-      padding: 40px 0 32px;
-      margin-top: 40px;
-      position: relative;
-      z-index: 1;
-    }
-    .footer-grid {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    .footer-links {
-      display: flex;
-      gap: 22px;
-      flex-wrap: wrap;
-    }
-    .footer-links a {
-      color: var(--text-2);
-      font-size: 14px;
-      transition: color .15s;
-    }
+    footer { border-top: 1px solid var(--border-0); padding: 40px 0 36px; margin-top: 24px; position: relative; z-index: 1; }
+    .footer-grid { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
+    .footer-links a { color: var(--text-2); font-size: 14px; transition: color .15s; }
     .footer-links a:hover { color: var(--text-0); }
     .footer-copy { color: var(--text-3); font-size: 13px; }
 
+    /* ===== REVEAL ANIMATION ===== */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .bubble, .chip-float { animation: none; opacity: 1; transform: none; }
+      .chart .line { stroke-dashoffset: 0; }
+    }
+
     /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+      .hero { padding: 48px 0 40px; text-align: center; }
+      .hero-sub { margin-left: auto; margin-right: auto; }
+      .hero-cta { justify-content: center; }
+      .preview { max-width: 440px; margin: 0 auto; }
+      .live-grid { grid-template-columns: 1fr; }
+      .chip-2 { left: -10px; }
+    }
     @media (max-width: 640px) {
       .container { padding: 0 18px; }
-      .nav { padding: 16px 0; }
-      .nav-link { padding: 8px 10px; font-size: 13px; }
-      .brand-sub { display: none; }
-      .hero { padding: 40px 0 60px; }
-      .section { padding: 60px 0; }
-      .footer-grid { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .btn { padding: 11px 18px; }
-      .btn-lg { padding: 13px 22px; font-size: 14px; }
-    }
-    @media (max-width: 390px) {
-      .hero h1 { font-size: 2rem; letter-spacing: -1px; }
-      .hero-cta { flex-direction: column; align-items: stretch; }
       .nav-link[data-secondary] { display: none; }
+      .section { padding: 60px 0; }
+      .brand-sub { display: none; }
+      .footer-grid { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .chip-float { display: none; }
     }
   </style>
 </head>
 
 <body>
-  <header class="container">
-    <nav class="nav" aria-label="Principal">
-      <a href="/" class="brand" aria-label="RE Expert — inicio">
-        <div class="brand-logo">RE</div>
-        <div>
-          <div class="brand-text">RE Expert</div>
-          <div class="brand-sub">Real Estate AI</div>
+  <header class="site-header" id="siteHeader">
+    <div class="container">
+      <nav class="nav" aria-label="Principal">
+        <a href="/" class="brand" aria-label="RE Expert — inicio">
+          <div class="brand-logo">RE</div>
+          <div>
+            <div class="brand-text">RE Expert</div>
+            <div class="brand-sub">Real Estate AI</div>
+          </div>
+        </a>
+        <div class="nav-links">
+          <a href="#features" class="nav-link" data-secondary>Funciones</a>
+          <a href="#live" class="nav-link" data-secondary>En vivo</a>
+          <a href="pricing.html" class="nav-link" data-secondary>Precios</a>
+          <a href="login.html" class="nav-link">Ingresar</a>
+          <a href="register.html" class="btn btn-primary">Probar gratis</a>
         </div>
-      </a>
-      <div class="nav-links">
-        <a href="#features" class="nav-link" data-secondary>Funciones</a>
-        <a href="pricing.html" class="nav-link" data-secondary>Precios</a>
-        <a href="login.html" class="nav-link">Ingresar</a>
-        <a href="register.html" class="btn btn-primary">Probar gratis</a>
-      </div>
-    </nav>
+      </nav>
+    </div>
   </header>
 
   <main>
     <!-- ===== HERO ===== -->
     <section class="hero container">
-      <div class="hero-badge">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Hecho para el mercado inmobiliario argentino
-      </div>
-      <h1>El asistente con <span>IA</span> que entiende tu negocio inmobiliario</h1>
-      <p class="hero-sub">
-        Presupuestos automáticos, gestión de obra con CPI/SPI y consultas legales al instante.
-        RE Expert combina la potencia de Claude con conocimiento local: AFIP, ARBA, leyes de propiedad horizontal y más.
-      </p>
-      <div class="hero-cta">
-        <a href="register.html" class="btn btn-primary btn-lg">
-          Probar 7 días gratis
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-        <a href="#features" class="btn btn-ghost btn-lg">Ver cómo funciona</a>
-      </div>
-      <div class="hero-trust">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        7 días de prueba gratis · Cancelás cuando quieras
+      <div class="hero-grid">
+        <div>
+          <div class="hero-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            La plataforma de IA hecha para el real estate argentino
+          </div>
+          <h1>Todo tu negocio inmobiliario, <span class="grad">potenciado con IA</span></h1>
+          <p class="hero-sub">
+            No es solo un chat. Es la plataforma completa para <strong>inmobiliarias, desarrolladores y constructores</strong>:
+            asesoría experta, comparador de créditos, análisis de planos, control de obra y precios de materiales en vivo —
+            con conocimiento local (AFIP, ARBA, BCRA, UVA).
+          </p>
+          <div class="hero-cta">
+            <a href="register.html" class="btn btn-primary btn-lg">
+              Probar 7 días gratis
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+            <a href="#features" class="btn btn-ghost btn-lg">Ver todo lo que hace</a>
+          </div>
+          <div class="hero-trust">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            7 días gratis · Sin tarjeta para empezar · Cancelás cuando quieras
+          </div>
+        </div>
+
+        <!-- Product preview -->
+        <div class="preview reveal">
+          <div class="chip-float chip-1">
+            <span class="ic">💳</span> Créditos comparados en vivo
+          </div>
+          <div class="chip-float chip-2">
+            <span class="ic">📐</span> Análisis de planos IA
+          </div>
+          <div class="chip-float chip-3">
+            <span class="ic">📈</span> CPI 0,98 · SPI 1,02
+          </div>
+          <div class="preview-card">
+            <div class="preview-top">
+              <span class="dot" style="background:#ef4444"></span>
+              <span class="dot" style="background:#f59e0b"></span>
+              <span class="dot" style="background:#22c55e"></span>
+              <span class="preview-title">RE Expert · Chat experto</span>
+            </div>
+            <div class="preview-body">
+              <div class="bubble user">¿Cuánto ingreso necesito para el crédito de Nación por una casa de USD 90.000?</div>
+              <div class="bubble ai b2">
+                Con Nación (UVA, <span class="hl">6% TNA</span>, financia 75%) necesitás financiar ~USD 67.500.
+                La cuota inicial ronda <span class="hl">$520.000/mes</span>, así que pedís un ingreso familiar de
+                <span class="hl">~$2.080.000</span> (relación cuota/ingreso 25%).
+              </div>
+              <div class="bubble ai b3">
+                <span class="ok">✓</span> Calificás con Nación, Ciudad y Bancor. ¿Te armo el cuadro comparativo y el PDF para el banco?
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
+    <!-- ===== TRUST STRIP ===== -->
+    <div class="trust-strip">
+      <div class="container trust-row">
+        <span class="lbl">Conocimiento local</span>
+        <span class="tag">AFIP</span>
+        <span class="tag">ARBA</span>
+        <span class="tag">BCRA</span>
+        <span class="tag">UVA / CER</span>
+        <span class="tag">Propiedad Horizontal</span>
+        <span class="tag">DNU Alquileres</span>
+      </div>
+    </div>
+
     <!-- ===== FEATURES ===== -->
-    <section id="features" class="section container" aria-labelledby="features-title">
-      <div class="section-head">
-        <div class="section-eyebrow">Funcionalidades</div>
-        <h2 id="features-title" class="section-title">Todo lo que necesitás en un solo lugar</h2>
-        <p class="section-sub">
-          Desde la consulta más simple hasta el control de costos de obra. RE Expert se adapta a inmobiliarias, desarrolladores y estudios de arquitectura.
-        </p>
+    <section id="features" class="section container">
+      <div class="section-head reveal">
+        <div class="section-eyebrow">Una plataforma, todo el ciclo</div>
+        <h2 class="section-title">Mucho más que un chatbot</h2>
+        <p class="section-sub">Cada sección resuelve una parte real de tu día. Todo conectado, todo con IA, todo pensado para Argentina.</p>
       </div>
 
-      <div class="features-grid">
+      <div class="features-grid reveal">
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          </div>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
           <h3 class="feature-title">Chat IA experto</h3>
-          <p class="feature-desc">Respuestas instantáneas sobre normativa, fiscalidad, escrituras, alquileres y todo el ciclo inmobiliario argentino.</p>
+          <p class="feature-desc">Respuestas al instante sobre fiscalidad, escrituras, sellos, alquileres y todo el ciclo inmobiliario argentino. Con cálculos exactos, no estimaciones.</p>
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/><path d="M3 9h6"/><path d="M3 15h6"/><path d="M15 3v6"/><path d="M15 15v6"/></svg>
-          </div>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg></div>
+          <h3 class="feature-title">Créditos hipotecarios</h3>
+          <p class="feature-desc">Asesor hipotecario digital: compará bancos, calculá tu cuota y mirá si calificás. Datos de fuentes oficiales (BCRA), verificados antes de publicar.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><path d="m13 14 2 2 3-3"/></svg></div>
+          <h3 class="feature-title">Análisis de planos con IA</h3>
+          <p class="feature-desc">Subí un plano y la IA te detecta superficies, ambientes y observaciones. Ideal para tasar, presupuestar o revisar un proyecto en segundos.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg></div>
+          <h3 class="feature-title">Línea base de costo y tiempo</h3>
+          <p class="feature-desc">Para desarrolladores y constructores: Earned Value, CPI, SPI, EAC y desviaciones en tiempo real. Sabé si tu obra va en presupuesto y en fecha.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/><circle cx="18" cy="9" r="1.6" fill="currentColor"/></svg></div>
+          <h3 class="feature-title">Precios de materiales <span class="badge-live">en vivo</span></h3>
+          <p class="feature-desc">Seguimiento de precios de materiales e insumos con histórico y pronósticos. Cotizá con datos frescos y anticipate a las subas.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></div>
           <h3 class="feature-title">Presupuestos automáticos</h3>
-          <p class="feature-desc">Generá presupuestos detallados de obra con un prompt. La IA arma materiales, mano de obra y plazos según tu proyecto.</p>
+          <p class="feature-desc">Generá presupuestos de obra detallados con un prompt. La IA arma materiales, mano de obra y plazos, y lo exportás en PDF o Excel.</p>
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>
-          </div>
-          <h3 class="feature-title">Indicadores CPI / SPI</h3>
-          <p class="feature-desc">Controlá la salud económica y temporal de cada obra. Earned Value, EAC y desviaciones calculadas en tiempo real.</p>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></div>
+          <h3 class="feature-title">Academia</h3>
+          <p class="feature-desc">Capacitación y guías prácticas del rubro: fiscalidad, contratos, gestión de obra y más. Aprendé mientras trabajás.</p>
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
-          </div>
-          <h3 class="feature-title">Materiales y certificados</h3>
-          <p class="feature-desc">Catálogo de materiales con precios actualizados, alquiler de equipos y certificación mensual de avance de obra.</p>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16a2 2 0 0 1-2 2z"/><path d="M16 8h-8"/><path d="M16 12h-8"/><path d="M12 16h-4"/></svg></div>
+          <h3 class="feature-title">Noticias segmentadas</h3>
+          <p class="feature-desc">El pulso del sector, filtrado para vos: normativa, mercado, créditos y construcción. Sin ruido, solo lo que te impacta.</p>
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          </div>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
           <h3 class="feature-title">Pagos y flujo de caja</h3>
-          <p class="feature-desc">Registrá pagos a proveedores y subcontratistas. Visualizá el cash flow del proyecto y proyecciones a futuro.</p>
+          <p class="feature-desc">Registrá pagos a proveedores y subcontratistas, y visualizá el cash flow del proyecto con proyecciones a futuro.</p>
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
+          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
           <h3 class="feature-title">Datos seguros</h3>
-          <p class="feature-desc">HTTPS obligatorio, autenticación JWT, base de datos cifrada y aislamiento por usuario. Tus datos no entrenan modelos.</p>
+          <p class="feature-desc">HTTPS obligatorio, autenticación JWT, base cifrada y aislamiento por usuario. Tus datos son tuyos: no entrenan modelos.</p>
         </article>
+      </div>
+    </section>
+
+    <!-- ===== LIVE SHOWCASE ===== -->
+    <section id="live" class="section container">
+      <div class="section-head reveal">
+        <div class="section-eyebrow">Datos reales, no demos</div>
+        <h2 class="section-title">Información que se actualiza sola</h2>
+        <p class="section-sub">Precios y créditos se refrescan desde fuentes oficiales y se validan antes de mostrarse. Vos decidís con datos frescos y verídicos.</p>
+      </div>
+
+      <div class="live-grid reveal">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Precio de materiales — proyección</span>
+            <span class="panel-tag"><span class="pulse"></span> EN VIVO</span>
+          </div>
+          <div class="panel-sub">Índice de costo de construcción · histórico + pronóstico IA</div>
+          <svg class="chart" viewBox="0 0 520 170" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </linearGradient>
+            </defs>
+            <path class="area" d="M0,130 L65,120 L130,124 L195,98 L260,104 L325,72 L390,80 L390,170 L0,170 Z"/>
+            <path class="line" d="M0,130 L65,120 L130,124 L195,98 L260,104 L325,72 L390,80"/>
+            <path class="line fc" d="M390,80 L455,60 L520,40"/>
+          </svg>
+          <div class="legend">
+            <span><i style="background:#818cf8"></i>Histórico</span>
+            <span><i style="background:#f59e0b"></i>Pronóstico IA</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Créditos hipotecarios UVA</span>
+            <span class="panel-tag"><span class="pulse"></span> BCRA</span>
+          </div>
+          <div class="panel-sub">Comparador en vivo · datos oficiales verificados</div>
+          <div class="credit-row">
+            <div class="credit-bank">
+              <span class="bank-pill" style="background:#1e40af">NACIÓN</span>
+              <div><div style="font-size:13px;font-weight:600">UVA Vivienda</div><div class="credit-meta">30 años · financia 75%</div></div>
+            </div>
+            <div class="credit-rate">6,0%<small> TNA</small></div>
+          </div>
+          <div class="credit-row">
+            <div class="credit-bank">
+              <span class="bank-pill" style="background:#0d9488">CIUDAD</span>
+              <div><div style="font-size:13px;font-weight:600">Primera Vivienda</div><div class="credit-meta">20 años · financia 75%</div></div>
+            </div>
+            <div class="credit-rate">7,5%<small> TNA</small></div>
+          </div>
+          <div class="credit-row">
+            <div class="credit-bank">
+              <span class="bank-pill" style="background:#1d4ed8">BBVA</span>
+              <div><div style="font-size:13px;font-weight:600">UVA Vivienda</div><div class="credit-meta">30 años · financia 80%</div></div>
+            </div>
+            <div class="credit-rate">7,5%<small> TNA</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SEGMENTS ===== -->
+    <section class="section container">
+      <div class="section-head reveal">
+        <div class="section-eyebrow">Para quién es</div>
+        <h2 class="section-title">Hecho para todo el rubro</h2>
+      </div>
+      <div class="segments reveal">
+        <div class="seg"><div class="seg-emoji">🏢</div><div class="seg-name">Inmobiliarias</div><div class="seg-desc">Consultas legales, fiscales y de créditos al instante.</div></div>
+        <div class="seg"><div class="seg-emoji">🏗️</div><div class="seg-name">Desarrolladores</div><div class="seg-desc">Línea base, factibilidad y control de obra con IA.</div></div>
+        <div class="seg"><div class="seg-emoji">👷</div><div class="seg-name">Constructores</div><div class="seg-desc">Presupuestos, precios en vivo y certificación de avance.</div></div>
+        <div class="seg"><div class="seg-emoji">📐</div><div class="seg-name">Arquitectos</div><div class="seg-desc">Análisis de planos y cómputos en segundos.</div></div>
+      </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <section class="section container">
+      <div class="stats reveal">
+        <div class="stat"><div class="stat-num">9</div><div class="stat-lbl">secciones de valor en una plataforma</div></div>
+        <div class="stat"><div class="stat-num">24/7</div><div class="stat-lbl">asistente experto disponible</div></div>
+        <div class="stat"><div class="stat-num">100%</div><div class="stat-lbl">enfocado en el mercado argentino</div></div>
+        <div class="stat"><div class="stat-num">Claude</div><div class="stat-lbl">la IA más avanzada, por dentro</div></div>
       </div>
     </section>
 
     <!-- ===== PRICING ===== -->
-    <section id="pricing" class="section container" aria-labelledby="pricing-title">
-      <div class="section-head">
+    <section id="pricing" class="section container">
+      <div class="section-head reveal">
         <div class="section-eyebrow">Planes</div>
-        <h2 id="pricing-title" class="section-title">Probá 7 días gratis. Un solo plan, todo incluido.</h2>
-        <p class="section-sub">Sin permanencia, sin sorpresas. Cancelá cuando quieras desde tu panel.</p>
+        <h2 class="section-title">Un solo plan. Todo incluido.</h2>
+        <p class="section-sub">Probá 7 días gratis. Sin permanencia, sin sorpresas. Cancelás cuando quieras desde tu panel.</p>
       </div>
-
-      <div class="pricing-grid">
-        <div class="price-card featured">
+      <div class="pricing-grid reveal">
+        <div class="price-card">
           <div class="price-badge">Más popular</div>
-          <div class="price-name" style="color: var(--accent-hover)">Pro</div>
-          <div>
-            <span class="price-amount">$69.900</span>
-            <span class="price-period"> / mes</span>
-          </div>
+          <div class="price-name">Pro</div>
+          <div><span class="price-amount">$69.900</span><span class="price-period"> / mes</span></div>
           <div class="price-divider"></div>
           <ul class="price-list">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>200 mensajes / día</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Presupuestos automáticos con IA</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Dashboard de proyecto y obra</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>CPI / SPI / EAC en tiempo real</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Acceso a todas las secciones</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Chat experto + análisis de planos con IA</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Créditos, presupuestos y control de obra</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Precios de materiales en vivo + pronósticos</li>
           </ul>
-          <a href="pricing.html" class="btn btn-primary price-cta">Ver detalles</a>
+          <a href="register.html" class="btn btn-primary price-cta">Empezar 7 días gratis</a>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== CTA BAND ===== -->
+    <section class="section container">
+      <div class="cta-band reveal">
+        <h2>Tu próximo proyecto, con una ventaja injusta</h2>
+        <p>Sumate a las inmobiliarias y desarrolladores que ya toman mejores decisiones con RE Expert.</p>
+        <a href="register.html" class="btn btn-primary btn-lg">
+          Crear mi cuenta gratis
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
       </div>
     </section>
   </main>
 
   <footer>
     <div class="container footer-grid">
-      <div class="footer-copy">© <span id="year">2026</span> RE Expert · Hecho en Argentina</div>
+      <div class="footer-copy">© <span id="year">2026</span> RE Expert · Real Estate AI · Hecho en Argentina</div>
       <nav class="footer-links" aria-label="Pie">
         <a href="#features">Funciones</a>
+        <a href="#live">En vivo</a>
         <a href="pricing.html">Precios</a>
         <a href="login.html">Ingresar</a>
         <a href="register.html">Crear cuenta</a>
@@ -490,8 +613,19 @@
   </footer>
 
   <script>
-    // Año dinámico, sin pegar fechas hardcoded.
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Nav con fondo al scrollear
+    const header = document.getElementById('siteHeader');
+    const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Reveal al entrar en viewport
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
   </script>
 </body>
 </html>

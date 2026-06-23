@@ -193,6 +193,42 @@ body::before {
   display: block;
 }
 
+/* Error visible por clase (robusto ante el wrapper del toggle de contraseña). */
+.form-error.is-visible {
+  display: block;
+}
+
+/* ===== Toggle ver/ocultar contraseña ===== */
+.input-wrap {
+  position: relative;
+  display: block;
+}
+.input-wrap .form-input {
+  padding-right: 44px;
+}
+.pw-toggle {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.pw-toggle:hover {
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .forgot-link {
   display: block;
   text-align: right;
