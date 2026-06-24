@@ -24,7 +24,6 @@ from models.project import Project, ProjectMilestone
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/api/project", tags=["project"])
 logger = logging.getLogger(__name__)
@@ -55,12 +54,31 @@ def _compute_indicators(project: Project) -> ProjectIndicators:
 
 
 async def _get_user_project(db: AsyncSession, user_id: UUID) -> Project | None:
-    result = await db.execute(
-        select(Project)
-        .where(Project.user_id == user_id)
-        .options(selectinload(Project.milestones))
-    )
+    # Sin selectinload de milestones a propósito: si la tabla project_milestones
+    # tuviera un problema de esquema, igual queremos poder cargar el proyecto.
+    # Los hitos se cargan aparte, de forma tolerante (ver _load_milestones).
+    result = await db.execute(select(Project).where(Project.user_id == user_id))
     return result.scalar_one_or_none()
+
+
+async def _load_milestones(db: AsyncSession, project_id: UUID) -> list[ProjectMilestone]:
+    """Carga los hitos de un proyecto de forma tolerante.
+
+    Si la consulta falla (p.ej. inconsistencia de esquema), devuelve [] en vez
+    de tumbar el panel entero — el proyecto y sus indicadores se siguen viendo.
+    No hace rollback a propósito: el objeto Project ya está materializado y la
+    sesión se cierra al terminar el request.
+    """
+    try:
+        result = await db.execute(
+            select(ProjectMilestone)
+            .where(ProjectMilestone.project_id == project_id)
+            .order_by(ProjectMilestone.orden.asc())
+        )
+        return list(result.scalars().all())
+    except Exception:  # noqa: BLE001 — un problema con hitos no debe romper el dashboard
+        logger.exception("No se pudieron cargar hitos del proyecto %s", project_id)
+        return []
 
 
 @router.get(
@@ -86,10 +104,11 @@ async def get_dashboard(
         indicators = ProjectIndicators(
             cpi=None, spi=None, eac=None, desvio_proyectado=None, pct_ejecutado=0.0
         )
+    milestones = await _load_milestones(db, project.id)
     return ProjectDashboard(
         project=ProjectOut.model_validate(project),
         indicators=indicators,
-        milestones=[MilestoneOut.model_validate(m) for m in project.milestones],
+        milestones=[MilestoneOut.model_validate(m) for m in milestones],
     )
 
 
@@ -161,10 +180,11 @@ async def update_project(
     await db.commit()
     await db.refresh(project)
 
+    milestones = await _load_milestones(db, project.id)
     return ProjectDashboard(
         project=ProjectOut.model_validate(project),
         indicators=_compute_indicators(project),
-        milestones=[MilestoneOut.model_validate(m) for m in project.milestones],
+        milestones=[MilestoneOut.model_validate(m) for m in milestones],
     )
 
 
@@ -179,12 +199,17 @@ async def list_milestones(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(ProjectMilestone)
-        .where(ProjectMilestone.user_id == user.id)
-        .order_by(ProjectMilestone.orden.asc())
-    )
-    return [MilestoneOut.model_validate(m) for m in result.scalars().all()]
+    try:
+        result = await db.execute(
+            select(ProjectMilestone)
+            .where(ProjectMilestone.user_id == user.id)
+            .order_by(ProjectMilestone.orden.asc())
+        )
+        rows = result.scalars().all()
+    except Exception:  # noqa: BLE001 — un problema con hitos no debe romper la vista
+        logger.exception("No se pudieron listar hitos del usuario %s", user.id)
+        return []
+    return [MilestoneOut.model_validate(m) for m in rows]
 
 
 @router.post(
