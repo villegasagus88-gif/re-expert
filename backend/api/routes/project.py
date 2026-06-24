@@ -20,6 +20,7 @@ from api.schemas.project import (
 from core.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from models.base import get_db
+from models.payment import Payment
 from models.project import Project, ProjectMilestone
 from models.user import User
 from sqlalchemy import select
@@ -29,20 +30,27 @@ router = APIRouter(prefix="/api/project", tags=["project"])
 logger = logging.getLogger(__name__)
 
 
-def _compute_indicators(project: Project) -> ProjectIndicators:
+def _compute_indicators(
+    project: Project,
+    ac: Decimal | None = None,
+    comprometido: Decimal | None = None,
+    gasto_desde_pagos: bool = False,
+) -> ProjectIndicators:
+    # ac = costo real (AC). Si viene None se usa el costo_real cargado a mano;
+    # normalmente viene de la suma de pagos "pagado" (ver _aggregate_payments).
     pb = float(project.presupuesto_base)
-    ac = float(project.costo_real)
+    ac_f = float(ac if ac is not None else project.costo_real)
     avance_real = float(project.avance_real_pct)
     avance_plan = float(project.avance_plan_pct)
 
     ev = pb * (avance_real / 100) if pb > 0 else 0.0
     pv = pb * (avance_plan / 100) if pb > 0 else 0.0
 
-    cpi = round(ev / ac, 3) if ac > 0 else None
+    cpi = round(ev / ac_f, 3) if ac_f > 0 else None
     spi = round(ev / pv, 3) if pv > 0 else None
-    eac_val = (pb * ac / ev) if (ev > 0 and ac > 0) else None  # EAC exacto (BAC/CPI sin arrastrar el redondeo del CPI)
+    eac_val = (pb * ac_f / ev) if (ev > 0 and ac_f > 0) else None  # EAC exacto (BAC/CPI sin arrastrar el redondeo del CPI)
     desvio = round(eac_val - pb, 2) if eac_val is not None else None
-    pct_ejecutado = round(ac / pb * 100, 1) if pb > 0 else 0.0
+    pct_ejecutado = round(ac_f / pb * 100, 1) if pb > 0 else 0.0
 
     return ProjectIndicators(
         cpi=round(cpi, 2) if cpi is not None else None,
@@ -50,6 +58,9 @@ def _compute_indicators(project: Project) -> ProjectIndicators:
         eac=Decimal(str(round(eac_val, 2))) if eac_val is not None else None,
         desvio_proyectado=Decimal(str(desvio)) if desvio is not None else None,
         pct_ejecutado=pct_ejecutado,
+        costo_real=Decimal(str(round(ac_f, 2))),
+        comprometido=comprometido,
+        gasto_desde_pagos=gasto_desde_pagos,
     )
 
 
@@ -81,6 +92,73 @@ async def _load_milestones(db: AsyncSession, project_id: UUID) -> list[ProjectMi
         return []
 
 
+async def _aggregate_payments(db: AsyncSession, user_id: UUID) -> dict | None:
+    """Suma los pagos del usuario para derivar el gasto real (AC) del proyecto.
+
+    Como hay un proyecto por usuario, los pagos del usuario son los del proyecto.
+    El AC sale de los pagos en estado 'pagado'; lo 'pendiente' es el compromiso a
+    futuro; el desglose por categoría sirve para los costos por rubro. Tolerante:
+    si falla, devuelve None y el dashboard cae al costo_real cargado a mano.
+    """
+    try:
+        result = await db.execute(select(Payment).where(Payment.user_id == user_id))
+        rows = list(result.scalars().all())
+    except Exception:  # noqa: BLE001 — un problema con pagos no debe romper el panel
+        logger.exception("No se pudieron agregar pagos del usuario %s", user_id)
+        return None
+
+    pagado = sum((p.monto for p in rows if p.estado == "pagado"), Decimal(0))
+    pendiente = sum((p.monto for p in rows if p.estado == "pendiente"), Decimal(0))
+    por_categoria: dict[str, Decimal] = {}
+    for p in rows:
+        if p.estado == "pagado":
+            cat = (p.categoria or "").strip().lower() or "otros"
+            por_categoria[cat] = por_categoria.get(cat, Decimal(0)) + p.monto
+    tiene_pagos = any(p.estado in ("pagado", "pendiente") for p in rows)
+    return {
+        "pagado": pagado,
+        "pendiente": pendiente,
+        "por_categoria": por_categoria,
+        "tiene_pagos": tiene_pagos,
+    }
+
+
+async def _build_dashboard(db: AsyncSession, project: Project) -> ProjectDashboard:
+    """Arma el dashboard: deriva el gasto real (AC) de los pagos, calcula los
+    indicadores EVM con ese AC, y carga los hitos. Todo tolerante: ningún
+    sub-fallo (pagos o hitos) debe tumbar el panel. Lo usan get/create/update."""
+    pay = await _aggregate_payments(db, project.user_id)
+    if pay and pay["tiene_pagos"]:
+        ac: Decimal | None = pay["pagado"]
+        comprometido = pay["pendiente"]
+        from_pagos = True
+        por_categoria = pay["por_categoria"]
+    else:
+        ac = None  # sin pagos → usa el costo_real cargado a mano (compat)
+        comprometido = pay["pendiente"] if pay else None
+        from_pagos = False
+        por_categoria = pay["por_categoria"] if pay else {}
+
+    try:
+        indicators = _compute_indicators(
+            project, ac=ac, comprometido=comprometido, gasto_desde_pagos=from_pagos
+        )
+    except Exception:  # noqa: BLE001 — datos raros no deben tumbar el dashboard
+        logger.exception("compute_indicators falló para proyecto %s", project.id)
+        indicators = ProjectIndicators(
+            cpi=None, spi=None, eac=None, desvio_proyectado=None, pct_ejecutado=0.0,
+            costo_real=project.costo_real, comprometido=comprometido, gasto_desde_pagos=False,
+        )
+
+    milestones = await _load_milestones(db, project.id)
+    return ProjectDashboard(
+        project=ProjectOut.model_validate(project),
+        indicators=indicators,
+        milestones=[MilestoneOut.model_validate(m) for m in milestones],
+        gasto_por_categoria=por_categoria,
+    )
+
+
 @router.get(
     "/dashboard",
     response_model=ProjectDashboard,
@@ -97,19 +175,7 @@ async def get_dashboard(
     project = await _get_user_project(db, user.id)
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
-    try:
-        indicators = _compute_indicators(project)
-    except Exception:  # noqa: BLE001 — datos raros no deben tumbar el dashboard
-        logger.exception("compute_indicators falló para proyecto %s", project.id)
-        indicators = ProjectIndicators(
-            cpi=None, spi=None, eac=None, desvio_proyectado=None, pct_ejecutado=0.0
-        )
-    milestones = await _load_milestones(db, project.id)
-    return ProjectDashboard(
-        project=ProjectOut.model_validate(project),
-        indicators=indicators,
-        milestones=[MilestoneOut.model_validate(m) for m in milestones],
-    )
+    return await _build_dashboard(db, project)
 
 
 @router.post(
@@ -142,11 +208,7 @@ async def create_project(
     await db.commit()
     await db.refresh(project)
 
-    return ProjectDashboard(
-        project=ProjectOut.model_validate(project),
-        indicators=_compute_indicators(project),
-        milestones=[],
-    )
+    return await _build_dashboard(db, project)
 
 
 @router.put(
@@ -180,12 +242,7 @@ async def update_project(
     await db.commit()
     await db.refresh(project)
 
-    milestones = await _load_milestones(db, project.id)
-    return ProjectDashboard(
-        project=ProjectOut.model_validate(project),
-        indicators=_compute_indicators(project),
-        milestones=[MilestoneOut.model_validate(m) for m in milestones],
-    )
+    return await _build_dashboard(db, project)
 
 
 # ── ProjectMilestones ──

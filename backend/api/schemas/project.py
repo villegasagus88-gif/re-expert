@@ -125,9 +125,17 @@ class ProjectIndicators(BaseModel):
     eac: Decimal | None
     desvio_proyectado: Decimal | None
     pct_ejecutado: float
+    # Gasto real (AC) usado para el cálculo. Normalmente = suma de pagos "pagado".
+    costo_real: Decimal | None = None
+    # Pagos pendientes (compromiso a futuro, no contado en el AC todavía).
+    comprometido: Decimal | None = None
+    # True si el AC salió de los pagos registrados (no del valor cargado a mano).
+    gasto_desde_pagos: bool = False
 
 
 class ProjectDashboard(BaseModel):
     project: ProjectOut
     indicators: ProjectIndicators
     milestones: list[MilestoneOut]
+    # Gasto real por categoría (suma de pagos "pagado" agrupados por categoría).
+    gasto_por_categoria: dict[str, Decimal] = Field(default_factory=dict)
