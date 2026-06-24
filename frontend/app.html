@@ -2572,6 +2572,17 @@ function _projSCurveSVG(p,ind){
   </svg>`;
 }
 
+// Alertas automáticas derivadas de los indicadores (no se guardan, se calculan).
+function _projAutoAlertas(p,ind){
+  const out=[];const PB=Number(p.presupuesto_base)||0;
+  if(ind.cpi!=null&&ind.cpi<0.9)out.push({severidad:'high',titulo:`Sobrecosto · CPI ${ind.cpi.toFixed(2)}`,descripcion:` Por cada $1 gastado recibís $${ind.cpi.toFixed(2)} de obra: vas ${((1-ind.cpi)*100).toFixed(0)}% sobre lo previsto.`});
+  if(ind.spi!=null&&ind.spi<0.9)out.push({severidad:'high',titulo:`Atraso de obra · SPI ${ind.spi.toFixed(2)}`,descripcion:` El avance va ${((1-ind.spi)*100).toFixed(0)}% por debajo del plan.`});
+  if(ind.desvio_proyectado!=null&&Number(ind.desvio_proyectado)>0&&PB>0&&Number(ind.desvio_proyectado)/PB>0.03)out.push({severidad:'high',titulo:'Proyección de sobrecosto',descripcion:` A este ritmo cerrás ${fmtM(ind.desvio_proyectado)} arriba del presupuesto base.`});
+  const gap=(Number(ind.pct_ejecutado)||0)-(Number(p.avance_real_pct)||0);
+  if(gap>12)out.push({severidad:'medium',titulo:'Gasto adelantado al avance',descripcion:` Gastaste ${gap.toFixed(0)} puntos más de lo que avanzaste físicamente.`});
+  return out;
+}
+
 function renderProyectoResumen(data){
   const el=$('#projResumenContent');if(!el)return;
   if(!data){el.innerHTML=proyectoEmptyHTML();return;}
@@ -2580,7 +2591,7 @@ function renderProyectoResumen(data){
   const cpiCls=ind.cpi==null?'':ind.cpi>=1?'good':ind.cpi>=0.9?'warn':'bad';
   const spiCls=ind.spi==null?'':ind.spi>=1?'good':ind.spi>=0.85?'warn':'bad';
   const eacCls=ind.desvio_proyectado==null?'':Number(ind.desvio_proyectado)<=0?'good':'bad';
-  const alertas=Array.isArray(p.alertas)?p.alertas:[];
+  const alertas=[..._projAutoAlertas(p,ind),...(Array.isArray(p.alertas)?p.alertas:[])];
   const v=_projVerdict(p,ind);
   // Avance físico vs financiero (la métrica clave de control de obra).
   const fis=Number(p.avance_real_pct)||0, fin=Number(ind.pct_ejecutado)||0;
@@ -2638,9 +2649,54 @@ function renderProyectoResumen(data){
     </div>
     ${alertas.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Alertas activas</div><div class="alert-list">${alertas.map(a=>`<div class="alert-item ${a.severidad}"><span class="alert-icon">${a.severidad==='high'?'⚠️':a.severidad==='medium'?'⏱️':'📋'}</span><div class="alert-text"><strong>${esc(a.titulo)}</strong>${esc(a.descripcion)}</div></div>`).join('')}</div></div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-primary" id="aiProjectAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Análisis IA del proyecto</button>
-      <button class="btn-secondary" id="aiProjectReport">Generar reporte ejecutivo</button>
+      <button class="btn-primary" id="aiProjectAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Diagnosticar con IA</button>
+      <button class="btn-secondary" id="aiProjectReport">Reporte ejecutivo (chat)</button>
+      <button class="btn-secondary" id="exportProjectPDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>Exportar PDF</button>
     </div>`;
+}
+
+// Exporta un reporte ejecutivo imprimible del proyecto (Guardar como PDF).
+function exportarProyectoPDF(){
+  const data=proyectoState.data;
+  if(!data){alert('No hay datos del proyecto para exportar.');return;}
+  const p=data.project,ind=data.indicators,ms=data.milestones||[];
+  const v=_projVerdict(p,ind);
+  const fis=Number(p.avance_real_pct)||0,fin=Number(ind.pct_ejecutado)||0;
+  const rubros=Array.isArray(p.costos_rubros)?p.costos_rubros:[];
+  const alertas=[..._projAutoAlertas(p,ind),...(Array.isArray(p.alertas)?p.alertas:[])];
+  const lbl={done:'Completado',active:'En curso',pending:'Pendiente',delayed:'Retrasado'};
+  const sevColor={high:'#dc2626',medium:'#d97706',low:'#64748b'};
+  const vColor=({green:'#16a34a',yellow:'#d97706',red:'#dc2626'})[v.cls]||'#d97706';
+  const today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte — ${esc(p.nombre||'Proyecto')}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1e293b;padding:32px 36px;font-size:13px;line-height:1.5}
+  .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #6366f1;padding-bottom:14px;margin-bottom:18px}.hd .logo{font-weight:800;font-size:18px;color:#6366f1}.hd .sub{color:#64748b;font-size:11px;margin-top:2px}
+  h1{font-size:20px;margin-bottom:2px}.verdict{display:inline-block;padding:6px 14px;border-radius:8px;font-weight:700;color:#fff;margin:8px 0 18px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#475569;border-bottom:1px solid #e2e8f0;padding-bottom:5px;margin:20px 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{border:1px solid #e2e8f0;border-radius:8px;padding:12px}.card .l{font-size:9.5px;color:#64748b;text-transform:uppercase}.card .v{font-size:17px;font-weight:800;margin-top:3px}
+  table{width:100%;border-collapse:collapse;margin-top:4px}td,th{padding:7px 8px;border-bottom:1px solid #eef2f7;text-align:left;font-size:12px}th{font-size:9.5px;text-transform:uppercase;color:#64748b}
+  .alert{border-left:3px solid #cbd5e1;padding:8px 12px;margin-bottom:8px;background:#f8fafc;border-radius:0 6px 6px 0}.alert b{display:block;margin-bottom:1px}
+  .ft{margin-top:26px;padding-top:12px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:10px}@media print{body{padding:6px 0}}</style></head><body>
+  <div class="hd"><div><div class="logo">RE Expert</div><div class="sub">Reporte ejecutivo de proyecto</div></div><div style="text-align:right;font-size:11px;color:#64748b">${today}</div></div>
+  <h1>${esc(p.nombre||'Proyecto')}</h1><span class="verdict" style="background:${vColor}">${esc(v.frase)}</span>
+  <h2>Indicadores clave</h2><div class="grid">
+   <div class="card"><div class="l">Presupuesto base</div><div class="v">${fmtM(p.presupuesto_base)}</div></div>
+   <div class="card"><div class="l">Costo real</div><div class="v">${fmtM(p.costo_real)}</div></div>
+   <div class="card"><div class="l">CPI</div><div class="v">${ind.cpi!=null?ind.cpi.toFixed(2):'—'}</div></div>
+   <div class="card"><div class="l">SPI</div><div class="v">${ind.spi!=null?ind.spi.toFixed(2):'—'}</div></div>
+   <div class="card"><div class="l">Avance físico</div><div class="v">${fis.toFixed(0)}%</div></div>
+   <div class="card"><div class="l">Avance financiero</div><div class="v">${fin.toFixed(0)}%</div></div>
+   <div class="card"><div class="l">Proyección cierre</div><div class="v">${ind.eac?fmtM(ind.eac):'—'}</div></div>
+   <div class="card"><div class="l">Desvío proyectado</div><div class="v" style="color:${ind.desvio_proyectado!=null&&Number(ind.desvio_proyectado)>0?'#dc2626':'#16a34a'}">${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado):'—'}</div></div>
+  </div>
+  ${rubros.length?`<h2>Costos por rubro</h2><table><tr><th>Rubro</th><th style="text-align:right">Base</th><th style="text-align:right">Real</th><th style="text-align:right">Var.</th></tr>${rubros.map(r=>{const b=Number(r.base)||0,re=Number(r.real)||0;const vp=b>0?((re-b)/b*100):0;return `<tr><td>${esc(r.nombre)}</td><td style="text-align:right">${fmtM(b)}</td><td style="text-align:right">${fmtM(re)}</td><td style="text-align:right;color:${vp>0?'#dc2626':'#16a34a'}">${re===0?'—':(vp>0?'+':'')+vp.toFixed(0)+'%'}</td></tr>`;}).join('')}</table>`:''}
+  ${ms.length?`<h2>Cronograma de hitos</h2><table><tr><th>Hito</th><th>Plan</th><th>Real</th><th>Estado</th></tr>${ms.map(m=>`<tr><td>${esc(m.nombre)}</td><td>${m.fecha_objetivo?fmtMonth(m.fecha_objetivo):'—'}</td><td>${m.fecha_real?fmtMonth(m.fecha_real):'—'}</td><td>${esc(lbl[m.estado]||m.estado)}</td></tr>`).join('')}</table>`:''}
+  ${alertas.length?`<h2>Alertas</h2>${alertas.map(a=>`<div class="alert" style="border-left-color:${sevColor[a.severidad]||'#cbd5e1'}"><b>${esc(a.titulo)}</b>${esc(a.descripcion)}</div>`).join('')}`:''}
+  <div class="ft">Generado por RE Expert · ${today} · Datos de referencia; verificá antes de decidir. Proyección (EAC) e índices son estimaciones según el avance cargado.</div>
+  <scr`+`ipt>window.onload=function(){setTimeout(function(){window.print()},250)}</scr`+`ipt></body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Tu navegador bloqueó la ventana emergente. Permitila para exportar el PDF.');return;}
+  w.document.open();w.document.write(html);w.document.close();
 }
 
 function renderProyectoCostos(data){
@@ -3949,25 +4005,26 @@ function initProyectoTabs(){
   $('#projResumenContent')?.addEventListener('click',e=>{
     const d=proyectoState.data?.project,ind=proyectoState.data?.indicators;
     if(e.target.closest('#aiProjectAnalysis')){
-      switchView('chat');
+      newConversation();
       setTimeout(()=>sendMessage(d
         ?`Analiza el estado de mi proyecto "${d.nombre}". Presupuesto base ${fmtM(d.presupuesto_base)}, costo real ${fmtM(d.costo_real)} (${ind?.pct_ejecutado??0}% ejecutado), avance ${d.avance_real_pct}% vs ${d.avance_plan_pct}% programado, ${d.meses_transcurridos} de ${d.meses_total} meses. CPI=${ind?.cpi??'N/A'}, SPI=${ind?.spi??'N/A'}, EAC=${ind?.eac?fmtM(ind.eac):'N/A'}. Diagnóstico profesional con recomendaciones concretas.`
         :'Analiza el estado general de mi proyecto de construccion. Dame un diagnostico profesional con recomendaciones concretas para corregir desvios.'
       ),100);
     }
     if(e.target.closest('#aiProjectReport')){
-      switchView('chat');
+      newConversation();
       setTimeout(()=>sendMessage(d
         ?`Genera un reporte ejecutivo del proyecto "${d.nombre}": Presupuesto ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}, avance ${d.avance_real_pct}%, plazo ${d.meses_transcurridos}/${d.meses_total} meses, CPI ${ind?.cpi??'N/A'}, SPI ${ind?.spi??'N/A'}, EAC ${ind?.eac?fmtM(ind.eac):'N/A'}. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos y recomendaciones.`
         :'Genera un reporte ejecutivo profesional del proyecto. Formato: resumen ejecutivo, estado financiero, cronograma, riesgos, recomendaciones y proximos pasos.'
       ),100);
     }
+    if(e.target.closest('#exportProjectPDF')){exportarProyectoPDF();}
   });
   $('#projCostosContent')?.addEventListener('click',e=>{
     if(e.target.closest('#aiCostAnalysis')){
       const d=proyectoState.data?.project;
       const rubros=d?.costos_rubros?.map(r=>`${r.nombre} base ${fmtM(r.base)} real ${fmtM(r.real)}`).join(', ')||'sin detalle';
-      switchView('chat');
+      newConversation();
       setTimeout(()=>sendMessage(d
         ?`Analiza los costos de mi proyecto "${d.nombre}": presupuesto total ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}. Rubros: ${rubros}. Analiza desvíos, identifica causas probables y recomendá acciones.`
         :'Haceme un analisis detallado de costos de mi obra. Analiza desvios, identifica causas probables y recomienda acciones.'
@@ -3978,7 +4035,7 @@ function initProyectoTabs(){
     if(e.target.closest('#aiScheduleAnalysis')){
       const d=proyectoState.data?.project,ms=proyectoState.data?.milestones||[];
       const hitos=ms.map(m=>`${m.nombre} (${m.estado})`).join(', ')||'sin hitos definidos';
-      switchView('chat');
+      newConversation();
       setTimeout(()=>sendMessage(d
         ?`Analiza el cronograma de mi proyecto "${d.nombre}": inicio ${d.fecha_inicio||'N/A'}, entrega programada ${d.fecha_entrega_programada||'N/A'}. Hitos: ${hitos}. SPI=${proyectoState.data?.indicators?.spi??'N/A'}. Dame analisis de ruta critica y plan para recuperar plazo.`
         :'Analiza el cronograma de mi proyecto de construccion. Dame un analisis de ruta critica, impacto del retraso acumulado y plan de accion para recuperar plazo.'
