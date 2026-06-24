@@ -12,9 +12,13 @@ Esta migración crea `project_milestones` SOLO si no existe (idempotente), con e
 mismo esquema que 0007. Segura de correr en cualquier entorno: si la tabla ya
 está, no hace nada.
 
-Revision ID: 0019_fix_missing_project_milestones
+Revision ID: 0019_fix_project_ms
 Revises: 0018_add_credits_pipeline
 Create Date: 2026-06-24 00:00:00.000000
+
+NOTA: el ID de revisión debe ser <= 32 chars — la columna alembic_version.version_num
+es VARCHAR(32). Un ID más largo hace fallar el UPDATE de stamping (y con él TODO el
+deploy, porque alembic upgrade head corre como preDeployCommand). Por eso es corto.
 """
 from collections.abc import Sequence
 
@@ -22,7 +26,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0019_fix_missing_project_milestones"
+revision: str = "0019_fix_project_ms"
 down_revision: str | None = "0018_add_credits_pipeline"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
