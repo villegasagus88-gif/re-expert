@@ -2522,39 +2522,122 @@ document.addEventListener('submit',(e)=>{
   if(e.target&&e.target.id==='projInitForm')_submitProjInit(e);
 });
 
+// Veredicto en criollo (semáforo) desde CPI/SPI.
+function _projVerdict(p,ind){
+  let cls='green';const parts=[];
+  if(ind.cpi!=null){
+    if(ind.cpi<0.9){cls='red';parts.push(`${((1-ind.cpi)*100).toFixed(0)}% sobre costo`);}
+    else if(ind.cpi<1){if(cls!=='red')cls='yellow';parts.push(`${((1-ind.cpi)*100).toFixed(0)}% sobre costo`);}
+    else parts.push('en presupuesto');
+  }
+  if(ind.spi!=null){
+    if(ind.spi<0.85){cls='red';parts.push(`${((1-ind.spi)*100).toFixed(0)}% atrasado`);}
+    else if(ind.spi<1){if(cls!=='red')cls='yellow';parts.push(`${((1-ind.spi)*100).toFixed(0)}% atrasado`);}
+    else parts.push('en fecha');
+  }
+  return {cls, frase: parts.length?parts.join(' · '):(p.estado_texto||'En curso')};
+}
+
+// Curva S de control: línea base de costo (plan) vs costo real + proyección a EAC.
+function _projSCurveSVG(p,ind){
+  const PB=Number(p.presupuesto_base)||0;
+  const AC=Number(p.costo_real)||0;
+  const EAC=ind.eac!=null?Number(ind.eac):AC;
+  const mTot=Math.max(1,p.meses_total||1);
+  const mNow=Math.min(mTot,Math.max(0.0001,p.meses_transcurridos||0));
+  const aReal=(p.avance_real_pct||0)/100;
+  const W=600,H=210,padL=6,padR=6,padT=14,padB=22;
+  const iW=W-padL-padR,iH=H-padT-padB;
+  const maxY=(Math.max(PB,EAC,AC)*1.12)||1;
+  const X=t=>padL+(t/mTot)*iW;
+  const Y=v=>padT+iH-(v/maxY)*iH;
+  const smooth=u=>u<=0?0:u>=1?1:u*u*(3-2*u);
+  const N=40;
+  let pv='';for(let i=0;i<=N;i++){pv+=(i?'L':'M')+X((i/N)*mTot).toFixed(1)+' '+Y(PB*smooth(i/N)).toFixed(1)+' ';}
+  let ac='';const Na=Math.max(2,Math.round(N*mNow/mTot));
+  for(let i=0;i<=Na;i++){ac+=(i?'L':'M')+X((i/Na)*mNow).toFixed(1)+' '+Y(AC*smooth(i/Na)).toFixed(1)+' ';}
+  const proj=`M${X(mNow).toFixed(1)} ${Y(AC).toFixed(1)} L${X(mTot).toFixed(1)} ${Y(EAC).toFixed(1)}`;
+  const hoyX=X(mNow).toFixed(1);
+  const area=`M${padL} ${(padT+iH).toFixed(1)} ${pv.replace(/^M/,'L')}L${X(mTot).toFixed(1)} ${(padT+iH).toFixed(1)} Z`;
+  return `<svg class="scurve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Curva S de control de costos">
+    <defs><linearGradient id="pvg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.18"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></linearGradient></defs>
+    <path class="scA" d="${area}"/>
+    <line class="scHoy" x1="${hoyX}" y1="${padT}" x2="${hoyX}" y2="${(padT+iH).toFixed(1)}"/>
+    <path class="scPV" d="${pv.trim()}"/>
+    <path class="scAC" d="${ac.trim()}"/>
+    <path class="scProj" d="${proj}"/>
+    <circle class="scDot ev" cx="${hoyX}" cy="${Y(PB*aReal).toFixed(1)}" r="4.5"><title>Valor ganado hoy</title></circle>
+    <circle class="scDot ac" cx="${hoyX}" cy="${Y(AC).toFixed(1)}" r="4.5"><title>Gastado hoy</title></circle>
+    <circle class="scDot eac" cx="${X(mTot).toFixed(1)}" cy="${Y(EAC).toFixed(1)}" r="4.5"><title>Proyección al cierre</title></circle>
+  </svg>`;
+}
+
 function renderProyectoResumen(data){
   const el=$('#projResumenContent');if(!el)return;
   if(!data){el.innerHTML=proyectoEmptyHTML();return;}
   const p=data.project,ind=data.indicators;
-  const hCls={verde:'green',amarillo:'yellow',rojo:'red'}[p.estado]||'yellow';
   const updDate=p.updated_at?formatDate(p.updated_at.slice(0,10)):'—';
-  const plazoW=p.meses_total>0?Math.min(100,Math.round(p.meses_transcurridos/p.meses_total*100)):0;
   const cpiCls=ind.cpi==null?'':ind.cpi>=1?'good':ind.cpi>=0.9?'warn':'bad';
   const spiCls=ind.spi==null?'':ind.spi>=1?'good':ind.spi>=0.85?'warn':'bad';
   const eacCls=ind.desvio_proyectado==null?'':Number(ind.desvio_proyectado)<=0?'good':'bad';
   const alertas=Array.isArray(p.alertas)?p.alertas:[];
+  const v=_projVerdict(p,ind);
+  // Avance físico vs financiero (la métrica clave de control de obra).
+  const fis=Number(p.avance_real_pct)||0, fin=Number(ind.pct_ejecutado)||0;
+  const gap=fin-fis;
+  const fvCls=gap>5?'bad':gap<-5?'good':'warn';
+  const fvMsg=gap>5?`Gastaste ${gap.toFixed(0)} puntos más de lo que avanzaste → posible sobrecosto o ineficiencia.`
+            :gap<-5?`Avanzaste ${(-gap).toFixed(0)} puntos más de lo que gastaste → vas eficiente.`
+            :'Gasto y avance alineados.';
   el.innerHTML=`
-    <div class="project-health">
-      <span class="health-dot ${hCls}"></span>
-      <span class="health-label">${esc(p.estado_texto)}</span>
-      <span class="health-sub">Actualizado ${updDate}</span>
+    <div class="proj-hero ${v.cls}">
+      <div class="proj-hero-l"><span class="proj-hero-dot"></span>
+        <div><div class="proj-hero-verdict">${esc(v.frase)}</div><div class="proj-hero-sub">${esc(p.estado_texto||'')} · actualizado ${updDate}</div></div>
+      </div>
+      <div class="proj-hero-eac">
+        <div class="ph-lbl">Proyección de cierre (EAC)</div>
+        <div class="ph-val">${ind.eac?fmtM(ind.eac):'—'}</div>
+        <div class="ph-dv ${eacCls}">${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado)+' vs base':''}</div>
+      </div>
     </div>
+
+    <div class="proj-cols">
+      <div class="section-block scurve-block">
+        <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M3 15s3-6 7-6 4 4 8 4"/></svg>Curva S — costo plan vs real</div>
+        ${_projSCurveSVG(p,ind)}
+        <div class="scurve-legend">
+          <span><i class="lg pv"></i>Plan (línea base)</span>
+          <span><i class="lg ac"></i>Costo real</span>
+          <span><i class="lg proj"></i>Proyección → cierre</span>
+          <span class="sc-x">Mes ${p.meses_transcurridos||0} de ${p.meses_total||0}</span>
+        </div>
+      </div>
+
+      <div class="section-block physfin-block">
+        <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>Avance físico vs financiero</div>
+        <div class="pf-bar"><div class="pf-head"><span>🏗️ Físico (obra)</span><strong>${fis.toFixed(0)}%</strong></div><div class="pf-track"><div class="pf-fill fis" style="width:${Math.min(100,fis)}%"></div></div></div>
+        <div class="pf-bar"><div class="pf-head"><span>💵 Financiero (gastado)</span><strong>${fin.toFixed(0)}%</strong></div><div class="pf-track"><div class="pf-fill fin" style="width:${Math.min(100,fin)}%"></div></div></div>
+        <div class="pf-verdict ${fvCls}">${fvMsg}</div>
+      </div>
+    </div>
+
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Presupuesto base</div><div class="kpi-value">${fmtM(p.presupuesto_base)}</div><div class="kpi-sub">Estimación aprobada</div></div>
-      <div class="kpi-card"><div class="kpi-label">Costo real</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${ind.pct_ejecutado.toFixed(1)}% ejecutado</div><div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:${Math.min(100,ind.pct_ejecutado)}%"></div></div></div>
-      <div class="kpi-card"><div class="kpi-label">Avance de obra</div><div class="kpi-value">${p.avance_real_pct.toFixed(1)}%</div><div class="kpi-sub">vs ${p.avance_plan_pct.toFixed(1)}% programado</div><div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
-      <div class="kpi-card"><div class="kpi-label">Plazo</div><div class="kpi-value">${p.meses_transcurridos} / ${p.meses_total}</div><div class="kpi-sub">meses transcurridos</div><div class="kpi-bar"><div class="kpi-bar-fill green" style="width:${plazoW}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Costo real</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${fin.toFixed(1)}% ejecutado</div><div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:${Math.min(100,fin)}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Avance de obra</div><div class="kpi-value">${fis.toFixed(1)}%</div><div class="kpi-sub">vs ${Number(p.avance_plan_pct).toFixed(1)}% programado</div><div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,fis)}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Plazo</div><div class="kpi-value">${p.meses_transcurridos} / ${p.meses_total}</div><div class="kpi-sub">meses transcurridos</div><div class="kpi-bar"><div class="kpi-bar-fill green" style="width:${p.meses_total>0?Math.min(100,Math.round(p.meses_transcurridos/p.meses_total*100)):0}%"></div></div></div>
     </div>
+
     <div class="section-block">
-      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Indicadores de Control</div>
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Indicadores de Control (Valor Ganado)</div>
       <div class="pmi-row">
-        <div class="pmi-card"><div class="pmi-title">CPI — Índice de costo</div><div class="pmi-value ${cpiCls}">${ind.cpi!=null?ind.cpi.toFixed(2):'—'}</div><div class="pmi-desc">${ind.cpi!=null?(ind.cpi>=1?'Dentro del presupuesto':'Costo real '+((1-ind.cpi)*100).toFixed(1)+'% arriba del plan'):'Sin datos suficientes'}</div></div>
+        <div class="pmi-card"><div class="pmi-title">CPI — Índice de costo</div><div class="pmi-value ${cpiCls}">${ind.cpi!=null?ind.cpi.toFixed(2):'—'}</div><div class="pmi-desc">${ind.cpi!=null?(ind.cpi>=1?'Rindes lo gastado o más':'Por cada $1 gastado, recibís $'+ind.cpi.toFixed(2)+' de obra'):'Sin datos suficientes'}</div></div>
         <div class="pmi-card"><div class="pmi-title">SPI — Índice de plazo</div><div class="pmi-value ${spiCls}">${ind.spi!=null?ind.spi.toFixed(2):'—'}</div><div class="pmi-desc">${ind.spi!=null?(ind.spi>=1?'En o adelante del plan':'Avance '+((1-ind.spi)*100).toFixed(1)+'% debajo del plan'):'Sin datos suficientes'}</div></div>
         <div class="pmi-card"><div class="pmi-title">EAC — Estimación al cierre</div><div class="pmi-value ${eacCls}">${ind.eac?fmtM(ind.eac):'—'}</div><div class="pmi-desc">${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado)+' vs presupuesto base':'Sin datos suficientes'}</div></div>
       </div>
     </div>
     ${alertas.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Alertas activas</div><div class="alert-list">${alertas.map(a=>`<div class="alert-item ${a.severidad}"><span class="alert-icon">${a.severidad==='high'?'⚠️':a.severidad==='medium'?'⏱️':'📋'}</span><div class="alert-text"><strong>${esc(a.titulo)}</strong>${esc(a.descripcion)}</div></div>`).join('')}</div></div>`:''}
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-primary" id="aiProjectAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Análisis IA del proyecto</button>
       <button class="btn-secondary" id="aiProjectReport">Generar reporte ejecutivo</button>
     </div>`;
