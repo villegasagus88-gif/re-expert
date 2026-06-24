@@ -85,9 +85,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-# DIAGNÓSTICO TEMPORAL: expone el tipo+mensaje del error en el 500 para depurar
-# el "Failed to fetch" del Panel de Proyecto. Volver a False una vez resuelto.
-_DEBUG_500 = True
+# Si True, el 500 incluye tipo+mensaje del error en el body (solo para depurar).
+# En producción queda False: el detalle se loguea, no se filtra al cliente.
+_DEBUG_500 = False
 
 # Handler global: cualquier excepción no manejada → 500 JSON.
 # OJO: este handler corre en el ServerErrorMiddleware (el más EXTERNO de Starlette),
