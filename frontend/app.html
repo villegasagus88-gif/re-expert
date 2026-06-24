@@ -2669,43 +2669,57 @@ function renderProyectoCostos(data){
     </div>`;
 }
 
+// Gantt de control: línea base (plan) vs real por hito, con desvío y "hoy".
+function _projGantt(p,ms){
+  const parse=d=>d?Date.parse(d):null;
+  const dates=[];
+  [p.fecha_inicio,p.fecha_entrega_programada,p.fecha_entrega_estimada].forEach(d=>{const t=parse(d);if(t)dates.push(t);});
+  ms.forEach(m=>{[m.fecha_objetivo,m.fecha_real].forEach(d=>{const t=parse(d);if(t)dates.push(t);});});
+  if(dates.length<2)return '';
+  let t0=Math.min(...dates),t1=Math.max(...dates);
+  const pad=(t1-t0)*0.05||1296000000; t0-=pad; t1+=pad;
+  const span=(t1-t0)||1;
+  const pos=t=>Math.max(0,Math.min(100,((t-t0)/span)*100));
+  const now=Date.now();
+  const hoyX=(now>=t0&&now<=t1)?pos(now):null;
+  const MON=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const ticks=[];let cur=new Date(new Date(t0).getFullYear(),new Date(t0).getMonth(),1).getTime();
+  for(let g=0;g<60&&cur<=t1;g++){if(cur>=t0)ticks.push({x:pos(cur),lbl:MON[new Date(cur).getMonth()]});const nd=new Date(cur);nd.setMonth(nd.getMonth()+1);cur=nd.getTime();}
+  const step=ticks.length>9?Math.ceil(ticks.length/9):1;
+  const shown=ticks.filter((_,i)=>i%step===0);
+  const STL={done:'Completado',active:'En curso',pending:'Pendiente',delayed:'Retrasado'};
+  const rows=ms.map(m=>{
+    const bo=parse(m.fecha_objetivo),br=parse(m.fecha_real);
+    const bx=bo!=null?pos(bo):null;
+    const rx=br!=null?pos(br):(m.estado==='active'&&hoyX!=null?hoyX:bx);
+    let bar='';
+    if(bx!=null&&rx!=null){const a=Math.min(bx,rx),b=Math.max(bx,rx);const late=br!=null?br>bo:(m.estado==='delayed');bar=`<div class="g-bar ${late?'late':'ontime'}" style="left:${a.toFixed(1)}%;width:${Math.max(0.6,b-a).toFixed(1)}%"></div>`;}
+    return `<div class="gantt-row"><div class="gantt-label" title="${esc(m.nombre)}">${esc(m.nombre)}</div><div class="gantt-track">${bx!=null?`<span class="g-base" style="left:${bx.toFixed(1)}%" title="Plan: ${fmtMonth(m.fecha_objetivo)}"></span>`:''}${bar}${rx!=null?`<span class="g-real ${m.estado}" style="left:${rx.toFixed(1)}%" title="${STL[m.estado]||m.estado}${m.fecha_real?' · '+fmtMonth(m.fecha_real):''}"></span>`:''}</div></div>`;
+  }).join('');
+  const hoyLine=hoyX!=null?`<div class="g-hoyline" style="left:calc(var(--gw) + (100% - var(--gw)) * ${(hoyX/100).toFixed(4)})"></div>`:'';
+  return `<div class="gantt">${hoyLine}<div class="gantt-row gantt-axis-row"><div class="gantt-label"></div><div class="gantt-track gantt-axis">${shown.map(t=>`<span class="g-tick" style="left:${t.x.toFixed(1)}%">${t.lbl}</span>`).join('')}${hoyX!=null?`<span class="g-hoy" style="left:${hoyX.toFixed(1)}%">hoy</span>`:''}</div></div>${rows}</div>`;
+}
+
 function renderProyectoCronograma(data){
   const el=$('#projCronogramaContent');if(!el)return;
   if(!data){el.innerHTML=proyectoEmptyHTML();return;}
   const p=data.project,ms=data.milestones||[];
   const lbl={done:'Completado',active:'En curso',pending:'Pendiente',delayed:'Retrasado'};
+  const gantt=_projGantt(p,ms);
   el.innerHTML=`
-    <div class="detail-grid">
-      <div>
-        <div class="section-block">
-          <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Hitos del proyecto</div>
-          <div class="milestone-track">
-            <div class="milestone-line"></div>
-            ${ms.length?ms.map(m=>`
-              <div class="milestone">
-                <div class="milestone-dot ${m.estado}"></div>
-                <div class="milestone-head"><span class="milestone-name">${esc(m.nombre)}</span><span class="milestone-status ${m.estado}">${esc(lbl[m.estado]||m.estado)}</span></div>
-                <div class="milestone-date">${fmtMonth(m.fecha_objetivo)}${m.fecha_real?' — completado '+fmtMonth(m.fecha_real):''}</div>
-                ${m.detalle?`<div class="milestone-detail">${esc(m.detalle)}</div>`:''}
-              </div>`).join(''):'<div class="pay-empty" style="padding:16px 0">Sin hitos definidos.</div>'}
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="section-block">
-          <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Resumen de plazo</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div class="kpi-card"><div class="kpi-label">Inicio</div><div class="kpi-value" style="font-size:18px">${p.fecha_inicio?fmtMonth(p.fecha_inicio):'—'}</div></div>
-            <div class="kpi-card"><div class="kpi-label">Entrega programada</div><div class="kpi-value" style="font-size:18px">${p.fecha_entrega_programada?fmtMonth(p.fecha_entrega_programada):'—'}</div></div>
-            ${p.fecha_entrega_estimada?`<div class="kpi-card"><div class="kpi-label">Entrega estimada real</div><div class="kpi-value" style="font-size:18px;color:#eab308">${fmtMonth(p.fecha_entrega_estimada)}</div></div>`:''}
-            <div class="kpi-card"><div class="kpi-label">Avance real vs plan</div><div style="display:flex;gap:8px;align-items:baseline;margin-top:4px"><span style="font-size:22px;font-weight:800;color:var(--text-0)">${p.avance_real_pct.toFixed(1)}%</span><span style="font-size:12px;color:var(--text-2)">real</span><span style="font-size:12px;color:var(--text-3)">vs</span><span style="font-size:18px;font-weight:700;color:var(--text-2)">${p.avance_plan_pct.toFixed(1)}%</span><span style="font-size:12px;color:var(--text-2)">plan</span></div><div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
-          </div>
-        </div>
-        <div style="margin-top:16px">
-          <button class="btn-primary" id="aiScheduleAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Análisis IA de cronograma</button>
-        </div>
-      </div>
-    </div>`;
+    <div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Cronograma — plan vs real</div>
+      ${gantt||'<div class="pay-empty" style="padding:14px 0">Cargá los hitos con sus fechas para ver el Gantt de control.</div>'}
+      ${gantt?`<div class="gantt-legend"><span><i class="gl base"></i>Plan (línea base)</span><span><i class="gl done"></i>Completado</span><span><i class="gl active"></i>En curso</span><span><i class="gl delayed"></i>Retrasado</span><span><i class="gl pending"></i>Pendiente</span></div>`:''}
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+      <div class="kpi-card"><div class="kpi-label">Inicio</div><div class="kpi-value" style="font-size:18px">${p.fecha_inicio?fmtMonth(p.fecha_inicio):'—'}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Entrega programada</div><div class="kpi-value" style="font-size:18px">${p.fecha_entrega_programada?fmtMonth(p.fecha_entrega_programada):'—'}</div></div>
+      ${p.fecha_entrega_estimada?`<div class="kpi-card"><div class="kpi-label">Entrega estimada real</div><div class="kpi-value" style="font-size:18px;color:#eab308">${fmtMonth(p.fecha_entrega_estimada)}</div></div>`:''}
+      <div class="kpi-card"><div class="kpi-label">Avance real vs plan</div><div class="kpi-value" style="font-size:18px">${p.avance_real_pct.toFixed(1)}% <span style="font-size:12px;color:var(--text-3);font-weight:600">vs ${p.avance_plan_pct.toFixed(1)}%</span></div><div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
+    </div>
+    ${ms.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Detalle de hitos</div><div class="milestone-track"><div class="milestone-line"></div>${ms.map(m=>`<div class="milestone"><div class="milestone-dot ${m.estado}"></div><div class="milestone-head"><span class="milestone-name">${esc(m.nombre)}</span><span class="milestone-status ${m.estado}">${esc(lbl[m.estado]||m.estado)}</span></div><div class="milestone-date">Plan ${fmtMonth(m.fecha_objetivo)}${m.fecha_real?' · real '+fmtMonth(m.fecha_real):''}</div>${m.detalle?`<div class="milestone-detail">${esc(m.detalle)}</div>`:''}</div>`).join('')}</div></div>`:''}
+    <div style="margin-top:8px"><button class="btn-primary" id="aiScheduleAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Análisis IA de cronograma</button></div>`;
 }
 
 async function loadProyecto(force=false){

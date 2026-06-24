@@ -959,3 +959,28 @@ select.pay-form-input{cursor:pointer}
 .pf-verdict.good{color:#22c55e;background:rgba(34,197,94,.1)}
 .pf-verdict.warn{color:#eab308;background:rgba(234,179,8,.1)}
 .pf-verdict.bad{color:#ef4444;background:rgba(239,68,68,.1)}
+
+/* ===== Gantt de cronograma (línea base vs real) ===== */
+.gantt{position:relative;margin-top:6px;--gw:140px}
+.gantt-row{display:grid;grid-template-columns:var(--gw) 1fr;align-items:center;height:32px}
+.gantt-axis-row{height:22px;margin-bottom:2px}
+.gantt-label{font-size:12px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px}
+.gantt-track{position:relative;height:100%}
+.gantt-row:not(.gantt-axis-row) .gantt-track::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border-0)}
+.g-tick{position:absolute;top:4px;transform:translateX(-50%);font-size:10px;color:var(--text-3);white-space:nowrap}
+.g-hoy{position:absolute;top:4px;transform:translateX(-50%);font-size:10px;font-weight:800;color:#f59e0b}
+.g-hoyline{position:absolute;top:22px;bottom:6px;width:2px;background:rgba(245,158,11,.5);z-index:1;pointer-events:none}
+.g-base{position:absolute;top:50%;width:9px;height:9px;transform:translate(-50%,-50%) rotate(45deg);border:1.5px solid #8b8b94;border-radius:2px;z-index:2;background:var(--bg-card)}
+.g-bar{position:absolute;top:50%;height:5px;transform:translateY(-50%);border-radius:3px;z-index:1;opacity:0;animation:scfade .6s ease .15s forwards}
+.g-bar.late{background:rgba(239,68,68,.6)}
+.g-bar.ontime{background:rgba(34,197,94,.5)}
+.g-real{position:absolute;top:50%;width:13px;height:13px;transform:translate(-50%,-50%);border-radius:50%;z-index:3;border:2px solid var(--bg-card);opacity:0;animation:scfade .4s ease .25s forwards}
+.g-real.done{background:#22c55e}
+.g-real.active{background:var(--accent-hover);box-shadow:0 0 0 4px rgba(129,140,248,.18)}
+.g-real.delayed{background:#ef4444}
+.g-real.pending{background:#71717a}
+.gantt-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--text-3)}
+.gantt-legend .gl{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle;margin-right:5px}
+.gantt-legend .gl.base{background:transparent;border:1.5px solid #8b8b94;border-radius:2px;transform:rotate(45deg);width:8px;height:8px}
+.gantt-legend .gl.done{background:#22c55e}.gantt-legend .gl.active{background:var(--accent-hover)}.gantt-legend .gl.delayed{background:#ef4444}.gantt-legend .gl.pending{background:#71717a}
+@media(max-width:640px){.gantt{--gw:92px}.gantt-label{font-size:11px;padding-right:8px}}
