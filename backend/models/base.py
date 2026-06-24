@@ -5,6 +5,10 @@ Uses asyncpg driver for PostgreSQL (Supabase). The engine and session
 factory are created lazily on first use so that the metadata can be
 inspected without an active DB connection.
 """
+import json
+from datetime import date
+from decimal import Decimal
+
 from config.settings import settings
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -13,6 +17,24 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+
+
+def _json_default(obj):
+    """Hace JSON-serializable lo que una columna JSONB no soporta nativo.
+
+    Sin esto, guardar un Decimal (p.ej. los costos por rubro del proyecto) en
+    una columna JSONB rompe con 'Object of type Decimal is not JSON
+    serializable' → 500. Decimal→float (queda como número), date→ISO.
+    """
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, date):  # date y datetime (datetime hereda de date)
+        return obj.isoformat()
+    return str(obj)
+
+
+def _json_serializer(obj) -> str:
+    return json.dumps(obj, default=_json_default, ensure_ascii=False)
 
 
 def _asyncpg_url(url: str) -> str:
@@ -58,6 +80,7 @@ def get_engine() -> AsyncEngine:
         _engine = create_async_engine(
             _asyncpg_url(settings.DATABASE_URL),
             echo=settings.DEBUG,
+            json_serializer=_json_serializer,
             pool_size=settings.DB_POOL_SIZE,
             max_overflow=settings.DB_MAX_OVERFLOW,
             pool_recycle=settings.DB_POOL_RECYCLE,

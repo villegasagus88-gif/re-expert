@@ -2,6 +2,7 @@
 Project dashboard and milestone CRUD endpoints.
 One project per user (enforced via unique constraint on user_id).
 """
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -26,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/api/project", tags=["project"])
+logger = logging.getLogger(__name__)
 
 
 def _compute_indicators(project: Project) -> ProjectIndicators:
@@ -77,9 +79,16 @@ async def get_dashboard(
     project = await _get_user_project(db, user.id)
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
+    try:
+        indicators = _compute_indicators(project)
+    except Exception:  # noqa: BLE001 — datos raros no deben tumbar el dashboard
+        logger.exception("compute_indicators falló para proyecto %s", project.id)
+        indicators = ProjectIndicators(
+            cpi=None, spi=None, eac=None, desvio_proyectado=None, pct_ejecutado=0.0
+        )
     return ProjectDashboard(
         project=ProjectOut.model_validate(project),
-        indicators=_compute_indicators(project),
+        indicators=indicators,
         milestones=[MilestoneOut.model_validate(m) for m in project.milestones],
     )
 

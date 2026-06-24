@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from api.routes.academia import router as academia_router
@@ -6,10 +7,10 @@ from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
 from api.routes.channels import router as channels_router
 from api.routes.chat import router as chat_router
-from api.routes.creditos import router as creditos_router
-from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
+from api.routes.creditos import router as creditos_router
+from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
 from api.routes.materials import router as materials_router
@@ -82,6 +83,18 @@ app = FastAPI(
 # Rate limiter
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Handler global: cualquier excepción no manejada → 500 JSON. Clave: al
+# manejarla acá (vía ExceptionMiddleware, que corre DENTRO del CORSMiddleware),
+# la respuesta SÍ lleva headers CORS → el frontend ve un error real (500) en vez
+# de un opaco "Failed to fetch". El detalle se loguea, no se filtra al cliente.
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: _Request, exc: Exception) -> _JSONResponse:
+    logging.getLogger("re_expert").exception(
+        "Error no manejado en %s %s", request.method, request.url.path
+    )
+    return _JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
