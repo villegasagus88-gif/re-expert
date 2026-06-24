@@ -85,16 +85,33 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-# Handler global: cualquier excepción no manejada → 500 JSON. Clave: al
-# manejarla acá (vía ExceptionMiddleware, que corre DENTRO del CORSMiddleware),
-# la respuesta SÍ lleva headers CORS → el frontend ve un error real (500) en vez
-# de un opaco "Failed to fetch". El detalle se loguea, no se filtra al cliente.
+# DIAGNÓSTICO TEMPORAL: expone el tipo+mensaje del error en el 500 para depurar
+# el "Failed to fetch" del Panel de Proyecto. Volver a False una vez resuelto.
+_DEBUG_500 = True
+
+# Handler global: cualquier excepción no manejada → 500 JSON.
+# OJO: este handler corre en el ServerErrorMiddleware (el más EXTERNO de Starlette),
+# por FUERA del CORSMiddleware → la respuesta NO pasa por CORS y queda sin headers
+# Access-Control-* → el browser la bloquea y muestra un opaco "Failed to fetch" en
+# vez del 500 real. Por eso agregamos los headers CORS a mano, reflejando el Origin
+# si está permitido. El detalle del error se loguea (y, mientras _DEBUG_500, se
+# devuelve recortado para diagnóstico).
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: _Request, exc: Exception) -> _JSONResponse:
     logging.getLogger("re_expert").exception(
         "Error no manejado en %s %s", request.method, request.url.path
     )
-    return _JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
+    headers: dict[str, str] = {}
+    origin = request.headers.get("origin")
+    allowed = settings.cors_allowed_origins
+    if origin and (origin in allowed or "*" in allowed):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Vary"] = "Origin"
+    content: dict[str, str] = {"detail": "Error interno del servidor"}
+    if _DEBUG_500:
+        content["error"] = f"{type(exc).__name__}: {exc}"[:500]
+    return _JSONResponse(status_code=500, content=content, headers=headers)
 
 
 class _BodySizeLimitMiddleware(BaseHTTPMiddleware):
