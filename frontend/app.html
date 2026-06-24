@@ -141,10 +141,6 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         Cotizacion Materiales
       </button>
-      <button class="sidebar-nav-item" data-view="pagos">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-        Gestion de Pagos
-      </button>
       <button class="sidebar-nav-item" data-view="proyecto">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         Panel de Proyecto
@@ -403,44 +399,6 @@
         </div>
       </div>
 
-      <!-- PAGOS VIEW -->
-      <div class="view" id="viewPagos">
-        <div class="section-view">
-          <div class="section-header">
-            <h2>Gestion de Pagos</h2>
-            <p>Controla pagos realizados, pendientes y cancelados de tu obra.</p>
-          </div>
-
-          <!-- Dynamic stat cards -->
-          <div class="cards-grid" id="pagosStatCards" style="margin-bottom:20px">
-            <div class="stat-card"><div class="stat-card-label">Cargando...</div></div>
-          </div>
-
-          <!-- Filter tabs -->
-          <div class="section-tabs">
-            <button class="section-tab active" data-pay-filter="todos">Todos</button>
-            <button class="section-tab" data-pay-filter="pagado">Pagados</button>
-            <button class="section-tab" data-pay-filter="pendiente">Pendientes</button>
-            <button class="section-tab" data-pay-filter="cancelado">Cancelados</button>
-          </div>
-
-          <!-- Loading indicator -->
-          <div class="pay-loading" id="pagosLoading"><div class="pay-loading-spinner"></div></div>
-
-          <!-- Payments table -->
-          <div id="pagosTableWrap">
-            <table class="data-table">
-              <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
-              <tbody id="pagosTableBody"></tbody>
-            </table>
-          </div>
-
-          <div style="margin-top:16px;display:flex;gap:8px">
-            <button class="btn-primary" id="addPaymentBtn">+ Registrar pago</button>
-            <button class="btn-secondary" id="aiPayAnalysis">Analisis IA de pagos</button>
-          </div>
-        </div>
-      </div>
       <!-- ACADEMIA VIEW -->
       <div class="view" id="viewAcademia">
         <div class="section-view">
@@ -758,6 +716,7 @@
 
           <div class="section-tabs">
             <button class="section-tab active" data-proj-tab="resumen">Resumen</button>
+            <button class="section-tab" data-proj-tab="pagos">Pagos</button>
             <button class="section-tab" data-proj-tab="costos">Costos</button>
             <button class="section-tab" data-proj-tab="cronograma">Cronograma</button>
           </div>
@@ -765,6 +724,31 @@
           <!-- TAB: RESUMEN -->
           <div id="projTabResumen" class="proj-tab-content">
             <div id="projResumenContent"></div>
+          </div>
+
+          <!-- TAB: PAGOS (unificado — antes era una sección aparte) -->
+          <div id="projTabPagos" class="proj-tab-content" style="display:none">
+            <p style="font-size:13px;color:var(--text-2);margin:0 0 16px;line-height:1.55">Registrá acá los pagos de la obra. El <strong>costo real</strong> del proyecto y los indicadores se calculan solos con estos datos — no hace falta cargarlo dos veces.</p>
+            <div class="cards-grid" id="pagosStatCards" style="margin-bottom:20px">
+              <div class="stat-card"><div class="stat-card-label">Cargando...</div></div>
+            </div>
+            <div class="section-tabs">
+              <button class="section-tab active" data-pay-filter="todos">Todos</button>
+              <button class="section-tab" data-pay-filter="pagado">Pagados</button>
+              <button class="section-tab" data-pay-filter="pendiente">Pendientes</button>
+              <button class="section-tab" data-pay-filter="cancelado">Cancelados</button>
+            </div>
+            <div class="pay-loading" id="pagosLoading"><div class="pay-loading-spinner"></div></div>
+            <div id="pagosTableWrap">
+              <table class="data-table">
+                <thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="pagosTableBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:8px">
+              <button class="btn-primary" id="addPaymentBtn">+ Registrar pago</button>
+              <button class="btn-secondary" id="aiPayAnalysis">Analisis IA de pagos</button>
+            </div>
           </div>
 
           <!-- TAB: COSTOS -->
@@ -1141,6 +1125,13 @@ function applyTheme(t){document.documentElement.setAttribute('data-theme',t);sta
 const _viewHistory = [];
 let _suppressViewHistory = false;
 function switchView(v){
+  // Pagos vive ahora como pestaña del Panel de Proyecto. Cualquier llamada a la
+  // vista vieja 'pagos' redirige al Panel y abre esa pestaña.
+  if(v==='pagos'){
+    switchView('proyecto');
+    const t=document.querySelector('[data-proj-tab="pagos"]');if(t)t.click();
+    return;
+  }
   if (!_suppressViewHistory && state.currentView && state.currentView !== v) {
     _viewHistory.push(state.currentView);
     if (_viewHistory.length > 20) _viewHistory.shift();
@@ -2378,6 +2369,9 @@ async function savePayment(){
     closePaymentModal();
     pagosState.loaded=false;
     await loadPagos(true);
+    // El gasto real del Panel sale de los pagos → refrescamos el dashboard.
+    proyectoState.loaded=false;
+    if(typeof loadProyecto==='function')loadProyecto(true);
   }catch(e){
     errEl.textContent=e.message;errEl.style.display='';
   }finally{
@@ -2403,6 +2397,8 @@ async function deletePayment(id){
       count_pagado:paid.length,count_pendiente:pend.length,count_cancelado:canc.length,count_total:pagosState.items.length
     };
     renderPagosStats();renderPagosTable();
+    proyectoState.loaded=false;
+    if(typeof loadProyecto==='function')loadProyecto(true);
   }catch(e){alert('No se pudo eliminar: '+e.message)}
 }
 
@@ -2583,10 +2579,57 @@ function _projAutoAlertas(p,ind){
   return out;
 }
 
+// Avance físico por etapas de obra (el único dato manual del panel).
+const _OBRA_STAGES=[
+  {min:0,label:'Preparación / limpieza'},
+  {min:8,label:'Cimientos / fundaciones'},
+  {min:28,label:'Estructura'},
+  {min:48,label:'Mampostería / cerramientos'},
+  {min:66,label:'Instalaciones'},
+  {min:82,label:'Terminaciones'},
+  {min:99,label:'Entrega / obra terminada'},
+];
+function _etapaObra(pct){
+  const v=Math.max(0,Math.min(100,Number(pct)||0));
+  let lab=_OBRA_STAGES[0].label;
+  for(const s of _OBRA_STAGES){if(v>=s.min)lab=s.label;}
+  return lab;
+}
+function _projAvanceSlider(p){
+  const fis=Math.round(Number(p.avance_real_pct)||0);
+  return `<div class="section-block av-block">
+    <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></svg>¿Cuánto avanzó la obra?</div>
+    <div class="av-readout"><strong id="avPctOut">${fis}%</strong><span id="avEtapaOut">${esc(_etapaObra(fis))}</span><span class="av-saved" id="avSaved"></span></div>
+    <input type="range" id="avSlider" class="av-range" min="0" max="100" step="5" value="${fis}">
+    <div class="av-stages"><span>Cimientos</span><span>Estructura</span><span>Cerram.</span><span>Instal.</span><span>Terminac.</span><span>Entrega</span></div>
+    <div class="av-hint">Arrastrá para reportar el avance físico de la obra. Se guarda solo y recalcula tus indicadores.</div>
+  </div>`;
+}
+async function _saveAvance(pct){
+  const saved=$('#avSaved');
+  if(saved){saved.textContent='Guardando…';saved.className='av-saved saving';}
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/project',{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({avance_real_pct:pct}),
+    });
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error('No se pudo guardar');
+    proyectoState.loaded=false;
+    await loadProyecto(true);
+  }catch(e){
+    if(saved){saved.textContent='Error al guardar';saved.className='av-saved err';}
+  }
+}
+
 function renderProyectoResumen(data){
   const el=$('#projResumenContent');if(!el)return;
   if(!data){el.innerHTML=proyectoEmptyHTML();return;}
   const p=data.project,ind=data.indicators;
+  // Gasto real derivado de los pagos (AC). Si no hay pagos, cae al cargado a mano.
+  const ac=Number(ind.costo_real!=null?ind.costo_real:p.costo_real)||0;
+  const comprometido=Number(ind.comprometido)||0;
+  const fromPagos=!!ind.gasto_desde_pagos;
   const updDate=p.updated_at?formatDate(p.updated_at.slice(0,10)):'—';
   const cpiCls=ind.cpi==null?'':ind.cpi>=1?'good':ind.cpi>=0.9?'warn':'bad';
   const spiCls=ind.spi==null?'':ind.spi>=1?'good':ind.spi>=0.85?'warn':'bad';
@@ -2612,6 +2655,8 @@ function renderProyectoResumen(data){
       </div>
     </div>
 
+    ${_projAvanceSlider(p)}
+
     <div class="proj-cols">
       <div class="section-block scurve-block">
         <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M3 15s3-6 7-6 4 4 8 4"/></svg>Curva S — costo plan vs real</div>
@@ -2634,7 +2679,7 @@ function renderProyectoResumen(data){
 
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Presupuesto base</div><div class="kpi-value">${fmtM(p.presupuesto_base)}</div><div class="kpi-sub">Estimación aprobada</div></div>
-      <div class="kpi-card"><div class="kpi-label">Costo real</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${fin.toFixed(1)}% ejecutado</div><div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:${Math.min(100,fin)}%"></div></div></div>
+      <div class="kpi-card"><div class="kpi-label">Costo real ${fromPagos?'<span class="kpi-tag">desde pagos</span>':''}</div><div class="kpi-value">${fmtM(ac)}</div><div class="kpi-sub">${fin.toFixed(1)}% ejecutado${comprometido>0?' · '+fmtM(comprometido)+' comprometido':''}</div><div class="kpi-bar"><div class="kpi-bar-fill brand" style="width:${Math.min(100,fin)}%"></div></div></div>
       <div class="kpi-card"><div class="kpi-label">Avance de obra</div><div class="kpi-value">${fis.toFixed(1)}%</div><div class="kpi-sub">vs ${Number(p.avance_plan_pct).toFixed(1)}% programado</div><div class="kpi-bar"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,fis)}%"></div></div></div>
       <div class="kpi-card"><div class="kpi-label">Plazo</div><div class="kpi-value">${p.meses_transcurridos} / ${p.meses_total}</div><div class="kpi-sub">meses transcurridos</div><div class="kpi-bar"><div class="kpi-bar-fill green" style="width:${p.meses_total>0?Math.min(100,Math.round(p.meses_transcurridos/p.meses_total*100)):0}%"></div></div></div>
     </div>
@@ -2704,7 +2749,15 @@ function renderProyectoCostos(data){
   if(!data){el.innerHTML=proyectoEmptyHTML();return;}
   const p=data.project,ind=data.indicators;
   const rubros=Array.isArray(p.costos_rubros)?p.costos_rubros:[];
+  const ac=Number(ind.costo_real!=null?ind.costo_real:p.costo_real)||0;
+  const porCat=data.gasto_por_categoria||{};
+  const catEntries=Object.entries(porCat).sort((a,b)=>Number(b[1])-Number(a[1]));
+  const totalCat=catEntries.reduce((a,[,v])=>a+Number(v),0)||1;
   el.innerHTML=`
+    ${catEntries.length?`<div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Gasto real por categoría <span class="kpi-tag">desde pagos</span></div>
+      <div class="cat-row">${catEntries.map(([cat,v])=>{const val=Number(v)||0;const pct=Math.round(val/totalCat*100);return `<div class="cat-item"><div class="cat-head"><span>${esc(cat)}</span><strong>${fmtM(val)}</strong></div><div class="cat-track"><div class="cat-fill" style="width:${Math.min(100,pct)}%"></div></div></div>`;}).join('')}</div>
+    </div>`:''}
     <div class="section-block">
       <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Línea base de costos por rubro</div>
       <div class="cost-row">${rubros.length?rubros.map(r=>{
@@ -2717,7 +2770,7 @@ function renderProyectoCostos(data){
     </div>
     <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
       <div class="kpi-card"><div class="kpi-label">Presupuesto base</div><div class="kpi-value">${fmtM(p.presupuesto_base)}</div></div>
-      <div class="kpi-card"><div class="kpi-label">Gastado hasta hoy</div><div class="kpi-value">${fmtM(p.costo_real)}</div><div class="kpi-sub">${ind.pct_ejecutado.toFixed(1)}% del presupuesto</div></div>
+      <div class="kpi-card"><div class="kpi-label">Gastado hasta hoy</div><div class="kpi-value">${fmtM(ac)}</div><div class="kpi-sub">${ind.pct_ejecutado.toFixed(1)}% del presupuesto</div></div>
       <div class="kpi-card"><div class="kpi-label">Desvío proyectado</div><div class="kpi-value" ${ind.desvio_proyectado!=null&&Number(ind.desvio_proyectado)>0?'style="color:#ef4444"':''}>${ind.desvio_proyectado!=null?(Number(ind.desvio_proyectado)>0?'+':'')+fmtM(ind.desvio_proyectado):'—'}</div><div class="kpi-sub">${ind.desvio_proyectado!=null&&Number(p.presupuesto_base)>0?((Number(ind.desvio_proyectado)/Number(p.presupuesto_base))*100).toFixed(1)+'% sobre presupuesto base':''}</div></div>
     </div>
     <div style="margin-top:16px;display:flex;gap:8px">
@@ -3512,10 +3565,10 @@ function solUpdateSendBtn(){$('#solSendBtn').disabled=!$('#solInput').value.trim
 // y los `type` que espera POST /api/data/ingest (en inglés). Cada entrada
 // también define el módulo destino (vista) y la etiqueta visible.
 const SOL_INGEST_SECTIONS = {
-  pagos:       {type:'payment',  view:'pagos',      label:'Pagos',       icon:'💸'},
+  pagos:       {type:'payment',  view:'proyecto',   label:'Pagos',       icon:'💸'},
   cronograma:  {type:'milestone',view:'proyecto',   label:'Cronograma',  icon:'📅'},
   materiales:  {type:'material', view:'materiales', label:'Materiales',  icon:'🧱'},
-  costos:      {type:'budget',   view:'pagos',      label:'Costos',      icon:'📊'},
+  costos:      {type:'budget',   view:'proyecto',   label:'Costos',      icon:'📊'},
 };
 
 // Renombres defensivos por si SOL devuelve los campos en español. El
@@ -3673,9 +3726,12 @@ window.addEventListener('sol:data-intake', e => { solIngestData(e.detail); });
 // para que el dato nuevo aparezca sin que el usuario tenga que navegar.
 window.addEventListener('sol:data-ingested', e => {
   const view = e.detail && e.detail.view;
-  if (view === 'pagos') { pagosState.loaded = false; if (state.currentView === 'pagos') loadPagos(true); }
-  else if (view === 'materiales') { materialesState.loaded = false; if (state.currentView === 'materiales') loadMateriales(true); }
-  else if (view === 'proyecto') { proyectoState.loaded = false; if (state.currentView === 'proyecto') loadProyecto(true); }
+  if (view === 'materiales') { materialesState.loaded = false; if (state.currentView === 'materiales') loadMateriales(true); }
+  else if (view === 'proyecto') {
+    // El Panel ahora incluye los pagos: refrescamos ambos (panel + tabla de pagos).
+    proyectoState.loaded = false; pagosState.loaded = false;
+    if (state.currentView === 'proyecto') { loadProyecto(true); loadPagos(true); }
+  }
 });
 
 function initSol(){
@@ -3999,7 +4055,19 @@ function initProyectoTabs(){
       tab.classList.add('active');
       $$('.proj-tab-content').forEach(c=>c.style.display='none');
       $(`#projTab${tab.dataset.projTab.charAt(0).toUpperCase()+tab.dataset.projTab.slice(1)}`).style.display='';
+      if(tab.dataset.projTab==='pagos')loadPagos();
     });
+  });
+  // Slider de avance de obra: lectura en vivo + guardado al soltar.
+  $('#projResumenContent')?.addEventListener('input',e=>{
+    if(e.target&&e.target.id==='avSlider'){
+      const v=Number(e.target.value)||0;
+      const o=$('#avPctOut'),et=$('#avEtapaOut'),sv=$('#avSaved');
+      if(o)o.textContent=v+'%';if(et)et.textContent=_etapaObra(v);if(sv)sv.textContent='';
+    }
+  });
+  $('#projResumenContent')?.addEventListener('change',e=>{
+    if(e.target&&e.target.id==='avSlider')_saveAvance(Number(e.target.value)||0);
   });
   // Event delegation for AI buttons (rendered dynamically inside containers)
   $('#projResumenContent')?.addEventListener('click',e=>{
@@ -4007,14 +4075,14 @@ function initProyectoTabs(){
     if(e.target.closest('#aiProjectAnalysis')){
       newConversation();
       setTimeout(()=>sendMessage(d
-        ?`Analiza el estado de mi proyecto "${d.nombre}". Presupuesto base ${fmtM(d.presupuesto_base)}, costo real ${fmtM(d.costo_real)} (${ind?.pct_ejecutado??0}% ejecutado), avance ${d.avance_real_pct}% vs ${d.avance_plan_pct}% programado, ${d.meses_transcurridos} de ${d.meses_total} meses. CPI=${ind?.cpi??'N/A'}, SPI=${ind?.spi??'N/A'}, EAC=${ind?.eac?fmtM(ind.eac):'N/A'}. Diagnóstico profesional con recomendaciones concretas.`
+        ?`Analiza el estado de mi proyecto "${d.nombre}". Presupuesto base ${fmtM(d.presupuesto_base)}, costo real ${fmtM(ind?.costo_real??d.costo_real)} (${ind?.pct_ejecutado??0}% ejecutado), avance ${d.avance_real_pct}% vs ${d.avance_plan_pct}% programado, ${d.meses_transcurridos} de ${d.meses_total} meses. CPI=${ind?.cpi??'N/A'}, SPI=${ind?.spi??'N/A'}, EAC=${ind?.eac?fmtM(ind.eac):'N/A'}. Diagnóstico profesional con recomendaciones concretas.`
         :'Analiza el estado general de mi proyecto de construccion. Dame un diagnostico profesional con recomendaciones concretas para corregir desvios.'
       ),100);
     }
     if(e.target.closest('#aiProjectReport')){
       newConversation();
       setTimeout(()=>sendMessage(d
-        ?`Genera un reporte ejecutivo del proyecto "${d.nombre}": Presupuesto ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}, avance ${d.avance_real_pct}%, plazo ${d.meses_transcurridos}/${d.meses_total} meses, CPI ${ind?.cpi??'N/A'}, SPI ${ind?.spi??'N/A'}, EAC ${ind?.eac?fmtM(ind.eac):'N/A'}. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos y recomendaciones.`
+        ?`Genera un reporte ejecutivo del proyecto "${d.nombre}": Presupuesto ${fmtM(d.presupuesto_base)}, gastado ${fmtM(ind?.costo_real??d.costo_real)}, avance ${d.avance_real_pct}%, plazo ${d.meses_transcurridos}/${d.meses_total} meses, CPI ${ind?.cpi??'N/A'}, SPI ${ind?.spi??'N/A'}, EAC ${ind?.eac?fmtM(ind.eac):'N/A'}. Formato: resumen ejecutivo, estado financiero, estado de cronograma, riesgos y recomendaciones.`
         :'Genera un reporte ejecutivo profesional del proyecto. Formato: resumen ejecutivo, estado financiero, cronograma, riesgos, recomendaciones y proximos pasos.'
       ),100);
     }
@@ -4026,7 +4094,7 @@ function initProyectoTabs(){
       const rubros=d?.costos_rubros?.map(r=>`${r.nombre} base ${fmtM(r.base)} real ${fmtM(r.real)}`).join(', ')||'sin detalle';
       newConversation();
       setTimeout(()=>sendMessage(d
-        ?`Analiza los costos de mi proyecto "${d.nombre}": presupuesto total ${fmtM(d.presupuesto_base)}, gastado ${fmtM(d.costo_real)}. Rubros: ${rubros}. Analiza desvíos, identifica causas probables y recomendá acciones.`
+        ?`Analiza los costos de mi proyecto "${d.nombre}": presupuesto total ${fmtM(d.presupuesto_base)}, gastado ${fmtM(ind?.costo_real??d.costo_real)}. Rubros: ${rubros}. Analiza desvíos, identifica causas probables y recomendá acciones.`
         :'Haceme un analisis detallado de costos de mi obra. Analiza desvios, identifica causas probables y recomienda acciones.'
       ),100);
     }

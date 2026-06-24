@@ -42,6 +42,11 @@ def _compute_indicators(
     ac_f = float(ac if ac is not None else project.costo_real)
     avance_real = float(project.avance_real_pct)
     avance_plan = float(project.avance_plan_pct)
+    # Si no se cargó el avance planificado, lo estimamos por el tiempo transcurrido
+    # (plan lineal): así el SPI funciona aunque el usuario solo reporte el avance
+    # físico con el slider. Si meses_total es 0, queda 0 (SPI no calculable).
+    if avance_plan <= 0 and project.meses_total and project.meses_total > 0:
+        avance_plan = min(100.0, project.meses_transcurridos / project.meses_total * 100)
 
     ev = pb * (avance_real / 100) if pb > 0 else 0.0
     pv = pb * (avance_plan / 100) if pb > 0 else 0.0
