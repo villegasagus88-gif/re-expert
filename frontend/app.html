@@ -145,6 +145,10 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         Panel de Proyecto
       </button>
+      <button class="sidebar-nav-item" data-view="scanner">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M11 7v4l2.5 2.5M21 21l-4.3-4.3"/></svg>
+        Opportunity Scanner
+      </button>
       <button class="sidebar-nav-item" data-view="noticias">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M18 18h-8M18 10h-8"/></svg>
         Noticias
@@ -764,6 +768,26 @@
 
         </div>
       </div>
+
+      <!-- SCANNER VIEW (Opportunity Scanner) -->
+      <div class="view" id="viewScanner">
+        <div class="section-view">
+          <div class="section-header">
+            <h2>Opportunity Scanner</h2>
+            <p>Antes de comprar o desarrollar, pasala por RE Expert. Cargá una oportunidad y obtené score, escenarios, sensibilidad, riesgos y una recomendación accionable.</p>
+          </div>
+          <div class="section-tabs">
+            <button class="section-tab active" data-scanner-tab="nueva">Nuevo análisis</button>
+            <button class="section-tab" data-scanner-tab="dealroom">Deal Room</button>
+          </div>
+          <div id="scanTabNueva" class="scanner-tab-content">
+            <div id="scanNuevaContent"></div>
+          </div>
+          <div id="scanTabDealroom" class="scanner-tab-content" style="display:none">
+            <div id="scanDealroomContent"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Input (only visible in chat view) -->
@@ -1143,7 +1167,7 @@ function switchView(v){
   $$('.sidebar-nav-item').forEach(el=>{if(el.dataset.view)el.classList.toggle('active',el.dataset.view===v)});
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
-  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
+  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',scanner:'Opportunity Scanner',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
   if(v==='workspace')els.topbarTitle.textContent=state.activeWorkspace?.name||'Proyecto';
   else els.topbarTitle.textContent=titles[v]||'';
   if(typeof updateWsActiveBar==='function')updateWsActiveBar();
@@ -1151,6 +1175,7 @@ function switchView(v){
   if(v==='materiales')loadMateriales();
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
+  if(v==='scanner')loadScanner();
   if(v==='academia')loadAcademia();
   if(v==='creditos')loadCreditos();
   if(v==='noticias'){
@@ -4394,6 +4419,352 @@ async function handleLogout(){
   await window.REAuthService.logout();
 }
 
+// ===== OPPORTUNITY SCANNER =====
+const scannerState={list:null,summary:null,loaded:false,loading:false,lastReport:null};
+
+const _SCAN_VEREDICTO={avanzar:'Avanzar con prioridad',due_diligence:'Avanzar con due diligence',negociar:'Negociar el precio de entrada',esperar:'Esperar / revisar',reformular:'Reformular el producto',descartar:'Descartar',mas_info:'Falta información'};
+const _SCAN_REC_LABEL={recomendada:'Recomendada',precaucion:'Precaución',rechazada:'Descartar'};
+const _SCAN_SEV={alta:'Alta',media:'Media',baja:'Baja'};
+
+function _scanScoreColor(s){const v=Number(s);return s==null||isNaN(v)?'var(--text-3)':v>=75?'#16a34a':v>=60?'#ea7317':v>=40?'#eab308':'#dc2626';}
+function _scanRecClass(r){return r==='recomendada'?'good':r==='rechazada'?'bad':'warn';}
+
+function _scanScoreRing(score){
+  const s=Math.max(0,Math.min(100,Number(score)||0));
+  const r=52,c=2*Math.PI*r,off=c*(1-s/100),col=_scanScoreColor(score);
+  return `<svg viewBox="0 0 120 120" width="116" height="116" class="score-ring">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--border-0)" stroke-width="10"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="57" text-anchor="middle" class="score-ring-num" fill="${col}">${Math.round(s)}</text>
+    <text x="60" y="78" text-anchor="middle" class="score-ring-lbl">de 100</text>
+  </svg>`;
+}
+
+function renderScannerNueva(){
+  const el=$('#scanNuevaContent');if(!el)return;
+  const opt=(v,l)=>`<option value="${v}">${l}</option>`;
+  el.innerHTML=`
+    <div class="scan-promise">
+      <div class="scan-promise-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M11 7v4l2.5 2.5M21 21l-4.3-4.3"/></svg></div>
+      <div><strong>“¿Esta oportunidad conviene o no?”</strong><span>Te respondemos con datos, escenarios, sensibilidad y una recomendación accionable — no con “la zona tiene potencial”.</span></div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>Pegá una publicación y la IA completa los datos <span class="kpi-tag">opcional</span></div>
+      <div class="scan-extract">
+        <input class="pay-form-input" id="scanFuenteUrl" type="url" placeholder="https://… (link de Zonaprop, Argenprop, MercadoLibre…)">
+        <textarea class="pay-form-input" id="scanFuenteTexto" rows="2" placeholder="…o pegá acá el texto de la publicación"></textarea>
+        <button class="btn-secondary" id="scanExtractBtn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>Completar con IA</button>
+        <span class="scan-extract-msg" id="scanExtractMsg"></span>
+      </div>
+    </div>
+
+    <form id="scanForm" class="scan-form">
+      <div class="scan-form-grid">
+        <div class="pay-form-row"><label class="pay-form-label">Título de la oportunidad</label><input class="pay-form-input" id="scanTitulo" type="text" maxlength="255" placeholder="Lote Av. Mitre 1200" required></div>
+        <div class="pay-form-row"><label class="pay-form-label">Tipo de activo</label><select class="pay-form-input" id="scanTipo">${opt('terreno','Terreno')}${opt('lote','Lote para desarrollo')}${opt('departamento','Departamento')}${opt('ph','PH')}${opt('casa','Casa')}${opt('local','Local comercial')}${opt('oficina','Oficina')}${opt('galpon','Galpón')}${opt('edificio','Edificio existente')}${opt('pozo','Proyecto en pozo')}${opt('otro','Otro')}</select></div>
+        <div class="pay-form-row"><label class="pay-form-label">Objetivo</label><select class="pay-form-input" id="scanObjetivo">${opt('desarrollar','Desarrollar')}${opt('invertir','Invertir (plusvalía)')}${opt('renta','Renta')}${opt('vivir','Comprar para vivir')}${opt('vender','Vender')}${opt('tasar','Tasar')}</select></div>
+        <div class="pay-form-row"><label class="pay-form-label">Moneda</label><select class="pay-form-input" id="scanMoneda">${opt('USD','USD')}${opt('ARS','ARS')}</select></div>
+        <div class="pay-form-row"><label class="pay-form-label">Zona / barrio</label><input class="pay-form-input" id="scanZona" type="text" maxlength="160" placeholder="Caseros, Tres de Febrero"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Ciudad / provincia</label><input class="pay-form-input" id="scanCiudad" type="text" maxlength="120" placeholder="Buenos Aires"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Sup. terreno (m²)</label><input class="pay-form-input" id="scanSupTerreno" type="number" min="0" step="0.01" placeholder="500"></div>
+        <div class="pay-form-row"><label class="pay-form-label">m² vendibles</label><input class="pay-form-input" id="scanM2Vend" type="number" min="0" step="0.01" placeholder="1000"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Precio pedido</label><input class="pay-form-input" id="scanPrecioPedido" type="number" min="0" step="0.01" placeholder="600000"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Costo de obra (por m²)</label><input class="pay-form-input" id="scanCostoObra" type="number" min="0" step="0.01" placeholder="1200"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Precio de venta (por m²)</label><input class="pay-form-input" id="scanPrecioVenta" type="number" min="0" step="0.01" placeholder="2400"></div>
+      </div>
+
+      <details class="scan-advanced">
+        <summary>Supuestos avanzados (si no los cargás, usamos valores de mercado y los mostramos)</summary>
+        <div class="scan-form-grid">
+          <div class="pay-form-row"><label class="pay-form-label">Comisión inmob. (%)</label><input class="pay-form-input" id="scanComision" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Impuestos compra (%)</label><input class="pay-form-input" id="scanImpuestos" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Honorarios (% s/ obra)</label><input class="pay-form-input" id="scanHonorarios" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Contingencia (%)</label><input class="pay-form-input" id="scanContingencia" type="number" min="0" step="0.1" placeholder="7"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Costo financiero (%)</label><input class="pay-form-input" id="scanFinanciero" type="number" min="0" step="0.1" placeholder="0"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Preventa esperada (%)</label><input class="pay-form-input" id="scanPreventa" type="number" min="0" max="100" step="1" placeholder="20"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Plazo de obra (meses)</label><input class="pay-form-input" id="scanPlazoObra" type="number" min="0" max="120" step="1" placeholder="14"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Plazo de venta (meses)</label><input class="pay-form-input" id="scanPlazoVenta" type="number" min="0" max="120" step="1" placeholder="10"></div>
+        </div>
+      </details>
+
+      <div id="scanFormError" class="scan-form-error" style="display:none"></div>
+      <button type="submit" class="btn-primary scan-analyze-btn" id="scanAnalyzeBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>
+        Analizar oportunidad
+      </button>
+    </form>
+
+    <div id="scanReport"></div>`;
+}
+
+function _scanReadForm(){
+  const num=id=>{const v=$('#'+id)?.value;return v===''||v==null?null:Number(v);};
+  const str=id=>{const v=$('#'+id)?.value?.trim();return v||null;};
+  const inputs={};
+  const addIn=(k,id)=>{const v=num(id);if(v!=null)inputs[k]=v;};
+  addIn('comision_pct','scanComision');addIn('impuestos_compra_pct','scanImpuestos');
+  addIn('honorarios_pct','scanHonorarios');addIn('contingencia_pct','scanContingencia');
+  addIn('costo_financiero_pct','scanFinanciero');addIn('preventa_pct','scanPreventa');
+  addIn('plazo_obra_meses','scanPlazoObra');addIn('plazo_venta_meses','scanPlazoVenta');
+  return {
+    titulo:str('scanTitulo')||'Oportunidad',tipo_inmueble:$('#scanTipo').value,objetivo:$('#scanObjetivo').value,
+    moneda:$('#scanMoneda').value,zona:str('scanZona'),ciudad:str('scanCiudad'),
+    superficie_terreno_m2:num('scanSupTerreno'),m2_vendibles:num('scanM2Vend'),
+    precio_pedido:num('scanPrecioPedido'),costo_obra_m2:num('scanCostoObra'),precio_venta_m2:num('scanPrecioVenta'),
+    inputs,
+  };
+}
+
+async function _scanExtract(){
+  const btn=$('#scanExtractBtn'),msg=$('#scanExtractMsg');
+  const url=$('#scanFuenteUrl')?.value?.trim()||null,texto=$('#scanFuenteTexto')?.value?.trim()||null;
+  if(!url&&!texto){msg.textContent='Pegá una URL o el texto de la publicación.';return;}
+  btn.disabled=true;msg.textContent='Leyendo con IA…';
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,texto})});
+    if(r.status===401){window.REAuthService.logout();return;}
+    const d=await r.json();
+    const map={titulo:'scanTitulo',zona:'scanZona',ciudad:'scanCiudad',superficie_terreno_m2:'scanSupTerreno',m2_vendibles:'scanM2Vend',precio_pedido:'scanPrecioPedido',precio_venta_m2:'scanPrecioVenta'};
+    let n=0;Object.entries(d.inputs||{}).forEach(([k,v])=>{if(map[k]&&v!=null&&$('#'+map[k])){$('#'+map[k]).value=v;n++;}});
+    if(d.inputs?.tipo_inmueble&&$('#scanTipo'))$('#scanTipo').value=d.inputs.tipo_inmueble;
+    if(d.inputs?.moneda&&$('#scanMoneda'))$('#scanMoneda').value=d.inputs.moneda;
+    msg.textContent=n>0?`✓ ${n} campos completados — revisalos antes de analizar.`:(d.nota||'No se pudieron extraer datos. Cargalos a mano.');
+  }catch(e){msg.textContent='No se pudo procesar ahora. Cargá los datos a mano.';}
+  finally{btn.disabled=false;}
+}
+
+async function _scanAnalyze(ev){
+  ev.preventDefault();
+  const err=$('#scanFormError'),btn=$('#scanAnalyzeBtn'),rep=$('#scanReport');
+  err.style.display='none';
+  const body=_scanReadForm();
+  if(!body.m2_vendibles&&!body.precio_pedido){err.textContent='Cargá al menos m² vendibles o precio pedido para analizar.';err.style.display='';return;}
+  btn.disabled=true;btn.classList.add('is-loading');
+  rep.innerHTML=`<div class="scan-loading"><div class="pay-loading-spinner"></div><span>Analizando: motor financiero + lectura de mercado con IA…</span></div>`;
+  rep.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    let r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error('No se pudo crear la oportunidad ('+r.status+')');
+    const opp=await r.json();
+    r=await window.REAuthService.authFetch(apiBase()+`/api/opportunities/${opp.id}/analyze`,{method:'POST'});
+    if(!r.ok)throw new Error('No se pudo analizar ('+r.status+')');
+    const analyzed=await r.json();
+    scannerState.lastReport=analyzed;scannerState.loaded=false;
+    renderScannerReport(analyzed);
+  }catch(e){
+    rep.innerHTML=`<div class="pay-empty">Error: ${esc(e.message)}</div>`;
+  }finally{
+    btn.disabled=false;btn.classList.remove('is-loading');
+  }
+}
+
+function renderScannerReport(opp){
+  const rep=$('#scanReport');if(!rep)return;
+  const a=opp.analysis||{},fin=a.finanzas||{},rec=a.recomendacion||{};
+  const mon=opp.moneda||'USD';
+  const M=v=>v==null?'—':fmtM(v);
+  const pct=v=>v==null?'—':(Number(v).toFixed(1)+'%');
+  const recCls=_scanRecClass(opp.recomendacion);
+  const escenarios=Array.isArray(a.escenarios)?a.escenarios:[];
+  const sens=Array.isArray(a.sensibilidad)?a.sensibilidad:[];
+  const riesgos=Array.isArray(a.riesgos)?a.riesgos:[];
+  const faltantes=Array.isArray(a.checklist_faltantes)?a.checklist_faltantes:[];
+  const fuentes=Array.isArray(a.fuentes)?a.fuentes:[];
+  const supuestos=Array.isArray(a.supuestos)?a.supuestos:[];
+  const sevCls={alta:'bad',media:'warn',baja:'neutral'};
+
+  rep.innerHTML=`
+    <div class="scan-report-head ${recCls}">
+      <div class="scan-score-wrap">${_scanScoreRing(a.score)}</div>
+      <div class="scan-verdict">
+        <span class="scan-verdict-badge ${recCls}">${esc(_SCAN_VEREDICTO[rec.veredicto]||_SCAN_REC_LABEL[opp.recomendacion]||'Análisis')}</span>
+        <div class="scan-verdict-title">${esc(opp.titulo)}</div>
+        <div class="scan-verdict-sub">${esc(rec.resumen||'')}</div>
+        ${a.parcial?`<span class="scan-parcial"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Análisis financiero completo · lectura de mercado IA no disponible ahora</span>`:''}
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Recomendación</div>
+      <div class="scan-rec-grid">
+        ${rec.precio_max_compra!=null?`<div class="scan-rec-item"><span>Precio máx. de compra</span><strong>${M(rec.precio_max_compra)}</strong></div>`:''}
+        ${rec.rango_venta_viable?`<div class="scan-rec-item"><span>Rango de venta viable</span><strong>${esc(rec.rango_venta_viable)}</strong></div>`:''}
+        ${rec.condicion_minima?`<div class="scan-rec-item wide"><span>Condición mínima para avanzar</span><strong>${esc(rec.condicion_minima)}</strong></div>`:''}
+        ${rec.riesgo_principal?`<div class="scan-rec-item wide"><span>Riesgo principal</span><strong>${esc(rec.riesgo_principal)}</strong></div>`:''}
+      </div>
+      ${Array.isArray(rec.proximos_pasos)&&rec.proximos_pasos.length?`<div class="scan-steps"><div class="scan-steps-t">Próximos pasos</div>${rec.proximos_pasos.map(p=>`<div class="scan-step"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>${esc(p)}</div>`).join('')}</div>`:''}
+    </div>
+
+    <div class="kpi-row scan-kpis">
+      <div class="kpi-card"><div class="kpi-label">Inversión total</div><div class="kpi-value">${M(fin.inversion_total)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Venta total esperada</div><div class="kpi-value">${M(fin.venta_total)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Margen neto</div><div class="kpi-value" style="color:${_scanScoreColor((fin.margen_neto_pct||0)*4)}">${pct(fin.margen_neto_pct)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">ROI</div><div class="kpi-value">${pct(fin.roi_pct)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">TIR anual</div><div class="kpi-value">${pct(fin.tir_anual_pct)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Break-even venta/m²</div><div class="kpi-value">${M(fin.break_even_venta_m2)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Incidencia tierra</div><div class="kpi-value">${pct(fin.incidencia_tierra_pct)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Necesidad máx. de caja</div><div class="kpi-value">${M(fin.necesidad_maxima_caja)}</div></div>
+    </div>
+
+    ${escenarios.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 2 4-5"/></svg>Escenarios probabilísticos</div>
+      <div class="scenario-grid">${escenarios.map(e=>{const cls=e.nombre==='optimista'?'good':e.nombre==='pesimista'?'bad':'warn';return `<div class="scenario-card ${cls}"><div class="scenario-head"><span class="scenario-name">${esc(e.nombre)}</span><span class="scenario-prob">${Math.round(e.probabilidad)}%</span></div><div class="scenario-rows"><div><span>Margen neto</span><strong>${pct(e.margen_neto_pct)}</strong></div><div><span>ROI</span><strong>${pct(e.roi_pct)}</strong></div><div><span>TIR</span><strong>${pct(e.tir_pct)}</strong></div></div>${e.comentario?`<div class="scenario-note">${esc(e.comentario)}</div>`:''}</div>`;}).join('')}</div></div>`:''}
+
+    ${sens.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><line x1="4" y1="4" x2="4" y2="20"/><path d="M4 16l4-4 4 2 8-8"/></svg>Análisis de sensibilidad</div>
+      ${sens.map(s=>`<div class="scan-sens"><div class="scan-sens-t">${esc(s.variable==='costo_obra'?'Variación del costo de obra':s.variable==='precio_venta'?'Variación del precio de venta':s.variable)}</div><table class="data-table"><thead><tr><th>Variación</th><th>Margen neto</th><th>ROI</th><th>Decisión</th></tr></thead><tbody>${(s.puntos||[]).map(p=>`<tr><td>${p.variacion_pct>0?'+':''}${p.variacion_pct}%</td><td>${pct(p.margen_neto_pct)}</td><td>${pct(p.roi_pct)}</td><td><span class="status-badge ${p.decision==='Descartar'?'bad':p.decision==='Avanzar'?'good':'warn'}">${esc(p.decision)}</span></td></tr>`).join('')}</tbody></table></div>`).join('')}</div>`:''}
+
+    ${riesgos.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Riesgos y variables a validar</div>
+      <div class="scan-risks">${riesgos.map(r=>`<div class="scan-risk"><span class="status-badge ${sevCls[r.severidad]||'neutral'}">${esc(_SCAN_SEV[r.severidad]||r.severidad)}</span><div><strong>${esc(r.descripcion)}</strong>${r.mitigacion?`<span>${esc(r.mitigacion)}</span>`:''}</div></div>`).join('')}</div></div>`:''}
+
+    ${a.lectura_mercado?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20 15 15 0 010-20"/></svg>Lectura de mercado <span class="kpi-tag">IA</span></div><p class="scan-market">${esc(a.lectura_mercado)}</p></div>`:''}
+
+    ${(supuestos.length||fuentes.length)?`<div class="section-block scan-meta">
+      ${supuestos.length?`<div class="scan-meta-col"><div class="scan-meta-t">Supuestos utilizados</div>${supuestos.map(s=>`<div class="scan-meta-row">${esc(s)}</div>`).join('')}</div>`:''}
+      ${fuentes.length?`<div class="scan-meta-col"><div class="scan-meta-t">Fuentes</div>${fuentes.map(f=>`<div class="scan-meta-row"><span class="src-dot ${f.estado==='conectada'?'on':'off'}"></span>${esc(f.nombre)} <span class="src-state">${esc(f.estado==='conectada'?'conectada':f.estado==='dato_usuario'?'dato del usuario':'estimación / no conectada')}</span></div>`).join('')}</div>`:''}
+    </div>`:''}
+
+    <div class="scan-disclaimer">Este análisis es una estimación basada en los datos cargados y supuestos financieros. No constituye asesoramiento legal, contable ni financiero definitivo. Validá con profesionales matriculados, tasadores y autoridades antes de decidir.</div>
+
+    <div class="scan-report-actions">
+      <button class="btn-secondary" id="scanGotoDealroom" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Ver en el Deal Room</button>
+      <button class="btn-secondary" id="scanExportPdf" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>Exportar PDF</button>
+      <button class="btn-primary" id="scanNuevoBtn" type="button">+ Nuevo análisis</button>
+    </div>`;
+  rep.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderScannerDealroom(data){
+  const el=$('#scanDealroomContent');if(!el)return;
+  const items=data?.items||[];const sum=data?.summary||{};
+  if(!items.length){el.innerHTML=`<div class="pay-empty" style="padding:30px 0"><div style="font-size:30px;margin-bottom:8px">🏗️</div>Todavía no analizaste oportunidades.<br>Andá a <strong>Nuevo análisis</strong> y cargá la primera.</div>`;return;}
+  const estLbl={nueva:'Nueva',en_analisis:'En análisis',shortlist:'Shortlist',descartada:'Descartada',cerrada:'Cerrada'};
+  el.innerHTML=`
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
+      <div class="kpi-card"><div class="kpi-label">Oportunidades</div><div class="kpi-value">${sum.count_total||0}</div></div>
+      <div class="kpi-card"><div class="kpi-label">En shortlist</div><div class="kpi-value">${sum.count_shortlist||0}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Score promedio</div><div class="kpi-value">${sum.avg_score!=null?Math.round(sum.avg_score):'—'}</div></div>
+    </div>
+    <div class="dealroom-grid">${items.map(o=>{
+      const col=_scanScoreColor(o.score);const rc=_scanRecClass(o.recomendacion);
+      return `<div class="opp-card" data-opp="${o.id}">
+        <div class="opp-card-top"><div class="opp-score" style="color:${col};border-color:${col}">${o.score!=null?Math.round(o.score):'—'}</div>
+          <div class="opp-card-head"><div class="opp-card-title">${esc(o.titulo)}</div><div class="opp-card-sub">${esc(o.tipo_inmueble)}${o.zona?' · '+esc(o.zona):''}</div></div>
+          <span class="status-badge ${rc}">${esc(estLbl[o.estado_pipeline]||o.estado_pipeline)}</span></div>
+        <div class="opp-card-metrics">
+          <div><span>Margen</span><strong>${o.analysis?.finanzas?.margen_neto_pct!=null?o.analysis.finanzas.margen_neto_pct.toFixed(1)+'%':'—'}</strong></div>
+          <div><span>ROI</span><strong>${o.analysis?.finanzas?.roi_pct!=null?o.analysis.finanzas.roi_pct.toFixed(0)+'%':'—'}</strong></div>
+          <div><span>TIR</span><strong>${o.analysis?.finanzas?.tir_anual_pct!=null?o.analysis.finanzas.tir_anual_pct.toFixed(0)+'%':'—'}</strong></div>
+        </div>
+        <div class="opp-card-actions">
+          <button class="btn-secondary opp-open" data-opp="${o.id}">Ver informe</button>
+          <button class="btn-icon opp-del" data-opp="${o.id}" title="Eliminar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+        </div>
+      </div>`;}).join('')}</div>`;
+}
+
+async function loadScanner(force=false){
+  if(!scannerState._formReady){renderScannerNueva();scannerState._formReady=true;}
+  if(scannerState.loading)return;
+  if(scannerState.loaded&&!force){renderScannerDealroom({items:scannerState.list,summary:scannerState.summary});return;}
+  scannerState.loading=true;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities');
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error('('+r.status+')');
+    const d=await r.json();
+    scannerState.list=d.items;scannerState.summary=d.summary;scannerState.loaded=true;
+    renderScannerDealroom(d);
+  }catch(e){
+    const el=$('#scanDealroomContent');if(el)el.innerHTML='<div class="pay-empty">No se pudo cargar el Deal Room.</div>';
+  }finally{scannerState.loading=false;}
+}
+
+function _scanSwitchTab(tab){
+  $$('[data-scanner-tab]').forEach(t=>t.classList.toggle('active',t.dataset.scannerTab===tab));
+  $$('.scanner-tab-content').forEach(c=>c.style.display='none');
+  const el=$('#scanTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(el)el.style.display='';
+  if(tab==='dealroom')loadScanner(true);
+}
+
+async function _scanOpenReport(id){
+  _scanSwitchTab('nueva');
+  const rep=$('#scanReport');if(rep){rep.innerHTML=`<div class="scan-loading"><div class="pay-loading-spinner"></div><span>Abriendo informe…</span></div>`;}
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities/'+id);
+    if(!r.ok)throw new Error();
+    renderScannerReport(await r.json());
+  }catch(e){if(rep)rep.innerHTML='<div class="pay-empty">No se pudo abrir el informe.</div>';}
+}
+
+async function _scanDelete(id){
+  if(!confirm('¿Eliminar esta oportunidad?'))return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities/'+id,{method:'DELETE'});
+    if(r.status!==204&&!r.ok)throw new Error();
+    scannerState.loaded=false;loadScanner(true);
+  }catch(e){alert('No se pudo eliminar.');}
+}
+
+function initScanner(){
+  $$('[data-scanner-tab]').forEach(t=>t.addEventListener('click',()=>_scanSwitchTab(t.dataset.scannerTab)));
+  // Delegación en la pestaña Nueva (form + extract + acciones del informe)
+  $('#scanTabNueva')?.addEventListener('click',e=>{
+    if(e.target.closest('#scanExtractBtn'))_scanExtract();
+    else if(e.target.closest('#scanNuevoBtn')){$('#scanReport').innerHTML='';renderScannerNueva();$('#viewScanner').scrollIntoView({behavior:'smooth',block:'start'});}
+    else if(e.target.closest('#scanGotoDealroom'))_scanSwitchTab('dealroom');
+    else if(e.target.closest('#scanExportPdf'))exportarOportunidadPDF();
+  });
+  $('#scanTabNueva')?.addEventListener('submit',e=>{if(e.target.id==='scanForm')_scanAnalyze(e);});
+  // Delegación en el Deal Room (abrir / borrar)
+  $('#scanTabDealroom')?.addEventListener('click',e=>{
+    const open=e.target.closest('.opp-open'),del=e.target.closest('.opp-del');
+    if(open)_scanOpenReport(open.dataset.opp);
+    else if(del)_scanDelete(del.dataset.opp);
+  });
+}
+
+// Export PDF del informe (print-to-PDF, mismo patrón que exportarProyectoPDF).
+function exportarOportunidadPDF(){
+  const opp=scannerState.lastReport;
+  if(!opp){alert('Generá un análisis primero.');return;}
+  const a=opp.analysis||{},fin=a.finanzas||{},rec=a.recomendacion||{};
+  const M=v=>v==null?'—':fmtM(v),pct=v=>v==null?'—':Number(v).toFixed(1)+'%';
+  const today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
+  const esc2=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const esc=esc2;
+  const escen=(a.escenarios||[]).map(e=>`<tr><td>${esc(e.nombre)}</td><td>${Math.round(e.probabilidad)}%</td><td>${pct(e.margen_neto_pct)}</td><td>${pct(e.roi_pct)}</td><td>${pct(e.tir_pct)}</td></tr>`).join('');
+  const riesgos=(a.riesgos||[]).map(r=>`<div class="al"><b>[${esc(r.severidad)}] ${esc(r.descripcion)}</b>${esc(r.mitigacion||'')}</div>`).join('');
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Informe — ${esc(opp.titulo)}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#2a1d12;padding:32px 36px;font-size:13px;line-height:1.5}
+  .hd{display:flex;justify-content:space-between;border-bottom:2px solid #BE5103;padding-bottom:12px;margin-bottom:16px}.logo{font-weight:800;font-size:18px;color:#BE5103}
+  h1{font-size:20px;margin-bottom:4px}.verdict{display:inline-block;padding:5px 12px;border-radius:8px;font-weight:700;color:#fff;background:#BE5103;margin:6px 0 16px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#897b6d;border-bottom:1px solid #ece4db;padding-bottom:5px;margin:18px 0 9px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.card{border:1px solid #ece4db;border-radius:8px;padding:10px}.card .l{font-size:9px;color:#897b6d;text-transform:uppercase}.card .v{font-size:15px;font-weight:800;margin-top:3px}
+  table{width:100%;border-collapse:collapse;margin-top:4px}td,th{padding:6px 8px;border-bottom:1px solid #f3ede6;text-align:left;font-size:12px}th{font-size:9px;text-transform:uppercase;color:#897b6d}
+  .al{border-left:3px solid #BE5103;padding:7px 11px;margin-bottom:7px;background:#faf7f3;border-radius:0 6px 6px 0}.al b{display:block}
+  .ft{margin-top:24px;padding-top:12px;border-top:1px solid #ece4db;color:#b3a799;font-size:10px}@media print{body{padding:6px 0}}</style></head><body>
+  <div class="hd"><div><div class="logo">RE Expert</div><div style="font-size:11px;color:#897b6d">Opportunity Scanner — informe</div></div><div style="text-align:right;font-size:11px;color:#897b6d">${today}<br>Score ${a.score!=null?Math.round(a.score):'—'}/100</div></div>
+  <h1>${esc(opp.titulo)}</h1><span class="verdict">${esc(_SCAN_VEREDICTO[rec.veredicto]||'Análisis')}</span>
+  <p>${esc(rec.resumen||'')}</p>
+  <h2>Números clave (${esc(opp.moneda||'USD')})</h2><div class="grid">
+   <div class="card"><div class="l">Inversión total</div><div class="v">${M(fin.inversion_total)}</div></div>
+   <div class="card"><div class="l">Venta total</div><div class="v">${M(fin.venta_total)}</div></div>
+   <div class="card"><div class="l">Margen neto</div><div class="v">${pct(fin.margen_neto_pct)}</div></div>
+   <div class="card"><div class="l">ROI / TIR</div><div class="v">${pct(fin.roi_pct)} / ${pct(fin.tir_anual_pct)}</div></div>
+   <div class="card"><div class="l">Break-even venta/m²</div><div class="v">${M(fin.break_even_venta_m2)}</div></div>
+   <div class="card"><div class="l">Incidencia tierra</div><div class="v">${pct(fin.incidencia_tierra_pct)}</div></div>
+   <div class="card"><div class="l">Necesidad máx. caja</div><div class="v">${M(fin.necesidad_maxima_caja)}</div></div>
+   <div class="card"><div class="l">Precio máx. compra</div><div class="v">${M(rec.precio_max_compra)}</div></div></div>
+  ${escen?`<h2>Escenarios</h2><table><tr><th>Escenario</th><th>Prob.</th><th>Margen</th><th>ROI</th><th>TIR</th></tr>${escen}</table>`:''}
+  ${riesgos?`<h2>Riesgos</h2>${riesgos}`:''}
+  ${a.lectura_mercado?`<h2>Lectura de mercado</h2><p>${esc(a.lectura_mercado)}</p>`:''}
+  <div class="ft">Generado por RE Expert · ${today} · Estimación según datos y supuestos cargados; no constituye asesoramiento profesional definitivo.</div>
+  <scr`+`ipt>window.onload=function(){setTimeout(function(){window.print()},250)}</scr`+`ipt></body></html>`;
+  const w=window.open('','_blank');if(!w){alert('Permití las ventanas emergentes para exportar el PDF.');return;}
+  w.document.open();w.document.write(html);w.document.close();
+}
+
 function init(){
   applyTheme(state.theme);
   // Cargar usuario desde sesión ya validada por el route guard
@@ -4467,7 +4838,7 @@ function init(){
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
 
   // Swipe-derecha-vuelve-atrás (gesto tipo iOS desde el borde izquierdo).
