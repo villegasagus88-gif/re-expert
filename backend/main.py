@@ -15,6 +15,7 @@ from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
+from api.routes.opportunity import router as opportunity_router
 from api.routes.payments import router as payments_router
 from api.routes.profile import router as profile_router
 from api.routes.project import router as project_router
@@ -262,6 +263,7 @@ app.include_router(creditos_router, dependencies=_paid)
 app.include_router(creditos_admin_router)
 app.include_router(payments_router, dependencies=_paid)
 app.include_router(project_router, dependencies=_paid)
+app.include_router(opportunity_router, dependencies=_paid)
 app.include_router(profile_router, dependencies=_paid)
 app.include_router(ingest_router, dependencies=_paid)
 app.include_router(news_router, dependencies=_paid)
