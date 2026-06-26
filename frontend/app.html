@@ -599,14 +599,17 @@
             <p>Lo que está pasando en real estate, construcción y economía — curado para decisiones reales.</p>
           </div>
 
-          <div class="section-tabs">
-            <button class="section-tab active" data-news-tab="destacadas">Destacadas</button>
-            <button class="section-tab" data-news-tab="ultimas">Últimas</button>
-            <button class="section-tab" data-news-tab="opinion">Opinión</button>
+          <div class="news-live-bar">
+            <div class="news-chips" id="newsChips"></div>
+            <button class="btn-secondary news-refresh" id="newsRefresh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+              Actualizar
+            </button>
           </div>
+          <div id="newsLiveFeed" class="news-live-feed"></div>
 
-          <!-- TAB: DESTACADAS — contenido dinámico vía loadNewsDestacadas() -->
-          <div id="newsTabDestacadas" class="news-tab-content">
+          <!-- TABS VIEJOS (estáticos) — ocultos; reemplazados por el feed en vivo de arriba -->
+          <div id="newsTabDestacadas" class="news-tab-content" style="display:none">
             <div id="newsDestacadasTakeaway"></div>
             <div id="newsDestacadasFilters" class="news-filters"></div>
             <div id="newsDestacadasHero" class="news-hero"></div>
@@ -809,6 +812,14 @@
           <button class="btn-icon" id="credModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body" id="credModalBody"></div>
+      </div>
+    </div>
+
+    <!-- News Reader Modal (digest de la nota) -->
+    <div class="modal-overlay" id="newsReaderModal">
+      <div class="modal modal-wide news-reader">
+        <button class="btn-icon news-reader-close" id="newsReaderClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <div class="modal-body" id="newsReaderBody"></div>
       </div>
     </div>
 
@@ -1178,14 +1189,7 @@ function switchView(v){
   if(v==='scanner')loadScanner();
   if(v==='academia')loadAcademia();
   if(v==='creditos')loadCreditos();
-  if(v==='noticias'){
-    // Re-disparar la tab activa por si cambió desde la última visita.
-    const activeNewsTab=document.querySelector('[data-news-tab].active');
-    const which=activeNewsTab?activeNewsTab.dataset.newsTab:'destacadas';
-    if(which==='destacadas')loadNewsDestacadas();
-    else if(which==='opinion')loadNewsOpinion();
-    else if(which==='ultimas')loadNews({append:false}).catch(()=>{});
-  }
+  if(v==='noticias')loadNewsLive();
 }
 
 // Vuelve a la vista anterior (gesto swipe-right o navegación programática).
@@ -3769,44 +3773,99 @@ function initSol(){
 }
 
 // Noticias tabs & filters
+// ── NOTICIAS EN VIVO (feed real Tavily + lector con digest IA) ──
+const newsLiveState={category:'todas',items:[],loading:false};
+const _NEWS_CATS=[['todas','Todas'],['economia','Economía'],['inmobiliario','Inmobiliario'],['construccion','Construcción'],['proyectos','Proyectos'],['arquitectura','Arquitectura'],['politica','Política']];
+const _NEWS_CAT_LABEL={economia:'Economía',inmobiliario:'Inmobiliario',construccion:'Construcción',proyectos:'Proyectos',arquitectura:'Arquitectura',politica:'Política',todas:'Todas'};
+
+function _newsAgo(s){
+  if(!s)return '';
+  const d=new Date(s);if(isNaN(d.getTime()))return '';
+  const h=(Date.now()-d.getTime())/3600000;
+  if(h<1)return 'hace '+Math.max(1,Math.round(h*60))+' min';
+  if(h<24)return 'hace '+Math.round(h)+' h';
+  if(h<48)return 'ayer';
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+}
+
+function _newsRenderChips(){
+  const el=$('#newsChips');if(!el)return;
+  el.innerHTML=_NEWS_CATS.map(([k,l])=>`<button class="news-chip ${k===newsLiveState.category?'active':''}" data-news-cat="${k}">${l}</button>`).join('');
+}
+
+function _newsCardHTML(it){
+  return `<article class="news-card" data-news-url="${esc(it.url)}">
+    <div class="news-card-meta"><span class="news-cat-badge ${esc(it.category)}">${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span><span class="news-card-source">${esc(it.source)}</span>${it.published_date?`<span class="news-card-date">· ${esc(_newsAgo(it.published_date))}</span>`:''}</div>
+    <h3 class="news-card-title">${esc(it.title)}</h3>
+    ${it.snippet?`<p class="news-card-snippet">${esc(it.snippet)}</p>`:''}
+    <span class="news-card-read">Leer la nota <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </article>`;
+}
+
+function renderNewsFeed(){
+  const el=$('#newsLiveFeed');if(!el)return;
+  const its=newsLiveState.items;
+  if(!its.length){el.innerHTML=`<div class="pay-empty" style="padding:30px 0">No encontramos noticias ahora. Probá Actualizar o cambiá de categoría.</div>`;return;}
+  el.innerHTML=`<div class="news-grid">${its.map(_newsCardHTML).join('')}</div>`;
+}
+
+async function loadNewsLive(force=false){
+  if(newsLiveState.loading)return;
+  if(!$('#newsChips')?.children.length)_newsRenderChips();
+  newsLiveState.loading=true;
+  const btn=$('#newsRefresh');if(btn)btn.classList.add('is-loading');
+  const el=$('#newsLiveFeed');
+  if(el&&(force||!newsLiveState.items.length))el.innerHTML=`<div class="scan-loading"><div class="pay-loading-spinner"></div><span>Trayendo noticias del rubro…</span></div>`;
+  try{
+    const r=await window.REAuthService.authFetch(`${apiBase()}/api/news/live?category=${newsLiveState.category}&refresh=${force?'true':'false'}`);
+    if(r.status===401){window.REAuthService.logout();return;}
+    if(!r.ok)throw new Error('('+r.status+')');
+    const d=await r.json();
+    newsLiveState.items=d.items||[];
+    renderNewsFeed();
+  }catch(e){ if(el)el.innerHTML='<div class="pay-empty">No se pudieron cargar las noticias. Probá de nuevo.</div>'; }
+  finally{ newsLiveState.loading=false; if(btn)btn.classList.remove('is-loading'); }
+}
+
+async function _newsOpenReader(url){
+  const it=newsLiveState.items.find(x=>x.url===url);if(!it)return;
+  const modal=$('#newsReaderModal'),body=$('#newsReaderBody');
+  modal.classList.add('active');
+  body.innerHTML=`<div class="scan-loading"><div class="pay-loading-spinner"></div><span>Armando la nota…</span></div>`;
+  try{
+    const q=new URLSearchParams({url:it.url,title:it.title||'',source:it.source||'',category:it.category||'',snippet:it.snippet||''});
+    const r=await window.REAuthService.authFetch(`${apiBase()}/api/news/digest?${q.toString()}`);
+    if(!r.ok)throw new Error();
+    renderDigest(await r.json(),it);
+  }catch(e){ body.innerHTML=`<div class="reader-content"><div class="pay-empty">No se pudo abrir la nota. <a href="${esc(it.url)}" target="_blank" rel="noopener">Leer en la fuente ↗</a></div></div>`; }
+}
+
+function renderDigest(d,it){
+  const body=$('#newsReaderBody');if(!body)return;
+  const puntos=Array.isArray(d.puntos_clave)?d.puntos_clave:[];
+  body.innerHTML=`
+    ${d.image_url?`<div class="reader-hero" style="background-image:url('${esc(d.image_url)}')"></div>`:''}
+    <div class="reader-content">
+      <div class="reader-meta"><span class="news-cat-badge ${esc(it.category)}">${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span><span class="news-card-source">${esc(d.source||it.source)}</span>${it.published_date?`<span class="news-card-date">· ${esc(_newsAgo(it.published_date))}</span>`:''}</div>
+      <h2 class="reader-title">${esc(d.title||it.title)}</h2>
+      ${d.lead?`<p class="reader-lead">${esc(d.lead)}</p>`:''}
+      ${puntos.length?`<div class="reader-block"><div class="reader-h">Lo que tenés que saber</div>${puntos.map(p=>`<div class="reader-point"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg><span>${esc(p)}</span></div>`).join('')}</div>`:''}
+      ${d.dato_clave?`<div class="reader-keyfact"><span>Dato clave</span><strong>${esc(d.dato_clave)}</strong></div>`:''}
+      ${d.impacto_real_estate?`<div class="reader-block reader-impact"><div class="reader-h">Por qué te importa</div><p>${esc(d.impacto_real_estate)}</p></div>`:''}
+      <a class="reader-source-link" href="${esc(it.url)}" target="_blank" rel="noopener">Leer la nota completa en ${esc(d.source||it.source)} <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7M7 7h10v10"/></svg></a>
+      ${d.parcial?`<div class="reader-parcial">Resumen acotado — no pudimos procesar el texto completo de la fuente.</div>`:''}
+    </div>`;
+  body.scrollTop=0;
+}
+
 function initNoticiasTabs(){
-  $$('[data-news-tab]').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      $$('[data-news-tab]').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      $$('.news-tab-content').forEach(c=>c.style.display='none');
-      const which=tab.dataset.newsTab;
-      $(`#newsTab${which.charAt(0).toUpperCase()+which.slice(1)}`).style.display='';
-      // Lazy load del contenido de la tab recién activada (la primera vez,
-      // y después usa caché en memoria — el JSON es estático).
-      if(which==='destacadas')loadNewsDestacadas();
-      else if(which==='opinion')loadNewsOpinion();
-    });
-  });
-  // Category filters (estáticos del feed Últimas — los de Destacadas se
-  // bindean al renderizar porque las categorías vienen del backend).
-  $$('.news-filters').forEach(filterGroup=>{
-    filterGroup.querySelectorAll('.news-filter').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        filterGroup.querySelectorAll('.news-filter').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        const cat=btn.dataset.category;
-        const container=filterGroup.parentElement;
-        const items=container.querySelectorAll('[data-cat]');
-        items.forEach(item=>{
-          item.style.display=(cat==='todas'||item.dataset.cat===cat)?'':'none';
-        });
-      });
-    });
-  });
-  // Hook "Cargar más" y dispara la primera carga.
-  const loadMoreBtn=$('#newsLoadMore');
-  if(loadMoreBtn){
-    loadMoreBtn.addEventListener('click',()=>loadNews({append:true}));
-  }
-  loadNews({append:false}).catch(()=>{ /* mantiene mock si falla */ });
-  // Carga inicial de Destacadas (tab activa por default).
-  loadNewsDestacadas().catch(()=>{});
+  _newsRenderChips();
+  $('#newsChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-news-cat]');if(!b||b.dataset.newsCat===newsLiveState.category)return;newsLiveState.category=b.dataset.newsCat;newsLiveState.items=[];_newsRenderChips();loadNewsLive(false);});
+  $('#newsRefresh')?.addEventListener('click',()=>loadNewsLive(true));
+  $('#newsLiveFeed')?.addEventListener('click',e=>{const c=e.target.closest('[data-news-url]');if(c)_newsOpenReader(c.dataset.newsUrl);});
+  const modal=$('#newsReaderModal');
+  $('#newsReaderClose')?.addEventListener('click',()=>modal.classList.remove('active'));
+  modal?.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('active');});
 }
 
 // Estado de paginación de Noticias.
