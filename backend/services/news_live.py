@@ -38,19 +38,30 @@ _DIGEST_TTL = 86400        # 24 h
 
 # Feeds RSS validados (andan y traen fecha). force_cat: feed monotemático.
 RSS_FEEDS = [
-    # Secciones temáticas (el medio ya filtra → mucho menos ruido). force_cat: feed dedicado.
-    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/propiedades/?outputType=xml",
-     "source": "lanacion.com.ar", "force_cat": "inmobiliario"},
-    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/economia/?outputType=xml",
-     "source": "lanacion.com.ar"},
+    # mode 'macro': se distribuye por keyword (default economia). 'section': cat fija, toma todo.
+    # 'strict': cat fija, sólo items que matchean las keywords de esa cat (filtra feeds generales).
+    {"url": "https://www.ambito.com/rss/economia.xml", "source": "ambito.com", "mode": "macro", "cat": "economia"},
+    {"url": "https://www.ambito.com/rss/finanzas.xml", "source": "ambito.com", "mode": "macro", "cat": "economia"},
     {"url": "https://www.infobae.com/arc/outboundfeeds/rss/category/economia/?outputType=xml",
-     "source": "infobae.com"},
-    {"url": "https://www.ambito.com/rss/economia.xml", "source": "ambito.com"},
-    {"url": "https://www.ambito.com/rss/finanzas.xml", "source": "ambito.com"},
-    {"url": "https://www.clarin.com/rss/economia/", "source": "clarin.com"},
-    {"url": "https://www.clarin.com/rss/arq/", "source": "clarin.com", "force_cat": "arquitectura"},
+     "source": "infobae.com", "mode": "macro", "cat": "economia"},
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/economia/?outputType=xml",
+     "source": "lanacion.com.ar", "mode": "macro", "cat": "economia"},
+    {"url": "https://www.clarin.com/rss/economia/", "source": "clarin.com", "mode": "macro", "cat": "economia"},
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/propiedades/?outputType=xml",
+     "source": "lanacion.com.ar", "mode": "section", "cat": "inmobiliario"},
+    {"url": "https://www.constructiondive.com/feeds/news/", "source": "constructiondive.com",
+     "mode": "section", "cat": "construccion", "intl": True},
+    {"url": "https://www.archdaily.com/rss/", "source": "archdaily.com",
+     "mode": "section", "cat": "proyectos", "intl": True},
+    {"url": "https://techcrunch.com/feed/", "source": "techcrunch.com",
+     "mode": "strict", "cat": "proyectos", "intl": True},
     {"url": "https://www.plataformaarquitectura.cl/cl/rss/", "source": "plataformaarquitectura.cl",
-     "force_cat": "arquitectura"},
+     "mode": "section", "cat": "arquitectura", "intl": True},
+    {"url": "https://www.clarin.com/rss/arq/", "source": "clarin.com", "mode": "section", "cat": "arquitectura"},
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/politica/?outputType=xml",
+     "source": "lanacion.com.ar", "mode": "strict", "cat": "politica"},
+    {"url": "https://www.infobae.com/arc/outboundfeeds/rss/category/politica/?outputType=xml",
+     "source": "infobae.com", "mode": "strict", "cat": "politica"},
 ]
 
 CATEGORIES: dict[str, str] = {
@@ -63,23 +74,40 @@ CATEGORIES: dict[str, str] = {
     "politica": "Política y normativa",
 }
 
-# Keywords SIN acentos (el texto se normaliza). Orden de prioridad al categorizar.
+# Keywords SIN acentos (el texto se normaliza). Orden de prioridad al categorizar (modo macro).
 _CAT_KW: dict[str, list[str]] = {
     "inmobiliario": ["inmobiliari", "propiedad", "departamento", "alquiler", "alquile", "metro cuadrado",
-                     "vivienda", " ph ", "compraventa", "escritura", "tasacion", "real estate", "casa propia",
-                     "credito hipotecario", "hipotecari", "metro2", " m2", "ladrillo", "cochera"],
-    "construccion": ["construccion", "obra ", "cemento", "corralon", "hormigon", "materiales de construccion",
-                     "costo de la construccion", "indice de la construccion", "ladrillos", "albanil", "steel frame"],
+                     "vivienda", " ph ", "compraventa", "escritura", "tasacion", "casa propia",
+                     "credito hipotecario", "hipotecari", "metro2", " m2", "cochera", "usado", "valor del m2"],
+    "construccion": ["construccion", "obra ", "cemento", "corralon", "hormigon", "materiales para la construccion",
+                     "costo de la construccion", "indice de la construccion", "ladrillos", "albanil",
+                     "hierro", "acero", "loma negra", "holcim", "ternium", "constructora", "camara de la construccion",
+                     "insumos de la construccion", "metro cuadrado de construccion"],
     "proyectos": ["desarrollo inmobiliario", "emprendimiento", "torre ", "barrio privado", "barrio cerrado",
-                  "fideicomiso", "megaproyecto", "en pozo", "desarrollador", "edificio", "complejo residencial"],
+                  "fideicomiso", "megaproyecto", "en pozo", "desarrollador", "complejo residencial",
+                  "nuevo proyecto", "lanzo el proyecto", "invertira"],
     "arquitectura": ["arquitectura", "arquitecto", "urbanismo", "diseno", "estudio de arquitectura"],
-    "politica": ["ley de alquiler", "blanqueo", "normativa urbana", "codigo urbanistico", "plan de vivienda",
+    "politica": ["ley de alquiler", "normativa urbana", "codigo urbanistico", "plan de vivienda",
                  "procrear", "regulacion inmobiliaria", "subsidio a la vivienda", "obra publica"],
     "economia": ["dolar", "inflacion", "tasa de interes", " tasas ", "plazo fijo", "bcra", "reservas",
                  "riesgo pais", "uva", "fmi", "blanqueo", "tipo de cambio", "actividad economica",
-                 "inversion inmobiliaria"],
+                 "inversion", "credito", "banco"],
 }
 _CAT_ORDER = ["inmobiliario", "construccion", "proyectos", "arquitectura", "politica", "economia"]
+
+# Modo 'strict' política: SÓLO normativa/política que toca vivienda, propiedad o crédito del rubro
+# (no política general). Términos específicos para no traer toda la rosca política.
+_POL_KW = ["blanqueo", "impuesto", "subsidio", "tarifa", "vivienda", "alquiler", "hipotecari", "credito",
+           "inmobiliari", "obra publica", "desregulacion", "procrear", "banco nacion", "rigi", "reforma",
+           "bienes personales", "retenciones", "ley de alquiler", "reservas", "deuda", "fmi", "presupuesto",
+           "ganancias", "coparticipacion", "dolar oficial", "baja de impuesto", "plan economico"]
+
+# Modo 'strict' proyectos (TechCrunch global): SÓLO real estate / construcción / proptech (multi-palabra
+# para no matchear 'building their own chips' y similares).
+_TC_KW = ["real estate", "real-estate", "proptech", "construction tech", "contech", "housing market",
+          "mortgage", "home builder", "homebuilder", "prefab", "modular construction", "building materials",
+          "commercial property", "smart building", "construction startup", "construction robot",
+          "property management", "rental market", "co-living", "coworking space"]
 
 # Temas claramente NO del rubro: si aparecen, descartamos la nota aunque matchee una keyword
 # (ej "Jesica Cirio" matcheaba 'dólar' por una causa de lavado). Texto normalizado, sin acentos.
@@ -233,9 +261,9 @@ async def _fetch_rss(feed: dict) -> list[dict]:
         if not title or not url:
             continue
         out.append({
-            "title": title[:240], "url": url, "snippet": _strip(desc)[:400],
+            "title": re.sub(r"\s+", " ", title).strip()[:240], "url": url, "snippet": _strip(desc)[:400],
             "published_date": pd, "image": img, "source": feed["source"],
-            "force_cat": feed.get("force_cat"),
+            "mode": feed.get("mode", "section"), "cat": feed.get("cat", "economia"),
         })
     return out
 
@@ -273,9 +301,17 @@ async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
         text_norm = _norm(it["title"] + " " + (it.get("snippet") or ""))
         if any(b in text_norm for b in _BLOCK_KW):
             continue  # tema fuera del rubro (espectáculos/policiales/deportes)
-        cat = it.get("force_cat") or _categorize(text_norm)
-        if cat is None:
-            continue  # no es del rubro
+        mode = it.get("mode", "section")
+        if mode == "macro":
+            cat = _categorize(text_norm) or "economia"   # distribuye por keyword; al menos economía
+        elif mode == "strict":
+            fcat = it.get("cat", "economia")
+            kws = _POL_KW if fcat == "politica" else _TC_KW
+            if not any(k in text_norm for k in kws):
+                continue   # feed general que no toca el rubro → fuera
+            cat = fcat
+        else:  # section → la categoría del feed
+            cat = it.get("cat", "economia")
         if category != "todas" and cat != category:
             continue
         seen.add(url)
