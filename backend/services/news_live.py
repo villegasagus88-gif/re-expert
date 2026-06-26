@@ -38,13 +38,19 @@ _DIGEST_TTL = 86400        # 24 h
 
 # Feeds RSS validados (andan y traen fecha). force_cat: feed monotemático.
 RSS_FEEDS = [
-    {"url": "https://www.ambito.com/rss/ultimas-noticias.xml", "source": "ambito.com"},
+    # Secciones temáticas (el medio ya filtra → mucho menos ruido). force_cat: feed dedicado.
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/propiedades/?outputType=xml",
+     "source": "lanacion.com.ar", "force_cat": "inmobiliario"},
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/economia/?outputType=xml",
+     "source": "lanacion.com.ar"},
+    {"url": "https://www.infobae.com/arc/outboundfeeds/rss/category/economia/?outputType=xml",
+     "source": "infobae.com"},
     {"url": "https://www.ambito.com/rss/economia.xml", "source": "ambito.com"},
-    {"url": "https://www.infobae.com/arc/outboundfeeds/rss/?outputType=xml", "source": "infobae.com"},
-    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml", "source": "lanacion.com.ar"},
+    {"url": "https://www.ambito.com/rss/finanzas.xml", "source": "ambito.com"},
     {"url": "https://www.clarin.com/rss/economia/", "source": "clarin.com"},
-    {"url": "https://www.clarin.com/rss/lo-ultimo/", "source": "clarin.com"},
-    {"url": "https://www.plataformaarquitectura.cl/cl/rss/", "source": "plataformaarquitectura.cl", "force_cat": "arquitectura"},
+    {"url": "https://www.clarin.com/rss/arq/", "source": "clarin.com", "force_cat": "arquitectura"},
+    {"url": "https://www.plataformaarquitectura.cl/cl/rss/", "source": "plataformaarquitectura.cl",
+     "force_cat": "arquitectura"},
 ]
 
 CATEGORIES: dict[str, str] = {
@@ -69,10 +75,20 @@ _CAT_KW: dict[str, list[str]] = {
     "arquitectura": ["arquitectura", "arquitecto", "urbanismo", "diseno", "estudio de arquitectura"],
     "politica": ["ley de alquiler", "blanqueo", "normativa urbana", "codigo urbanistico", "plan de vivienda",
                  "procrear", "regulacion inmobiliaria", "subsidio a la vivienda", "obra publica"],
-    "economia": ["dolar", "inflacion", "tasa", "plazo fijo", "bcra", "reservas", "riesgo pais", "credito",
-                 "uva", "inversion", "economia", "fmi", "blanqueo", "actividad economica"],
+    "economia": ["dolar", "inflacion", "tasa de interes", " tasas ", "plazo fijo", "bcra", "reservas",
+                 "riesgo pais", "uva", "fmi", "blanqueo", "tipo de cambio", "actividad economica",
+                 "inversion inmobiliaria"],
 }
 _CAT_ORDER = ["inmobiliario", "construccion", "proyectos", "arquitectura", "politica", "economia"]
+
+# Temas claramente NO del rubro: si aparecen, descartamos la nota aunque matchee una keyword
+# (ej "Jesica Cirio" matcheaba 'dólar' por una causa de lavado). Texto normalizado, sin acentos.
+_BLOCK_KW = [
+    "futbol", "seleccion argentina", "river plate", "boca juniors", " messi", "espectaculo", "farandula",
+    "gran hermano", "masterchef", "horoscopo", "receta", "cirio", "wanda nara", "icardi", "femicidio",
+    "crimen", "asesinat", "narcotrafico", "homicidi", "viral", "tenis", "formula 1", " f1 ", "mundial de",
+    "pampita", "telenovela", "celebrities", "farandul", "policiales", "detenido por", "escandalo",
+]
 
 # Términos de alto impacto para el rubro (suben en el ranking).
 _IMPACT_KW = ["credito hipotecario", "hipotecari", "dolar", "inflacion", "blanqueo", "record", "ley ",
@@ -255,6 +271,8 @@ async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
         if dt is None or dt < cutoff:
             continue
         text_norm = _norm(it["title"] + " " + (it.get("snippet") or ""))
+        if any(b in text_norm for b in _BLOCK_KW):
+            continue  # tema fuera del rubro (espectáculos/policiales/deportes)
         cat = it.get("force_cat") or _categorize(text_norm)
         if cat is None:
             continue  # no es del rubro
