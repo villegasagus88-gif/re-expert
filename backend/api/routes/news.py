@@ -26,6 +26,7 @@ from api.schemas.news import NewsResponse, OpinionResponse, SpotlightResponse
 from core.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.user import User
+from services.news_live import CATEGORIES, fetch_feed, make_digest
 from services.news_service import list_news
 
 router = APIRouter(prefix="/api/news", tags=["news"])
@@ -91,3 +92,42 @@ async def get_destacadas(_user: User = Depends(get_current_user)) -> SpotlightRe
 async def get_opinion(_user: User = Depends(get_current_user)) -> OpinionResponse:
     data = _load_json(str(_OPINION_PATH))
     return OpinionResponse(**data)
+
+
+# ── Noticias EN VIVO (Tavily) + lector con digest IA ──
+
+@router.get(
+    "/categories",
+    summary="Categorías disponibles del feed en vivo",
+)
+async def get_news_categories(_user: User = Depends(get_current_user)) -> dict:
+    return {"categories": [{"key": k, "label": v["label"]} for k, v in CATEGORIES.items()]}
+
+
+@router.get(
+    "/live",
+    summary="Feed de noticias reales en vivo del rubro (Tavily), por categoría",
+    responses={401: {"description": "Token inválido o ausente"}},
+)
+async def get_news_live(
+    category: str = Query("todas", max_length=24, description="Categoría del feed"),
+    refresh: bool = Query(False, description="Bypassa el cache y trae noticias nuevas"),
+    _user: User = Depends(get_current_user),
+) -> dict:
+    return await fetch_feed(category=category, refresh=refresh)
+
+
+@router.get(
+    "/digest",
+    summary="Lector: digest IA (transformativo) de una nota, para leer dentro de la plataforma",
+    responses={401: {"description": "Token inválido o ausente"}},
+)
+async def get_news_digest(
+    url: str = Query(..., max_length=2000, description="URL de la nota original"),
+    title: str = Query("", max_length=300),
+    source: str = Query("", max_length=120),
+    category: str = Query("", max_length=24),
+    snippet: str = Query("", max_length=600),
+    _user: User = Depends(get_current_user),
+) -> dict:
+    return await make_digest(url=url, title=title, snippet=snippet, source=source, category=category)
