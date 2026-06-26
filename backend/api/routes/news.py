@@ -101,7 +101,7 @@ async def get_opinion(_user: User = Depends(get_current_user)) -> OpinionRespons
     summary="Categorías disponibles del feed en vivo",
 )
 async def get_news_categories(_user: User = Depends(get_current_user)) -> dict:
-    return {"categories": [{"key": k, "label": v["label"]} for k, v in CATEGORIES.items()]}
+    return {"categories": [{"key": k, "label": v} for k, v in CATEGORIES.items()]}
 
 
 @router.get(
@@ -111,10 +111,12 @@ async def get_news_categories(_user: User = Depends(get_current_user)) -> dict:
 )
 async def get_news_live(
     category: str = Query("todas", max_length=24, description="Categoría del feed"),
+    page: int = Query(1, ge=1, description="Página (1-indexed) para cargar más"),
+    per_page: int = Query(12, ge=1, le=40),
     refresh: bool = Query(False, description="Bypassa el cache y trae noticias nuevas"),
     _user: User = Depends(get_current_user),
 ) -> dict:
-    return await fetch_feed(category=category, refresh=refresh)
+    return await fetch_feed(category=category, page=page, per_page=per_page, refresh=refresh)
 
 
 @router.get(
@@ -128,6 +130,8 @@ async def get_news_digest(
     source: str = Query("", max_length=120),
     category: str = Query("", max_length=24),
     snippet: str = Query("", max_length=600),
+    image: str = Query("", max_length=2000),
     _user: User = Depends(get_current_user),
 ) -> dict:
-    return await make_digest(url=url, title=title, snippet=snippet, source=source, category=category)
+    return await make_digest(url=url, title=title, snippet=snippet, source=source,
+                             category=category, image=image)

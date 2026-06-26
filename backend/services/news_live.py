@@ -1,11 +1,15 @@
 """
-NewsLive — agregador de noticias REALES en vivo para el rubro real estate AR.
+NewsLive — diario en vivo del rubro real estate AR vía RSS de medios argentinos.
 
-Independiente (cliente httpx + cache propios; NO toca el retrieval de la Capa 2).
-Trae noticias vía Tavily (topic=news) cubriendo todo el rubro de punta a punta, y
-arma un "digest" transformativo con IA (puntos clave + por qué importa para real
-estate) para leer la nota dentro de la plataforma — sin reproducir el artículo
-completo (se cita la fuente con su link).
+Independiente (httpx + cache propios; NO toca la Capa 2). Lee feeds RSS reales de
+medios AR (Ámbito, Infobae, La Nación, Clarín, Plataforma Arquitectura), filtra a
+lo relevante para el rubro (inmobiliario, construcción, economía/macro, proyectos,
+arquitectura, política de vivienda), rankea por recencia + impacto, pagina, y arma
+un "digest" transformativo con IA para leer la nota adentro de la plataforma.
+
+Por qué RSS y no Tavily: Tavily con include_domains devolvía páginas de archivo
+sin fecha (se colaban notas viejas); los RSS traen artículos recientes, con fecha
+confiable (pubDate) y en volumen.
 """
 from __future__ import annotations
 
@@ -13,6 +17,8 @@ import asyncio
 import logging
 import re
 import time
+import unicodedata
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -23,81 +29,58 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-_TAVILY_URL = "https://api.tavily.com/search"
-_TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
+_TIMEOUT = httpx.Timeout(connect=5.0, read=15.0, write=5.0, pool=5.0)
+_UA = {"User-Agent": "Mozilla/5.0 (compatible; RE-Expert-News/1.0)"}
+_MAX_AGE_DAYS = 30          # descarta lo más viejo que ~1 mes
+_RAW_TTL = 600             # 10 min — cache del fetch crudo de RSS
+_FEED_TTL = 600            # 10 min — cache de la lista rankeada por categoría
+_DIGEST_TTL = 86400        # 24 h
 
-# Medios argentinos / en español del rubro (economía, inmobiliario, construcción,
-# arquitectura). Restringimos a estos para que el feed sea RELEVANTE para AR y en
-# español, en vez de traer noticias de EE.UU. Ampliable.
-_AR_DOMAINS = [
-    "ambito.com", "cronista.com", "infobae.com", "lanacion.com.ar", "clarin.com",
-    "iprofesional.com", "perfil.com", "pagina12.com.ar", "baenegocios.com",
-    "eleconomista.com.ar", "forbesargentina.com", "reporteinmobiliario.com",
-    "mdzol.com", "lavoz.com.ar", "losandes.com.ar", "plataformaarquitectura.cl",
-    "areaurbana.com", "elcronista.com", "apertura.com",
+# Feeds RSS validados (andan y traen fecha). force_cat: feed monotemático.
+RSS_FEEDS = [
+    {"url": "https://www.ambito.com/rss/ultimas-noticias.xml", "source": "ambito.com"},
+    {"url": "https://www.ambito.com/rss/economia.xml", "source": "ambito.com"},
+    {"url": "https://www.infobae.com/arc/outboundfeeds/rss/?outputType=xml", "source": "infobae.com"},
+    {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/?outputType=xml", "source": "lanacion.com.ar"},
+    {"url": "https://www.clarin.com/rss/economia/", "source": "clarin.com"},
+    {"url": "https://www.clarin.com/rss/lo-ultimo/", "source": "clarin.com"},
+    {"url": "https://www.plataformaarquitectura.cl/cl/rss/", "source": "plataformaarquitectura.cl", "force_cat": "arquitectura"},
 ]
 
-# Categorías que cubren el rubro de punta a punta. query=None → feed mezclado.
-CATEGORIES: dict[str, dict[str, Any]] = {
-    "todas": {"label": "Todas", "query": None,
-              "mix": ["economia", "inmobiliario", "construccion", "proyectos"]},
-    "economia": {"label": "Economía y macro",
-                 "query": "economía argentina inflación dólar tasas crédito hipotecario inversión inmobiliaria mercado"},
-    "inmobiliario": {"label": "Inmobiliario",
-                     "query": "mercado inmobiliario argentina precios m2 alquileres venta propiedades operaciones"},
-    "construccion": {"label": "Construcción",
-                     "query": "construcción argentina costos materiales obra desarrollo edilicio índice construcción"},
-    "proyectos": {"label": "Grandes proyectos",
-                  "query": "nuevos desarrollos inmobiliarios argentina grandes proyectos torres barrios privados real estate"},
-    "arquitectura": {"label": "Arquitectura",
-                     "query": "arquitectura argentina diseño edificios estudios urbanismo premios"},
-    "politica": {"label": "Política y normativa",
-                 "query": "argentina vivienda blanqueo inmobiliario normativa urbana créditos UVA medidas gobierno real estate"},
+CATEGORIES: dict[str, str] = {
+    "todas": "Todas",
+    "economia": "Economía y macro",
+    "inmobiliario": "Inmobiliario",
+    "construccion": "Construcción",
+    "proyectos": "Grandes proyectos",
+    "arquitectura": "Arquitectura",
+    "politica": "Política y normativa",
 }
+
+# Keywords SIN acentos (el texto se normaliza). Orden de prioridad al categorizar.
+_CAT_KW: dict[str, list[str]] = {
+    "inmobiliario": ["inmobiliari", "propiedad", "departamento", "alquiler", "alquile", "metro cuadrado",
+                     "vivienda", " ph ", "compraventa", "escritura", "tasacion", "real estate", "casa propia",
+                     "credito hipotecario", "hipotecari", "metro2", " m2", "ladrillo", "cochera"],
+    "construccion": ["construccion", "obra ", "cemento", "corralon", "hormigon", "materiales de construccion",
+                     "costo de la construccion", "indice de la construccion", "ladrillos", "albanil", "steel frame"],
+    "proyectos": ["desarrollo inmobiliario", "emprendimiento", "torre ", "barrio privado", "barrio cerrado",
+                  "fideicomiso", "megaproyecto", "en pozo", "desarrollador", "edificio", "complejo residencial"],
+    "arquitectura": ["arquitectura", "arquitecto", "urbanismo", "diseno", "estudio de arquitectura"],
+    "politica": ["ley de alquiler", "blanqueo", "normativa urbana", "codigo urbanistico", "plan de vivienda",
+                 "procrear", "regulacion inmobiliaria", "subsidio a la vivienda", "obra publica"],
+    "economia": ["dolar", "inflacion", "tasa", "plazo fijo", "bcra", "reservas", "riesgo pais", "credito",
+                 "uva", "inversion", "economia", "fmi", "blanqueo", "actividad economica"],
+}
+_CAT_ORDER = ["inmobiliario", "construccion", "proyectos", "arquitectura", "politica", "economia"]
+
+# Términos de alto impacto para el rubro (suben en el ranking).
+_IMPACT_KW = ["credito hipotecario", "hipotecari", "dolar", "inflacion", "blanqueo", "record", "ley ",
+              "uva", "tasa", "reservas", "desarrollo inmobiliario", "alquiler", "vivienda", "milei"]
+
 
 # ── Cache simple en memoria (TTL) ──
 _cache: dict[str, tuple[float, Any]] = {}
-_FEED_TTL = 900       # 15 min — un refresh "Actualizar" bypassa el cache
-_DIGEST_TTL = 86400   # 24 h — el digest de una nota no cambia
-_MAX_AGE_DAYS = 30    # descarta noticias más viejas que esto (feed actual, ~1 mes)
-
-
-def _parse_dt(s: str | None) -> datetime | None:
-    """Parsea la fecha de Tavily (RFC822 'Wed, 17 Jun 2026...' o ISO). None si no se puede."""
-    if not s:
-        return None
-    try:
-        dt = parsedate_to_datetime(s)
-        if dt is not None:
-            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
-    except (TypeError, ValueError, IndexError):
-        pass
-    try:
-        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
-        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
-    except ValueError:
-        return None
-
-
-_URL_DMY = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-](\d{1,2})(?:[/-]|$|\.)")
-_URL_YM = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-]")
-
-
-def _date_from_url(url: str | None) -> datetime | None:
-    """Muchos medios AR (Infobae, La Nación, Clarín, Ámbito) ponen la fecha en la
-    URL (/2026/06/24/...). La usamos como respaldo cuando Tavily no trae fecha."""
-    if not url:
-        return None
-    try:
-        m = _URL_DMY.search(url)
-        if m:
-            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), tzinfo=UTC)
-        m = _URL_YM.search(url)
-        if m:
-            return datetime(int(m.group(1)), int(m.group(2)), 1, tzinfo=UTC)
-    except (ValueError, TypeError):
-        return None
-    return None
 
 
 def _cache_get(key: str) -> Any | None:
@@ -115,6 +98,11 @@ def _cache_set(key: str, value: Any, ttl: int) -> None:
     _cache[key] = (time.time() + ttl, value)
 
 
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFD", (s or "").lower())
+    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+
 def _domain(url: str | None) -> str:
     if not url:
         return ""
@@ -125,105 +113,187 @@ def _domain(url: str | None) -> str:
         return ""
 
 
-def _card(r: dict, category: str) -> dict | None:
-    url = r.get("url")
-    title = (r.get("title") or "").strip()
-    if not url or not title:
+def _strip(s: str) -> str:
+    s = re.sub(r"(?s)<[^>]+>", " ", s or "")
+    s = (s.replace("&nbsp;", " ").replace("&amp;", "&").replace("&#039;", "'")
+         .replace("&quot;", '"').replace("&lt;", "<").replace("&gt;", ">").replace("&#8230;", "…"))
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _parse_dt(s: str | None) -> datetime | None:
+    if not s:
         return None
-    return {
-        "title": title[:240],
-        "url": url,
-        "source": _domain(url),
-        "published_date": r.get("published_date"),
-        "snippet": (r.get("content") or "").strip()[:400],
-        "category": category,
-        "score": r.get("score"),
-    }
-
-
-async def _tavily_news(query: str, max_results: int = 12, days: int = 10) -> list[dict]:
-    api_key = settings.TAVILY_API_KEY
-    if not api_key:
-        logger.warning("NewsLive: falta TAVILY_API_KEY")
-        return []
-    body = {
-        "api_key": api_key, "query": query, "max_results": max(1, min(20, max_results)),
-        "search_depth": "basic", "topic": "news", "days": days,
-        "include_domains": _AR_DOMAINS,
-    }
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            resp = await client.post(_TAVILY_URL, json=body)
-        if resp.status_code != 200:
-            logger.warning("NewsLive: Tavily %s — %s", resp.status_code, resp.text[:160])
-            return []
-        return resp.json().get("results") or []
+        dt = parsedate_to_datetime(s)
+        if dt is not None:
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except (TypeError, ValueError, IndexError):
+        pass
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+_URL_DMY = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-](\d{1,2})(?:[/-]|$|\.)")
+
+
+def _date_from_url(url: str | None) -> datetime | None:
+    if not url:
+        return None
+    m = _URL_DMY.search(url)
+    if not m:
+        return None
+    try:
+        return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), tzinfo=UTC)
+    except (ValueError, TypeError):
+        return None
+
+
+def _categorize(text_norm: str) -> str | None:
+    for cat in _CAT_ORDER:
+        if any(kw in text_norm for kw in _CAT_KW[cat]):
+            return cat
+    return None
+
+
+def _impact(text_norm: str) -> int:
+    return sum(1 for kw in _IMPACT_KW if kw in text_norm)
+
+
+def _score(text_norm: str, dt: datetime, now: datetime) -> float:
+    age_h = (now - dt).total_seconds() / 3600.0
+    recency = max(0.0, 1.0 - age_h / (24 * 14))     # 0..1 a lo largo de 14 días
+    return recency + 0.12 * min(5, _impact(text_norm))
+
+
+_MRSS = "{http://search.yahoo.com/mrss/}"
+_ATOM = "{http://www.w3.org/2005/Atom}"
+_DC = "{http://purl.org/dc/elements/1.1/}"
+
+
+def _item_image(item: ET.Element) -> str | None:
+    enc = item.find("enclosure")
+    if enc is not None and enc.get("url") and (enc.get("type", "").startswith("image") or True):
+        return enc.get("url")
+    for tag in (_MRSS + "content", _MRSS + "thumbnail"):
+        m = item.find(tag)
+        if m is not None and m.get("url"):
+            return m.get("url")
+    return None
+
+
+async def _fetch_rss(feed: dict) -> list[dict]:
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=True, headers=_UA) as client:
+            resp = await client.get(feed["url"])
+            resp.raise_for_status()
+            root = ET.fromstring(resp.content)
     except Exception as e:  # noqa: BLE001
-        logger.warning("NewsLive: Tavily falló — %s", e)
+        logger.warning("NewsLive RSS %s falló — %s", feed["url"], e)
         return []
 
-
-def _dedupe_sort(cards: list[dict]) -> list[dict]:
-    """Dedup + descarta lo que tiene fecha VIEJA (>_MAX_AGE_DAYS) + ordena.
-
-    Tavily a veces no trae published_date (lo deja null), sobre todo en medios AR.
-    NO descartamos esas (las dejamos, presumiblemente recientes por la ventana
-    days=10 de Tavily) — solo tiramos las que SÍ tienen fecha y es vieja (el caso
-    'noticia de marzo 2025'). Orden: primero las fechadas más nuevas, después las
-    sin fecha. Así el feed es actual sin quedar vacío."""
-    cutoff = datetime.now(UTC) - timedelta(days=_MAX_AGE_DAYS)
-    seen: set[str] = set()
     out: list[dict] = []
-    for c in cards:
-        key = c["url"]
-        if key in seen:
+    elems = root.findall(".//item")
+    is_atom = False
+    if not elems:
+        elems = root.findall(f".//{_ATOM}entry")
+        is_atom = True
+    for it in elems:
+        if is_atom:
+            title = (it.findtext(_ATOM + "title") or "").strip()
+            link_el = it.find(_ATOM + "link")
+            url = (link_el.get("href") if link_el is not None else "") or ""
+            desc = it.findtext(_ATOM + "summary") or it.findtext(_ATOM + "content") or ""
+            pd = it.findtext(_ATOM + "published") or it.findtext(_ATOM + "updated")
+            img = None
+        else:
+            title = (it.findtext("title") or "").strip()
+            url = (it.findtext("link") or "").strip()
+            desc = it.findtext("description") or ""
+            pd = it.findtext("pubDate") or it.findtext(_DC + "date")
+            img = _item_image(it)
+        if not title or not url:
             continue
-        # Fecha: la de Tavily, o si no, la que esté en la URL (/2026/06/...).
-        dt = _parse_dt(c.get("published_date")) or _date_from_url(c["url"])
-        if dt is None or dt < cutoff:
-            continue  # sin fecha confiable o vieja → fuera (el feed es ACTUAL)
-        seen.add(key)
-        c["published_date"] = dt.isoformat()
-        c["_ts"] = dt.timestamp()
-        out.append(c)
-    out.sort(key=lambda c: c["_ts"], reverse=True)
-    for c in out:
-        c.pop("_ts", None)
+        out.append({
+            "title": title[:240], "url": url, "snippet": _strip(desc)[:400],
+            "published_date": pd, "image": img, "source": feed["source"],
+            "force_cat": feed.get("force_cat"),
+        })
     return out
 
 
-async def fetch_feed(category: str = "todas", limit: int = 24, refresh: bool = False) -> dict:
-    """Trae el feed de noticias de una categoría (o mezclado para 'todas')."""
-    category = category if category in CATEGORIES else "todas"
-    cache_key = f"feed::{category}"
+async def _fetch_all_rss(refresh: bool = False) -> list[dict]:
+    if not refresh:
+        cached = _cache_get("raw_rss")
+        if cached is not None:
+            return cached
+    results = await asyncio.gather(*[_fetch_rss(f) for f in RSS_FEEDS])
+    raw = [it for r in results for it in r]
+    _cache_set("raw_rss", raw, _RAW_TTL)
+    return raw
+
+
+async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
+    cache_key = f"ranked::{category}"
     if not refresh:
         cached = _cache_get(cache_key)
         if cached is not None:
             return cached
 
-    cfg = CATEGORIES[category]
-    if cfg["query"] is None:  # 'todas' → mezcla de categorías en paralelo
-        mix = cfg["mix"]
-        results = await asyncio.gather(*[
-            _tavily_news(CATEGORIES[k]["query"], max_results=18) for k in mix
-        ])
-        cards = [c for k, res in zip(mix, results, strict=False) for r in res if (c := _card(r, k))]
-    else:
-        res = await _tavily_news(cfg["query"], max_results=min(20, limit))
-        cards = [c for r in res if (c := _card(r, category))]
+    raw = await _fetch_all_rss(refresh)
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(days=_MAX_AGE_DAYS)
+    seen: set[str] = set()
+    items: list[dict] = []
+    for it in raw:
+        url = it["url"]
+        if url in seen:
+            continue
+        dt = _parse_dt(it.get("published_date")) or _date_from_url(url)
+        if dt is None or dt < cutoff:
+            continue
+        text_norm = _norm(it["title"] + " " + (it.get("snippet") or ""))
+        cat = it.get("force_cat") or _categorize(text_norm)
+        if cat is None:
+            continue  # no es del rubro
+        if category != "todas" and cat != category:
+            continue
+        seen.add(url)
+        items.append({
+            "title": it["title"], "url": url, "source": it["source"], "category": cat,
+            "published_date": dt.isoformat(), "snippet": it.get("snippet") or "",
+            "image": it.get("image"), "_score": _score(text_norm, dt, now),
+        })
+    items.sort(key=lambda x: x["_score"], reverse=True)
+    for x in items:
+        x.pop("_score", None)
+    _cache_set(cache_key, items, _FEED_TTL)
+    return items
 
-    cards = _dedupe_sort(cards)[:limit]
-    payload = {
+
+async def fetch_feed(category: str = "todas", page: int = 1, per_page: int = 12,
+                     refresh: bool = False) -> dict:
+    """Feed paginado y rankeado (recencia + impacto). Lo mejor/más fresco primero;
+    al paginar (cargar más) aparece lo más viejo o menos relevante."""
+    category = category if category in CATEGORIES else "todas"
+    page = max(1, page)
+    per_page = max(1, min(per_page, 40))
+    full = await _ranked_items(category, refresh)
+    start, end = (page - 1) * per_page, (page - 1) * per_page + per_page
+    return {
         "category": category,
-        "items": cards,
-        "count": len(cards),
+        "items": full[start:end],
+        "page": page,
+        "per_page": per_page,
+        "total": len(full),
+        "has_more": end < len(full),
         "fetched_at": datetime.now(UTC).isoformat(),
     }
-    _cache_set(cache_key, payload, _FEED_TTL)
-    return payload
 
 
-# ── Lectura de la nota: digest transformativo con IA ──
+# ── Lector: digest transformativo con IA ──
 
 _DIGEST_TOOL = {
     "name": "armar_digest_noticia",
@@ -233,9 +303,9 @@ _DIGEST_TOOL = {
         "properties": {
             "lead": {"type": "string", "description": "1-2 frases gancho que resumen la noticia."},
             "puntos_clave": {"type": "array", "items": {"type": "string"},
-                             "description": "3-6 bullets con la info relevante de la nota, en palabras propias."},
+                             "description": "3-6 bullets con la info relevante, en palabras propias."},
             "impacto_real_estate": {"type": "string",
-                                    "description": "2-4 frases: por qué le importa a alguien del rubro inmobiliario AR."},
+                                    "description": "2-4 frases: por qué le importa a alguien del rubro AR."},
             "dato_clave": {"type": "string", "description": "El número/dato más importante, si hay (opcional)."},
         },
         "required": ["lead", "puntos_clave", "impacto_real_estate"],
@@ -255,10 +325,7 @@ _DIGEST_SYSTEM = (
 
 async def _fetch_article_text(url: str) -> tuple[str | None, str | None]:
     try:
-        async with httpx.AsyncClient(
-            timeout=_TIMEOUT, follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (compatible; RE-Expert-News/1.0)"},
-        ) as client:
+        async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=True, headers=_UA) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             html = resp.text
@@ -269,21 +336,20 @@ async def _fetch_article_text(url: str) -> tuple[str | None, str | None]:
         text = (text.replace("&nbsp;", " ").replace("&amp;", "&")
                 .replace("&#039;", "'").replace("&quot;", '"'))
         text = re.sub(r"\s+", " ", text).strip()
-        return image, text[:9000]  # type: ignore[return-value]
+        return image, text[:9000]
     except Exception as e:  # noqa: BLE001
         logger.warning("NewsLive: no se pudo bajar %s — %s", url, e)
-        return None, None  # type: ignore[return-value]
+        return None, None
 
 
 async def make_digest(url: str, title: str = "", snippet: str = "",
-                      source: str = "", category: str = "") -> dict:
-    """Trae el artículo y arma el digest IA. Tolerante: si falla, usa el snippet."""
+                      source: str = "", category: str = "", image: str = "") -> dict:
     cache_key = f"digest::{url}"
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
 
-    image, text = await _fetch_article_text(url)
+    og_image, text = await _fetch_article_text(url)
     content = text or snippet or title
     digest: dict[str, Any] = {}
     parcial = True
@@ -305,18 +371,15 @@ async def make_digest(url: str, title: str = "", snippet: str = "",
                     digest = dict(block.input)
                     parcial = False
                     break
-        except Exception as e:  # noqa: BLE001 — la IA no debe tumbar la lectura
+        except Exception as e:  # noqa: BLE001
             logger.warning("NewsLive: digest IA falló — %s", e)
 
     if not digest:
         digest = {"lead": snippet or title, "puntos_clave": [], "impacto_real_estate": ""}
 
     payload = {
-        "title": title,
-        "url": url,
-        "source": source or _domain(url),
-        "category": category,
-        "image_url": image,
+        "title": title, "url": url, "source": source or _domain(url), "category": category,
+        "image_url": og_image or (image or None),
         "lead": digest.get("lead", ""),
         "puntos_clave": digest.get("puntos_clave", []) or [],
         "impacto_real_estate": digest.get("impacto_real_estate", ""),
