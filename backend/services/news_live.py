@@ -120,7 +120,7 @@ def _card(r: dict, category: str) -> dict | None:
     }
 
 
-async def _tavily_news(query: str, max_results: int = 12, days: int = 14) -> list[dict]:
+async def _tavily_news(query: str, max_results: int = 12, days: int = 10) -> list[dict]:
     api_key = settings.TAVILY_API_KEY
     if not api_key:
         logger.warning("NewsLive: falta TAVILY_API_KEY")
@@ -143,26 +143,36 @@ async def _tavily_news(query: str, max_results: int = 12, days: int = 14) -> lis
 
 
 def _dedupe_sort(cards: list[dict]) -> list[dict]:
-    """Dedup + descarta lo viejo o sin fecha (evergreen/páginas de sección) + ordena
-    por fecha desc. Así el feed es siempre ACTUAL: lo más nuevo arriba, nada rancio."""
+    """Dedup + descarta lo que tiene fecha VIEJA (>_MAX_AGE_DAYS) + ordena.
+
+    Tavily a veces no trae published_date (lo deja null), sobre todo en medios AR.
+    NO descartamos esas (las dejamos, presumiblemente recientes por la ventana
+    days=10 de Tavily) — solo tiramos las que SÍ tienen fecha y es vieja (el caso
+    'noticia de marzo 2025'). Orden: primero las fechadas más nuevas, después las
+    sin fecha. Así el feed es actual sin quedar vacío."""
     cutoff = datetime.now(UTC) - timedelta(days=_MAX_AGE_DAYS)
     seen: set[str] = set()
-    out: list[dict] = []
+    dated: list[dict] = []
+    undated: list[dict] = []
     for c in cards:
         key = c["url"]
         if key in seen:
             continue
         dt = _parse_dt(c.get("published_date"))
-        if dt is None or dt < cutoff:
-            continue  # sin fecha o vieja → fuera (no es noticia actual)
+        if dt is not None and dt < cutoff:
+            continue  # tiene fecha y es vieja → fuera
         seen.add(key)
-        c["published_date"] = dt.isoformat()  # normalizado para el frontend
-        c["_ts"] = dt.timestamp()
-        out.append(c)
-    out.sort(key=lambda c: c["_ts"], reverse=True)
-    for c in out:
+        if dt is not None:
+            c["published_date"] = dt.isoformat()
+            c["_ts"] = dt.timestamp()
+            dated.append(c)
+        else:
+            c["published_date"] = None
+            undated.append(c)
+    dated.sort(key=lambda c: c["_ts"], reverse=True)
+    for c in dated:
         c.pop("_ts", None)
-    return out
+    return dated + undated
 
 
 async def fetch_feed(category: str = "todas", limit: int = 24, refresh: bool = False) -> dict:
