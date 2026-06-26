@@ -25,6 +25,17 @@ logger = logging.getLogger(__name__)
 _TAVILY_URL = "https://api.tavily.com/search"
 _TIMEOUT = httpx.Timeout(connect=5.0, read=20.0, write=5.0, pool=5.0)
 
+# Medios argentinos / en español del rubro (economía, inmobiliario, construcción,
+# arquitectura). Restringimos a estos para que el feed sea RELEVANTE para AR y en
+# español, en vez de traer noticias de EE.UU. Ampliable.
+_AR_DOMAINS = [
+    "ambito.com", "cronista.com", "infobae.com", "lanacion.com.ar", "clarin.com",
+    "iprofesional.com", "perfil.com", "pagina12.com.ar", "baenegocios.com",
+    "eleconomista.com.ar", "forbesargentina.com", "reporteinmobiliario.com",
+    "mdzol.com", "lavoz.com.ar", "losandes.com.ar", "plataformaarquitectura.cl",
+    "areaurbana.com", "elcronista.com", "apertura.com",
+]
+
 # Categorías que cubren el rubro de punta a punta. query=None → feed mezclado.
 CATEGORIES: dict[str, dict[str, Any]] = {
     "todas": {"label": "Todas", "query": None,
@@ -90,7 +101,7 @@ def _card(r: dict, category: str) -> dict | None:
     }
 
 
-async def _tavily_news(query: str, max_results: int = 12, days: int = 21) -> list[dict]:
+async def _tavily_news(query: str, max_results: int = 12, days: int = 30) -> list[dict]:
     api_key = settings.TAVILY_API_KEY
     if not api_key:
         logger.warning("NewsLive: falta TAVILY_API_KEY")
@@ -98,6 +109,7 @@ async def _tavily_news(query: str, max_results: int = 12, days: int = 21) -> lis
     body = {
         "api_key": api_key, "query": query, "max_results": max(1, min(20, max_results)),
         "search_depth": "basic", "topic": "news", "days": days,
+        "include_domains": _AR_DOMAINS,
     }
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
