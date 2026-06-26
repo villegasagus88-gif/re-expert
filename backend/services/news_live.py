@@ -59,7 +59,7 @@ CATEGORIES: dict[str, dict[str, Any]] = {
 _cache: dict[str, tuple[float, Any]] = {}
 _FEED_TTL = 900       # 15 min — un refresh "Actualizar" bypassa el cache
 _DIGEST_TTL = 86400   # 24 h — el digest de una nota no cambia
-_MAX_AGE_DAYS = 21    # descarta noticias más viejas que esto (feed actual)
+_MAX_AGE_DAYS = 30    # descarta noticias más viejas que esto (feed actual, ~1 mes)
 
 
 def _parse_dt(s: str | None) -> datetime | None:
@@ -77,6 +77,27 @@ def _parse_dt(s: str | None) -> datetime | None:
         return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
     except ValueError:
         return None
+
+
+_URL_DMY = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-](\d{1,2})(?:[/-]|$|\.)")
+_URL_YM = re.compile(r"/(20\d{2})[/-](\d{1,2})[/-]")
+
+
+def _date_from_url(url: str | None) -> datetime | None:
+    """Muchos medios AR (Infobae, La Nación, Clarín, Ámbito) ponen la fecha en la
+    URL (/2026/06/24/...). La usamos como respaldo cuando Tavily no trae fecha."""
+    if not url:
+        return None
+    try:
+        m = _URL_DMY.search(url)
+        if m:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), tzinfo=UTC)
+        m = _URL_YM.search(url)
+        if m:
+            return datetime(int(m.group(1)), int(m.group(2)), 1, tzinfo=UTC)
+    except (ValueError, TypeError):
+        return None
+    return None
 
 
 def _cache_get(key: str) -> Any | None:
@@ -152,27 +173,23 @@ def _dedupe_sort(cards: list[dict]) -> list[dict]:
     sin fecha. Así el feed es actual sin quedar vacío."""
     cutoff = datetime.now(UTC) - timedelta(days=_MAX_AGE_DAYS)
     seen: set[str] = set()
-    dated: list[dict] = []
-    undated: list[dict] = []
+    out: list[dict] = []
     for c in cards:
         key = c["url"]
         if key in seen:
             continue
-        dt = _parse_dt(c.get("published_date"))
-        if dt is not None and dt < cutoff:
-            continue  # tiene fecha y es vieja → fuera
+        # Fecha: la de Tavily, o si no, la que esté en la URL (/2026/06/...).
+        dt = _parse_dt(c.get("published_date")) or _date_from_url(c["url"])
+        if dt is None or dt < cutoff:
+            continue  # sin fecha confiable o vieja → fuera (el feed es ACTUAL)
         seen.add(key)
-        if dt is not None:
-            c["published_date"] = dt.isoformat()
-            c["_ts"] = dt.timestamp()
-            dated.append(c)
-        else:
-            c["published_date"] = None
-            undated.append(c)
-    dated.sort(key=lambda c: c["_ts"], reverse=True)
-    for c in dated:
+        c["published_date"] = dt.isoformat()
+        c["_ts"] = dt.timestamp()
+        out.append(c)
+    out.sort(key=lambda c: c["_ts"], reverse=True)
+    for c in out:
         c.pop("_ts", None)
-    return dated + undated
+    return out
 
 
 async def fetch_feed(category: str = "todas", limit: int = 24, refresh: bool = False) -> dict:
@@ -188,7 +205,7 @@ async def fetch_feed(category: str = "todas", limit: int = 24, refresh: bool = F
     if cfg["query"] is None:  # 'todas' → mezcla de categorías en paralelo
         mix = cfg["mix"]
         results = await asyncio.gather(*[
-            _tavily_news(CATEGORIES[k]["query"], max_results=12) for k in mix
+            _tavily_news(CATEGORIES[k]["query"], max_results=18) for k in mix
         ])
         cards = [c for k, res in zip(mix, results, strict=False) for r in res if (c := _card(r, k))]
     else:
