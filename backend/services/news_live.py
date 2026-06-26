@@ -13,7 +13,8 @@ import asyncio
 import logging
 import re
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urlparse
 
@@ -58,6 +59,24 @@ CATEGORIES: dict[str, dict[str, Any]] = {
 _cache: dict[str, tuple[float, Any]] = {}
 _FEED_TTL = 900       # 15 min — un refresh "Actualizar" bypassa el cache
 _DIGEST_TTL = 86400   # 24 h — el digest de una nota no cambia
+_MAX_AGE_DAYS = 21    # descarta noticias más viejas que esto (feed actual)
+
+
+def _parse_dt(s: str | None) -> datetime | None:
+    """Parsea la fecha de Tavily (RFC822 'Wed, 17 Jun 2026...' o ISO). None si no se puede."""
+    if not s:
+        return None
+    try:
+        dt = parsedate_to_datetime(s)
+        if dt is not None:
+            return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except (TypeError, ValueError, IndexError):
+        pass
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except ValueError:
+        return None
 
 
 def _cache_get(key: str) -> Any | None:
@@ -101,7 +120,7 @@ def _card(r: dict, category: str) -> dict | None:
     }
 
 
-async def _tavily_news(query: str, max_results: int = 12, days: int = 30) -> list[dict]:
+async def _tavily_news(query: str, max_results: int = 12, days: int = 14) -> list[dict]:
     api_key = settings.TAVILY_API_KEY
     if not api_key:
         logger.warning("NewsLive: falta TAVILY_API_KEY")
@@ -124,15 +143,25 @@ async def _tavily_news(query: str, max_results: int = 12, days: int = 30) -> lis
 
 
 def _dedupe_sort(cards: list[dict]) -> list[dict]:
-    seen, out = set(), []
+    """Dedup + descarta lo viejo o sin fecha (evergreen/páginas de sección) + ordena
+    por fecha desc. Así el feed es siempre ACTUAL: lo más nuevo arriba, nada rancio."""
+    cutoff = datetime.now(UTC) - timedelta(days=_MAX_AGE_DAYS)
+    seen: set[str] = set()
+    out: list[dict] = []
     for c in cards:
         key = c["url"]
         if key in seen:
             continue
+        dt = _parse_dt(c.get("published_date"))
+        if dt is None or dt < cutoff:
+            continue  # sin fecha o vieja → fuera (no es noticia actual)
         seen.add(key)
+        c["published_date"] = dt.isoformat()  # normalizado para el frontend
+        c["_ts"] = dt.timestamp()
         out.append(c)
-    # fecha desc (los sin fecha al final), tie-break por score
-    out.sort(key=lambda c: (c.get("published_date") or "", c.get("score") or 0), reverse=True)
+    out.sort(key=lambda c: c["_ts"], reverse=True)
+    for c in out:
+        c.pop("_ts", None)
     return out
 
 
@@ -149,7 +178,7 @@ async def fetch_feed(category: str = "todas", limit: int = 24, refresh: bool = F
     if cfg["query"] is None:  # 'todas' → mezcla de categorías en paralelo
         mix = cfg["mix"]
         results = await asyncio.gather(*[
-            _tavily_news(CATEGORIES[k]["query"], max_results=8) for k in mix
+            _tavily_news(CATEGORIES[k]["query"], max_results=12) for k in mix
         ])
         cards = [c for k, res in zip(mix, results, strict=False) for r in res if (c := _card(r, k))]
     else:
