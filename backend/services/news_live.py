@@ -14,6 +14,7 @@ confiable (pubDate) y en volumen.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import time
@@ -264,6 +265,7 @@ async def _fetch_rss(feed: dict) -> list[dict]:
             "title": re.sub(r"\s+", " ", title).strip()[:240], "url": url, "snippet": _strip(desc)[:400],
             "published_date": pd, "image": img, "source": feed["source"],
             "mode": feed.get("mode", "section"), "cat": feed.get("cat", "economia"),
+            "intl": feed.get("intl", False),
         })
     return out
 
@@ -318,7 +320,8 @@ async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
         items.append({
             "title": it["title"], "url": url, "source": it["source"], "category": cat,
             "published_date": dt.isoformat(), "snippet": it.get("snippet") or "",
-            "image": it.get("image"), "_score": _score(text_norm, dt, now),
+            "image": it.get("image"), "intl": it.get("intl", False),
+            "_score": _score(text_norm, dt, now),
         })
     items.sort(key=lambda x: x["_score"], reverse=True)
     for x in items:
@@ -327,18 +330,92 @@ async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
     return items
 
 
+# ── Traducción de títulos/bajadas de noticias internacionales al español ──
+
+_TR_TOOL = {
+    "name": "traducir",
+    "description": "Traduce al español los títulos y bajadas de noticias.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "i": {"type": "integer"},
+                        "titulo": {"type": "string"},
+                        "bajada": {"type": "string"},
+                    },
+                    "required": ["i", "titulo"],
+                },
+            },
+        },
+        "required": ["items"],
+    },
+}
+_TR_SYSTEM = (
+    "Traducís al español rioplatense, claro y natural, títulos y bajadas de noticias de real estate, "
+    "construcción y arquitectura. Mantené el sentido, los nombres propios y las cifras. No agregues "
+    "comentarios. Devolvés la traducción por la tool, respetando el índice 'i' de cada item."
+)
+
+
+async def _translate_intl(items: list[dict]) -> None:
+    """Traduce in-place los items internacionales al español (batch, cacheado por URL)."""
+    need: list[dict] = []
+    for it in items:
+        if not it.get("intl"):
+            continue
+        cached = _cache_get(f"tr::{it['url']}")
+        if cached:
+            it["title"] = cached["t"]
+            it["snippet"] = cached.get("s", it.get("snippet", ""))
+        else:
+            need.append(it)
+    if not need:
+        return
+    payload = [{"i": i, "titulo": it["title"], "bajada": (it.get("snippet") or "")[:240]}
+               for i, it in enumerate(need)]
+    try:
+        from services.anthropic_service import get_client
+        client = get_client()
+        resp = await client.messages.create(
+            model=settings.ANTHROPIC_MODEL_FAST, max_tokens=2000, system=_TR_SYSTEM,
+            tools=[_TR_TOOL], tool_choice={"type": "tool", "name": "traducir"},
+            messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+        )
+        out: dict = {}
+        for b in resp.content:
+            if getattr(b, "type", None) == "tool_use":
+                out = dict(b.input)
+                break
+        for r in (out.get("items") or []):
+            i = r.get("i")
+            if isinstance(i, int) and 0 <= i < len(need):
+                it = need[i]
+                it["title"] = (r.get("titulo") or it["title"]).strip()[:240]
+                it["snippet"] = (r.get("bajada") or it.get("snippet", "")).strip()[:400]
+                _cache_set(f"tr::{it['url']}", {"t": it["title"], "s": it["snippet"]}, _DIGEST_TTL)
+    except Exception as e:  # noqa: BLE001 — si falla, queda en inglés (no rompe el feed)
+        logger.warning("NewsLive: traducción falló — %s", e)
+
+
 async def fetch_feed(category: str = "todas", page: int = 1, per_page: int = 12,
                      refresh: bool = False) -> dict:
     """Feed paginado y rankeado (recencia + impacto). Lo mejor/más fresco primero;
-    al paginar (cargar más) aparece lo más viejo o menos relevante."""
+    al paginar (cargar más) aparece lo más viejo o menos relevante. Las notas
+    internacionales se traducen al español."""
     category = category if category in CATEGORIES else "todas"
     page = max(1, page)
     per_page = max(1, min(per_page, 40))
     full = await _ranked_items(category, refresh)
     start, end = (page - 1) * per_page, (page - 1) * per_page + per_page
+    page_items = full[start:end]
+    await _translate_intl(page_items)
     return {
         "category": category,
-        "items": full[start:end],
+        "items": page_items,
         "page": page,
         "per_page": per_page,
         "total": len(full),
