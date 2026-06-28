@@ -216,16 +216,26 @@ def _score(text_norm: str, dt: datetime, now: datetime) -> float:
 _MRSS = "{http://search.yahoo.com/mrss/}"
 _ATOM = "{http://www.w3.org/2005/Atom}"
 _DC = "{http://purl.org/dc/elements/1.1/}"
+_CONTENT = "{http://purl.org/rss/1.0/modules/content/}encoded"
 
 
 def _item_image(item: ET.Element) -> str | None:
     enc = item.find("enclosure")
-    if enc is not None and enc.get("url") and (enc.get("type", "").startswith("image") or True):
+    if enc is not None and enc.get("url"):
         return enc.get("url")
     for tag in (_MRSS + "content", _MRSS + "thumbnail"):
         m = item.find(tag)
         if m is not None and m.get("url"):
             return m.get("url")
+    grp = item.find(_MRSS + "group")
+    if grp is not None:
+        m = grp.find(_MRSS + "content")
+        if m is not None and m.get("url"):
+            return m.get("url")
+    for txt in (item.findtext("description") or "", item.findtext(_CONTENT) or ""):
+        mm = re.search(r'<img[^>]+src=["\']([^"\']+)', txt)
+        if mm:
+            return mm.group(1)
     return None
 
 
@@ -330,6 +340,41 @@ async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
     return items
 
 
+# ── Imagen: garantizar una foto por card (og:image del artículo si el RSS no la trae) ──
+
+async def _fetch_og_image(url: str) -> str | None:
+    cache_key = f"og::{url}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached or None
+    img = None
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=True, headers=_UA) as client:
+            resp = await client.get(url)
+            html = resp.text[:60000]  # el og:image vive en el <head>, al principio
+        for pat in (r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)',
+                    r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)'):
+            m = re.search(pat, html, re.I)
+            if m:
+                img = m.group(1)
+                break
+    except Exception as e:  # noqa: BLE001 — sin imagen no rompe nada
+        logger.warning("NewsLive: og:image falló %s — %s", url, e)
+    _cache_set(cache_key, img or "", _DIGEST_TTL)
+    return img
+
+
+async def _ensure_images(items: list[dict]) -> None:
+    """Para las cards sin imagen, busca el og:image del artículo (paralelo, cacheado)."""
+    missing = [it for it in items if not it.get("image")]
+    if not missing:
+        return
+    imgs = await asyncio.gather(*[_fetch_og_image(it["url"]) for it in missing])
+    for it, img in zip(missing, imgs, strict=False):
+        if img:
+            it["image"] = img
+
+
 # ── Traducción de títulos/bajadas de noticias internacionales al español ──
 
 _TR_TOOL = {
@@ -412,7 +457,7 @@ async def fetch_feed(category: str = "todas", page: int = 1, per_page: int = 12,
     full = await _ranked_items(category, refresh)
     start, end = (page - 1) * per_page, (page - 1) * per_page + per_page
     page_items = full[start:end]
-    await _translate_intl(page_items)
+    await asyncio.gather(_translate_intl(page_items), _ensure_images(page_items))
     return {
         "category": category,
         "items": page_items,

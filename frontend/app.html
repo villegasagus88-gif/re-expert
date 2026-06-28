@@ -3794,8 +3794,8 @@ function _newsRenderChips(){
 }
 
 function _newsCardHTML(it){
-  return `<article class="news-card${it.image?' has-img':''}" data-news-url="${esc(it.url)}">
-    ${it.image?`<div class="news-card-img" style="background-image:url('${esc(it.image)}')"></div>`:''}
+  return `<article class="news-card has-img" data-news-url="${esc(it.url)}">
+    <div class="news-card-img${it.image?'':' ph '+esc(it.category)}"${it.image?` style="background-image:url('${esc(it.image)}')"`:''}>${it.image?'':`<span>${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span>`}</div>
     <div class="news-card-body">
       <div class="news-card-meta"><span class="news-cat-badge ${esc(it.category)}">${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span><span class="news-card-source">${esc(it.source)}</span>${it.published_date?`<span class="news-card-date">· ${esc(_newsAgo(it.published_date))}</span>`:''}</div>
       <h3 class="news-card-title">${esc(it.title)}</h3>

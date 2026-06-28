@@ -1120,6 +1120,8 @@ select.pay-form-input{cursor:pointer}
 .news-card{border:1px solid var(--border-0);border-radius:14px;overflow:hidden;background:var(--bg-card);cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column}
 .news-card:hover{border-color:var(--accent-brand-border);box-shadow:var(--shadow-sm)}
 .news-card-img{height:150px;background-size:cover;background-position:center;background-color:var(--bg-2);flex:none}
+.news-card-img.ph{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent-brand-light),var(--bg-2))}
+.news-card-img.ph span{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-brand);opacity:.75}
 .news-card-body{padding:15px 17px;display:flex;flex-direction:column;flex:1}
 .news-more{display:flex;justify-content:center;margin-top:22px}
 .news-more .btn-secondary{padding:10px 22px}
