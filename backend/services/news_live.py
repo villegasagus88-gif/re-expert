@@ -20,6 +20,7 @@ import re
 import time
 import unicodedata
 import xml.etree.ElementTree as ET
+import zlib
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -364,15 +365,47 @@ async def _fetch_og_image(url: str) -> str | None:
     return img
 
 
+# Imagen temática (foto REAL de Flickr por keyword) cuando la nota no trae imagen ni og:image.
+# Así toda card tiene una imagen realista que tiene que ver con el tema, no un placeholder.
+_TOPIC_IMG = {
+    "economia": "argentina,money,finance",
+    "inmobiliario": "house,realestate,home",
+    "construccion": "construction,building,site",
+    "proyectos": "architecture,skyscraper,building",
+    "arquitectura": "architecture,design,building",
+    "politica": "government,argentina,building",
+}
+_TOPIC_OVERRIDE = [
+    ("dolar", "money,dollar,currency"), ("hipotec", "house,keys,mortgage"),
+    ("credito", "house,keys,bank"), ("alquiler", "apartment,rent"),
+    ("obra", "construction,site"), ("cemento", "construction,concrete"),
+    ("hierro", "steel,construction"), ("torre", "skyscraper,tower"),
+    ("barrio", "neighborhood,houses"), ("inversion", "investment,finance"),
+    ("inflacion", "market,prices"), ("plazo fijo", "bank,savings"),
+    ("banco", "bank,finance"), ("escritura", "documents,house"),
+]
+
+
+def _topic_image(it: dict) -> str:
+    tn = _norm(it.get("title", ""))
+    kw = _TOPIC_IMG.get(it.get("category", ""), "realestate,building")
+    for term, ikw in _TOPIC_OVERRIDE:
+        if term in tn:
+            kw = ikw
+            break
+    lock = zlib.crc32(it["url"].encode()) % 100000  # estable por nota
+    return f"https://loremflickr.com/400/240/{kw}?lock={lock}"
+
+
 async def _ensure_images(items: list[dict]) -> None:
-    """Para las cards sin imagen, busca el og:image del artículo (paralelo, cacheado)."""
+    """Toda card termina con imagen: la del RSS, o el og:image del artículo, o —si no hay—
+    una foto REAL del tema (Flickr por keyword). Nunca queda sin imagen."""
     missing = [it for it in items if not it.get("image")]
     if not missing:
         return
     imgs = await asyncio.gather(*[_fetch_og_image(it["url"]) for it in missing])
     for it, img in zip(missing, imgs, strict=False):
-        if img:
-            it["image"] = img
+        it["image"] = img or _topic_image(it)
 
 
 # ── Traducción de títulos/bajadas de noticias internacionales al español ──
