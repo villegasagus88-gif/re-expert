@@ -52,9 +52,10 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent-brand),#8f3d02);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px;color:#fff;letter-spacing:.5px}
 .logo-title{font-weight:700;font-size:13px;color:#fff;letter-spacing:-.3px}
 .logo-subtitle{font-size:9.5px;color:var(--text-sidebar-muted);letter-spacing:.1px}
-.btn-new-chat{display:flex;align-items:center;gap:6px;margin:8px 10px;padding:8px 10px;background:var(--accent-brand-light);border:1px solid var(--accent-brand-border);border-radius:var(--radius-sm);color:var(--text-sidebar);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);font-family:var(--font)}
-.btn-new-chat:hover{background:rgba(190,81,3,.26);border-color:var(--accent-brand)}
+.btn-new-chat{display:flex;align-items:center;gap:8px;margin:8px 10px;padding:7px 10px;background:transparent;border:none;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s var(--ease-out);font-family:var(--font);text-align:left}
+.btn-new-chat:hover{background:var(--bg-sidebar-hover);color:rgba(255,255,255,.85)}
 .btn-new-chat:active{transform:scale(.98)}
+.btn-new-chat svg{flex-shrink:0;opacity:.6}
 
 /* Sidebar Nav Tabs */
 .sidebar-nav{display:flex;flex-direction:column;gap:1px;padding:8px 10px}
@@ -812,7 +813,7 @@ select.pay-form-input{cursor:pointer}
 .sol-toast-close{flex-shrink:0;background:none;border:none;color:var(--text-1);cursor:pointer;padding:2px;font-size:16px;line-height:1;opacity:.6;transition:opacity .15s}
 .sol-toast-close:hover{opacity:1}
 /* Banner de prueba (modelo pago-only) */
-.trial-banner{background:linear-gradient(90deg,#6d28d9,#7c3aed);color:#fff;font-size:12.5px;text-align:center;padding:7px 14px;flex-shrink:0}
+.trial-banner{background:linear-gradient(90deg,#BE5103,#8f3d02);color:#fff;font-size:12.5px;text-align:center;padding:7px 14px;flex-shrink:0}
 .trial-banner a{color:#fff;font-weight:700;text-decoration:underline;margin-left:2px}
 /* Compartir entregables (Excel/PDF) por WhatsApp / Mail */
 .artifact-share{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-0)}
