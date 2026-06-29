@@ -11,7 +11,7 @@
   <meta name="keywords" content="inmobiliaria argentina, IA real estate, créditos hipotecarios UVA, análisis de planos IA, gestión de obra, CPI SPI, precios materiales construcción, software inmobiliario, real estate AI">
   <meta name="author" content="RE Expert">
   <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#BE5103">
   <link rel="canonical" href="https://re-expert.app/">
 
   <!-- Open Graph -->
@@ -42,590 +42,530 @@
   }
   </script>
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap">
 
   <script src="config.js"></script>
   <script src="sentry.js"></script>
 
   <style>
-    :root {
-      --bg-0: #09090b;
-      --bg-1: #0f0f12;
-      --bg-card: #111114;
-      --bg-card-2: #16161a;
-      --text-0: #fafafa;
-      --text-1: #d4d4d8;
-      --text-2: #a1a1aa;
-      --text-3: #71717a;
-      --border-0: #27272a;
-      --border-1: #3f3f46;
-      --accent: #6366f1;
-      --accent-hover: #818cf8;
-      --accent-2: #a855f7;
-      --accent-soft: rgba(99, 102, 241, 0.12);
-      --success: #22c55e;
-      --warn: #f59e0b;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      --radius-xl: 18px;
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --maxw: 1140px;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
-    body {
-      font-family: var(--font);
-      background: var(--bg-0);
-      color: var(--text-0);
-      min-height: 100dvh;
-      line-height: 1.5;
-      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-      overflow-x: hidden;
-    }
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 15% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
-        radial-gradient(ellipse 70% 50% at 90% 5%, rgba(168, 85, 247, 0.12), transparent 55%);
-      pointer-events: none; z-index: 0;
-    }
-    a { color: inherit; text-decoration: none; }
-    .container { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
-
-    /* ===== BUTTONS ===== */
-    .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 10px 18px; border-radius: var(--radius-md);
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      border: 1px solid transparent; font-family: inherit;
-      transition: transform .12s ease, background .15s, border-color .15s, box-shadow .2s;
-    }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px -4px rgba(99,102,241,0.5); }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 10px 24px -6px rgba(99,102,241,0.6); }
-    .btn-ghost { background: transparent; color: var(--text-1); border-color: var(--border-0); }
-    .btn-ghost:hover { color: var(--text-0); border-color: var(--border-1); background: rgba(255,255,255,0.03); }
-    .btn-lg { padding: 14px 26px; font-size: 15px; }
-
-    /* ===== NAV ===== */
-    .site-header { position: sticky; top: 0; z-index: 50; transition: background .25s, border-color .25s, backdrop-filter .25s; border-bottom: 1px solid transparent; }
-    .site-header.scrolled { background: rgba(9,9,11,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom-color: var(--border-0); }
-    .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; gap: 16px; }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand-logo {
-      width: 36px; height: 36px; border-radius: 9px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 13px; color: #fff;
-      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
-    }
-    .brand-text { font-weight: 800; font-size: 18px; letter-spacing: -0.3px; }
-    .brand-sub { font-size: 11px; color: var(--text-2); letter-spacing: 0.4px; text-transform: uppercase; margin-top: 1px; }
-    .nav-links { display: flex; align-items: center; gap: 6px; }
-    .nav-link { padding: 8px 14px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; color: var(--text-1); transition: background .15s, color .15s; }
-    .nav-link:hover { color: var(--text-0); background: rgba(255,255,255,0.05); }
-
-    /* ===== HERO ===== */
-    .hero { padding: 72px 0 60px; }
-    .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-      border-radius: 999px; background: var(--accent-soft); color: var(--accent-hover);
-      font-size: 12.5px; font-weight: 600; margin-bottom: 22px; border: 1px solid rgba(99,102,241,0.2);
-    }
-    .hero h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); font-weight: 900; letter-spacing: -1.6px; line-height: 1.08; margin-bottom: 20px; }
-    .hero h1 .grad {
-      background: linear-gradient(120deg, var(--accent-hover), var(--accent-2));
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
-    }
-    .rotator { display: inline-block; position: relative; color: var(--accent-hover); }
-    .hero-sub { font-size: clamp(1rem, 1.5vw, 1.13rem); color: var(--text-2); max-width: 560px; margin-bottom: 30px; }
-    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-    .hero-trust { margin-top: 22px; font-size: 13px; color: var(--text-3); display: inline-flex; align-items: center; gap: 7px; }
-    .hero-trust svg { color: var(--success); flex-shrink: 0; }
-
-    /* ===== HERO PREVIEW (mockup) ===== */
-    .preview { position: relative; }
-    .preview-card {
-      background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
-      border: 1px solid var(--border-0); border-radius: var(--radius-xl);
-      box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02);
-      overflow: hidden;
-    }
-    .preview-top { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--border-0); }
-    .dot { width: 11px; height: 11px; border-radius: 50%; }
-    .preview-title { margin-left: 8px; font-size: 12.5px; color: var(--text-2); font-weight: 600; }
-    .preview-body { padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; }
-    .bubble { max-width: 86%; padding: 11px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
-    .bubble.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
-    .bubble.ai { align-self: flex-start; background: #1c1c21; border: 1px solid var(--border-0); color: var(--text-1); border-bottom-left-radius: 5px; }
-    .bubble.b2 { animation-delay: .5s; }
-    .bubble.b3 { animation-delay: 1.05s; }
-    .bubble .hl { color: var(--accent-hover); font-weight: 700; }
-    .bubble .ok { color: var(--success); font-weight: 700; }
-    @keyframes rise { to { opacity: 1; transform: none; } }
-    .chip-float {
-      position: absolute; display: flex; align-items: center; gap: 7px;
-      background: rgba(20,20,24,0.92); border: 1px solid var(--border-1);
-      border-radius: 11px; padding: 9px 13px; font-size: 12.5px; font-weight: 600;
-      box-shadow: 0 16px 36px -14px rgba(0,0,0,0.7); backdrop-filter: blur(6px);
-      animation: float 5s ease-in-out infinite;
-    }
-    .chip-float .ic { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-hover); }
-    .chip-1 { top: -22px; right: 18px; animation-delay: 0s; }
-    .chip-2 { bottom: 64px; left: -34px; animation-delay: 1.4s; }
-    .chip-3 { bottom: -20px; right: 40px; animation-delay: 2.6s; }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
-
-    /* ===== TRUST STRIP ===== */
-    .trust-strip { border-top: 1px solid var(--border-0); border-bottom: 1px solid var(--border-0); padding: 18px 0; }
-    .trust-row { display: flex; align-items: center; justify-content: center; gap: 12px 30px; flex-wrap: wrap; }
-    .trust-row .lbl { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-    .trust-row .tag { font-size: 13.5px; color: var(--text-2); font-weight: 600; }
-
-    /* ===== SECTIONS ===== */
-    .section { padding: 84px 0; }
-    .section-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
-    .section-eyebrow { font-size: 12px; font-weight: 700; color: var(--accent-hover); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
-    .section-title { font-size: clamp(1.7rem, 3.4vw, 2.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; line-height: 1.12; }
-    .section-sub { color: var(--text-2); font-size: 15.5px; }
-
-    /* ===== FEATURES ===== */
-    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 16px; }
-    .feature-card {
-      background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg);
-      padding: 26px 22px; transition: border-color .2s, transform .2s, background .2s; position: relative; overflow: hidden;
-    }
-    .feature-card::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 70%); opacity: 0; transition: opacity .25s; pointer-events: none; }
-    .feature-card:hover { border-color: var(--border-1); transform: translateY(-3px); }
-    .feature-card:hover::after { opacity: 1; }
-    .feature-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--accent-soft); color: var(--accent-hover); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-    .feature-title { font-size: 16.5px; font-weight: 700; margin-bottom: 7px; display: flex; align-items: center; gap: 8px; }
-    .feature-title .badge-live { font-size: 9.5px; font-weight: 800; letter-spacing: .5px; color: var(--success); background: rgba(34,197,94,.14); padding: 2px 7px; border-radius: 999px; text-transform: uppercase; }
-    .feature-desc { color: var(--text-2); font-size: 13.8px; line-height: 1.55; }
-
-    /* ===== SEGMENTS ===== */
-    .segments { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-    .seg { background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg); padding: 22px; text-align: center; transition: border-color .2s, transform .2s; }
-    .seg:hover { border-color: var(--border-1); transform: translateY(-2px); }
-    .seg .seg-emoji { font-size: 26px; }
-    .seg .seg-name { font-weight: 700; margin-top: 10px; font-size: 15px; }
-    .seg .seg-desc { color: var(--text-3); font-size: 12.5px; margin-top: 5px; }
-
-    /* ===== LIVE SHOWCASE ===== */
-    .live-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
-    .panel { background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-xl); padding: 24px; }
-    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-    .panel-title { font-size: 15px; font-weight: 700; }
-    .panel-tag { font-size: 11px; font-weight: 700; color: var(--success); background: rgba(34,197,94,.13); padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
-    .panel-tag .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 1.6s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-    .panel-sub { color: var(--text-3); font-size: 12.5px; margin-bottom: 14px; }
-    .chart { width: 100%; height: 170px; }
-    .chart .line { fill: none; stroke: var(--accent-hover); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; transition: stroke-dashoffset 1.8s ease; }
-    .chart .line.fc { stroke: var(--warn); stroke-dasharray: 6 6; opacity: .9; }
-    .reveal.in .chart .line { stroke-dashoffset: 0; }
-    .reveal.in .chart .line.fc { stroke-dasharray: 6 6; }
-    .chart .area { fill: url(#g); opacity: 0; transition: opacity 1s ease .8s; }
-    .reveal.in .chart .area { opacity: .18; }
-    .legend { display: flex; gap: 18px; margin-top: 10px; font-size: 12px; color: var(--text-3); }
-    .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
-
-    .credit-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-0); }
-    .credit-row:last-child { border-bottom: none; }
-    .credit-bank { display: flex; align-items: center; gap: 10px; }
-    .bank-pill { font-size: 10.5px; font-weight: 800; color: #fff; padding: 3px 8px; border-radius: 6px; letter-spacing: .3px; }
-    .credit-meta { font-size: 11.5px; color: var(--text-3); }
-    .credit-rate { font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
-    .credit-rate small { font-size: 11px; color: var(--text-3); font-weight: 600; }
-
-    /* ===== STATS ===== */
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
-    .stat { text-align: center; padding: 26px 16px; background: var(--bg-card); border: 1px solid var(--border-0); border-radius: var(--radius-lg); }
-    .stat-num { font-size: 30px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(120deg, var(--accent-hover), var(--accent-2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-    .stat-lbl { color: var(--text-2); font-size: 13px; margin-top: 6px; }
-
-    /* ===== PRICING ===== */
-    .pricing-grid { display: grid; grid-template-columns: 1fr; gap: 18px; max-width: 420px; margin: 0 auto; }
-    .price-card { background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-xl); padding: 32px 28px; position: relative; box-shadow: 0 24px 60px -24px rgba(99,102,241,0.45); }
-    .price-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 999px; letter-spacing: .4px; }
-    .price-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--accent-hover); }
-    .price-amount { font-size: 42px; font-weight: 900; letter-spacing: -2px; }
-    .price-period { color: var(--text-3); font-size: 14px; font-weight: 500; }
-    .price-divider { height: 1px; background: var(--border-0); margin: 20px 0; }
-    .price-list { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
-    .price-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-1); }
-    .price-list svg { color: var(--success); flex-shrink: 0; margin-top: 3px; }
-    .price-cta { width: 100%; justify-content: center; }
-
-    /* ===== CTA BAND ===== */
-    .cta-band { text-align: center; background: linear-gradient(135deg, rgba(99,102,241,0.14), rgba(168,85,247,0.1)); border: 1px solid rgba(99,102,241,0.25); border-radius: var(--radius-xl); padding: 56px 24px; }
-    .cta-band h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 14px; }
-    .cta-band p { color: var(--text-2); max-width: 520px; margin: 0 auto 26px; font-size: 15px; }
-
-    /* ===== FOOTER ===== */
-    footer { border-top: 1px solid var(--border-0); padding: 40px 0 36px; margin-top: 24px; position: relative; z-index: 1; }
-    .footer-grid { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
-    .footer-links { display: flex; gap: 22px; flex-wrap: wrap; }
-    .footer-links a { color: var(--text-2); font-size: 14px; transition: color .15s; }
-    .footer-links a:hover { color: var(--text-0); }
-    .footer-copy { color: var(--text-3); font-size: 13px; }
-
-    /* ===== REVEAL ANIMATION ===== */
-    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.in { opacity: 1; transform: none; }
-    @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1; transform: none; transition: none; }
-      .bubble, .chip-float { animation: none; opacity: 1; transform: none; }
-      .chart .line { stroke-dashoffset: 0; }
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 900px) {
-      .hero-grid { grid-template-columns: 1fr; gap: 48px; }
-      .hero { padding: 48px 0 40px; text-align: center; }
-      .hero-sub { margin-left: auto; margin-right: auto; }
-      .hero-cta { justify-content: center; }
-      .preview { max-width: 440px; margin: 0 auto; }
-      .live-grid { grid-template-columns: 1fr; }
-      .chip-2 { left: -10px; }
-    }
-    @media (max-width: 640px) {
-      .container { padding: 0 18px; }
-      .nav-link[data-secondary] { display: none; }
-      .section { padding: 60px 0; }
-      .brand-sub { display: none; }
-      .footer-grid { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .chip-float { display: none; }
-    }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  body { background: #ffffff; overflow-x: hidden; font-feature-settings: 'cv02','cv03','cv04','cv11'; }
+  ::selection { background: rgba(190,81,3,0.18); color: #2a1d12; }
+  #re ::-webkit-scrollbar { width: 9px; }
+  #re ::-webkit-scrollbar-thumb { background: #e0d6cb; border-radius: 999px; }
+  @keyframes re-kenburns { 0% { transform: scale(1.03); } 100% { transform: scale(1.13); } }
+  @keyframes re-floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes re-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  @keyframes re-spin { to { transform: rotate(360deg); } }
+  @keyframes re-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes re-rise-dot { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+  @media (max-width: 1000px) {
+    #re [data-hero-grid] { grid-template-columns: 1fr !important; gap: 44px !important; }
+    #re [data-hero-art] { height: 460px !important; }
+    #re [data-bento] { grid-template-columns: repeat(2, 1fr) !important; }
+    #re [data-bento] > [data-big] { grid-column: span 2 !important; }
+    #re [data-bento] > [data-wide] { grid-column: span 2 !important; }
+    #re [data-2col] { grid-template-columns: 1fr !important; }
+    #re [data-3col] { grid-template-columns: 1fr !important; }
+    #re [data-split] { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 680px) {
+    #re [data-hide-sm] { display: none !important; }
+    #re [data-bento] { grid-template-columns: 1fr !important; }
+    #re [data-bento] > * { grid-column: span 1 !important; }
+    #re [data-4col] { grid-template-columns: 1fr 1fr !important; }
+    #re [data-sec] { padding: 64px 0 !important; }
+    #re [data-hero] { padding: 92px 0 56px !important; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    #re *, #re *::before, #re *::after { animation: none !important; }
+  }
+  #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
   </style>
 </head>
-
 <body>
-  <header class="site-header" id="siteHeader">
-    <div class="container">
-      <nav class="nav" aria-label="Principal">
-        <a href="/" class="brand" aria-label="RE Expert — inicio">
-          <div class="brand-logo">RE</div>
-          <div>
-            <div class="brand-text">RE Expert</div>
-            <div class="brand-sub">Real Estate AI</div>
-          </div>
-        </a>
-        <div class="nav-links">
-          <a href="#features" class="nav-link" data-secondary>Funciones</a>
-          <a href="#live" class="nav-link" data-secondary>En vivo</a>
-          <a href="pricing.html" class="nav-link" data-secondary>Precios</a>
-          <a href="login.html" class="nav-link">Ingresar</a>
-          <a href="register.html" class="btn btn-primary">Probar gratis</a>
+<div id="re" style="--acc:#BE5103;--acc2:#8f3d02;--ease:cubic-bezier(0.16,1,0.3,1);position:relative; background:#ffffff; color:#2a1d12; font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; line-height:1.5;">
+
+  <div data-progress="" aria-hidden="true" style="position:fixed; top:0; left:0; right:0; height:3px; transform:scaleX(0); transform-origin:left center; background:linear-gradient(90deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); z-index:90; will-change:transform; pointer-events:none;"></div>
+  <div data-cursor-glow="" aria-hidden="true" style="position:fixed; top:0; left:0; width:560px; height:560px; margin:-280px 0 0 -280px; border-radius:50%; background:radial-gradient(circle, rgba(190,81,3,0.14), transparent 68%); pointer-events:none; z-index:4; opacity:0; transition:opacity .45s ease; will-change:transform; mix-blend-mode:multiply;"></div>
+
+  
+
+  <!-- ============ NAV ============ -->
+  <header data-nav="" style="position:sticky; top:0; z-index:70; border-bottom:1px solid transparent; transition:background .3s ease, border-color .3s ease, box-shadow .3s ease, backdrop-filter .3s ease;">
+    <div style="max-width:1240px; margin:0 auto; padding:17px 30px; display:flex; align-items:center; justify-content:space-between; gap:18px;">
+      <a href="index.html" style="display:flex; align-items:center; gap:11px; text-decoration:none; color:inherit;">
+        <div style="width:38px; height:38px; border-radius:9px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:#fff; letter-spacing:0.4px; box-shadow:0 8px 20px -6px rgba(190,81,3,0.55);">RE</div>
+        <div style="line-height:1.1;">
+          <div style="font-weight:800; font-size:17px; letter-spacing:-0.4px;">RE Expert</div>
+          <div data-hide-sm="" style="font-size:9.5px; color:#897b6d; letter-spacing:1px; text-transform:uppercase; margin-top:2px; font-weight:600;">Real Estate AI</div>
         </div>
+      </a>
+      <nav style="display:flex; align-items:center; gap:3px;">
+        <a data-hide-sm="" href="#features" style="padding:9px 14px; border-radius:9px; font-size:13.5px; font-weight:500; color:#5c4d40; text-decoration:none; transition:color .15s, background .15s;" style-hover="color:#2a1d12; background:#f6f1ec;">Funciones</a>
+        <a data-hide-sm="" href="#live" style="padding:9px 14px; border-radius:9px; font-size:13.5px; font-weight:500; color:#5c4d40; text-decoration:none; transition:color .15s, background .15s;" style-hover="color:#2a1d12; background:#f6f1ec;">En vivo</a>
+        <a data-hide-sm="" href="#precios" style="padding:9px 14px; border-radius:9px; font-size:13.5px; font-weight:500; color:#5c4d40; text-decoration:none; transition:color .15s, background .15s;" style-hover="color:#2a1d12; background:#f6f1ec;">Precios</a>
+        <a href="login.html" style="padding:9px 14px; border-radius:9px; font-size:13.5px; font-weight:500; color:#2a1d12; text-decoration:none; transition:background .15s;" style-hover="background:#f6f1ec;">Ingresar</a>
+        <a href="register.html" style="display:inline-flex; align-items:center; gap:7px; height:39px; padding:0 18px; border-radius:10px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:13.5px; font-weight:600; text-decoration:none; box-shadow:0 8px 18px -6px rgba(190,81,3,0.5); transition:transform .18s var(--ease,cubic-bezier(.16,1,.3,1)), box-shadow .18s;" style-hover="transform:translateY(-1px); box-shadow:0 12px 26px -6px rgba(190,81,3,0.7);">Probar gratis</a>
       </nav>
     </div>
   </header>
 
-  <main>
-    <!-- ===== HERO ===== -->
-    <section class="hero container">
-      <div class="hero-grid">
-        <div>
-          <div class="hero-badge">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            La plataforma de IA hecha para el real estate argentino
-          </div>
-          <h1>Todo tu negocio inmobiliario, <span class="grad">potenciado con IA</span></h1>
-          <p class="hero-sub">
-            No es solo un chat. Es la plataforma completa para <strong>inmobiliarias, desarrolladores y constructores</strong>:
-            asesoría experta, comparador de créditos, análisis de planos, control de obra y precios de materiales en vivo —
-            con conocimiento local (AFIP, ARBA, BCRA, UVA).
-          </p>
-          <div class="hero-cta">
-            <a href="register.html" class="btn btn-primary btn-lg">
-              Probar 7 días gratis
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </a>
-            <a href="#features" class="btn btn-ghost btn-lg">Ver todo lo que hace</a>
-          </div>
-          <div class="hero-trust">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-            7 días gratis · Sin tarjeta para empezar · Cancelás cuando quieras
-          </div>
+  <!-- ============ HERO ============ -->
+  <section data-hero="" style="position:relative; overflow:hidden; padding:70px 0 88px;">
+    <!-- soft warm ambient -->
+    <div data-parallax="0.08" aria-hidden="true" style="position:absolute; top:-200px; right:-160px; width:620px; height:620px; border-radius:50%; background:radial-gradient(circle, rgba(190,81,3,0.10), transparent 65%); pointer-events:none; z-index:0;"></div>
+    <div data-parallax="-0.05" aria-hidden="true" style="position:absolute; bottom:-220px; left:-180px; width:560px; height:560px; border-radius:50%; background:radial-gradient(circle, rgba(190,81,3,0.06), transparent 65%); pointer-events:none; z-index:0;"></div>
+
+    <div data-hero-grid="" style="position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:0 30px; display:grid; grid-template-columns:1.04fr 0.96fr; gap:64px; align-items:center;">
+      <!-- LEFT -->
+      <div>
+        <div data-reveal="" data-delay="0" style="display:inline-flex; align-items:center; gap:9px; padding:6px 13px 6px 11px; border-radius:999px; background:#f6f1ec; border:1px solid #ece4db; font-size:12px; font-weight:600; color:#8f3d02; letter-spacing:0.2px; margin-bottom:26px;">
+          <span style="width:6px; height:6px; border-radius:999px; background:var(--acc,#BE5103); box-shadow:0 0 0 3px rgba(190,81,3,0.16);"></span>
+          Real estate · IA · Argentina
         </div>
 
-        <!-- Product preview -->
-        <div class="preview reveal">
-          <div class="chip-float chip-1">
-            <span class="ic">💳</span> Créditos comparados en vivo
-          </div>
-          <div class="chip-float chip-2">
-            <span class="ic">📐</span> Análisis de planos IA
-          </div>
-          <div class="chip-float chip-3">
-            <span class="ic">📈</span> CPI 0,98 · SPI 1,02
-          </div>
-          <div class="preview-card">
-            <div class="preview-top">
-              <span class="dot" style="background:#ef4444"></span>
-              <span class="dot" style="background:#f59e0b"></span>
-              <span class="dot" style="background:#22c55e"></span>
-              <span class="preview-title">RE Expert · Chat experto</span>
-            </div>
-            <div class="preview-body">
-              <div class="bubble user">¿Cuánto ingreso necesito para el crédito de Nación por una casa de USD 90.000?</div>
-              <div class="bubble ai b2">
-                Con Nación (UVA, <span class="hl">6% TNA</span>, financia 75%) necesitás financiar ~USD 67.500.
-                La cuota inicial ronda <span class="hl">$520.000/mes</span>, así que pedís un ingreso familiar de
-                <span class="hl">~$2.080.000</span> (relación cuota/ingreso 25%).
-              </div>
-              <div class="bubble ai b3">
-                <span class="ok">✓</span> Calificás con Nación, Ciudad y Bancor. ¿Te armo el cuadro comparativo y el PDF para el banco?
-              </div>
-            </div>
-          </div>
+        <h1 style="font-size:clamp(42px, 5.6vw, 74px); font-weight:800; letter-spacing:-2.6px; line-height:1.02; margin-bottom:26px; color:#2a1d12;">
+          <span data-line="" style="display:block; overflow:hidden; padding-bottom:0.06em;"><span data-line-inner="" style="display:block;">Todo tu negocio</span></span>
+          <span data-line="" style="display:block; overflow:hidden; padding-bottom:0.06em;"><span data-line-inner="" style="display:block;">inmobiliario,</span></span>
+          <span data-line="" style="display:block; overflow:hidden; padding-bottom:0.12em;"><span data-line-inner="" style="display:block; font-family:'Spectral',serif; font-weight:300; font-style:italic; letter-spacing:-1.4px; color:var(--acc,#BE5103);">con criterio experto.</span></span>
+        </h1>
+
+        <p data-reveal="" data-delay="120" style="font-size:clamp(16px, 1.5vw, 18.5px); color:#5c4d40; max-width:520px; line-height:1.62; margin-bottom:32px;">
+          No es solo un chat. Es la plataforma completa para inmobiliarias, desarrolladores y constructores: asesoría experta, créditos, análisis de planos, control de obra y precios de materiales en vivo.
+        </p>
+
+        <div data-reveal="" data-delay="200" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <a href="register.html" style="display:inline-flex; align-items:center; gap:9px; height:53px; padding:0 28px; border-radius:13px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:15px; font-weight:600; text-decoration:none; box-shadow:0 12px 30px -8px rgba(190,81,3,0.6); transition:transform .2s var(--ease,cubic-bezier(.16,1,.3,1)), box-shadow .2s;" style-hover="transform:translateY(-2px); box-shadow:0 20px 44px -10px rgba(190,81,3,0.8);">
+            Probar 7 días gratis
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </a>
+          <a href="#features" style="display:inline-flex; align-items:center; gap:9px; height:53px; padding:0 24px; border-radius:13px; background:#fff; border:1px solid #e0d6cb; color:#2a1d12; font-size:15px; font-weight:600; text-decoration:none; transition:background .2s, border-color .2s;" style-hover="background:#f6f1ec; border-color:#d3c6b8;">
+            Ver la plataforma
+          </a>
+        </div>
+
+        <div data-reveal="" data-delay="280" style="margin-top:26px; display:inline-flex; align-items:center; gap:8px; font-size:13px; color:#897b6d;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--acc,#BE5103)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          7 días gratis · Sin tarjeta para empezar · Cancelás cuando quieras
         </div>
       </div>
-    </section>
 
-    <!-- ===== TRUST STRIP ===== -->
-    <div class="trust-strip">
-      <div class="container trust-row">
-        <span class="lbl">Conocimiento local</span>
-        <span class="tag">AFIP</span>
-        <span class="tag">ARBA</span>
-        <span class="tag">BCRA</span>
-        <span class="tag">UVA / CER</span>
-        <span class="tag">Propiedad Horizontal</span>
-        <span class="tag">DNU Alquileres</span>
+      <!-- RIGHT: cinematic image -->
+      <div data-tilt-area="" style="position:relative;">
+        <div data-tilt="" data-hero-art="" style="position:relative; height:560px; border-radius:22px; transition:transform .25s ease; transform-style:preserve-3d; will-change:transform;">
+          <div data-clip="" style="position:absolute; inset:0; border-radius:22px; overflow:hidden; box-shadow:0 40px 80px -30px rgba(42,29,18,0.5), 0 0 0 1px rgba(42,29,18,0.04);">
+            <img onerror="this.style.display='none';try{this.parentElement.style.background='linear-gradient(140deg,#2a1d12,#5c4d40)'}catch(e){}" src="assets/landing/6fb8d773.jpg" alt="Torres corporativas" style="width:100%; height:100%; object-fit:cover; object-position:center; transform:scale(1.04); animation:re-kenburns 26s ease-in-out infinite alternate;">
+            <div aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(180deg, transparent 40%, rgba(42,29,18,0.32) 100%), linear-gradient(120deg, rgba(190,81,3,0.10), transparent 55%);"></div>
+          </div>
+          <!-- corner caption -->
+          <div style="position:absolute; top:18px; left:18px; z-index:2; display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; background:rgba(255,255,255,0.82); backdrop-filter:blur(8px); font-size:11px; font-weight:600; color:#2a1d12; letter-spacing:0.2px;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#22a06b;"></span>Análisis en tiempo real
+          </div>
+        </div>
+
+        <!-- floating product card -->
+        <div data-parallax="0.05" style="position:absolute; bottom:-26px; left:-30px; z-index:3; width:300px; background:#fff; border:1px solid #efe7dd; border-radius:16px; box-shadow:0 28px 60px -22px rgba(42,29,18,0.35); padding:15px; animation:re-floaty 6s ease-in-out infinite;">
+          <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px;">
+            <div style="width:30px; height:30px; border-radius:8px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:10px;">RE</div>
+            <div style="font-size:12px; font-weight:700; color:#2a1d12;">Chat experto</div>
+            <span style="margin-left:auto; font-size:9.5px; font-weight:700; color:#22a06b; background:rgba(34,160,107,0.12); padding:2px 7px; border-radius:999px;">EN VIVO</span>
+          </div>
+          <div style="font-size:12px; line-height:1.5; color:#5c4d40; background:#f6f1ec; border-radius:10px; padding:9px 11px;">Complejo corporativo · 24.000 m² · 2 torres → <b style="color:#8f3d02;">TIR 24,6%</b> · VAN <b style="color:#8f3d02;">USD 220M</b></div>
+        </div>
+
+        <!-- floating data chip -->
+        <div data-parallax="-0.07" style="position:absolute; top:64px; right:-24px; z-index:3; display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #efe7dd; border-radius:13px; padding:11px 14px; box-shadow:0 22px 50px -20px rgba(42,29,18,0.34); animation:re-floaty 7s ease-in-out infinite 1.4s; font-family:'JetBrains Mono',monospace;">
+          <span style="width:30px; height:30px; border-radius:8px; background:rgba(190,81,3,0.1); display:flex; align-items:center; justify-content:center; font-size:14px;">🏢</span>
+          <div><div style="font-size:9.5px; color:#897b6d; font-weight:600; letter-spacing:0.3px;">DESARROLLO</div><div style="font-size:13px; font-weight:700; color:#2a1d12;">24.000 m² · 32 pisos</div></div>
+        </div>
       </div>
     </div>
+  </section>
 
-    <!-- ===== FEATURES ===== -->
-    <section id="features" class="section container">
-      <div class="section-head reveal">
-        <div class="section-eyebrow">Una plataforma, todo el ciclo</div>
-        <h2 class="section-title">Mucho más que un chatbot</h2>
-        <p class="section-sub">Cada sección resuelve una parte real de tu día. Todo conectado, todo con IA, todo pensado para Argentina.</p>
+  <!-- ============ TRUST MARQUEE ============ -->
+  <div style="border-top:1px solid #f0eae2; border-bottom:1px solid #f0eae2; padding:22px 0; overflow:hidden; position:relative; background:#fdfbf9;">
+    <div style="position:absolute; left:0; top:0; bottom:0; width:120px; z-index:2; background:linear-gradient(90deg, #fdfbf9, transparent); pointer-events:none;"></div>
+    <div style="position:absolute; right:0; top:0; bottom:0; width:120px; z-index:2; background:linear-gradient(270deg, #fdfbf9, transparent); pointer-events:none;"></div>
+    <div style="text-align:center; font-size:11px; font-weight:700; color:#b3a799; text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">Conocimiento local, siempre al día</div>
+    <div data-marquee="" style="display:flex; width:max-content; will-change:transform; animation:re-marquee 34s linear infinite;">
+      <div style="display:flex; align-items:center; gap:48px; padding-right:48px;">
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">AFIP</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">ARBA</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">BCRA</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">UVA / CER</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">INDEC</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">CAC</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Banco Nación</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Propiedad Horizontal</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Código Urbano CABA</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:48px; padding-right:48px;" aria-hidden="true">
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">AFIP</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">ARBA</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">BCRA</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">UVA / CER</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">INDEC</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">CAC</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Banco Nación</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Propiedad Horizontal</span>
+        <span style="font-size:15px; font-weight:700; color:#a89a8b;">Código Urbano CABA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OFFICE STATEMENT BAND ============ -->
+  <section data-sec="" style="position:relative; overflow:hidden; padding:0; margin:0; min-height:600px; display:flex; align-items:flex-end;">
+    <img data-parallax="-0.08" onerror="this.style.display='none';try{this.parentElement.style.background='linear-gradient(140deg,#2a1d12,#5c4d40)'}catch(e){}" src="assets/landing/9309232f.jpg" alt="Oficina ejecutiva con vista a la ciudad" style="position:absolute; top:-12%; left:0; width:100%; height:128%; object-fit:cover; object-position:center; z-index:0;">
+    <div aria-hidden="true" style="position:absolute; inset:0; z-index:1; background:linear-gradient(90deg, rgba(26,17,9,0.78) 0%, rgba(26,17,9,0.45) 45%, rgba(26,17,9,0.15) 100%), linear-gradient(0deg, rgba(26,17,9,0.55), transparent 55%);"></div>
+    <div aria-hidden="true" style="position:absolute; inset:0; z-index:1; background:linear-gradient(120deg, rgba(190,81,3,0.16), transparent 50%); mix-blend-mode:overlay;"></div>
+    <div style="position:relative; z-index:2; max-width:1240px; margin:0 auto; padding:72px 30px; width:100%;">
+      <div data-reveal="" data-delay="0" style="font-size:12px; font-weight:700; color:#f0c9a8; text-transform:uppercase; letter-spacing:1.6px; margin-bottom:18px;">El cambio</div>
+      <h2 data-reveal="" data-delay="80" style="font-size:clamp(30px, 4.6vw, 58px); font-weight:800; letter-spacing:-1.8px; line-height:1.06; color:#fff; max-width:760px; margin-bottom:22px;">Lo que antes te llevaba semanas, hoy es <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:#f5b27f;">una conversación.</span></h2>
+      <p data-reveal="" data-delay="160" style="font-size:17px; line-height:1.6; color:rgba(255,255,255,0.82); max-width:560px;">RE Expert reúne factibilidad, normativa, costos y gestión de obra en un solo lugar — pensado para quienes deciden con poco tiempo y mucho en juego.</p>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES BENTO ============ -->
+  <section id="features" data-sec="" style="padding:100px 0 92px; position:relative; background:#fff;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="text-align:center; max-width:680px; margin:0 auto 52px;">
+        <div style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">Una plataforma, todo el ciclo</div>
+        <h2 style="font-size:clamp(30px, 4.2vw, 48px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; margin-bottom:16px; color:#2a1d12;">Mucho más que un <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">chatbot</span></h2>
+        <p style="color:#897b6d; font-size:16px; line-height:1.6;">Cada módulo resuelve una parte real de tu día. Todo conectado, todo con IA, todo pensado para Argentina.</p>
       </div>
 
-      <div class="features-grid reveal">
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <h3 class="feature-title">Chat IA experto</h3>
-          <p class="feature-desc">Respuestas al instante sobre fiscalidad, escrituras, sellos, alquileres y todo el ciclo inmobiliario argentino. Con cálculos exactos, no estimaciones.</p>
-        </article>
+      <div data-bento="" data-skew="" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:16px; grid-auto-rows:minmax(0,auto);">
 
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M5 6l7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/></svg></div>
-          <h3 class="feature-title">Créditos hipotecarios</h3>
-          <p class="feature-desc">Asesor hipotecario digital: compará bancos, calculá tu cuota y mirá si calificás. Datos de fuentes oficiales (BCRA), verificados antes de publicar.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/><path d="m13 14 2 2 3-3"/></svg></div>
-          <h3 class="feature-title">Análisis de planos con IA</h3>
-          <p class="feature-desc">Subí un plano y la IA te detecta superficies, ambientes y observaciones. Ideal para tasar, presupuestar o revisar un proyecto en segundos.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg></div>
-          <h3 class="feature-title">Línea base de costo y tiempo</h3>
-          <p class="feature-desc">Para desarrolladores y constructores: Earned Value, CPI, SPI, EAC y desviaciones en tiempo real. Sabé si tu obra va en presupuesto y en fecha.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/><circle cx="18" cy="9" r="1.6" fill="currentColor"/></svg></div>
-          <h3 class="feature-title">Precios de materiales <span class="badge-live">en vivo</span></h3>
-          <p class="feature-desc">Seguimiento de precios de materiales e insumos con histórico y pronósticos. Cotizá con datos frescos y anticipate a las subas.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></div>
-          <h3 class="feature-title">Presupuestos automáticos</h3>
-          <p class="feature-desc">Generá presupuestos de obra detallados con un prompt. La IA arma materiales, mano de obra y plazos, y lo exportás en PDF o Excel.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg></div>
-          <h3 class="feature-title">Academia</h3>
-          <p class="feature-desc">Capacitación y guías prácticas del rubro: fiscalidad, contratos, gestión de obra y más. Aprendé mientras trabajás.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16a2 2 0 0 1-2 2z"/><path d="M16 8h-8"/><path d="M16 12h-8"/><path d="M12 16h-4"/></svg></div>
-          <h3 class="feature-title">Noticias segmentadas</h3>
-          <p class="feature-desc">El pulso del sector, filtrado para vos: normativa, mercado, créditos y construcción. Sin ruido, solo lo que te impacta.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-          <h3 class="feature-title">Pagos y flujo de caja</h3>
-          <p class="feature-desc">Registrá pagos a proveedores y subcontratistas, y visualizá el cash flow del proyecto con proyecciones a futuro.</p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <h3 class="feature-title">Datos seguros</h3>
-          <p class="feature-desc">HTTPS obligatorio, autenticación JWT, base cifrada y aislamiento por usuario. Tus datos son tuyos: no entrenan modelos.</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- ===== LIVE SHOWCASE ===== -->
-    <section id="live" class="section container">
-      <div class="section-head reveal">
-        <div class="section-eyebrow">Datos reales, no demos</div>
-        <h2 class="section-title">Información que se actualiza sola</h2>
-        <p class="section-sub">Precios y créditos se refrescan desde fuentes oficiales y se validan antes de mostrarse. Vos decidís con datos frescos y verídicos.</p>
-      </div>
-
-      <div class="live-grid reveal">
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title">Precio de materiales — proyección</span>
-            <span class="panel-tag"><span class="pulse"></span> EN VIVO</span>
+        <!-- A · Chat experto (big) -->
+        <article data-reveal="" data-delay="0" data-big="" style="grid-column:span 3; grid-row:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:26px; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+            <span style="width:46px; height:46px; border-radius:12px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+            <div>
+              <h3 style="font-size:18px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; display:flex; align-items:center; gap:9px;">Chat IA experto <span style="font-size:9.5px; font-weight:800; letter-spacing:.5px; color:var(--acc2,#8f3d02); background:rgba(190,81,3,0.12); padding:3px 8px; border-radius:999px; text-transform:uppercase;">Núcleo</span></h3>
+              <p style="color:#897b6d; font-size:13.5px; margin-top:4px; line-height:1.5;">Fiscalidad, escrituras, sellos y alquileres — con cálculos exactos, no estimaciones.</p>
+            </div>
           </div>
-          <div class="panel-sub">Índice de costo de construcción · histórico + pronóstico IA</div>
-          <svg class="chart" viewBox="0 0 520 170" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#818cf8"/>
-                <stop offset="100%" stop-color="transparent"/>
-              </linearGradient>
-            </defs>
-            <path class="area" d="M0,130 L65,120 L130,124 L195,98 L260,104 L325,72 L390,80 L390,170 L0,170 Z"/>
-            <path class="line" d="M0,130 L65,120 L130,124 L195,98 L260,104 L325,72 L390,80"/>
-            <path class="line fc" d="M390,80 L455,60 L520,40"/>
+          <div style="margin-top:auto; background:#faf7f3; border:1px solid #f0eae2; border-radius:13px; padding:15px; display:flex; flex-direction:column; gap:10px;">
+            <div style="align-self:flex-end; max-width:88%; padding:9px 12px; border-radius:12px; border-bottom-right-radius:4px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:12.5px; line-height:1.5;">¿Qué sellos pago por una compraventa de USD 120.000 en CABA?</div>
+            <div style="align-self:flex-start; max-width:92%; padding:9px 12px; border-radius:12px; border-bottom-left-radius:4px; background:#fff; border:1px solid #efe7dd; color:#5c4d40; font-size:12.5px; line-height:1.55;">En CABA pagás <b style="color:#8f3d02;">Sellos 3,6%</b> (1,8% cada parte). Sobre USD 120.000 → <b style="color:#8f3d02;">~USD 2.160</b> tu parte. Te detallo honorarios y gastos de escritura en PDF.</div>
+          </div>
+        </article>
+
+        <!-- C · Control de obra (wide) -->
+        <article data-reveal="" data-delay="120" data-wide="" style="grid-column:span 3; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px 24px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <div style="display:flex; align-items:center; gap:11px; margin-bottom:16px;">
+            <span style="width:40px; height:40px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 14 4-4 4 4 5-5"></path></svg></span>
+            <div style="flex:1;"><h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12;">Control de obra · Earned Value</h3><p style="color:#897b6d; font-size:12.5px; margin-top:2px;">CPI, SPI, EAC y desvíos en tiempo real</p></div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;">
+            <div style="background:#faf7f3; border:1px solid #f0eae2; border-radius:11px; padding:11px 12px;"><div style="font-size:10.5px; color:#897b6d; font-weight:600;">CPI</div><div style="font-size:21px; font-weight:800; letter-spacing:-.6px; font-family:'JetBrains Mono',monospace; color:#d97706;">0,98</div></div>
+            <div style="background:#faf7f3; border:1px solid #f0eae2; border-radius:11px; padding:11px 12px;"><div style="font-size:10.5px; color:#897b6d; font-weight:600;">SPI</div><div style="font-size:21px; font-weight:800; letter-spacing:-.6px; font-family:'JetBrains Mono',monospace; color:#22a06b;">1,02</div></div>
+            <div style="background:#faf7f3; border:1px solid #f0eae2; border-radius:11px; padding:11px 12px;"><div style="font-size:10.5px; color:#897b6d; font-weight:600;">EAC</div><div style="font-size:21px; font-weight:800; letter-spacing:-.6px; font-family:'JetBrains Mono',monospace; color:#2a1d12;">2,4<span style="font-size:11px; color:#b3a799;">M</span></div></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="flex:1; height:7px; border-radius:999px; background:#f0eae2; overflow:hidden;"><div style="width:62%; height:100%; border-radius:999px; background:linear-gradient(90deg, var(--acc,#BE5103), var(--acc2,#8f3d02));"></div></div>
+            <span style="font-size:12px; color:#897b6d; font-weight:600; font-family:'JetBrains Mono',monospace;">62% avance</span>
+          </div>
+        </article>
+
+        <!-- D · Planos -->
+        <article data-reveal="" data-delay="40" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; margin-bottom:14px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path><path d="m13 14 2 2 3-3"></path></svg></span>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Análisis de planos con IA</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55; margin-bottom:13px;">Subí un plano y la IA detecta superficies, ambientes y observaciones en segundos.</p>
+          <div style="display:flex; gap:7px; flex-wrap:wrap;">
+            <span style="font-size:11px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 9px; border-radius:999px; font-family:'JetBrains Mono',monospace;">84 m²</span>
+            <span style="font-size:11px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 9px; border-radius:999px; font-family:'JetBrains Mono',monospace;">3 amb</span>
+            <span style="font-size:11px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 9px; border-radius:999px; font-family:'JetBrains Mono',monospace;">2 baños</span>
+          </div>
+        </article>
+
+        <!-- E · Materiales -->
+        <article data-reveal="" data-delay="80" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-3-3-4 4"></path></svg></span>
+            <span style="font-size:13px; font-weight:800; color:#d97706; font-family:'JetBrains Mono',monospace;">+4,2%</span>
+          </div>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Precios de materiales <span style="font-size:9.5px; font-weight:800; color:#22a06b; background:rgba(34,160,107,0.12); padding:2px 7px; border-radius:999px; text-transform:uppercase; vertical-align:middle;">en vivo</span></h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55; margin-bottom:8px;">Histórico y pronóstico IA por rubro. Anticipate a las subas.</p>
+          <svg viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%; height:34px;"><path d="M0,32 L30,28 L60,30 L90,20 L120,23 L150,12 L180,15 L200,8" fill="none" stroke="var(--acc,#BE5103)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </article>
+
+        <!-- F · Presupuestos -->
+        <article data-reveal="" data-delay="120" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; margin-bottom:14px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg></span>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Presupuestos automáticos</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55; margin-bottom:13px;">Materiales, mano de obra y plazos con un prompt. Listo para exportar.</p>
+          <div style="display:flex; gap:7px;"><span style="font-size:11px; font-weight:700; color:#5c4d40; background:#f6f1ec; border:1px solid #efe7dd; padding:4px 10px; border-radius:7px;">PDF</span><span style="font-size:11px; font-weight:700; color:#5c4d40; background:#f6f1ec; border:1px solid #efe7dd; padding:4px 10px; border-radius:7px;">Excel</span></div>
+        </article>
+
+        <!-- G · Academia -->
+        <article data-reveal="" data-delay="60" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; margin-bottom:14px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"></path></svg></span>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Academia</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55;">Guías prácticas del rubro: fiscalidad, contratos y gestión de obra.</p>
+        </article>
+
+        <!-- H · Noticias -->
+        <article data-reveal="" data-delay="100" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; margin-bottom:14px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16a2 2 0 0 1-2 2z"></path><path d="M16 8h-8"></path><path d="M16 12h-8"></path><path d="M12 16h-4"></path></svg></span>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Noticias segmentadas</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55;">El pulso del sector filtrado para vos: normativa, mercado y créditos.</p>
+        </article>
+
+        <!-- I · Pagos -->
+        <article data-reveal="" data-delay="140" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
+          <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; margin-bottom:14px;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg></span>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Pagos y flujo de caja</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55;">Pagos a proveedores y el cash flow del proyecto proyectado a futuro.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LIVE DATA ============ -->
+  <section id="live" data-sec="" style="padding:96px 0; position:relative; background:#f6f1ec;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="text-align:center; max-width:680px; margin:0 auto 48px;">
+        <div style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">Datos reales, no demos</div>
+        <h2 style="font-size:clamp(30px, 4.2vw, 48px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; margin-bottom:16px; color:#2a1d12;">Información que se <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">actualiza sola</span></h2>
+        <p style="color:#897b6d; font-size:16px; line-height:1.6;">Precios y créditos se refrescan desde fuentes oficiales y se validan antes de mostrarse. Vos decidís con datos frescos y verídicos.</p>
+      </div>
+      <div data-split="" data-skew="" style="display:grid; grid-template-columns:1.35fr 1fr; gap:18px;">
+        <div data-reveal="" data-delay="0" data-chart-group="" style="background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:24px; box-shadow:0 1px 3px rgba(42,29,18,0.03);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <span style="font-size:15px; font-weight:700; color:#2a1d12;">Índice de costo de construcción</span>
+            <span style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:#22a06b; background:rgba(34,160,107,0.12); padding:3px 9px; border-radius:999px;"><span style="width:6px; height:6px; border-radius:50%; background:#22a06b; animation:re-pulse 1.6s ease-in-out infinite;"></span>EN VIVO</span>
+          </div>
+          <div style="color:#897b6d; font-size:12.5px; margin-bottom:18px;">Histórico (CAC) + pronóstico IA · variación mensual</div>
+          <svg viewBox="0 0 520 200" preserveAspectRatio="none" style="width:100%; height:190px; display:block;">
+            <defs><linearGradient id="reArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--acc,#BE5103)"></stop><stop offset="100%" stop-color="transparent"></stop></linearGradient></defs>
+            <path data-chart-area="" d="M0,150 L65,138 L130,144 L195,110 L260,120 L325,80 L390,92 L390,200 L0,200 Z" fill="url(#reArea)" style="opacity:0.16;"></path>
+            <path data-chart-draw="" d="M0,150 L65,138 L130,144 L195,110 L260,120 L325,80 L390,92" fill="none" stroke="var(--acc,#BE5103)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:900; stroke-dashoffset:0;"></path>
+            <path d="M390,92 L455,66 L520,44" fill="none" stroke="#d97706" stroke-width="2.5" stroke-dasharray="7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="390" cy="92" r="4" fill="var(--acc,#BE5103)"></circle><circle cx="520" cy="44" r="4" fill="#d97706"></circle>
           </svg>
-          <div class="legend">
-            <span><i style="background:#818cf8"></i>Histórico</span>
-            <span><i style="background:#f59e0b"></i>Pronóstico IA</span>
+          <div style="display:flex; gap:20px; margin-top:14px; font-size:12px; color:#897b6d;">
+            <span style="display:inline-flex; align-items:center; gap:7px;"><i style="display:inline-block; width:14px; height:3px; border-radius:2px; background:var(--acc,#BE5103);"></i>Histórico</span>
+            <span style="display:inline-flex; align-items:center; gap:7px;"><i style="display:inline-block; width:14px; height:3px; border-radius:2px; background:#d97706;"></i>Pronóstico IA</span>
           </div>
         </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title">Créditos hipotecarios UVA</span>
-            <span class="panel-tag"><span class="pulse"></span> BCRA</span>
+        <div data-reveal="" data-delay="120" style="background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:24px; box-shadow:0 1px 3px rgba(42,29,18,0.03);">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+            <span style="font-size:15px; font-weight:700; color:#2a1d12;">Señales del mercado</span>
+            <span style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:var(--acc2,#8f3d02); background:rgba(190,81,3,0.1); padding:3px 9px; border-radius:999px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--acc,#BE5103); animation:re-pulse 1.6s ease-in-out infinite;"></span>BCRA · INDEC</span>
           </div>
-          <div class="panel-sub">Comparador en vivo · datos oficiales verificados</div>
-          <div class="credit-row">
-            <div class="credit-bank">
-              <span class="bank-pill" style="background:#1e40af">NACIÓN</span>
-              <div><div style="font-size:13px;font-weight:600">UVA Vivienda</div><div class="credit-meta">30 años · financia 75%</div></div>
-            </div>
-            <div class="credit-rate">6,0%<small> TNA</small></div>
-          </div>
-          <div class="credit-row">
-            <div class="credit-bank">
-              <span class="bank-pill" style="background:#0d9488">CIUDAD</span>
-              <div><div style="font-size:13px;font-weight:600">Primera Vivienda</div><div class="credit-meta">20 años · financia 75%</div></div>
-            </div>
-            <div class="credit-rate">7,5%<small> TNA</small></div>
-          </div>
-          <div class="credit-row">
-            <div class="credit-bank">
-              <span class="bank-pill" style="background:#1d4ed8">BBVA</span>
-              <div><div style="font-size:13px;font-weight:600">UVA Vivienda</div><div class="credit-meta">30 años · financia 80%</div></div>
-            </div>
-            <div class="credit-rate">7,5%<small> TNA</small></div>
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Dólar MEP</div><div style="font-size:11.5px; color:#b3a799;">cotización de referencia</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">$1.245</div><div style="font-size:11px; color:#22a06b; font-weight:700;">▲ 0,4%</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Tasa BCRA</div><div style="font-size:11.5px; color:#b3a799;">referencia · TNA</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">29%</div><div style="font-size:11px; color:#dc2626; font-weight:700;">▼ 2,0pp</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">CAC</div><div style="font-size:11.5px; color:#b3a799;">costo construcción · mensual</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">+4,2%</div><div style="font-size:11px; color:#d97706; font-weight:700;">▲ mensual</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">m² CABA</div><div style="font-size:11.5px; color:#b3a799;">usado · promedio USD</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">USD 2.180</div><div style="font-size:11px; color:#22a06b; font-weight:700;">▲ 1,1%</div></div></div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ===== SEGMENTS ===== -->
-    <section class="section container">
-      <div class="section-head reveal">
-        <div class="section-eyebrow">Para quién es</div>
-        <h2 class="section-title">Hecho para todo el rubro</h2>
+  <!-- ============ VISIÓN / FRAMED OPPORTUNITY ============ -->
+  <section data-sec="" style="padding:100px 0; position:relative; background:#fff;">
+    <div data-split="" style="max-width:1240px; margin:0 auto; padding:0 30px; display:grid; grid-template-columns:1fr 1.1fr; gap:60px; align-items:center;">
+      <div>
+        <div data-reveal="" data-delay="0" style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:16px;">Visión 360°</div>
+        <h2 data-reveal="" data-delay="60" style="font-size:clamp(30px, 4vw, 50px); font-weight:800; letter-spacing:-1.8px; line-height:1.06; color:#2a1d12; margin-bottom:20px;">Vé el negocio completo, <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">no solo el lote.</span></h2>
+        <p data-reveal="" data-delay="120" style="font-size:16.5px; line-height:1.62; color:#5c4d40; margin-bottom:26px; max-width:460px;">Factibilidad, mercado, normativa y costos en una sola mirada. RE Expert te arma el cuadro completo para que decidas con confianza — antes que el resto.</p>
+        <div data-reveal="" data-delay="180" style="display:flex; flex-direction:column; gap:14px; max-width:430px;">
+          <div style="display:flex; align-items:flex-start; gap:12px;"><span style="width:26px; height:26px; border-radius:8px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><div><b style="font-size:14.5px; color:#2a1d12;">Factibilidad al instante</b> <span style="font-size:14px; color:#897b6d;">— TIR, VAN y sensibilidad por dólar.</span></div></div>
+          <div style="display:flex; align-items:flex-start; gap:12px;"><span style="width:26px; height:26px; border-radius:8px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><div><b style="font-size:14.5px; color:#2a1d12;">Normativa por zona</b> <span style="font-size:14px; color:#897b6d;">— FOT/FOS, alturas y retiros de CABA.</span></div></div>
+          <div style="display:flex; align-items:flex-start; gap:12px;"><span style="width:26px; height:26px; border-radius:8px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center; flex:0 0 auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><div><b style="font-size:14.5px; color:#2a1d12;">Mercado en contexto</b> <span style="font-size:14px; color:#897b6d;">— precios de m², dólar y tasa, al día.</span></div></div>
+        </div>
       </div>
-      <div class="segments reveal">
-        <div class="seg"><div class="seg-emoji">🏢</div><div class="seg-name">Inmobiliarias</div><div class="seg-desc">Consultas legales, fiscales y de créditos al instante.</div></div>
-        <div class="seg"><div class="seg-emoji">🏗️</div><div class="seg-name">Desarrolladores</div><div class="seg-desc">Línea base, factibilidad y control de obra con IA.</div></div>
-        <div class="seg"><div class="seg-emoji">👷</div><div class="seg-name">Constructores</div><div class="seg-desc">Presupuestos, precios en vivo y certificación de avance.</div></div>
-        <div class="seg"><div class="seg-emoji">📐</div><div class="seg-name">Arquitectos</div><div class="seg-desc">Análisis de planos y cómputos en segundos.</div></div>
+      <div data-tilt-area="" style="position:relative;">
+        <div data-clipreveal="" style="border-radius:18px; overflow:hidden; box-shadow:0 36px 70px -30px rgba(42,29,18,0.4); aspect-ratio:3/2;">
+          <img onerror="this.style.display='none';try{this.parentElement.style.background='linear-gradient(140deg,#2a1d12,#5c4d40)'}catch(e){}" src="assets/landing/7fd71ea3.jpg" alt="Enmarcando la ciudad" style="width:100%; height:100%; object-fit:cover; transform:scale(1.04); animation:re-kenburns 24s ease-in-out infinite alternate;">
+        </div>
+        <div data-parallax="0.04" style="position:absolute; bottom:-22px; right:-18px; background:#fff; border:1px solid #efe7dd; border-radius:14px; padding:13px 16px; box-shadow:0 22px 50px -20px rgba(42,29,18,0.34); animation:re-floaty 6.5s ease-in-out infinite;">
+          <div style="font-size:10px; color:#897b6d; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px;">Oportunidad detectada</div>
+          <div style="font-size:15px; font-weight:800; color:#2a1d12; font-family:'JetBrains Mono',monospace;">TIR 18,4% · 22 meses</div>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ===== STATS ===== -->
-    <section class="section container">
-      <div class="stats reveal">
-        <div class="stat"><div class="stat-num">9</div><div class="stat-lbl">secciones de valor en una plataforma</div></div>
-        <div class="stat"><div class="stat-num">24/7</div><div class="stat-lbl">asistente experto disponible</div></div>
-        <div class="stat"><div class="stat-num">100%</div><div class="stat-lbl">enfocado en el mercado argentino</div></div>
-        <div class="stat"><div class="stat-num">Claude</div><div class="stat-lbl">la IA más avanzada, por dentro</div></div>
+  <!-- ============ CÓMO FUNCIONA ============ -->
+  <section data-sec="" style="padding:96px 0; background:#fff;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="text-align:center; max-width:640px; margin:0 auto 50px;">
+        <div style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">En 3 pasos</div>
+        <h2 style="font-size:clamp(30px, 4.2vw, 48px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; color:#2a1d12;">Tan simple como una <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">conversación</span></h2>
       </div>
-    </section>
+      <div data-3col="" data-skew="" style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px;">
+        <div data-reveal="" data-delay="0" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:18px; padding:28px;">
+          <div style="font-size:13px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--acc,#BE5103); margin-bottom:18px;">01</div>
+          <h3 style="font-size:18px; font-weight:700; letter-spacing:-0.4px; margin-bottom:9px; color:#2a1d12;">Cargás tu proyecto</h3>
+          <p style="color:#897b6d; font-size:14px; line-height:1.6;">Sumás el lote, la obra o la consulta. En 2 minutos estás adentro, sin migrar nada.</p>
+        </div>
+        <div data-reveal="" data-delay="100" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:18px; padding:28px;">
+          <div style="font-size:13px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--acc,#BE5103); margin-bottom:18px;">02</div>
+          <h3 style="font-size:18px; font-weight:700; letter-spacing:-0.4px; margin-bottom:9px; color:#2a1d12;">Preguntás en tus palabras</h3>
+          <p style="color:#897b6d; font-size:14px; line-height:1.6;">Sin planillas ni jerga técnica. Le hablás como a un socio senior con 25 años de oficio.</p>
+        </div>
+        <div data-reveal="" data-delay="200" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:18px; padding:28px;">
+          <div style="font-size:13px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--acc,#BE5103); margin-bottom:18px;">03</div>
+          <h3 style="font-size:18px; font-weight:700; letter-spacing:-0.4px; margin-bottom:9px; color:#2a1d12;">Decidís con datos</h3>
+          <p style="color:#897b6d; font-size:14px; line-height:1.6;">Pro-formas, comparativos y reportes listos para presentar. Exportás en PDF o Excel.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <!-- ===== PRICING ===== -->
-    <section id="pricing" class="section container">
-      <div class="section-head reveal">
-        <div class="section-eyebrow">Planes</div>
-        <h2 class="section-title">Un solo plan. Todo incluido.</h2>
-        <p class="section-sub">Probá 7 días gratis. Sin permanencia, sin sorpresas. Cancelás cuando quieras desde tu panel.</p>
+  <!-- ============ STATS + FACADE IMAGE ============ -->
+  <section data-sec="" style="padding:0; background:#f6f1ec; overflow:hidden;">
+    <div data-split="" style="max-width:1400px; margin:0 auto; display:grid; grid-template-columns:0.85fr 1.15fr; gap:0; align-items:stretch;">
+      <div style="position:relative; min-height:540px; overflow:hidden;">
+        <img data-parallax="-0.05" onerror="this.style.display='none';try{this.parentElement.style.background='linear-gradient(140deg,#2a1d12,#5c4d40)'}catch(e){}" src="assets/landing/8fa10a91.jpg" alt="Fachada al atardecer" style="position:absolute; top:-8%; left:0; width:100%; height:120%; object-fit:cover; object-position:center;">
+        <div aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(90deg, transparent 60%, #f6f1ec 100%), linear-gradient(120deg, rgba(190,81,3,0.18), transparent 55%); mix-blend-mode:multiply;"></div>
       </div>
-      <div class="pricing-grid reveal">
-        <div class="price-card">
-          <div class="price-badge">Más popular</div>
-          <div class="price-name">Pro</div>
-          <div><span class="price-amount">$69.900</span><span class="price-period"> / mes</span></div>
-          <div class="price-divider"></div>
-          <ul class="price-list">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Acceso a todas las secciones</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Chat experto + análisis de planos con IA</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Créditos, presupuestos y control de obra</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Precios de materiales en vivo + pronósticos</li>
+      <div style="padding:80px 60px;">
+        <div data-reveal="" data-delay="0" style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:16px;">La ventaja que falta</div>
+        <h2 data-reveal="" data-delay="60" style="font-size:clamp(28px, 3.6vw, 44px); font-weight:800; letter-spacing:-1.4px; line-height:1.1; color:#2a1d12; margin-bottom:40px; max-width:480px;">Una sola plataforma. Todo el mercado argentino, <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">por dentro.</span></h2>
+        <div data-reveal="" data-counter-group="" data-delay="0" data-2col="" style="display:grid; grid-template-columns:1fr 1fr; gap:32px 28px; max-width:460px;">
+          <div><div style="display:flex; align-items:baseline; gap:2px;"><span data-count="9" style="font-size:44px; font-weight:900; letter-spacing:-1.5px; color:var(--acc,#BE5103);">9</span></div><div style="color:#897b6d; font-size:13.5px; margin-top:4px; line-height:1.45;">módulos de valor en una plataforma</div></div>
+          <div><div style="font-size:44px; font-weight:900; letter-spacing:-1.5px; color:var(--acc,#BE5103);">24/7</div><div style="color:#897b6d; font-size:13.5px; margin-top:4px; line-height:1.45;">asistente experto disponible</div></div>
+          <div><div style="display:flex; align-items:baseline;"><span data-count="100" data-suffix="%" style="font-size:44px; font-weight:900; letter-spacing:-1.5px; color:var(--acc,#BE5103);">100%</span></div><div style="color:#897b6d; font-size:13.5px; margin-top:4px; line-height:1.45;">enfocado en el mercado argentino</div></div>
+          <div><div style="font-size:44px; font-weight:900; letter-spacing:-1.5px; color:var(--acc,#BE5103); font-family:'Spectral',serif; font-style:italic;">Claude</div><div style="color:#897b6d; font-size:13.5px; margin-top:4px; line-height:1.45;">la IA más avanzada, por dentro</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SEGMENTS ============ -->
+  <section data-sec="" style="padding:96px 0; background:#fff;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="text-align:center; max-width:640px; margin:0 auto 44px;">
+        <div style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">Para quién es</div>
+        <h2 style="font-size:clamp(30px, 4.2vw, 48px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; color:#2a1d12;">Hecho para todo el rubro</h2>
+      </div>
+      <div data-4col="" data-skew="" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+        <div data-reveal="" data-delay="0" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:16px; padding:26px 22px; transition:border-color .25s, transform .25s, box-shadow .25s;" style-hover="border-color:var(--acc,#BE5103); transform:translateY(-3px); box-shadow:0 18px 40px -22px rgba(190,81,3,0.4);">
+          <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(140deg, rgba(190,81,3,0.13), rgba(190,81,3,0.04)); border:1px solid rgba(190,81,3,0.18); display:flex; align-items:center; justify-content:center; color:var(--acc2,#8f3d02); margin-bottom:16px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path></svg></div>
+          <div style="font-size:16px; font-weight:700; letter-spacing:-0.3px; margin-bottom:7px; color:#2a1d12;">Inmobiliarias</div>
+          <div style="color:#897b6d; font-size:13px; line-height:1.55;">Consultas legales, fiscales y de créditos al instante.</div>
+        </div>
+        <div data-reveal="" data-delay="60" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:16px; padding:26px 22px; transition:border-color .25s, transform .25s, box-shadow .25s;" style-hover="border-color:var(--acc,#BE5103); transform:translateY(-3px); box-shadow:0 18px 40px -22px rgba(190,81,3,0.4);">
+          <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(140deg, rgba(190,81,3,0.13), rgba(190,81,3,0.04)); border:1px solid rgba(190,81,3,0.18); display:flex; align-items:center; justify-content:center; color:var(--acc2,#8f3d02); margin-bottom:16px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"></line><line x1="6" x2="6" y1="18" y2="11"></line><line x1="10" x2="10" y1="18" y2="11"></line><line x1="14" x2="14" y1="18" y2="11"></line><line x1="18" x2="18" y1="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></svg></div>
+          <div style="font-size:16px; font-weight:700; letter-spacing:-0.3px; margin-bottom:7px; color:#2a1d12;">Desarrolladores</div>
+          <div style="color:#897b6d; font-size:13px; line-height:1.55;">Factibilidad, línea base y control de obra con IA.</div>
+        </div>
+        <div data-reveal="" data-delay="120" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:16px; padding:26px 22px; transition:border-color .25s, transform .25s, box-shadow .25s;" style-hover="border-color:var(--acc,#BE5103); transform:translateY(-3px); box-shadow:0 18px 40px -22px rgba(190,81,3,0.4);">
+          <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(140deg, rgba(190,81,3,0.13), rgba(190,81,3,0.04)); border:1px solid rgba(190,81,3,0.18); display:flex; align-items:center; justify-content:center; color:var(--acc2,#8f3d02); margin-bottom:16px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"></path><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"></path><path d="M4 15v-3a6 6 0 0 1 6-6"></path><path d="M14 6a6 6 0 0 1 6 6v3"></path></svg></div>
+          <div style="font-size:16px; font-weight:700; letter-spacing:-0.3px; margin-bottom:7px; color:#2a1d12;">Constructores</div>
+          <div style="color:#897b6d; font-size:13px; line-height:1.55;">Presupuestos, precios en vivo y certificación de avance.</div>
+        </div>
+        <div data-reveal="" data-delay="180" style="background:#faf7f3; border:1px solid #f0eae2; border-radius:16px; padding:26px 22px; transition:border-color .25s, transform .25s, box-shadow .25s;" style-hover="border-color:var(--acc,#BE5103); transform:translateY(-3px); box-shadow:0 18px 40px -22px rgba(190,81,3,0.4);">
+          <div style="width:48px; height:48px; border-radius:13px; background:linear-gradient(140deg, rgba(190,81,3,0.13), rgba(190,81,3,0.04)); border:1px solid rgba(190,81,3,0.18); display:flex; align-items:center; justify-content:center; color:var(--acc2,#8f3d02); margin-bottom:16px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"></path><path d="m7.5 10.5 2 2"></path><path d="m10.5 7.5 2 2"></path><path d="m13.5 4.5 2 2"></path><path d="m4.5 13.5 2 2"></path></svg></div>
+          <div style="font-size:16px; font-weight:700; letter-spacing:-0.3px; margin-bottom:7px; color:#2a1d12;">Arquitectos</div>
+          <div style="color:#897b6d; font-size:13px; line-height:1.55;">Análisis de planos y cómputos en segundos.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRICING ============ -->
+  <section id="precios" data-sec="" style="padding:96px 0; background:#f6f1ec;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="text-align:center; max-width:640px; margin:0 auto 46px;">
+        <div style="font-size:12px; font-weight:700; color:var(--acc,#BE5103); text-transform:uppercase; letter-spacing:1.4px; margin-bottom:14px;">Planes</div>
+        <h2 style="font-size:clamp(30px, 4.2vw, 48px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; margin-bottom:16px; color:#2a1d12;">Un solo plan. <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic; color:var(--acc,#BE5103);">Todo incluido.</span></h2>
+        <p style="color:#897b6d; font-size:16px; line-height:1.6;">Probá 7 días gratis. Sin permanencia, sin sorpresas. Cancelás cuando quieras desde tu panel.</p>
+      </div>
+      <div data-reveal="" data-delay="80" style="max-width:430px; margin:0 auto;">
+        <div style="position:relative; background:#fff; border:1.5px solid var(--acc,#BE5103); border-radius:20px; padding:34px 30px; box-shadow:0 30px 70px -28px rgba(190,81,3,0.5);">
+          <div style="position:absolute; top:-13px; left:50%; transform:translateX(-50%); background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:11px; font-weight:700; padding:5px 15px; border-radius:999px; letter-spacing:.4px; box-shadow:0 6px 16px -4px rgba(190,81,3,0.6);">Más popular</div>
+          <div style="font-size:15px; font-weight:700; color:var(--acc2,#8f3d02); margin-bottom:10px;">Pro</div>
+          <div style="display:flex; align-items:baseline; gap:6px;"><span style="font-size:46px; font-weight:900; letter-spacing:-2.2px; color:#2a1d12;">$69.900</span><span style="color:#b3a799; font-size:14px; font-weight:500;">/ mes</span></div>
+          <div style="font-size:13px; color:#22a06b; font-weight:600; margin-top:6px;">Primeros 7 días gratis · sin tarjeta</div>
+          <div style="height:1px; background:#f0eae2; margin:22px 0;"></div>
+          <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; margin-bottom:26px;">
+            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Acceso a todos los módulos y secciones</li>
+            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Chat experto + análisis de planos con IA</li>
+            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Créditos, presupuestos y control de obra</li>
+            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Precios de materiales en vivo + pronósticos</li>
+            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Reportes en PDF y Excel · soporte en español</li>
           </ul>
-          <a href="register.html" class="btn btn-primary price-cta">Empezar 7 días gratis</a>
+          <a href="register.html" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:50px; border-radius:13px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:15px; font-weight:600; text-decoration:none; box-shadow:0 12px 28px -8px rgba(190,81,3,0.6); transition:transform .2s var(--ease,cubic-bezier(.16,1,.3,1)), box-shadow .2s;" style-hover="transform:translateY(-2px); box-shadow:0 18px 40px -10px rgba(190,81,3,0.8);">Empezar 7 días gratis</a>
+        </div>
+        <div style="display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin-top:20px;">
+          <span style="font-size:12.5px; color:#897b6d; display:inline-flex; align-items:center; gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Sin permanencia</span>
+          <span style="font-size:12.5px; color:#897b6d; display:inline-flex; align-items:center; gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Sin tarjeta para empezar</span>
+          <span style="font-size:12.5px; color:#897b6d; display:inline-flex; align-items:center; gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Soporte en español</span>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ===== CTA BAND ===== -->
-    <section class="section container">
-      <div class="cta-band reveal">
-        <h2>Tu próximo proyecto, con una ventaja injusta</h2>
-        <p>Sumate a las inmobiliarias y desarrolladores que ya toman mejores decisiones con RE Expert.</p>
-        <a href="register.html" class="btn btn-primary btn-lg">
-          Crear mi cuenta gratis
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
+  <!-- ============ CTA BAND ============ -->
+  <section data-sec="" style="padding:30px 0 100px; background:#fff;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div data-reveal="" data-delay="0" style="position:relative; overflow:hidden; text-align:center; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); border-radius:26px; padding:68px 28px; box-shadow:0 36px 80px -32px rgba(190,81,3,0.65);">
+        <div aria-hidden="true" style="position:absolute; top:-40%; right:-10%; width:480px; height:480px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.16), transparent 65%); pointer-events:none;"></div>
+        <div style="position:relative;">
+          <h2 style="font-size:clamp(30px, 4.4vw, 50px); font-weight:800; letter-spacing:-1.6px; line-height:1.08; margin-bottom:16px; color:#fff;">Tu próximo proyecto, con una <span style="font-family:'Spectral',serif; font-weight:300; font-style:italic;">ventaja injusta.</span></h2>
+          <p style="color:rgba(255,255,255,0.88); max-width:520px; margin:0 auto 30px; font-size:16.5px; line-height:1.6;">Sumate a las inmobiliarias y desarrolladores que ya toman mejores decisiones con RE Expert.</p>
+          <a href="register.html" style="display:inline-flex; align-items:center; gap:9px; height:56px; padding:0 32px; border-radius:14px; background:#fff; color:var(--acc2,#8f3d02); font-size:15.5px; font-weight:700; text-decoration:none; box-shadow:0 14px 34px -10px rgba(0,0,0,0.3); transition:transform .2s var(--ease,cubic-bezier(.16,1,.3,1)), box-shadow .2s;" style-hover="transform:translateY(-2px); box-shadow:0 22px 48px -12px rgba(0,0,0,0.4);">Crear mi cuenta gratis<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
 
-  <footer>
-    <div class="container footer-grid">
-      <div class="footer-copy">© <span id="year">2026</span> RE Expert · Real Estate AI · Hecho en Argentina</div>
-      <nav class="footer-links" aria-label="Pie">
-        <a href="#features">Funciones</a>
-        <a href="#live">En vivo</a>
-        <a href="pricing.html">Precios</a>
-        <a href="login.html">Ingresar</a>
-        <a href="register.html">Crear cuenta</a>
-      </nav>
+  <!-- ============ FOOTER ============ -->
+  <footer style="border-top:1px solid #f0eae2; padding:42px 0 38px; background:#fdfbf9;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 30px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap;">
+        <a href="index.html" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;">
+          <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:#fff;">RE</div>
+          <span style="font-weight:800; font-size:15px; color:#2a1d12;">RE Expert</span>
+        </a>
+        <nav style="display:flex; gap:22px; flex-wrap:wrap;">
+          <a href="#features" style="color:#897b6d; font-size:14px; text-decoration:none; transition:color .15s;" style-hover="color:#2a1d12;">Funciones</a>
+          <a href="#live" style="color:#897b6d; font-size:14px; text-decoration:none; transition:color .15s;" style-hover="color:#2a1d12;">En vivo</a>
+          <a href="#precios" style="color:#897b6d; font-size:14px; text-decoration:none; transition:color .15s;" style-hover="color:#2a1d12;">Precios</a>
+          <a href="login.html" style="color:#897b6d; font-size:14px; text-decoration:none; transition:color .15s;" style-hover="color:#2a1d12;">Ingresar</a>
+          <a href="register.html" style="color:#897b6d; font-size:14px; text-decoration:none; transition:color .15s;" style-hover="color:#2a1d12;">Crear cuenta</a>
+        </nav>
+      </div>
+      <div style="height:1px; background:#f0eae2; margin:28px 0 20px;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="color:#b3a799; font-size:13px;">© 2026 RE Expert · Real Estate AI · Hecho en Argentina 🇦🇷</div>
+        <div style="color:#b3a799; font-size:12px; max-width:440px;">RE Expert puede cometer errores. Verificá la información importante.</div>
+      </div>
     </div>
   </footer>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
+</div>
 
-    // Nav con fondo al scrollear
-    const header = document.getElementById('siteHeader');
-    const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    // Reveal al entrar en viewport
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
-  </script>
+<script>
+/* Landing RE Expert — el contenido es 100% estático y visible sin JS.
+   Esto solo mueve la barra de progreso de scroll (cosmético, no oculta nada). */
+(function () {
+  var re = document.getElementById('re');
+  if (!re) return;
+  var prog = re.querySelector('[data-progress]');
+  if (!prog) return;
+  var onScroll = function () {
+    var h = document.documentElement;
+    var p = h.scrollTop / ((h.scrollHeight - h.clientHeight) || 1);
+    prog.style.transform = 'scaleX(' + Math.min(1, Math.max(0, p)) + ')';
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
 </body>
 </html>
