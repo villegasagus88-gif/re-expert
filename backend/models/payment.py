@@ -23,6 +23,14 @@ class Payment(Base):
         nullable=False,
         index=True,
     )
+    # Proyecto al que pertenece el pago (multi-proyecto). Nullable por compat con
+    # pagos viejos; la migración 0021 hace backfill al proyecto del usuario.
+    project_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     concepto: Mapped[str] = mapped_column(Text, nullable=False)
     proveedor: Mapped[str | None] = mapped_column(String(255), nullable=True)
     monto: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

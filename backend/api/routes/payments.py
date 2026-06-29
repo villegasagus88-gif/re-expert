@@ -18,6 +18,7 @@ from core.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.base import get_db
 from models.payment import Payment
+from models.project import Project
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,21 +53,23 @@ def _build_summary(rows: list[Payment]) -> PaymentsSummary:
 )
 async def list_payments(
     estado: str | None = Query(None, pattern="^(pendiente|pagado|cancelado)$"),
+    project_id: UUID | None = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    q = select(Payment).where(Payment.user_id == user.id).order_by(Payment.fecha.desc())
+    # base = pagos del usuario, opcionalmente acotados a un proyecto.
+    base = select(Payment).where(Payment.user_id == user.id)
+    if project_id is not None:
+        base = base.where(Payment.project_id == project_id)
+    q = base.order_by(Payment.fecha.desc())
     if estado:
         q = q.where(Payment.estado == estado)
     result = await db.execute(q)
     rows = list(result.scalars().all())
 
-    # Summary always over all payments (not filtered)
+    # El summary va sobre todos los pagos (del proyecto), sin filtrar por estado.
     if estado:
-        all_result = await db.execute(
-            select(Payment).where(Payment.user_id == user.id)
-        )
-        all_rows = list(all_result.scalars().all())
+        all_rows = list((await db.execute(base)).scalars().all())
         summary = _build_summary(all_rows)
     else:
         summary = _build_summary(rows)
@@ -90,8 +93,19 @@ async def create_payment(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    # Resolver/validar el proyecto del pago (multi-proyecto). Si viene project_id,
+    # validamos que sea del usuario; si no, lo asignamos al primer proyecto del
+    # usuario (compat con 1 proyecto). Un id ajeno/inexistente queda en None.
+    pq = select(Project).where(Project.user_id == user.id)
+    if body.project_id is not None:
+        pq = pq.where(Project.id == body.project_id)
+    else:
+        pq = pq.order_by(Project.created_at.asc())
+    proj = (await db.execute(pq)).scalars().first()
+
     payment = Payment(
         user_id=user.id,
+        project_id=proj.id if proj else None,
         concepto=body.concepto,
         proveedor=body.proveedor,
         monto=body.monto,

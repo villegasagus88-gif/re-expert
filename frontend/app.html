@@ -717,9 +717,12 @@
       <!-- PROYECTO VIEW -->
       <div class="view" id="viewProyecto">
         <div class="section-view">
-          <div class="section-header">
-            <h2>Panel de Proyecto</h2>
-            <p>Vista ejecutiva del estado, costos, cronograma e indicadores de control.</p>
+          <div class="section-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <h2>Panel de Proyecto</h2>
+              <p>Vista ejecutiva del estado, costos, cronograma e indicadores de control.</p>
+            </div>
+            <select id="projSelect" aria-label="Seleccionar proyecto" style="display:none;background:var(--bg-card);color:var(--text-0);border:1px solid var(--border-0);border-radius:9px;padding:8px 12px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;max-width:260px;flex-shrink:0"></select>
           </div>
 
           <div class="section-tabs">
@@ -2317,7 +2320,7 @@ async function loadPagos(force=false){
   const _skRow='<tr>'+['','','','','','',''].map(()=>'<td><div class="skeleton" style="height:10px;border-radius:3px"></div></td>').join('')+'</tr>';
   if(w)w.innerHTML='<table class="data-table"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Concepto</th><th>Categoria</th><th>Monto</th><th>Estado</th><th></th></tr></thead><tbody>'+_skRow+_skRow+_skRow+_skRow+'</tbody></table>';
   try{
-    const r=await window.REAuthService.authFetch(apiBase()+'/api/payments');
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/payments'+(state.activeProject?('?project_id='+encodeURIComponent(state.activeProject)):''));
     if(r.status===401){window.REAuthService.logout();return}
     if(!r.ok)throw new Error('Error cargando pagos ('+r.status+')');
     const data=await r.json();
@@ -2385,6 +2388,7 @@ async function savePayment(){
     proveedor:$('#payProveedor').value.trim()||null,
     categoria:$('#payCategoria').value.trim()||null,
     notas:$('#payNotas').value.trim()||null,
+    project_id:state.activeProject||null,
   };
   try{
     const isEdit=!!pagosState.editingId;
@@ -2530,8 +2534,11 @@ async function _submitProjInit(ev){
       errEl.textContent=typeof d.detail==='string'?d.detail:'Error creando proyecto ('+r.status+')';
       errEl.style.display='';return;
     }
-    // Reload del dashboard con los datos recién creados
-    proyectoState.loaded=false;
+    // Seleccionar el proyecto recién creado y recargar lista + dashboard.
+    const created=await r.json().catch(()=>null);
+    state.activeProject=(created&&created.project&&created.project.id)||null;
+    state.projectsLoaded=false;
+    proyectoState.loaded=false;pagosState.loaded=false;
     await loadProyecto(true);
   }catch(e){
     errEl.textContent='No pudimos crear el proyecto. Reintentá en un momento.';
@@ -2861,8 +2868,47 @@ function renderProyectoCronograma(data){
     <div style="margin-top:8px"><button class="btn-primary" id="aiScheduleAnalysis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Análisis IA de cronograma</button></div>`;
 }
 
+// ── Multi-proyecto: lista de proyectos del usuario + selector del Panel ──
+async function loadProjectsList(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/project');
+    state.projectsLoaded=true;
+    if(!r.ok){state.projects=[];return;}
+    const list=await r.json();
+    state.projects=Array.isArray(list)?list:[];
+    // Mantener el activo si sigue existiendo; sino, el primero (o ninguno).
+    if(!state.activeProject||!state.projects.some(p=>p.id===state.activeProject)){
+      state.activeProject=state.projects.length?state.projects[0].id:null;
+    }
+    renderProjectSelector();
+  }catch(e){state.projects=[];state.projectsLoaded=true;}
+}
+function renderProjectSelector(){
+  const sel=document.getElementById('projSelect');if(!sel)return;
+  const projs=state.projects||[];
+  // El selector aparece sólo si hay ≥1 proyecto (con 0, el wizard ocupa la vista).
+  sel.style.display=projs.length?'':'none';
+  if(!projs.length){sel.innerHTML='';return;}
+  sel.innerHTML=projs.map(p=>'<option value="'+esc(p.id)+'"'+(p.id===state.activeProject?' selected':'')+'>'+esc(p.nombre||'Proyecto')+'</option>').join('')+'<option value="__new__">+ Nuevo proyecto</option>';
+}
+// Cambio de proyecto en el dropdown (delegación a nivel document, se liga 1 vez).
+document.addEventListener('change',function(e){
+  const sel=e.target&&e.target.closest&&e.target.closest('#projSelect');if(!sel)return;
+  if(sel.value==='__new__'){
+    renderProjectSelector(); // re-seleccionar el activo en el <select>
+    proyectoState.loaded=false;proyectoState.data=null;
+    ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=proyectoEmptyHTML();});
+    return;
+  }
+  if(sel.value===state.activeProject)return;
+  state.activeProject=sel.value;
+  proyectoState.loaded=false;pagosState.loaded=false;
+  loadProyecto(true);
+});
+
 async function loadProyecto(force=false){
   if(proyectoState.loading)return;
+  if(!state.projectsLoaded)await loadProjectsList();
   if(proyectoState.loaded&&!force){
     renderProyectoResumen(proyectoState.data);renderProyectoCostos(proyectoState.data);renderProyectoCronograma(proyectoState.data);return;
   }
@@ -2871,9 +2917,17 @@ async function loadProyecto(force=false){
   const _projSkeleton='<div class="sk-kpi-grid">'+_skKpi+_skKpi+_skKpi+_skKpi+'</div>';
   ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=_projSkeleton;});
   try{
-    const r=await window.REAuthService.authFetch(apiBase()+'/api/project/dashboard');
+    if(!state.activeProject){
+      // Sin proyectos → empty state / wizard de creación (igual que antes).
+      proyectoState.data=null;proyectoState.loaded=true;
+      ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=proyectoEmptyHTML();});
+      return;
+    }
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/project/dashboard?project_id='+encodeURIComponent(state.activeProject));
     if(r.status===401){window.REAuthService.logout();return;}
     if(r.status===404){
+      // El proyecto activo ya no existe → recargar lista y caer al wizard si no hay.
+      state.activeProject=null;state.projectsLoaded=false;
       proyectoState.data=null;proyectoState.loaded=true;
       ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML=proyectoEmptyHTML();});
       return;

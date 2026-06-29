@@ -19,12 +19,13 @@ class Project(Base):
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, server_default=func.gen_random_uuid()
     )
+    # NO unique: un usuario puede tener N proyectos (multi-proyecto en el Panel).
+    # La selección de "qué proyecto" la maneja el frontend (project_id en las rutas).
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        unique=True,
     )
     nombre: Mapped[str] = mapped_column(String(255), nullable=False, server_default="Mi Proyecto")
     estado: Mapped[str] = mapped_column(String(20), nullable=False, server_default="amarillo")

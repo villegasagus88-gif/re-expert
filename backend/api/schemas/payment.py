@@ -18,6 +18,9 @@ class CreatePaymentRequest(BaseModel):
     estado: str = Field(default="pendiente", pattern="^(pendiente|pagado|cancelado)$")
     categoria: SanitizedOptStr = Field(default=None, max_length=100)
     notas: SanitizedOptStr = Field(default=None, max_length=2000)
+    # Proyecto al que pertenece el pago (multi-proyecto). Si no viene, la ruta lo
+    # asigna al proyecto activo/primero del usuario (compat con 1 proyecto).
+    project_id: UUID | None = None
 
 
 class UpdatePaymentRequest(BaseModel):
@@ -34,6 +37,7 @@ class UpdatePaymentRequest(BaseModel):
 
 class PaymentOut(BaseModel):
     id: UUID
+    project_id: UUID | None = None
     concepto: str
     proveedor: str | None
     monto: Decimal

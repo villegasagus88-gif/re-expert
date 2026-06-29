@@ -69,12 +69,19 @@ def _compute_indicators(
     )
 
 
-async def _get_user_project(db: AsyncSession, user_id: UUID) -> Project | None:
-    # Sin selectinload de milestones a propósito: si la tabla project_milestones
-    # tuviera un problema de esquema, igual queremos poder cargar el proyecto.
-    # Los hitos se cargan aparte, de forma tolerante (ver _load_milestones).
-    result = await db.execute(select(Project).where(Project.user_id == user_id))
-    return result.scalar_one_or_none()
+async def _get_user_project(
+    db: AsyncSession, user_id: UUID, project_id: UUID | None = None
+) -> Project | None:
+    # Multi-proyecto: si viene project_id, traemos ESE validando ownership
+    # (user_id); si no, el primero del usuario (compat con el flujo de 1 proyecto).
+    # Sin selectinload de milestones a propósito (ver _load_milestones).
+    q = select(Project).where(Project.user_id == user_id)
+    if project_id is not None:
+        q = q.where(Project.id == project_id)
+    else:
+        q = q.order_by(Project.created_at.asc())
+    result = await db.execute(q)
+    return result.scalars().first()
 
 
 async def _load_milestones(db: AsyncSession, project_id: UUID) -> list[ProjectMilestone]:
@@ -97,16 +104,22 @@ async def _load_milestones(db: AsyncSession, project_id: UUID) -> list[ProjectMi
         return []
 
 
-async def _aggregate_payments(db: AsyncSession, user_id: UUID) -> dict | None:
-    """Suma los pagos del usuario para derivar el gasto real (AC) del proyecto.
+async def _aggregate_payments(
+    db: AsyncSession, user_id: UUID, project_id: UUID | None = None
+) -> dict | None:
+    """Suma los pagos para derivar el gasto real (AC) del proyecto.
 
-    Como hay un proyecto por usuario, los pagos del usuario son los del proyecto.
-    El AC sale de los pagos en estado 'pagado'; lo 'pendiente' es el compromiso a
-    futuro; el desglose por categoría sirve para los costos por rubro. Tolerante:
-    si falla, devuelve None y el dashboard cae al costo_real cargado a mano.
+    Multi-proyecto: si se pasa project_id, suma SOLO los pagos de ese proyecto
+    (siempre filtrando además por user_id). El AC sale de los pagos en estado
+    'pagado'; lo 'pendiente' es el compromiso a futuro; el desglose por categoría
+    sirve para los costos por rubro. Tolerante: si falla, devuelve None y el
+    dashboard cae al costo_real cargado a mano.
     """
     try:
-        result = await db.execute(select(Payment).where(Payment.user_id == user_id))
+        q = select(Payment).where(Payment.user_id == user_id)
+        if project_id is not None:
+            q = q.where(Payment.project_id == project_id)
+        result = await db.execute(q)
         rows = list(result.scalars().all())
     except Exception:  # noqa: BLE001 — un problema con pagos no debe romper el panel
         logger.exception("No se pudieron agregar pagos del usuario %s", user_id)
@@ -132,7 +145,7 @@ async def _build_dashboard(db: AsyncSession, project: Project) -> ProjectDashboa
     """Arma el dashboard: deriva el gasto real (AC) de los pagos, calcula los
     indicadores EVM con ese AC, y carga los hitos. Todo tolerante: ningún
     sub-fallo (pagos o hitos) debe tumbar el panel. Lo usan get/create/update."""
-    pay = await _aggregate_payments(db, project.user_id)
+    pay = await _aggregate_payments(db, project.user_id, project_id=project.id)
     if pay and pay["tiene_pagos"]:
         ac: Decimal | None = pay["pagado"]
         comprometido = pay["pendiente"]
@@ -165,6 +178,24 @@ async def _build_dashboard(db: AsyncSession, project: Project) -> ProjectDashboa
 
 
 @router.get(
+    "",
+    response_model=list[ProjectOut],
+    summary="Listar los proyectos del usuario (para el selector del Panel)",
+    responses={401: {"description": "Token inválido"}},
+)
+async def list_projects(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Project)
+        .where(Project.user_id == user.id)
+        .order_by(Project.created_at.asc())
+    )
+    return [ProjectOut.model_validate(p) for p in result.scalars().all()]
+
+
+@router.get(
     "/dashboard",
     response_model=ProjectDashboard,
     summary="Dashboard del proyecto con indicadores calculados",
@@ -174,10 +205,12 @@ async def _build_dashboard(db: AsyncSession, project: Project) -> ProjectDashboa
     },
 )
 async def get_dashboard(
+    project_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    project = await _get_user_project(db, user.id)
+    # project_id opcional: si no viene, usa el primer proyecto del usuario.
+    project = await _get_user_project(db, user.id, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
     return await _build_dashboard(db, project)
@@ -187,10 +220,9 @@ async def get_dashboard(
     "",
     response_model=ProjectDashboard,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear proyecto (uno por usuario)",
+    summary="Crear proyecto (multi-proyecto: el usuario puede tener varios)",
     responses={
         401: {"description": "Token inválido"},
-        409: {"description": "Ya existe un proyecto para este usuario"},
     },
 )
 async def create_project(
@@ -198,10 +230,6 @@ async def create_project(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    existing = await db.execute(select(Project).where(Project.user_id == user.id))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=409, detail="Ya existe un proyecto para este usuario")
-
     project = Project(
         user_id=user.id,
         **body.model_dump(exclude_none=False),
@@ -227,10 +255,11 @@ async def create_project(
 )
 async def update_project(
     body: UpdateProjectRequest,
+    project_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    project = await _get_user_project(db, user.id)
+    project = await _get_user_project(db, user.id, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
 
@@ -258,15 +287,15 @@ async def update_project(
     summary="Listar hitos del proyecto",
 )
 async def list_milestones(
+    project_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     try:
-        result = await db.execute(
-            select(ProjectMilestone)
-            .where(ProjectMilestone.user_id == user.id)
-            .order_by(ProjectMilestone.orden.asc())
-        )
+        q = select(ProjectMilestone).where(ProjectMilestone.user_id == user.id)
+        if project_id is not None:
+            q = q.where(ProjectMilestone.project_id == project_id)
+        result = await db.execute(q.order_by(ProjectMilestone.orden.asc()))
         rows = result.scalars().all()
     except Exception:  # noqa: BLE001 — un problema con hitos no debe romper la vista
         logger.exception("No se pudieron listar hitos del usuario %s", user.id)
@@ -283,11 +312,11 @@ async def list_milestones(
 )
 async def create_milestone(
     body: CreateMilestoneRequest,
+    project_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    proj_result = await db.execute(select(Project).where(Project.user_id == user.id))
-    project = proj_result.scalar_one_or_none()
+    project = await _get_user_project(db, user.id, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Sin proyecto configurado")
 
