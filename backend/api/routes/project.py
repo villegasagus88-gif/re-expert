@@ -1,6 +1,8 @@
 """
 Project dashboard and milestone CRUD endpoints.
-One project per user (enforced via unique constraint on user_id).
+Multi-proyecto: un usuario puede tener N proyectos. Cuando no se pasa
+project_id, las rutas operan sobre el primer proyecto del usuario (por
+created_at), preservando el flujo histórico de 1 proyecto.
 """
 import logging
 from datetime import UTC, datetime
