@@ -268,6 +268,13 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
    canvas (z-index:0 en #main); las vistas de datos son opacas y lo tapan. */
 #viewChat{background:transparent}
 .skyline-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+/* Toggle global de animaciones (botón #animToggle en la topbar). Con OFF se
+   oculta el skyline y se anulan animaciones/transiciones decorativas. */
+[data-animations="off"] .skyline-bg{display:none!important}
+/* Solo anulamos animaciones por keyframes (decorativas). NO tocamos las
+   transiciones: alguna lógica depende de transitionend y matarlas rompería UX. */
+[data-animations="off"] *,[data-animations="off"] *::before,[data-animations="off"] *::after{animation:none!important}
+#animToggle.is-off{opacity:.5}
 #pageContainer{position:relative;z-index:1}
 .ws-active-bar{position:relative;z-index:1}
 

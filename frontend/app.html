@@ -227,6 +227,9 @@
         <button class="btn-icon" id="exportBtn" title="Exportar" style="display:none">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         </button>
+        <button class="btn-icon" id="animToggle" title="Animaciones" aria-pressed="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="animIcon"><path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z"/><circle cx="18.5" cy="17" r="1.3"/><circle cx="6.5" cy="16.5" r="1"/></svg>
+        </button>
         <button class="btn-icon" id="themeToggle">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="themeIcon"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
         </button>
@@ -5272,9 +5275,32 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   var stop=null;
   function curTheme(){return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';}
-  function boot(){try{if(stop)stop();stop=initSkyline('bgCanvas',{interaction:true,theme:curTheme(),isFocused:function(){var i=document.getElementById('messageInput');return !!i&&document.activeElement===i;}});}catch(e){/* el skyline es decorativo: nunca debe romper la app */}}
+  function animsOn(){var v=document.documentElement.getAttribute('data-animations');if(v==='off')return false;if(v==='on')return true;return !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
+  function boot(){try{if(stop){stop();stop=null;}if(!animsOn())return;stop=initSkyline('bgCanvas',{interaction:true,theme:curTheme(),isFocused:function(){var i=document.getElementById('messageInput');return !!i&&document.activeElement===i;}});}catch(e){/* el skyline es decorativo: nunca debe romper la app */}}
   if(document.readyState!=='loading')boot();else document.addEventListener('DOMContentLoaded',boot);
   document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(boot,40);});
+  document.addEventListener('re:anim',boot); // re-evaluar el skyline cuando cambia el toggle de animaciones
+})();
+</script>
+
+<!-- Toggle global de animaciones (topbar). Gatea el skyline + las animaciones CSS; persiste en localStorage; respeta prefers-reduced-motion por defecto. NO toca la lógica de la app. -->
+<script>
+(function(){
+  function reduced(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+  function current(){var v=localStorage.getItem('re_animations');return (v==='on'||v==='off')?v:(reduced()?'off':'on');}
+  function apply(on,persist){
+    document.documentElement.setAttribute('data-animations',on?'on':'off');
+    if(persist)try{localStorage.setItem('re_animations',on?'on':'off');}catch(e){}
+    var b=document.getElementById('animToggle');
+    if(b){b.setAttribute('aria-pressed',on?'true':'false');b.classList.toggle('is-off',!on);b.title=on?'Animaciones: activadas':'Animaciones: desactivadas';}
+    document.dispatchEvent(new Event('re:anim'));
+  }
+  function init(){
+    apply(current()==='on',false);
+    var b=document.getElementById('animToggle');
+    if(b)b.addEventListener('click',function(){apply(document.documentElement.getAttribute('data-animations')==='off',true);});
+  }
+  if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
 
