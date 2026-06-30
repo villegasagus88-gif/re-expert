@@ -1,28 +1,52 @@
 /* Auth pages (login + register) — premium dark theme */
+/* Reskin C1 — paleta cálida/naranja (#BE5103), light (default) + dark.
+   En tono con la app (app.css comparte estos colores). */
 :root {
-  --bg-0: #09090b;
-  --bg-1: #0f0f12;
-  --bg-card: #111114;
-  --bg-input: #18181b;
-  --bg-input-hover: #1e1e22;
-  --text-0: #fafafa;
-  --text-1: #d4d4d8;
-  --text-2: #a1a1aa;
-  --text-3: #52525b;
-  --border-0: #27272a;
-  --border-focus: #818cf8;
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-soft: rgba(99, 102, 241, 0.12);
-  --danger: #ef4444;
-  --danger-soft: rgba(239, 68, 68, 0.1);
-  --success: #22c55e;
-  --success-soft: rgba(34, 197, 94, 0.12);
+  --bg-0: #f6f1ec;
+  --bg-1: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-input-hover: #faf7f3;
+  --text-0: #2a1d12;
+  --text-1: #5c4d40;
+  --text-2: #897b6d;
+  --text-3: #b3a799;
+  --border-0: #ece4db;
+  --border-focus: #BE5103;
+  --accent: #BE5103;
+  --accent-hover: #8f3d02;
+  --accent-soft: rgba(190, 81, 3, 0.12);
+  --danger: #d92d20;
+  --danger-soft: rgba(217, 45, 32, 0.1);
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.12);
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
-  --shadow-card: 0 24px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-card: 0 20px 50px -12px rgba(42, 29, 18, 0.18), 0 0 0 1px rgba(42, 29, 18, 0.05);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+[data-theme="dark"] {
+  --bg-0: #0c0a08;
+  --bg-1: #100d0a;
+  --bg-card: #141009;
+  --bg-input: #141009;
+  --bg-input-hover: #1a140d;
+  --text-0: #f6efe8;
+  --text-1: #d8ccc0;
+  --text-2: #9a8d80;
+  --text-3: #6b6157;
+  --border-0: rgba(255, 255, 255, 0.1);
+  --border-focus: #BE5103;
+  --accent: #BE5103;
+  --accent-hover: #d4611a;
+  --accent-soft: rgba(190, 81, 3, 0.18);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.12);
+  --shadow-card: 0 24px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -56,8 +80,8 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.15), transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.1), transparent 50%);
+    radial-gradient(ellipse at 20% 0%, rgba(190, 81, 3, 0.12), transparent 52%),
+    radial-gradient(ellipse at 80% 100%, rgba(190, 81, 3, 0.07), transparent 55%);
   pointer-events: none;
   z-index: 0;
 }
@@ -83,14 +107,14 @@ body::before {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), #a855f7);
+  background: linear-gradient(135deg, var(--accent), #8f3d02);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 13px;
   letter-spacing: 0.5px;
-  box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 8px 20px -4px rgba(190, 81, 3, 0.45);
 }
 
 .auth-brand-text {
@@ -226,7 +250,7 @@ body::before {
 }
 .pw-toggle:hover {
   color: var(--text-2);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-input-hover);
 }
 
 .forgot-link {
@@ -255,7 +279,7 @@ body::before {
   height: 44px;
   border: none;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  background: linear-gradient(135deg, var(--accent), #8f3d02);
   color: #fff;
   font-family: var(--font);
   font-size: 14px;
@@ -263,7 +287,7 @@ body::before {
   letter-spacing: 0.1px;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.15s ease;
-  box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 6px 18px -4px rgba(190, 81, 3, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -271,7 +295,7 @@ body::before {
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 10px 28px -4px rgba(99, 102, 241, 0.7);
+  box-shadow: 0 10px 28px -4px rgba(190, 81, 3, 0.6);
   transform: translateY(-1px);
 }
 
@@ -320,14 +344,14 @@ body::before {
 
 .alert-error {
   background: var(--danger-soft);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .alert-success {
   background: var(--success-soft);
-  border-color: rgba(34, 197, 94, 0.3);
-  color: #86efac;
+  border-color: var(--success);
+  color: var(--success);
 }
 
 .auth-toggle {

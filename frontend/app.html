@@ -33,13 +33,13 @@
     #app-auth-overlay .spinner {
       width: 40px; height: 40px; border-radius: 50%;
       border: 3px solid rgba(255,255,255,.15);
-      border-top-color: #6366f1;
+      border-top-color: #BE5103;
       animation: re-spin .8s linear infinite;
     }
     #app-auth-overlay .label { font-size: 13px; color: #a1a1aa; letter-spacing: .01em; }
     @keyframes re-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) {
-      #app-auth-overlay .spinner { animation: none; border-top-color: #6366f1; }
+      #app-auth-overlay .spinner { animation: none; border-top-color: #BE5103; }
     }
   </style>
   <link rel="stylesheet" href="app.css">
@@ -210,7 +210,7 @@
         <div style="display:flex;align-items:center;gap:6px">
           <a href="account.html" id="planBadge" class="plan-badge plan-badge-free" title="Mi cuenta">Cuenta</a>
           <span id="dailyMsgsCounter" style="display:none;font-size:10px;color:var(--text-sidebar-muted)"></span>
-          <a href="pricing.html" id="upgradeSidebarLink" style="margin-left:auto;font-size:10px;color:#818cf8;text-decoration:none;font-weight:600;display:none">↑ Pro</a>
+          <a href="pricing.html" id="upgradeSidebarLink" style="margin-left:auto;font-size:10px;color:#BE5103;text-decoration:none;font-weight:600;display:none">↑ Pro</a>
         </div>
       </div>
     </div>
@@ -855,7 +855,7 @@
           <button class="btn-icon" id="upgradeModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body" style="padding-top:4px;padding-bottom:28px">
-          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(168,85,247,.15));border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">⭐</div>
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,rgba(190,81,3,.2),rgba(190,81,3,.12));border:1px solid rgba(190,81,3,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">⭐</div>
           <h3 style="font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px">Función exclusiva Pro</h3>
           <p id="upgradeFeatureDesc" style="font-size:13px;color:var(--text-2);margin-bottom:6px"></p>
           <p style="font-size:13px;color:var(--text-2);line-height:1.55">Actualizá tu plan para acceder a esta y muchas más funcionalidades avanzadas.</p>
@@ -971,7 +971,7 @@
 
         <!-- Slide 1: Bienvenida -->
         <div class="ob-slide active" id="obSlide0">
-          <div class="ob-icon ob-icon-brand" style="font-size:22px;font-weight:800;color:#818cf8;letter-spacing:-.5px">RE</div>
+          <div class="ob-icon ob-icon-brand" style="font-size:22px;font-weight:800;color:#BE5103;letter-spacing:-.5px">RE</div>
           <div class="ob-title">¡Bienvenido/a, <span id="obUserName">RE Expert</span>!</div>
           <div class="ob-desc">Tu asistente de IA especializado en real estate argentino. Análisis financiero, normativas, gestión de obra y mucho más, todo en un solo lugar.</div>
           <div class="ob-dots">
