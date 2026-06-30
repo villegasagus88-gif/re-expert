@@ -727,6 +727,67 @@ select.pay-form-input{cursor:pointer}
 .course-link{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--accent-brand);margin-top:8px;text-decoration:none;transition:opacity .15s}
 .course-link:hover{opacity:.7}
 
+/* ── Premium marketplace card (clickeable → abre detalle) ── */
+.acad-card{position:relative;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:all .2s var(--ease-out);display:flex;flex-direction:column;overflow:hidden}
+.acad-card:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.acad-card:active{transform:scale(.995)}
+.acad-ribbon{position:absolute;top:0;right:0;background:linear-gradient(135deg,#BE5103,#8f3d02);color:#fff;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-bottom-left-radius:10px;max-width:64%;text-align:right;line-height:1.25}
+.acad-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:11px}
+.acad-logo{width:42px;height:42px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;letter-spacing:-.3px;flex-shrink:0;color:var(--text-0);text-align:center;line-height:1.05;padding:3px}
+.acad-logo.dev{background:rgba(190,81,3,.12)}
+.acad-logo.build{background:rgba(234,179,8,.12)}
+.acad-logo.finance{background:rgba(34,197,94,.12)}
+.acad-logo.legal{background:rgba(239,68,68,.12)}
+.acad-logo.management{background:rgba(14,165,233,.12)}
+.acad-logo.design{background:rgba(168,85,247,.12)}
+.acad-card-tags{display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-top:1px;flex-shrink:0}
+.acad-modality{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3)}
+.acad-card-title{font-size:14px;font-weight:700;color:var(--text-0);letter-spacing:-.2px;line-height:1.3;margin-bottom:3px}
+.acad-card-provider{font-size:10.5px;color:var(--text-2);font-weight:600;margin-bottom:8px}
+.acad-card-desc{font-size:11.5px;color:var(--text-2);line-height:1.5;margin-bottom:auto;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.acad-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border-1)}
+.acad-card-info{font-size:10px;color:var(--text-3)}
+.acad-card-price{font-size:13px;font-weight:800;color:var(--text-0);white-space:nowrap}
+.acad-card-price.free{color:#22c55e}
+
+/* ── Detalle del curso (modal premium) ── */
+.modal.acad-detail{width:640px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;position:relative}
+.acad-detail .acad-modal-close{position:absolute;top:14px;right:14px;z-index:2;background:var(--bg-2)}
+.acad-detail .modal-body{padding:26px 28px 24px;overflow-y:auto}
+.acad-d-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;padding-right:34px}
+.acad-logo.lg{width:54px;height:54px;font-size:14px;border-radius:14px}
+.acad-d-headtext{min-width:0}
+.acad-d-provider{font-size:11px;font-weight:700;color:var(--accent-brand);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.acad-d-title{font-size:19px;font-weight:800;color:var(--text-0);letter-spacing:-.4px;line-height:1.25}
+.acad-d-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.acad-badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 9px;border-radius:100px;background:var(--accent-brand-light);color:var(--accent-brand);border:1px solid rgba(190,81,3,.2)}
+.acad-d-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-1);border:1px solid var(--border-1);border-radius:var(--radius-md);overflow:hidden;margin-bottom:18px}
+.acad-d-meta>div{background:var(--bg-card);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.acad-d-meta span{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);font-weight:600}
+.acad-d-meta strong{font-size:12.5px;color:var(--text-0);font-weight:700}
+.acad-d-desc{font-size:13px;color:var(--text-1);line-height:1.6;margin-bottom:18px}
+.acad-d-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.acad-d-box{background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-md);padding:12px 14px}
+.acad-d-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:6px}
+.acad-d-box p{font-size:12px;color:var(--text-1);line-height:1.55}
+.acad-d-section{margin-bottom:18px}
+.acad-syllabus{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin:0;padding:0}
+.acad-syllabus li{font-size:12px;color:var(--text-1);line-height:1.45;padding-left:16px;position:relative}
+.acad-syllabus li::before{content:"";position:absolute;left:2px;top:6px;width:6px;height:6px;border-radius:50%;background:var(--accent-brand)}
+.acad-d-rep{font-size:12px;color:var(--text-1);line-height:1.55;font-style:italic}
+.acad-d-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;background:var(--bg-2);border:1px solid var(--border-0);border-radius:var(--radius-lg);margin-bottom:12px}
+.acad-d-price{font-size:21px;font-weight:800;color:var(--text-0);letter-spacing:-.5px}
+.acad-d-price.free{color:#22c55e}
+.acad-d-cta .btn-primary{padding:11px 22px;font-size:13.5px}
+.acad-inscribir-msg{font-size:12px;line-height:1.5;margin-bottom:10px;display:none}
+.acad-inscribir-msg.ok{display:block;color:#16a34a;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius-md);padding:10px 12px}
+.acad-d-disclaimer{font-size:10.5px;color:var(--text-3);line-height:1.5}
+@media(max-width:680px){
+  .acad-d-meta{grid-template-columns:repeat(2,1fr)}
+  .acad-d-cols,.acad-syllabus{grid-template-columns:1fr}
+  .acad-d-cta{flex-direction:column;align-items:stretch;text-align:center}
+}
+
 .path-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:20px;margin-bottom:12px;transition:all .15s}
 .path-card:hover{box-shadow:var(--shadow-md)}
 .path-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}

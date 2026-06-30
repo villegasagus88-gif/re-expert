@@ -9,7 +9,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # ── Cursos ──────────────────────────────────────────────────────────
 
 class Course(BaseModel):
@@ -20,11 +19,25 @@ class Course(BaseModel):
     icon_color: str = "dev"
     description: str
     provider: str = ""
-    duration_hours: int = Field(ge=0)
-    duration_weeks: int = Field(ge=0)
-    price_ars: int = Field(ge=0)
+    duration_hours: int = Field(default=0, ge=0)
+    duration_weeks: int = Field(default=0, ge=0)
+    price_ars: int = Field(default=0, ge=0)
     price_label: str = ""
     is_free: bool = False
+    # Campos ricos del marketplace educativo premium (defaults → tolerante al JSON).
+    topic: str = ""
+    provider_short: str = ""
+    modality: str = "online"            # online | en_vivo | presencial | hibrida
+    certificate: bool = True
+    start_date: str = ""
+    seats: str = ""
+    syllabus: list[str] = Field(default_factory=list)
+    audience: str = ""
+    problem_solved: str = ""
+    career_outcome: str = ""
+    provider_reputation: str = ""
+    badges: list[str] = Field(default_factory=list)
+    enroll_url: str = ""
 
 
 class CourseCategory(BaseModel):
@@ -57,3 +70,32 @@ class PathsResponse(BaseModel):
     updated_at: str
     intro: str = ""
     paths: list[LearningPath]
+
+
+# ── Medición de demanda (interés en cursos) ────────────────────────
+
+class RecordInterestRequest(BaseModel):
+    course_id: str = Field(min_length=1, max_length=80)
+    course_title: str = Field(default="", max_length=255)
+    topic: str = Field(default="", max_length=40)
+    action: Literal["view", "info", "inscribir"] = "view"
+
+
+class TopicDemand(BaseModel):
+    topic: str
+    count: int
+
+
+class CourseDemand(BaseModel):
+    course_id: str
+    course_title: str
+    total: int
+    inscribir: int
+    info: int
+    view: int
+
+
+class DemandResponse(BaseModel):
+    total_events: int
+    by_topic: list[TopicDemand]
+    by_course: list[CourseDemand]

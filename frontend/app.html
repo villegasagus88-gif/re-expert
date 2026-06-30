@@ -412,7 +412,7 @@
         <div class="section-view">
           <div class="section-header">
             <h2>Academia</h2>
-            <p>Cursos, formación y rutas de aprendizaje para cada nivel — de principiante a experto.</p>
+            <p>El lugar donde un profesional o estudiante del real estate entra para formarse, actualizarse y encontrar <strong>cursos confiables del rubro</strong> — curados por RE Expert.</p>
           </div>
 
           <div class="section-tabs">
@@ -826,6 +826,14 @@
       <div class="modal modal-wide news-reader">
         <button class="btn-icon news-reader-close" id="newsReaderClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         <div class="modal-body" id="newsReaderBody"></div>
+      </div>
+    </div>
+
+    <!-- Academia: detalle de curso -->
+    <div class="modal-overlay" id="acadModal">
+      <div class="modal modal-wide acad-detail">
+        <button class="btn-icon acad-modal-close" id="acadModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <div class="modal-body" id="acadModalBody"></div>
       </div>
     </div>
 
@@ -2947,31 +2955,92 @@ async function loadProyecto(force=false){
 }
 
 // Academia: state + carga del backend
-const academiaState={courses:null,paths:null,loaded:false,loading:false};
+const academiaState={courses:null,paths:null,loaded:false,loading:false,index:{},current:null};
 
 const _ACAD_LEVEL_LABEL={beginner:'Principiante',intermediate:'Intermedio',advanced:'Avanzado'};
 
+const _ACAD_MODALITY={online:'Online',en_vivo:'En vivo',presencial:'Presencial',hibrida:'Híbrida'};
+
 function _academiaCourseCardHTML(c){
   const lvlLabel=_ACAD_LEVEL_LABEL[c.level]||c.level;
-  const priceClass=c.is_free?'course-price free':'course-price';
-  // Todos los datos van por esc() para defensa en profundidad — la
-  // data viene del backend que es nuestro, pero igual escapamos para
-  // que un día que se permita admin upload no genere XSS.
-  return `<div class="course-card" data-lvl="${esc(c.level)}">
-    <div class="course-top">
-      <div class="course-icon ${esc(c.icon_color||'dev')}">${esc(c.icon||'📚')}</div>
-      <span class="course-level ${esc(c.level)}">${esc(lvlLabel)}</span>
+  const badge=(c.badges||[])[0];
+  return `<article class="acad-card" data-course="${esc(c.id)}" data-lvl="${esc(c.level)}">
+    ${badge?`<div class="acad-ribbon">${esc(badge)}</div>`:''}
+    <div class="acad-card-head">
+      <div class="acad-logo ${esc(c.icon_color||'dev')}">${esc(c.provider_short||c.icon||'📚')}</div>
+      <div class="acad-card-tags"><span class="course-level ${esc(c.level)}">${esc(lvlLabel)}</span>${c.modality?`<span class="acad-modality">${esc(_ACAD_MODALITY[c.modality]||c.modality)}</span>`:''}</div>
     </div>
-    <div class="course-title">${esc(c.title)}</div>
-    <div class="course-desc">${esc(c.description)}</div>
-    <div class="course-provider">${esc(c.provider||'')}</div>
-    <div class="course-meta-row">
-      <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> ${c.duration_hours} hs</span>
-      <span class="course-meta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${c.duration_weeks} semanas</span>
-      <span class="${priceClass}">${esc(c.price_label||'')}</span>
+    <h3 class="acad-card-title">${esc(c.title)}</h3>
+    <div class="acad-card-provider">${esc(c.provider||'')}</div>
+    <p class="acad-card-desc">${esc(c.description||'')}</p>
+    <div class="acad-card-foot">
+      <span class="acad-card-info">${c.duration_hours?esc(c.duration_hours)+' hs':''}${c.certificate?' · 🎓 Cert.':''}</span>
+      <span class="acad-card-price ${c.is_free?'free':''}">${c.is_free?'Gratis':esc(c.price_label||'')}</span>
     </div>
-  </div>`;
+  </article>`;
 }
+
+function _acadRenderDetail(c){
+  const body=$('#acadModalBody');if(!body)return;
+  const lvl=_ACAD_LEVEL_LABEL[c.level]||c.level;
+  const meta=[['Nivel',lvl],['Modalidad',_ACAD_MODALITY[c.modality]||c.modality],
+    ['Duración',c.duration_hours?(c.duration_hours+' hs'+(c.duration_weeks?' · '+c.duration_weeks+' sem':'')):''],
+    ['Certificado',c.certificate?'Sí':'No'],['Inicio',c.start_date||''],['Cupos',c.seats||'']].filter(m=>m[1]);
+  body.innerHTML=`
+    <div class="acad-d-head">
+      <div class="acad-logo lg ${esc(c.icon_color||'dev')}">${esc(c.provider_short||c.icon||'📚')}</div>
+      <div class="acad-d-headtext"><div class="acad-d-provider">${esc(c.provider||'')}</div><h2 class="acad-d-title">${esc(c.title)}</h2></div>
+    </div>
+    ${(c.badges||[]).length?`<div class="acad-d-badges">${c.badges.map(b=>`<span class="acad-badge">${esc(b)}</span>`).join('')}</div>`:''}
+    <div class="acad-d-meta">${meta.map(m=>`<div><span>${esc(m[0])}</span><strong>${esc(m[1])}</strong></div>`).join('')}</div>
+    <p class="acad-d-desc">${esc(c.description||'')}</p>
+    <div class="acad-d-cols">
+      ${c.problem_solved?`<div class="acad-d-box"><div class="acad-d-h">Qué problema resuelve</div><p>${esc(c.problem_solved)}</p></div>`:''}
+      ${c.audience?`<div class="acad-d-box"><div class="acad-d-h">Para quién es</div><p>${esc(c.audience)}</p></div>`:''}
+      ${c.career_outcome?`<div class="acad-d-box"><div class="acad-d-h">Salida laboral / aplicación</div><p>${esc(c.career_outcome)}</p></div>`:''}
+    </div>
+    ${(c.syllabus||[]).length?`<div class="acad-d-section"><div class="acad-d-h">Temario</div><ul class="acad-syllabus">${c.syllabus.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>`:''}
+    ${c.provider_reputation?`<div class="acad-d-section"><div class="acad-d-h">Reputación del emisor</div><p class="acad-d-rep">${esc(c.provider_reputation)}</p></div>`:''}
+    <div class="acad-d-cta">
+      <div class="acad-d-price ${c.is_free?'free':''}">${c.is_free?'Gratis':esc(c.price_label||'')}</div>
+      <button class="btn-primary acad-inscribir" data-course="${esc(c.id)}">${c.is_free?'Acceder al curso':'Inscribirme'}</button>
+    </div>
+    <div id="acadInscribirMsg" class="acad-inscribir-msg"></div>
+    <div class="acad-d-disclaimer">El pago y la inscripción se coordinan a través de RE Expert: registramos tu interés y te contactamos para finalizar la inscripción con la institución.</div>`;
+  body.scrollTop=0;
+}
+
+function _acadRecordInterest(c,action){
+  try{
+    window.REAuthService.authFetch(apiBase()+'/api/academia/interest',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({course_id:c.id,course_title:c.title,topic:c.topic||'',action}),
+    }).catch(()=>{});
+  }catch(e){/* el tracking no debe romper nada */}
+}
+
+function _acadOpenCourse(id){
+  const c=academiaState.index&&academiaState.index[id];if(!c)return;
+  academiaState.current=c;
+  $('#acadModal')?.classList.add('active');
+  _acadRenderDetail(c);
+  _acadRecordInterest(c,'view');
+}
+
+function _acadInscribir(c){
+  _acadRecordInterest(c,'inscribir');
+  const msg=$('#acadInscribirMsg');
+  if(c.enroll_url){window.open(c.enroll_url,'_blank','noopener');if(msg){msg.className='acad-inscribir-msg ok';msg.textContent='Te llevamos a inscribirte. Registramos tu interés.';}}
+  else if(msg){msg.className='acad-inscribir-msg ok';msg.textContent='✓ ¡Listo! Registramos tu interés. Te contactamos para coordinar la inscripción y el pago.';}
+}
+
+// Delegación global: abrir curso, cerrar modal, inscribirse.
+document.addEventListener('click',e=>{
+  if(e.target.closest('.acad-inscribir')){if(academiaState.current)_acadInscribir(academiaState.current);return;}
+  const card=e.target.closest('.acad-card');if(card){_acadOpenCourse(card.dataset.course);return;}
+  const m=$('#acadModal');
+  if(m&&(e.target.closest('.acad-modal-close')||e.target===m))m.classList.remove('active');
+});
 
 function _academiaCategoryHTML(cat){
   return `<div class="section-block">
@@ -3008,13 +3077,16 @@ function _renderAcademiaCourses(data){
     cont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">Sin cursos disponibles</div></div>';
     return;
   }
+  // Índice plano id→curso para que el click en el card abra el detalle.
+  academiaState.index={};
+  data.categories.forEach(cat=>(cat.courses||[]).forEach(c=>{academiaState.index[c.id]=c;}));
   cont.innerHTML=data.categories.map(_academiaCategoryHTML).join('');
   // Reaplicar el filtro de nivel activo (si el user había seleccionado).
   const activeLevelBtn=document.querySelector('.level-btn.active');
   if(activeLevelBtn){
     const lvl=activeLevelBtn.dataset.level;
     if(lvl&&lvl!=='todos'){
-      cont.querySelectorAll('.course-card').forEach(card=>{
+      cont.querySelectorAll('.acad-card').forEach(card=>{
         card.style.display=(card.dataset.lvl===lvl)?'':'none';
       });
     }
@@ -3348,7 +3420,7 @@ function initAcademiaTabs(){
       $$('.level-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       const lvl=btn.dataset.level;
-      $$('.course-card').forEach(card=>{
+      $$('.acad-card').forEach(card=>{
         card.style.display=(lvl==='todos'||card.dataset.lvl===lvl)?'':'none';
       });
     });
