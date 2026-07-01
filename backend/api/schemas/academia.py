@@ -27,7 +27,7 @@ class Course(BaseModel):
     # Campos ricos del marketplace educativo premium (defaults → tolerante al JSON).
     topic: str = ""
     provider_short: str = ""
-    modality: str = "online"            # online | en_vivo | presencial | hibrida
+    modality: str = "online"            # online | presencial | hibrida
     certificate: bool = True
     start_date: str = ""
     seats: str = ""
@@ -38,6 +38,7 @@ class Course(BaseModel):
     provider_reputation: str = ""
     badges: list[str] = Field(default_factory=list)
     enroll_url: str = ""
+    image_url: str = ""  # foto temática del curso (loremflickr por keywords, estable por ?lock=)
 
 
 class CourseCategory(BaseModel):
@@ -63,6 +64,9 @@ class PathStep(BaseModel):
 class LearningPath(BaseModel):
     id: str
     title: str
+    # Catálogo al que pertenece la ruta (las rutas se agrupan por catálogo en la UI).
+    category: str = ""
+    category_title: str = ""
     steps: list[PathStep]
 
 

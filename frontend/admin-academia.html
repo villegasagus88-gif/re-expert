@@ -91,9 +91,13 @@
   const $ = s => document.querySelector(s);
 
   // Etiquetas legibles para los slugs de tema (coinciden con cursos.json).
+  // Los catálogos vigentes van primero; los slugs viejos quedan para eventos históricos.
   const TOPIC_LABELS = {
-    desarrollo:'Desarrollo inmobiliario', inversion:'Inversión', finanzas:'Finanzas',
-    fideicomisos:'Fideicomisos', normativa:'Normativa y legales', brokers:'Brokers / comercial',
+    desarrollo:'Desarrollo', construccion:'Construcción y arquitectura',
+    inmobiliario:'Inmobiliario', legal:'Legal', tecnologia:'Tecnología e IA',
+    // slugs históricos (catálogo anterior)
+    inversion:'Inversión', finanzas:'Finanzas', fideicomisos:'Fideicomisos',
+    normativa:'Normativa y legales', brokers:'Brokers / comercial',
     tasaciones:'Tasaciones', marketing:'Marketing inmobiliario', obra:'Obra y construcción',
     urbanismo:'Urbanismo', ia:'IA aplicada', gestion:'Gestión', sin_tema:'(sin tema)',
   };

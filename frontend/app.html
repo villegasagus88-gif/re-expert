@@ -2959,13 +2959,15 @@ const academiaState={courses:null,paths:null,loaded:false,loading:false,index:{}
 
 const _ACAD_LEVEL_LABEL={beginner:'Principiante',intermediate:'Intermedio',advanced:'Avanzado'};
 
-const _ACAD_MODALITY={online:'Online',en_vivo:'En vivo',presencial:'Presencial',hibrida:'Híbrida'};
+// Solo 3 modalidades oficiales; "en_vivo" (data vieja) se muestra como Online.
+const _ACAD_MODALITY={online:'Online',en_vivo:'Online',presencial:'Presencial',hibrida:'Híbrida'};
 
 function _academiaCourseCardHTML(c){
   const lvlLabel=_ACAD_LEVEL_LABEL[c.level]||c.level;
   const badge=(c.badges||[])[0];
   return `<article class="acad-card" data-course="${esc(c.id)}" data-lvl="${esc(c.level)}">
     ${badge?`<div class="acad-ribbon">${esc(badge)}</div>`:''}
+    ${c.image_url?`<div class="acad-card-img"><img src="${esc(c.image_url)}" alt="" loading="lazy" onerror="this.parentNode.style.display='none'"></div>`:''}
     <div class="acad-card-head">
       <div class="acad-logo ${esc(c.icon_color||'dev')}">${esc(c.provider_short||c.icon||'📚')}</div>
       <div class="acad-card-tags"><span class="course-level ${esc(c.level)}">${esc(lvlLabel)}</span>${c.modality?`<span class="acad-modality">${esc(_ACAD_MODALITY[c.modality]||c.modality)}</span>`:''}</div>
@@ -2987,6 +2989,7 @@ function _acadRenderDetail(c){
     ['Duración',c.duration_hours?(c.duration_hours+' hs'+(c.duration_weeks?' · '+c.duration_weeks+' sem':'')):''],
     ['Certificado',c.certificate?'Sí':'No'],['Inicio',c.start_date||''],['Cupos',c.seats||'']].filter(m=>m[1]);
   body.innerHTML=`
+    ${c.image_url?`<div class="acad-d-hero"><img src="${esc(c.image_url)}" alt="" onerror="this.parentNode.style.display='none'"></div>`:''}
     <div class="acad-d-head">
       <div class="acad-logo lg ${esc(c.icon_color||'dev')}">${esc(c.provider_short||c.icon||'📚')}</div>
       <div class="acad-d-headtext"><div class="acad-d-provider">${esc(c.provider||'')}</div><h2 class="acad-d-title">${esc(c.title)}</h2></div>
@@ -3043,15 +3046,45 @@ document.addEventListener('click',e=>{
 });
 
 function _academiaCategoryHTML(cat){
-  return `<div class="section-block">
+  // Dentro de cada catálogo, los cursos van agrupados por nivel (Principiante → Avanzado).
+  const order=['beginner','intermediate','advanced'];
+  const groups=order.map(lvl=>{
+    const cs=(cat.courses||[]).filter(c=>c.level===lvl);
+    if(!cs.length)return '';
+    return `<div class="acad-level-group" data-lvl="${lvl}">
+      <div class="acad-level-title"><span class="course-level ${lvl}">${_ACAD_LEVEL_LABEL[lvl]}</span></div>
+      <div class="course-grid">${cs.map(_academiaCourseCardHTML).join('')}</div>
+    </div>`;
+  }).join('');
+  return `<div class="section-block acad-cat-block">
     <div class="section-block-title">${esc(cat.title)}</div>
-    <div class="course-grid">${cat.courses.map(_academiaCourseCardHTML).join('')}</div>
+    ${groups}
   </div>`;
 }
 
+// Filtro de nivel: oculta cards, y también los grupos y catálogos que quedan vacíos
+// (así no quedan títulos colgados sin cursos abajo).
+function _acadApplyLevelFilter(lvl){
+  const cont=$('#academiaCoursesContainer');if(!cont)return;
+  cont.querySelectorAll('.acad-card').forEach(card=>{
+    card.style.display=(lvl==='todos'||card.dataset.lvl===lvl)?'':'none';
+  });
+  cont.querySelectorAll('.acad-level-group').forEach(g=>{
+    g.style.display=(lvl==='todos'||g.dataset.lvl===lvl)?'':'none';
+  });
+  cont.querySelectorAll('.acad-cat-block').forEach(b=>{
+    const visible=[...b.querySelectorAll('.acad-level-group')].some(g=>g.style.display!=='none');
+    b.style.display=visible?'':'none';
+  });
+}
+
 function _academiaPathHTML(p){
+  // Cada ruta pertenece a un catálogo: el título del bloque es el catálogo
+  // y la ruta se muestra como camino progresivo adentro.
+  const blockTitle=p.category_title||p.title;
   return `<div class="section-block">
-    <div class="section-block-title">${esc(p.title)}</div>
+    <div class="section-block-title">${esc(blockTitle)}</div>
+    ${p.category_title?`<div class="acad-path-name">${esc(p.title)}</div>`:''}
     ${p.steps.map(s=>`
       <div class="path-card">
         <div class="path-header">
@@ -3083,14 +3116,7 @@ function _renderAcademiaCourses(data){
   cont.innerHTML=data.categories.map(_academiaCategoryHTML).join('');
   // Reaplicar el filtro de nivel activo (si el user había seleccionado).
   const activeLevelBtn=document.querySelector('.level-btn.active');
-  if(activeLevelBtn){
-    const lvl=activeLevelBtn.dataset.level;
-    if(lvl&&lvl!=='todos'){
-      cont.querySelectorAll('.acad-card').forEach(card=>{
-        card.style.display=(card.dataset.lvl===lvl)?'':'none';
-      });
-    }
-  }
+  if(activeLevelBtn&&activeLevelBtn.dataset.level)_acadApplyLevelFilter(activeLevelBtn.dataset.level);
 }
 
 function _renderAcademiaPaths(data){
@@ -3419,10 +3445,7 @@ function initAcademiaTabs(){
     btn.addEventListener('click',()=>{
       $$('.level-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      const lvl=btn.dataset.level;
-      $$('.acad-card').forEach(card=>{
-        card.style.display=(lvl==='todos'||card.dataset.lvl===lvl)?'':'none';
-      });
+      _acadApplyLevelFilter(btn.dataset.level);
     });
   });
 }

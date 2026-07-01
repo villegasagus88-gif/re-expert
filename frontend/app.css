@@ -731,7 +731,17 @@ select.pay-form-input{cursor:pointer}
 .acad-card{position:relative;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:18px;cursor:pointer;transition:all .2s var(--ease-out);display:flex;flex-direction:column;overflow:hidden}
 .acad-card:hover{border-color:var(--accent-brand);box-shadow:var(--shadow-md);transform:translateY(-2px)}
 .acad-card:active{transform:scale(.995)}
-.acad-ribbon{position:absolute;top:0;right:0;background:linear-gradient(135deg,#BE5103,#8f3d02);color:#fff;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-bottom-left-radius:10px;max-width:64%;text-align:right;line-height:1.25}
+.acad-ribbon{position:absolute;top:0;right:0;z-index:2;background:linear-gradient(135deg,#BE5103,#8f3d02);color:#fff;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-bottom-left-radius:10px;max-width:64%;text-align:right;line-height:1.25;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.acad-card-img{margin:-18px -18px 13px;height:140px;overflow:hidden;background:var(--bg-2)}
+.acad-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s var(--ease-out)}
+.acad-card:hover .acad-card-img img{transform:scale(1.04)}
+/* Sub-grupos por nivel dentro de cada catálogo */
+.acad-level-group{margin-bottom:16px}
+.acad-level-group:last-child{margin-bottom:0}
+.acad-level-title{margin-bottom:10px}
+.acad-level-title .course-level{font-size:10px;padding:4px 11px}
+/* Nombre de la ruta dentro del bloque de catálogo (Rutas de aprendizaje) */
+.acad-path-name{font-size:12.5px;font-weight:600;color:var(--accent-brand);margin:-6px 0 12px}
 .acad-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:11px}
 .acad-logo{width:42px;height:42px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;letter-spacing:-.3px;flex-shrink:0;color:var(--text-0);text-align:center;line-height:1.05;padding:3px}
 .acad-logo.dev{background:rgba(190,81,3,.12)}
@@ -754,6 +764,8 @@ select.pay-form-input{cursor:pointer}
 .modal.acad-detail{width:640px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;position:relative}
 .acad-detail .acad-modal-close{position:absolute;top:14px;right:14px;z-index:2;background:var(--bg-2)}
 .acad-detail .modal-body{padding:26px 28px 24px;overflow-y:auto}
+.acad-d-hero{margin:-26px -28px 18px;height:190px;overflow:hidden;background:var(--bg-2)}
+.acad-d-hero img{width:100%;height:100%;object-fit:cover;display:block}
 .acad-d-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;padding-right:34px}
 .acad-logo.lg{width:54px;height:54px;font-size:14px;border-radius:14px}
 .acad-d-headtext{min-width:0}

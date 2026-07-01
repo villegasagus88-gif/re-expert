@@ -1,75 +1,178 @@
 {
-  "updated_at": "2026-05-28",
-  "intro": "Caminos progresivos desde cero hasta nivel profesional. Cada ruta combina cursos en el orden correcto para maximizar tu aprendizaje.",
+  "updated_at": "2026-07-01",
+  "intro": "Las rutas de aprendizaje son itinerarios curados que te llevan de principiante a experto en cada especialidad del real estate. Cada ruta encadena los cursos del catálogo en tres niveles progresivos, para que sepas exactamente qué estudiar y en qué orden.",
   "paths": [
     {
-      "id": "ruta-desarrollador",
-      "title": "Ruta: Desarrollador inmobiliario",
+      "id": "ruta-desarrollo",
+      "title": "Ruta: De cero a desarrollador inmobiliario",
+      "category": "desarrollo",
+      "category_title": "Desarrollo",
       "steps": [
         {
           "order": 1,
-          "title": "Bases del negocio inmobiliario",
-          "subtitle": "Entender el mercado, tipos de desarrollos y modelos de negocio",
+          "title": "Nivel inicial",
+          "subtitle": "Entendé cómo nace un desarrollo rentable y aprendé a evaluar terrenos con criterio profesional.",
           "courses": [
-            "📖 Intro al desarrollo inmobiliario",
-            "📖 Real estate para inversores",
-            "📊 Lectura de mercado"
+            "🏗️ Tu Primer Desarrollo Inmobiliario: de la Idea al Proyecto Rentable",
+            "🗺️ Radiografía del Terreno: Factibilidad Urbanística, Técnica y Comercial"
           ]
         },
         {
           "order": 2,
-          "title": "Análisis y estructuración",
-          "subtitle": "Evaluar viabilidad financiera y armar estructura legal",
+          "title": "Nivel intermedio",
+          "subtitle": "Dominá los números del proyecto y estructuralo legal y fiscalmente con fideicomisos al costo.",
           "courses": [
-            "📊 Análisis financiero de proyectos",
-            "⚖️ Marco legal",
-            "📐 Factibilidad técnica"
+            "📊 Finanzas del Desarrollador: Flujo de Fondos, TIR y VAN para Decidir con Números",
+            "📜 Fideicomisos al Costo: Estructurá tu Emprendimiento sin Sorpresas Legales ni Fiscales"
           ]
         },
         {
           "order": 3,
-          "title": "Ejecución y escala",
-          "subtitle": "Gestionar obra, inversores y crecimiento del negocio",
+          "title": "Nivel avanzado",
+          "subtitle": "Liderá proyectos de punta a punta y dá el salto a masterplans y megaproyectos de gran escala.",
           "courses": [
-            "🎯 Fideicomisos inmobiliarios",
-            "📋 Project management",
-            "🤝 Captación de inversores"
+            "🧭 Dirección Integral de Proyectos Inmobiliarios: del Pliego a la Entrega",
+            "🏙️ Desarrollos a Gran Escala: Masterplan, Land Banking y Gestión de Megaproyectos"
           ]
         }
       ]
     },
     {
-      "id": "ruta-constructor",
-      "title": "Ruta: Constructor / Director de obra",
+      "id": "ruta-construccion",
+      "title": "Ruta: De la obra al producto inmobiliario rentable",
+      "category": "construccion",
+      "category_title": "Construcción y arquitectura",
       "steps": [
         {
           "order": 1,
-          "title": "Fundamentos constructivos",
-          "subtitle": "Materiales, procesos y lectura de documentación técnica",
+          "title": "Nivel inicial",
+          "subtitle": "Manejá los números de tu obra y pisá el sitio conociendo tus responsabilidades de seguridad e higiene.",
           "courses": [
-            "🧱 Fundamentos de construcción",
-            "📐 Lectura de planos",
-            "📏 Cómputo y presupuesto"
+            "🧮 Cómputos y Presupuestos: dominá los números de tu obra",
+            "🦺 Seguridad e Higiene en Obra: entrá al sitio sabiendo lo que firmás"
           ]
         },
         {
           "order": 2,
-          "title": "Gestión de obra",
-          "subtitle": "Planificación, control y gestión de equipos en campo",
+          "title": "Nivel intermedio",
+          "subtitle": "Proyectá edificios eficientes y certificables, y movete con soltura por la normativa edilicia de CABA y PBA.",
           "courses": [
-            "📋 Dirección y control de obra",
-            "⚖️ Marco legal de construcción",
-            "🔧 Instalaciones especiales"
+            "🌱 Edificios que ahorran: eficiencia energética y certificación sustentable",
+            "🏙️ Código Urbanístico sin secretos: normativa edilicia en CABA y PBA"
           ]
         },
         {
           "order": 3,
-          "title": "Nivel profesional",
-          "subtitle": "Certificaciones, project management y optimización",
+          "title": "Nivel avanzado",
+          "subtitle": "Dirigí obras sin sobrecostos y diseñá arquitectura pensada como producto que se vende solo.",
           "courses": [
-            "📋 PMI/PMP para construcción",
-            "📊 Control de costos avanzado",
-            "🏗️ BIM management"
+            "🏗️ Dirección de Obra de Alto Rendimiento: del pliego a la entrega sin sobrecostos",
+            "📐 Diseñar para vender: arquitectura como producto inmobiliario rentable"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ruta-inmobiliario",
+      "title": "Ruta: Del primer cliente a la dirección comercial",
+      "category": "inmobiliario",
+      "category_title": "Inmobiliario",
+      "steps": [
+        {
+          "order": 1,
+          "title": "Nivel inicial",
+          "subtitle": "Armá tu primera cartera de propiedades y aprendé a captar y vender con marketing digital.",
+          "courses": [
+            "🔑 Iniciación al Corretaje: Captá tu Primera Cartera de Propiedades",
+            "📱 Marketing Inmobiliario Digital: De Publicar a Vender"
+          ]
+        },
+        {
+          "order": 2,
+          "title": "Nivel intermedio",
+          "subtitle": "Tasá con método defendible y administrá alquileres de forma rentable y sin conflictos.",
+          "courses": [
+            "📐 Tasación de Inmuebles Urbanos: Método, Criterio y Defensa del Valor",
+            "🏢 Administración Rentable de Alquileres: Del Contrato al Cobro sin Dolores de Cabeza"
+          ]
+        },
+        {
+          "order": 3,
+          "title": "Nivel avanzado",
+          "subtitle": "Analizá inversiones como un profesional y liderá negociaciones y cierres de alto valor.",
+          "courses": [
+            "📈 Inversión Inmobiliaria Profesional: Análisis Financiero y Portafolio de Ladrillos",
+            "🤝 Dirección Comercial Inmobiliaria: Negociación de Alto Valor y Cierre de Operaciones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ruta-legal",
+      "title": "Ruta: Experto legal del negocio inmobiliario",
+      "category": "legal",
+      "category_title": "Legal",
+      "steps": [
+        {
+          "order": 1,
+          "title": "Nivel inicial",
+          "subtitle": "Blindá tus operaciones con contratos sólidos y dominá el marco locativo vigente sin letra chica.",
+          "courses": [
+            "📜 Contratos y Boletos Blindados: la base legal de toda operación inmobiliaria",
+            "🔑 Ley de Alquileres sin Letra Chica: el marco locativo vigente explicado en criollo"
+          ]
+        },
+        {
+          "order": 2,
+          "title": "Nivel intermedio",
+          "subtitle": "Estructurá desarrollos con fideicomisos y manejá el circuito notarial de la compraventa de punta a punta.",
+          "courses": [
+            "🏦 Fideicomisos Inmobiliarios de Punta a Punta: la estructura jurídica del desarrollo",
+            "🖋️ Escrituración y Registro: dominá el circuito notarial de la compraventa"
+          ]
+        },
+        {
+          "order": 3,
+          "title": "Nivel avanzado",
+          "subtitle": "Optimizá la carga fiscal de cada operación y operá impecable frente a UIF y compliance.",
+          "courses": [
+            "💰 Ingeniería Fiscal del Real Estate: Ganancias, Sellos e IVA en la obra y la compraventa",
+            "⚖️ Compliance y UIF en Real Estate: operaciones limpias en un mercado bajo la lupa"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ruta-tecnologia",
+      "title": "Ruta: Profesional inmobiliario potenciado por IA",
+      "category": "tecnologia",
+      "category_title": "Tecnología e IA aplicada al real estate",
+      "steps": [
+        {
+          "order": 1,
+          "title": "Nivel inicial",
+          "subtitle": "Incorporá la IA generativa a tu día a día comercial y lanzá campañas que captan y venden.",
+          "courses": [
+            "🤖 IA Generativa para Corredores: Empezá a Vender con ChatGPT y Claude",
+            "🎯 Marketing Inmobiliario con IA: Campañas que Captan Propiedades y Cierran Ventas"
+          ]
+        },
+        {
+          "order": 2,
+          "title": "Nivel intermedio",
+          "subtitle": "Decidí inversiones con datos y automatizá tu operación con CRM, no-code e IA para escalar.",
+          "courses": [
+            "📊 Real Estate Data Analytics: Decisiones de Inversión Basadas en Datos",
+            "⚙️ Automatización Inmobiliaria: CRM, No-Code e IA para Escalar tu Operación"
+          ]
+        },
+        {
+          "order": 3,
+          "title": "Nivel avanzado",
+          "subtitle": "Gestioná desarrollos con BIM y gemelos digitales, y tasá con precisión usando machine learning.",
+          "courses": [
+            "🏗️ Del Plano al Gemelo Digital: BIM Management para Desarrollos Inmobiliarios",
+            "📈 Valuación Algorítmica: Machine Learning para Tasación y Pricing de Precisión"
           ]
         }
       ]
