@@ -423,10 +423,12 @@
           <!-- TAB: CURSOS — contenido dinámico vía loadAcademia() -->
           <div id="acadTabCursos" class="acad-tab-content">
             <div class="level-filters">
-              <button class="level-btn active" data-level="todos">Todos</button>
-              <button class="level-btn" data-level="beginner">Principiante</button>
-              <button class="level-btn" data-level="intermediate">Intermedio</button>
-              <button class="level-btn" data-level="advanced">Avanzado</button>
+              <button class="level-btn active" data-cat="todos">Todos</button>
+              <button class="level-btn" data-cat="desarrollo">Desarrollo</button>
+              <button class="level-btn" data-cat="construccion">Construcción y arquitectura</button>
+              <button class="level-btn" data-cat="inmobiliario">Inmobiliario</button>
+              <button class="level-btn" data-cat="legal">Legal</button>
+              <button class="level-btn" data-cat="tecnologia">Tecnología e IA</button>
             </div>
             <div id="academiaCoursesContainer"></div>
             <button class="btn-primary" id="aiCourseRec">
@@ -3056,25 +3058,18 @@ function _academiaCategoryHTML(cat){
       <div class="course-grid">${cs.map(_academiaCourseCardHTML).join('')}</div>
     </div>`;
   }).join('');
-  return `<div class="section-block acad-cat-block">
+  return `<div class="section-block acad-cat-block" data-cat="${esc(cat.id)}">
     <div class="section-block-title">${esc(cat.title)}</div>
     ${groups}
   </div>`;
 }
 
-// Filtro de nivel: oculta cards, y también los grupos y catálogos que quedan vacíos
-// (así no quedan títulos colgados sin cursos abajo).
-function _acadApplyLevelFilter(lvl){
+// Filtro por catálogo: muestra solo el catálogo elegido (los niveles ya se ven
+// como sub-grupos adentro de cada catálogo).
+function _acadApplyCatFilter(catId){
   const cont=$('#academiaCoursesContainer');if(!cont)return;
-  cont.querySelectorAll('.acad-card').forEach(card=>{
-    card.style.display=(lvl==='todos'||card.dataset.lvl===lvl)?'':'none';
-  });
-  cont.querySelectorAll('.acad-level-group').forEach(g=>{
-    g.style.display=(lvl==='todos'||g.dataset.lvl===lvl)?'':'none';
-  });
   cont.querySelectorAll('.acad-cat-block').forEach(b=>{
-    const visible=[...b.querySelectorAll('.acad-level-group')].some(g=>g.style.display!=='none');
-    b.style.display=visible?'':'none';
+    b.style.display=(catId==='todos'||b.dataset.cat===catId)?'':'none';
   });
 }
 
@@ -3114,9 +3109,9 @@ function _renderAcademiaCourses(data){
   academiaState.index={};
   data.categories.forEach(cat=>(cat.courses||[]).forEach(c=>{academiaState.index[c.id]=c;}));
   cont.innerHTML=data.categories.map(_academiaCategoryHTML).join('');
-  // Reaplicar el filtro de nivel activo (si el user había seleccionado).
-  const activeLevelBtn=document.querySelector('.level-btn.active');
-  if(activeLevelBtn&&activeLevelBtn.dataset.level)_acadApplyLevelFilter(activeLevelBtn.dataset.level);
+  // Reaplicar el filtro de catálogo activo (si el user había seleccionado).
+  const activeCatBtn=document.querySelector('.level-btn.active');
+  if(activeCatBtn&&activeCatBtn.dataset.cat)_acadApplyCatFilter(activeCatBtn.dataset.cat);
 }
 
 function _renderAcademiaPaths(data){
@@ -3445,7 +3440,7 @@ function initAcademiaTabs(){
     btn.addEventListener('click',()=>{
       $$('.level-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      _acadApplyLevelFilter(btn.dataset.level);
+      _acadApplyCatFilter(btn.dataset.cat);
     });
   });
 }
