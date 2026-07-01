@@ -19,6 +19,7 @@ from api.routes.opportunity import router as opportunity_router
 from api.routes.payments import router as payments_router
 from api.routes.profile import router as profile_router
 from api.routes.project import router as project_router
+from api.routes.public_landing import router as public_landing_router
 from api.routes.reminders import router as reminders_router
 from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
@@ -247,6 +248,9 @@ app.include_router(auth_router)
 app.include_router(billing_router)
 app.include_router(stripe_router)
 app.include_router(usage_router)
+# Landing pública: muestra read-only y cacheada de materiales + noticias
+# (sin auth y sin datos de usuario; ver api/routes/public_landing.py).
+app.include_router(public_landing_router)
 
 # Routes de PRODUCTO: requieren suscripción activa (trial vigente o pro).
 # Modelo pago-only — un usuario sin acceso recibe 403 (paywall) en cualquiera.
