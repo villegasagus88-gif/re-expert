@@ -18,6 +18,15 @@ BACKEND_DIR = REPO_ROOT / "backend"
 ANTHROPIC_KEY_RE = re.compile(r"sk-ant-[A-Za-z0-9_\-]{20,}")
 # Stripe live/test keys
 STRIPE_KEY_RE = re.compile(r"sk_(live|test)_[A-Za-z0-9]{24,}")
+# Postgres/Supabase connection strings with an embedded password (user:pass@host).
+# Cubre postgresql://, postgres:// y postgresql+asyncpg:// (formato SQLAlchemy).
+POSTGRES_URL_RE = re.compile(r"postgres(?:ql)?(?:\+[a-z]+)?://[^\s:/@]+:([^\s:/@]+)@[^\s/]+")
+# Passwords "dummy" que aparecen legítimamente en templates/docker/tests y NO son leaks.
+DUMMY_DB_PASSWORDS = {
+    "password", "pass", "postgres", "changeme", "secret", "test", "dev",
+    "re_expert", "re_expert_local", "your_password", "your-password",
+    "user", "example", "placeholder", "xxxx", "xxx", "dbpass",
+}
 
 # Tokens that should not appear in any committed frontend asset.
 FORBIDDEN_FRONTEND_TOKENS = (
@@ -104,6 +113,29 @@ def test_no_stripe_key_committed_anywhere():
         for m in STRIPE_KEY_RE.finditer(text):
             leaks.append(f"{path.relative_to(REPO_ROOT)}: {m.group(0)[:18]}…")
     assert not leaks, f"Stripe secret key found in committed files: {leaks}"
+
+
+def test_no_db_connection_string_committed_anywhere():
+    """Ninguna connection string de Postgres con password REAL embebida debe estar
+    en un archivo trackeado. Los placeholders/dummies de templates y docker se
+    ignoran (ver DUMMY_DB_PASSWORDS)."""
+    leaks: list[str] = []
+    for path in _walk(REPO_ROOT):
+        if path.name == "test_secret_hygiene.py":
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for m in POSTGRES_URL_RE.finditer(text):
+            pwd = m.group(1)
+            low = pwd.lower()
+            if low in DUMMY_DB_PASSWORDS:
+                continue
+            if any(t in low for t in ("example", "placeholder", "your", "xxx", "<", "{")):
+                continue
+            leaks.append(f"{path.relative_to(REPO_ROOT)}: {m.group(0)[:32]}…")
+    assert not leaks, f"DB connection string with embedded password in tracked files: {leaks}"
 
 
 # ---------------------------------------------------------- backend logging --

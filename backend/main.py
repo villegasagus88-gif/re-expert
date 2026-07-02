@@ -372,7 +372,10 @@ async def health_storage():
                 "Las variables están pero el upload falló. Verificá que exista el "
                 "bucket 'reports' y que la key sea la service_role (no la anon)."
             )
-    except Exception as e:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
+        # No devolvemos str(e) al cliente (endpoint público, info disclosure):
+        # se loguea server-side y el cliente recibe un mensaje genérico.
+        logging.getLogger("re_expert").exception("health/storage: excepción en el test de upload")
         out["status"] = "error"
-        out["detalle"] = f"Excepción en el test: {str(e)[:200]}"
+        out["detalle"] = "El test de Storage falló; revisá los logs del servidor."
     return out

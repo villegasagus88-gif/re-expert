@@ -534,10 +534,12 @@ _DIGEST_SYSTEM = (
 
 async def _fetch_article_text(url: str) -> tuple[str | None, str | None]:
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=True, headers=_UA) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            html = resp.text
+        # Guard anti-SSRF: valida esquema/host, bloquea IPs internas y revalida
+        # cada redirect. Una URL no permitida lanza UnsafeUrlError y cae al except.
+        from core.safe_fetch import safe_get
+        resp = await safe_get(url, timeout=_TIMEOUT, headers=_UA)
+        resp.raise_for_status()
+        html = resp.text
         og = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', html, re.I)
         image = og.group(1) if og else None
         html = re.sub(r"(?is)<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>", " ", html)

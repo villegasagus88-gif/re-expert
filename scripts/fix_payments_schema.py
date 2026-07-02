@@ -1,11 +1,11 @@
 """Idempotent payments schema repair."""
 import asyncio
+import os
+
 import asyncpg
 
-DB_URL = (
-    "postgresql://postgres.uaiiqjouxlcvleiimokz:lHy3HqVyI77Doy3E"
-    "@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
-)
+# Connection string desde el entorno — NUNCA hardcodear credenciales.
+DB_URL = os.environ["DATABASE_URL"].replace("+asyncpg", "")
 
 # Map of "if this English column exists, rename to this Spanish one"
 RENAMES = {

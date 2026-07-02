@@ -602,14 +602,15 @@ async def _fetch_url(url: str) -> str | None:
     try:
         import re
 
-        import httpx
-        async with httpx.AsyncClient(
-            timeout=20.0, follow_redirects=True,
+        # Guard anti-SSRF: valida esquema/host, bloquea IPs internas y revalida
+        # cada redirect. Una URL no permitida lanza UnsafeUrlError y cae al except.
+        from core.safe_fetch import safe_get
+        resp = await safe_get(
+            url, timeout=20.0,
             headers={"User-Agent": "Mozilla/5.0 (compatible; RE-Expert-Scanner/1.0)"},
-        ) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            html = resp.text
+        )
+        resp.raise_for_status()
+        html = resp.text
         html = re.sub(r"(?is)<(script|style|noscript|svg)[^>]*>.*?</\1>", " ", html)
         text = re.sub(r"(?s)<[^>]+>", " ", html)
         text = re.sub(r"\s+", " ", text)

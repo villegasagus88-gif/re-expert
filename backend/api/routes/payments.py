@@ -102,6 +102,10 @@ async def create_payment(
     else:
         pq = pq.order_by(Project.created_at.asc())
     proj = (await db.execute(pq)).scalars().first()
+    # Si vino un project_id EXPLÍCITO y no es del usuario (o no existe), fallar
+    # claro en vez de crear un pago huérfano (project_id=None) silenciosamente.
+    if body.project_id is not None and proj is None:
+        raise HTTPException(status_code=404, detail="Proyecto no encontrado")
 
     payment = Payment(
         user_id=user.id,

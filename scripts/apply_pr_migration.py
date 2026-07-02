@@ -1,12 +1,13 @@
 """Apply password_resets migration to Supabase via the pooler (6543)."""
 import asyncio
+import os
+
 import asyncpg
 
+# Connection string desde el entorno — NUNCA hardcodear credenciales.
+# Acepta el formato SQLAlchemy (postgresql+asyncpg://) y lo normaliza para asyncpg.
 # Pooler transaction mode (6543) needs statement_cache_size=0.
-DB = (
-    "postgresql://postgres.uaiiqjouxlcvleiimokz:lHy3HqVyI77Doy3E"
-    "@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
-)
+DB = os.environ["DATABASE_URL"].replace("+asyncpg", "")
 
 
 async def main():

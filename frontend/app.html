@@ -1885,7 +1885,7 @@ function parseMd(t){
   }
   return raw;
 }
-function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function addCopyBtns(){els.messagesEl.querySelectorAll('pre').forEach(pre=>{if(pre.parentElement.classList.contains('code-block-wrapper'))return;const w=document.createElement('div');w.className='code-block-wrapper';pre.parentNode.insertBefore(w,pre);w.appendChild(pre);const b=document.createElement('button');b.className='copy-btn';b.textContent='Copiar';b.onclick=()=>{navigator.clipboard.writeText(pre.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar',1500)})};w.appendChild(b)})}
 function scrollBottom(){requestAnimationFrame(()=>{$('#pageContainer').scrollTop=$('#pageContainer').scrollHeight})}
 
