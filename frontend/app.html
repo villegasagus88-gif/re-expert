@@ -3069,21 +3069,30 @@ function _acadOpenCourse(id){
   _acadRecordInterest(c,'view');
 }
 
+// Helpers del checkout: el modal se re-renderiza (_acadRenderDetail), así que
+// el nodo del mensaje SIEMPRE se busca fresco — nunca guardar la referencia.
+function _acadMsg(kind,text){
+  const m=$('#acadInscribirMsg');
+  if(m){m.className='acad-inscribir-msg '+kind;m.textContent=text;}
+}
+function _acadRestoreBuyBtn(id){
+  const b=document.querySelector('.acad-buy[data-course="'+CSS.escape(id)+'"]');
+  if(b){b.disabled=false;if(b.dataset.label)b.textContent=b.dataset.label;}
+}
+
 // Fallback cuando la pasarela de pago todavía no está habilitada (sin
-// credenciales de MP): registramos el interés, igual que antes.
+// credenciales de MP): el interés ya quedó registrado por _acadCheckout.
 function _acadInteresFallback(c){
-  _acadRecordInterest(c,'inscribir');
-  const msg=$('#acadInscribirMsg');
-  if(msg){msg.className='acad-inscribir-msg ok';msg.textContent='Los pagos se están habilitando. Registramos tu interés y te contactamos para coordinar la inscripción.';}
+  _acadRestoreBuyBtn(c.id);
+  _acadMsg('ok','Los pagos se están habilitando. Registramos tu interés y te contactamos para coordinar la inscripción.');
 }
 
 // Compra real: pide el checkout al backend. Gratis → inscripción directa;
 // pago → redirect a Mercado Pago. Degrada a interés si MP no está configurado.
 async function _acadCheckout(c){
   const btn=document.querySelector('.acad-buy[data-course="'+CSS.escape(c.id)+'"]');
-  const msg=$('#acadInscribirMsg');
   if(btn){btn.disabled=true;btn.dataset.label=btn.textContent;btn.textContent=c.is_free?'Inscribiendo…':'Redirigiendo a Mercado Pago…';}
-  if(msg){msg.className='acad-inscribir-msg';msg.textContent='';}
+  _acadMsg('','');
   _acadRecordInterest(c,'inscribir');
   try{
     const r=await window.REAuthService.authFetch(apiBase()+'/api/academia/checkout',{
@@ -3091,25 +3100,26 @@ async function _acadCheckout(c){
       body:JSON.stringify({course_id:c.id}),
     });
     if(r.status===401){window.REAuthService.logout();return;}
+    if(r.status===403){_acadRestoreBuyBtn(c.id);return;} // sin plan: authFetch ya disparó el paywall
     if(r.status===503){_acadInteresFallback(c);return;}  // MP aún no configurado
     const data=await r.json().catch(()=>({}));
-    if(r.status===409){ // ya lo tiene
+    if(r.status===409){ // ya lo tiene (el 422 "sin precio" cae al throw de abajo)
       academiaState.owned[c.id]='approved';_acadRenderDetail(c);
-      if(msg){msg.className='acad-inscribir-msg ok';msg.textContent='Ya tenés acceso a este curso.';}
+      _acadMsg('ok','Ya tenés acceso a este curso.');
       return;
     }
-    if(!r.ok)throw new Error(data.detail||('Error '+r.status));
+    if(!r.ok)throw new Error(typeof data.detail==='string'?data.detail:('Error '+r.status));
     if(data.kind==='redirect'&&data.url){window.location.href=data.url;return;} // → Mercado Pago
     if(data.kind==='enrolled'){ // curso gratis, inscripto al instante
       academiaState.owned[c.id]='free';_acadRenderDetail(c);
       if(academiaState.loaded)_renderAcademiaCourses(academiaState.courses);
-      if(msg){msg.className='acad-inscribir-msg ok';msg.textContent='✓ ¡Listo! Ya estás inscripto. El curso aparece en «Mis cursos».';}
+      _acadMsg('ok','✓ ¡Listo! Ya estás inscripto. El curso aparece en «Mis cursos».');
       return;
     }
     throw new Error('Respuesta inesperada del servidor');
   }catch(e){
-    if(btn){btn.disabled=false;if(btn.dataset.label)btn.textContent=btn.dataset.label;}
-    if(msg){msg.className='acad-inscribir-msg err';msg.textContent='No pudimos procesar la compra: '+esc(e.message)+'. Probá de nuevo en un momento.';}
+    _acadRestoreBuyBtn(c.id);
+    _acadMsg('err','No pudimos procesar la compra: '+e.message+'. Probá de nuevo en un momento.');
   }
 }
 
@@ -3242,9 +3252,17 @@ function _acadHandleMpReturn(){
   try{window.history.replaceState({},document.title,window.location.pathname+window.location.hash);}catch(e){}
   if(typeof showSolToast!=='function')return;
   if(status==='approved'){
-    showSolToast({type:'success',title:'¡Pago acreditado!',meta:'Ya tenés acceso al curso.',view:'academia'});
+    showSolToast({type:'success',title:'¡Pago aprobado!',meta:'Estamos activando tu acceso al curso.',view:'academia'});
     academiaState.loaded=false; // forzar recarga con el nuevo estado de posesión
-    _acadLoadOwned().then(()=>{if(academiaState.courses)_renderAcademiaCourses(academiaState.courses);});
+    // El webhook de MP puede tardar unos segundos en marcar la compra: se
+    // reintenta hasta ver el acceso (o rendirse en silencio — queda pending).
+    let tries=0;
+    const poll=()=>{_acadLoadOwned().then(()=>{
+      const owned=Object.values(academiaState.owned).some(s=>s==='approved');
+      if(academiaState.courses)_renderAcademiaCourses(academiaState.courses);
+      if(!owned&&++tries<5)setTimeout(poll,3000);
+    });};
+    poll();
   }else if(status==='pending'||status==='in_process'){
     showSolToast({type:'success',title:'Pago pendiente',meta:'Cuando Mercado Pago lo acredite, verás el acceso en Academia.',view:'academia'});
   }else{

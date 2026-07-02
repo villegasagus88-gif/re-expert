@@ -9,6 +9,8 @@ Estados:
   rejected  → pago rechazado.
   refunded  → reembolsado.
   free      → curso gratis, inscripción directa sin cobro.
+  duplicate → pago aprobado de un curso que el usuario YA tenía (pagó dos
+              veces): no da acceso extra, requiere reembolso manual.
 """
 from datetime import datetime
 from decimal import Decimal
@@ -42,7 +44,8 @@ class CoursePurchase(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(),
+        onupdate=func.now(), nullable=False,
     )
 
     __table_args__ = (

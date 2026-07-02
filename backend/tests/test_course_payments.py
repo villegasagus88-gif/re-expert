@@ -65,8 +65,15 @@ async def test_create_course_preference_payload(monkeypatch):
 # ── _apply_payment_to_purchase: mapeo + idempotencia ──
 
 class _FakeResult:
+    """La query por id usa scalar_one_or_none(); la búsqueda de otra fila owned
+    (anti-duplicado) usa scalars().first() → acá devuelve None (sin duplicado)."""
     def __init__(self, obj): self._o = obj
     def scalar_one_or_none(self): return self._o
+    def scalars(self):
+        class _S:
+            def first(self): return None
+            def all(self): return []
+        return _S()
 
 class _FakeDB:
     def __init__(self, obj): self._o = obj
@@ -82,7 +89,8 @@ class _FakeDB:
 ])
 async def test_apply_payment_mapea_estados(mp_status, expected):
     pid = uuid4()
-    purchase = SimpleNamespace(status="pending", mp_payment_id=None)
+    purchase = SimpleNamespace(id=uuid4(), user_id=uuid4(), course_id="c-1",
+                               status="pending", mp_payment_id=None)
     db = _FakeDB(purchase)
     res = await mp._apply_payment_to_purchase(
         db, {"status": mp_status, "external_reference": str(pid), "id": "PAY-1"})
@@ -122,6 +130,45 @@ async def test_apply_payment_external_reference_invalido():
     assert purchase.status == "pending"
 
 
+# ── _apply_payment_to_purchase: pago duplicado no viola el unique parcial ──
+
+class _FakeDBDup:
+    """Primera query devuelve la compra target; la segunda (búsqueda de otra fila
+    owned del mismo user+curso) devuelve `other`."""
+    def __init__(self, target, other):
+        self._results = [target, other]
+    async def execute(self, *_a, **_k):
+        obj = self._results.pop(0) if self._results else None
+        class _R:
+            def __init__(self, o): self._o = o
+            def scalar_one_or_none(self): return self._o
+            def scalars(self):
+                o = self._o
+                class _S:
+                    def first(self): return o
+                    def all(self): return [o] if o else []
+                return _S()
+        return _R(obj)
+
+
+@pytest.mark.anyio
+async def test_apply_payment_duplicado_no_pisa_al_owned():
+    """Segundo pago aprobado del mismo (user, curso) → la fila queda 'duplicate'
+    (para reembolso manual), NUNCA 'approved' (violaría el unique parcial)."""
+    uid, cid = uuid4(), "curso-x"
+    target = SimpleNamespace(id=uuid4(), user_id=uid, course_id=cid,
+                             status="pending", mp_payment_id=None)
+    owned = SimpleNamespace(id=uuid4(), user_id=uid, course_id=cid,
+                            status="approved", mp_payment_id="PAY-1")
+    res = await mp._apply_payment_to_purchase(
+        _FakeDBDup(target, owned),
+        {"status": "approved", "external_reference": str(target.id), "id": "PAY-2"})
+    assert res == str(target.id)
+    assert target.status == "duplicate"
+    assert target.mp_payment_id == "PAY-2"  # trazable para el refund
+    assert owned.status == "approved"       # el acceso original no se toca
+
+
 # ── handle_webhook: el topic "payment" despacha al flujo de cursos ──
 
 @pytest.mark.anyio
@@ -155,3 +202,60 @@ async def test_webhook_payment_despacha_a_cursos(monkeypatch):
     )
     assert out["status"] == "ok"
     assert calls == {"fetched": "PAY-77", "applied": "PAY-77", "committed": True}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("topic", [
+    # Cobro recurrente de suscripción: contiene "payment" pero NO es un pago de
+    # curso — data.id no existe en /v1/payments → si se procesara, 502 en loop.
+    "subscription_authorized_payment",
+    # Notificación de plan: contiene "preapproval" pero NO es un preapproval.
+    "subscription_preapproval_plan",
+    "merchant_order",
+])
+async def test_webhook_topics_no_manejados_se_ignoran_sin_red(monkeypatch, topic):
+    """El dispatch es por match EXACTO: los topics parecidos (substring) se
+    ignoran con 200 en vez de consultar el endpoint equivocado."""
+    monkeypatch.setattr(settings, "MP_ACCESS_TOKEN", "TEST", raising=False)
+    monkeypatch.setattr(settings, "MP_PLAN_ID", "PLAN123", raising=False)
+    monkeypatch.setattr(settings, "MP_WEBHOOK_SECRET", "", raising=False)
+    monkeypatch.setattr(settings, "DEBUG", True, raising=False)
+
+    async def _boom(*_a, **_k):
+        raise AssertionError("no debe llamar a la red para topics ignorados")
+    monkeypatch.setattr(mp, "fetch_payment", _boom)
+    monkeypatch.setattr(mp, "fetch_preapproval", _boom)
+
+    out = await mp.handle_webhook(
+        None, data_id="123", notif_type=topic, x_signature="", x_request_id="",
+    )
+    assert out["status"] == "ignored"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("topic", ["preapproval", "subscription_preapproval"])
+async def test_webhook_preapproval_sigue_despachando_suscripcion(monkeypatch, topic):
+    """Los dos nombres reales del topic de suscripción llegan a su branch."""
+    monkeypatch.setattr(settings, "MP_ACCESS_TOKEN", "TEST", raising=False)
+    monkeypatch.setattr(settings, "MP_PLAN_ID", "PLAN123", raising=False)
+    monkeypatch.setattr(settings, "MP_WEBHOOK_SECRET", "", raising=False)
+    monkeypatch.setattr(settings, "DEBUG", True, raising=False)
+
+    calls = {}
+    async def _fake_pre(pid):
+        calls["fetched"] = pid
+        return {"status": "authorized", "external_reference": str(uuid4())}
+    async def _fake_apply(db, ext, status):
+        calls["applied"] = status
+        return ext
+    class _DB:
+        async def commit(self): calls["committed"] = True
+
+    monkeypatch.setattr(mp, "fetch_preapproval", _fake_pre)
+    monkeypatch.setattr(mp, "_apply_status_to_user", _fake_apply)
+
+    out = await mp.handle_webhook(
+        _DB(), data_id="PRE-9", notif_type=topic, x_signature="", x_request_id="",
+    )
+    assert out["status"] == "ok"
+    assert calls == {"fetched": "PRE-9", "applied": "authorized", "committed": True}

@@ -244,6 +244,32 @@ async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | N
     # Idempotencia: una compra ya aprobada no se pisa salvo por un refund.
     if purchase.status == "approved" and new_status != "refunded":
         return str(pid)
+    # Anti-duplicado: si OTRA fila del mismo (user, curso) ya tiene acceso,
+    # aprobar esta violaría el unique parcial (uq_course_purchases_owned) y el
+    # webhook quedaría en 500 con MP reintentando. La marcamos "duplicate" para
+    # conciliar/reembolsar a mano: el usuario pagó dos veces el mismo curso.
+    if new_status == "approved":
+        other = (
+            await db.execute(
+                select(CoursePurchase).where(
+                    CoursePurchase.user_id == purchase.user_id,
+                    CoursePurchase.course_id == purchase.course_id,
+                    CoursePurchase.status.in_(("approved", "free")),
+                    CoursePurchase.id != purchase.id,
+                )
+            )
+        ).scalars().first()
+        if other is not None:
+            purchase.status = "duplicate"
+            payment_id = payment.get("id")
+            if payment_id is not None:
+                purchase.mp_payment_id = str(payment_id)
+            logger.warning(
+                "MP webhook payment: pago DUPLICADO del curso %s (user %s, pago %s) — "
+                "requiere reembolso manual",
+                purchase.course_id, purchase.user_id, payment_id,
+            )
+            return str(pid)
     purchase.status = new_status
     payment_id = payment.get("id")
     if payment_id is not None:
@@ -456,18 +482,23 @@ async def handle_webhook(
             detail="Webhook no configurado (falta MP_WEBHOOK_SECRET)",
         )
 
-    # 2. Dispatch por tipo: suscripción (preapproval) o pago único de curso (payment).
+    # 2. Dispatch por tipo, con MATCH EXACTO. MP manda más topics de los que
+    #    manejamos: "subscription_authorized_payment" (cada cobro recurrente)
+    #    contiene "payment" y "subscription_preapproval_plan" contiene
+    #    "preapproval" — un match por substring los mandaría al endpoint
+    #    equivocado (404 → 502 → MP reintenta en loop). Se ignoran a propósito:
+    #    el estado de la suscripción lo gobierna subscription_preapproval.
     if not data_id:
         return {"status": "ignored", "reason": "sin data.id"}
     t = (notif_type or "").lower()
 
-    if "payment" in t:
+    if t == "payment":  # pago único de curso (Checkout Pro)
         payment = await fetch_payment(data_id)
         updated = await _apply_payment_to_purchase(db, payment)
         await db.commit()
         return {"status": "ok" if updated else "noop", "payment_status": payment.get("status")}
 
-    if "preapproval" in t:
+    if t in ("preapproval", "subscription_preapproval"):  # suscripción
         pre = await fetch_preapproval(data_id)
         status = pre.get("status")
         ext_ref = pre.get("external_reference") or ""

@@ -32,6 +32,7 @@ from models.base import get_db
 from models.course_purchase import CoursePurchase
 from models.user import User
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/academia", tags=["academia"])
@@ -106,6 +107,7 @@ def _find_course(course_id: str) -> dict | None:
         401: {"description": "Token inválido o ausente"},
         404: {"description": "Curso no encontrado"},
         409: {"description": "Ya tenés el curso"},
+        422: {"description": "Curso pago sin precio configurado en el catálogo"},
         503: {"description": "Mercado Pago no configurado"},
     },
 )
@@ -137,20 +139,41 @@ async def checkout_course(
             user_id=user.id, course_id=body.course_id, course_title=title,
             price_ars=0, status="free",
         ))
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Race (doble click): otro request ya lo inscribió — mismo resultado.
+            await db.rollback()
         return CourseCheckoutResponse(kind="enrolled", course_id=body.course_id, status="free")
 
     price = int(course.get("price_ars") or 0)
     if price <= 0:
-        raise HTTPException(status_code=409, detail="Este curso no tiene precio configurado.")
+        # 422 (no 409): el 409 significa "ya lo tenés"; esto es data del catálogo.
+        raise HTTPException(
+            status_code=422, detail="Este curso no tiene precio configurado."
+        )
 
-    # Crear la compra pendiente + la preference de MP (el precio sale del catálogo).
-    purchase = CoursePurchase(
-        user_id=user.id, course_id=body.course_id, course_title=title,
-        price_ars=price, status="pending",
-    )
-    db.add(purchase)
-    await db.flush()  # obtener purchase.id para el external_reference
+    # Reusar la compra pendiente si ya hay una (reintento de pago): evita
+    # acumular N filas pending + N preferences del mismo curso.
+    purchase = (await db.execute(
+        select(CoursePurchase).where(
+            CoursePurchase.user_id == user.id,
+            CoursePurchase.course_id == body.course_id,
+            CoursePurchase.status == "pending",
+        ).order_by(CoursePurchase.created_at.desc())
+    )).scalars().first()
+    if purchase is None:
+        purchase = CoursePurchase(
+            user_id=user.id, course_id=body.course_id, course_title=title,
+            price_ars=price, status="pending",
+        )
+        db.add(purchase)
+        await db.flush()  # obtener purchase.id para el external_reference
+    else:
+        # El catálogo puede haber cambiado entre reintentos: la fila refleja
+        # siempre lo que la preference nueva va a cobrar.
+        purchase.course_title = title
+        purchase.price_ars = price
 
     from services.mercadopago_service import create_course_preference
     pref = await create_course_preference(
