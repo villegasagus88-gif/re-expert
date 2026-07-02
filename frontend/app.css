@@ -796,10 +796,15 @@ select.pay-form-input{cursor:pointer}
 .acad-inscribir-msg.err{display:block;color:#dc2626;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:10px 12px}
 .acad-d-cta .btn-primary:disabled{opacity:.65;cursor:default;box-shadow:none;transform:none}
 .acad-d-disclaimer{font-size:10.5px;color:var(--text-3);line-height:1.5}
-/* Badge "ya tenés este curso" en la tarjeta del catálogo */
-.acad-owned-badge{position:absolute;top:0;left:0;z-index:2;background:#16a34a;color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 9px;border-bottom-right-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.acad-owned-badge.pending{background:#d97706}
+/* Badge "ya tenés este curso": mismo formato que .acad-ribbon (esquina,
+   tipografía, sombra, gradiente 135deg) pero espejado y en la paleta verde/
+   ámbar de estado que ya usa la app. */
+.acad-owned-badge{position:absolute;top:0;left:0;z-index:2;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 10px;border-bottom-right-radius:10px;max-width:64%;line-height:1.25;box-shadow:0 2px 8px rgba(0,0,0,.25);display:inline-flex;align-items:center;gap:4px}
+.acad-owned-badge svg{flex-shrink:0}
+.acad-owned-badge.pending{background:linear-gradient(135deg,#f59e0b,#b45309)}
 .acad-card.is-owned{border-color:rgba(34,197,94,.4)}
+/* Botones del CTA con icono SVG (mismo trazo que el resto de la app) */
+.acad-d-cta .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px}
 @media(max-width:680px){
   .acad-d-meta{grid-template-columns:repeat(2,1fr)}
   .acad-d-cols,.acad-syllabus{grid-template-columns:1fr}

@@ -2976,12 +2976,17 @@ const _ACAD_LEVEL_LABEL={beginner:'Principiante',intermediate:'Intermedio',advan
 // Solo 3 modalidades oficiales; "en_vivo" (data vieja) se muestra como Online.
 const _ACAD_MODALITY={online:'Online',en_vivo:'Online',presencial:'Presencial',hibrida:'Híbrida'};
 
+// Iconos SVG con el mismo trazo que usa toda la app (stroke currentColor,
+// stroke-width 2.5, linecap round) — nada de emojis en badges/botones.
+const _acadSvgCheck=s=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
+const _acadSvgClock=s=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v5l3 2"/></svg>`;
+
 function _academiaCourseCardHTML(c){
   const lvlLabel=_ACAD_LEVEL_LABEL[c.level]||c.level;
   const badge=(c.badges||[])[0];
   const st=academiaState.owned[c.id];
-  const ownedBadge=(st==='approved'||st==='free')?'<div class="acad-owned-badge">✓ Tenés este curso</div>'
-    :(st==='pending'?'<div class="acad-owned-badge pending">⏳ Compra pendiente</div>':'');
+  const ownedBadge=(st==='approved'||st==='free')?`<div class="acad-owned-badge">${_acadSvgCheck(10)}Tenés este curso</div>`
+    :(st==='pending'?`<div class="acad-owned-badge pending">${_acadSvgClock(10)}Compra pendiente</div>`:'');
   return `<article class="acad-card${st?' is-owned':''}" data-course="${esc(c.id)}" data-lvl="${esc(c.level)}">
     ${ownedBadge}
     ${badge?`<div class="acad-ribbon">${esc(badge)}</div>`:''}
@@ -3035,11 +3040,11 @@ function _acadRenderDetail(c){
 function _acadCtaButtonHTML(c){
   const st=academiaState.owned[c.id];
   if(st==='approved'||st==='free'){
-    const go=c.enroll_url?`<a class="btn-primary" href="${esc(c.enroll_url)}" target="_blank" rel="noopener">Ir al curso</a>`
-      :'<button class="btn-primary" disabled>✓ Ya tenés este curso</button>';
+    const go=c.enroll_url?`<a class="btn-primary" href="${esc(c.enroll_url)}" target="_blank" rel="noopener">Ir al curso →</a>`
+      :`<button class="btn-primary" disabled>${_acadSvgCheck(14)}Ya tenés este curso</button>`;
     return go;
   }
-  if(st==='pending')return '<button class="btn-primary" disabled>⏳ Compra pendiente…</button>';
+  if(st==='pending')return `<button class="btn-primary" disabled>${_acadSvgClock(14)}Compra pendiente…</button>`;
   const label=c.is_free?'Empezar gratis':('Comprar · '+esc(c.price_label||''));
   return `<button class="btn-primary acad-buy" data-course="${esc(c.id)}">${label}</button>`;
 }
