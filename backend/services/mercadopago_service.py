@@ -154,6 +154,104 @@ async def start_subscription_checkout(user: User) -> dict[str, str]:
     return await create_pro_checkout_session(user)
 
 
+# ── Cursos (pago único — Checkout Pro) ───────────────────────────────────────
+async def create_course_preference(
+    user: User, *, purchase_id: str, title: str, price_ars: float
+) -> dict[str, str]:
+    """Crea una preference de Checkout Pro para la compra de un curso y devuelve
+    `{url, preference_id}`. `external_reference` = purchase_id (así el webhook
+    matchea el pago con la compra). El precio SIEMPRE viene del backend."""
+    _require_mp()
+    base = _back_url()
+    payload = {
+        "items": [{
+            "title": title[:250], "quantity": 1,
+            "unit_price": float(price_ars), "currency_id": "ARS",
+        }],
+        "external_reference": str(purchase_id),
+        "payer": {"email": user.email},
+        "back_urls": {"success": base, "failure": base, "pending": base},
+        "auto_return": "approved",
+        "metadata": {"kind": "course", "purchase_id": str(purchase_id), "user_id": str(user.id)},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.post(
+                f"{MP_API}/checkout/preferences", json=payload, headers=_auth_headers()
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP create_course_preference: error de red — %s", exc)
+        raise HTTPException(status_code=502, detail="No se pudo contactar a Mercado Pago.") from exc
+    if resp.status_code >= 300:
+        logger.warning("MP create_course_preference falló %s — %s", resp.status_code, resp.text[:500])
+        raise HTTPException(status_code=502, detail="No se pudo iniciar el pago en Mercado Pago.")
+    data = resp.json()
+    url = data.get("init_point") or data.get("sandbox_init_point")
+    if not url:
+        logger.error("MP create_course_preference: sin init_point — %s", str(data)[:300])
+        raise HTTPException(status_code=502, detail="Mercado Pago no devolvió un link de pago.")
+    return {"url": url, "preference_id": str(data.get("id", ""))}
+
+
+async def fetch_payment(payment_id: str) -> dict:
+    """Consulta un pago por id en MP. Raises 502 si MP falla."""
+    _require_mp()
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.get(
+                f"{MP_API}/v1/payments/{payment_id}", headers=_auth_headers()
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP fetch_payment: error de red — %s", exc)
+        raise HTTPException(status_code=502, detail="No se pudo consultar Mercado Pago.") from exc
+    if resp.status_code >= 300:
+        logger.warning("MP fetch_payment %s falló %s — %s", payment_id, resp.status_code, resp.text[:300])
+        raise HTTPException(status_code=502, detail="Mercado Pago devolvió un error.")
+    return resp.json()
+
+
+# Estado del pago (MP) → estado de la compra del curso.
+_PAYMENT_STATUS_TO_PURCHASE = {
+    "approved": "approved",
+    "rejected": "rejected",
+    "cancelled": "rejected",
+    "refunded": "refunded",
+    "charged_back": "refunded",
+}
+
+
+async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | None:
+    """Aplica el estado de un pago de MP a su CoursePurchase (external_reference =
+    purchase_id). Idempotente: no degrada un approved salvo refund."""
+    from models.course_purchase import CoursePurchase
+
+    ext_ref = payment.get("external_reference") or ""
+    new_status = _PAYMENT_STATUS_TO_PURCHASE.get((payment.get("status") or "").lower())
+    if new_status is None:
+        logger.info("MP webhook payment: estado %r sin acción", payment.get("status"))
+        return None
+    try:
+        pid = UUID(str(ext_ref))
+    except (ValueError, TypeError):
+        logger.warning("MP webhook payment: external_reference inválido=%r", ext_ref)
+        return None
+    purchase = (
+        await db.execute(select(CoursePurchase).where(CoursePurchase.id == pid))
+    ).scalar_one_or_none()
+    if not purchase:
+        logger.warning("MP webhook payment: compra %s no encontrada", pid)
+        return None
+    # Idempotencia: una compra ya aprobada no se pisa salvo por un refund.
+    if purchase.status == "approved" and new_status != "refunded":
+        return str(pid)
+    purchase.status = new_status
+    payment_id = payment.get("id")
+    if payment_id is not None:
+        purchase.mp_payment_id = str(payment_id)
+    logger.info("MP webhook payment: compra %s → %s", pid, new_status)
+    return str(pid)
+
+
 # ── Webhook ──────────────────────────────────────────────────────────────────
 def verify_webhook_signature(
     x_signature: str | None,
@@ -358,16 +456,24 @@ async def handle_webhook(
             detail="Webhook no configurado (falta MP_WEBHOOK_SECRET)",
         )
 
-    # 2. Solo nos interesan notificaciones de suscripción (preapproval).
-    if notif_type and "preapproval" not in notif_type.lower():
-        logger.info("MP webhook: tipo %r ignorado", notif_type)
-        return {"status": "ignored", "type": notif_type}
+    # 2. Dispatch por tipo: suscripción (preapproval) o pago único de curso (payment).
     if not data_id:
         return {"status": "ignored", "reason": "sin data.id"}
+    t = (notif_type or "").lower()
 
-    pre = await fetch_preapproval(data_id)
-    status = pre.get("status")
-    ext_ref = pre.get("external_reference") or ""
-    updated = await _apply_status_to_user(db, ext_ref, status)
-    await db.commit()
-    return {"status": "ok" if updated else "noop", "preapproval_status": status}
+    if "payment" in t:
+        payment = await fetch_payment(data_id)
+        updated = await _apply_payment_to_purchase(db, payment)
+        await db.commit()
+        return {"status": "ok" if updated else "noop", "payment_status": payment.get("status")}
+
+    if "preapproval" in t:
+        pre = await fetch_preapproval(data_id)
+        status = pre.get("status")
+        ext_ref = pre.get("external_reference") or ""
+        updated = await _apply_status_to_user(db, ext_ref, status)
+        await db.commit()
+        return {"status": "ok" if updated else "noop", "preapproval_status": status}
+
+    logger.info("MP webhook: tipo %r ignorado", notif_type)
+    return {"status": "ignored", "type": notif_type}

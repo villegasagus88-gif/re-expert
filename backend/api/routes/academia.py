@@ -14,9 +14,13 @@ from functools import lru_cache
 from pathlib import Path
 
 from api.schemas.academia import (
+    CourseCheckoutRequest,
+    CourseCheckoutResponse,
     CourseDemand,
     CoursesResponse,
     DemandResponse,
+    MyCoursesResponse,
+    OwnedCourse,
     PathsResponse,
     RecordInterestRequest,
     TopicDemand,
@@ -25,6 +29,7 @@ from core.auth import get_current_user, require_admin
 from fastapi import APIRouter, Depends, HTTPException, status
 from models.academia import AcademiaInterest
 from models.base import get_db
+from models.course_purchase import CoursePurchase
 from models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,6 +83,112 @@ async def get_courses(_user: User = Depends(get_current_user)) -> CoursesRespons
 async def get_paths(_user: User = Depends(get_current_user)) -> PathsResponse:
     data = _load_json(str(_PATHS_PATH))
     return PathsResponse(**data)
+
+
+def _find_course(course_id: str) -> dict | None:
+    """Busca un curso por id en el catálogo (categories[].courses[]). El precio y
+    el is_free SIEMPRE se leen del catálogo del backend, nunca del cliente."""
+    data = _load_json(str(_COURSES_PATH))
+    for cat in data.get("categories", []):
+        for c in cat.get("courses", []):
+            if c.get("id") == course_id:
+                return c
+    return None
+
+
+# ── Compra de cursos (Checkout Pro de Mercado Pago) ──
+
+@router.post(
+    "/checkout",
+    response_model=CourseCheckoutResponse,
+    summary="Comprar un curso (o inscribirse si es gratis)",
+    responses={
+        401: {"description": "Token inválido o ausente"},
+        404: {"description": "Curso no encontrado"},
+        409: {"description": "Ya tenés el curso"},
+        503: {"description": "Mercado Pago no configurado"},
+    },
+)
+async def checkout_course(
+    body: CourseCheckoutRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CourseCheckoutResponse:
+    course = _find_course(body.course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso no encontrado")
+
+    # ¿Ya lo tiene? (approved o free) → no re-comprar.
+    owned = (await db.execute(
+        select(CoursePurchase).where(
+            CoursePurchase.user_id == user.id,
+            CoursePurchase.course_id == body.course_id,
+            CoursePurchase.status.in_(("approved", "free")),
+        )
+    )).scalar_one_or_none()
+    if owned:
+        raise HTTPException(status_code=409, detail="Ya tenés acceso a este curso.")
+
+    title = str(course.get("title", ""))[:255]
+
+    # Curso GRATIS → inscripción directa, sin MP.
+    if course.get("is_free"):
+        db.add(CoursePurchase(
+            user_id=user.id, course_id=body.course_id, course_title=title,
+            price_ars=0, status="free",
+        ))
+        await db.commit()
+        return CourseCheckoutResponse(kind="enrolled", course_id=body.course_id, status="free")
+
+    price = int(course.get("price_ars") or 0)
+    if price <= 0:
+        raise HTTPException(status_code=409, detail="Este curso no tiene precio configurado.")
+
+    # Crear la compra pendiente + la preference de MP (el precio sale del catálogo).
+    purchase = CoursePurchase(
+        user_id=user.id, course_id=body.course_id, course_title=title,
+        price_ars=price, status="pending",
+    )
+    db.add(purchase)
+    await db.flush()  # obtener purchase.id para el external_reference
+
+    from services.mercadopago_service import create_course_preference
+    pref = await create_course_preference(
+        user, purchase_id=str(purchase.id), title=title, price_ars=price,
+    )
+    purchase.mp_preference_id = pref.get("preference_id") or None
+    await db.commit()
+    return CourseCheckoutResponse(
+        kind="redirect", url=pref["url"], course_id=body.course_id, status="pending",
+    )
+
+
+@router.get(
+    "/my-courses",
+    response_model=MyCoursesResponse,
+    summary="Cursos comprados / inscriptos del usuario",
+    responses={401: {"description": "Token inválido o ausente"}},
+)
+async def my_courses(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> MyCoursesResponse:
+    rows = list((await db.execute(
+        select(CoursePurchase).where(
+            CoursePurchase.user_id == user.id,
+            CoursePurchase.status.in_(("approved", "free", "pending")),
+        ).order_by(CoursePurchase.created_at.desc())
+    )).scalars().all())
+    # Un solo item por curso: preferimos el estado con acceso sobre pending.
+    best: dict[str, OwnedCourse] = {}
+    rank = {"approved": 0, "free": 0, "pending": 1}
+    for r in rows:
+        cur = best.get(r.course_id)
+        if cur is None or rank.get(r.status, 9) < rank.get(cur.status, 9):
+            best[r.course_id] = OwnedCourse(
+                course_id=r.course_id, course_title=r.course_title, status=r.status,
+            )
+    return MyCoursesResponse(items=list(best.values()))
 
 
 # ── Medición de demanda ──

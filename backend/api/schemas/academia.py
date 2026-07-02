@@ -85,6 +85,30 @@ class RecordInterestRequest(BaseModel):
     action: Literal["view", "info", "inscribir"] = "view"
 
 
+# ── Compra de cursos (Checkout Pro) ────────────────────────────────
+
+class CourseCheckoutRequest(BaseModel):
+    course_id: str = Field(min_length=1, max_length=80)
+
+
+class CourseCheckoutResponse(BaseModel):
+    # "redirect" → hay que ir a `url` (curso pago); "enrolled" → gratis, ya inscripto.
+    kind: Literal["redirect", "enrolled"]
+    url: str = ""
+    course_id: str
+    status: str
+
+
+class OwnedCourse(BaseModel):
+    course_id: str
+    course_title: str
+    status: str  # approved | free | pending
+
+
+class MyCoursesResponse(BaseModel):
+    items: list[OwnedCourse]
+
+
 class TopicDemand(BaseModel):
     topic: str
     count: int

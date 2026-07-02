@@ -218,9 +218,10 @@ def test_webhook_ignores_non_subscription_types(monkeypatch):
     sig = f"ts={ts},v1={v1}"
 
     async def go():
-        # firma válida + tipo "payment" → ignorado SIN llamar a la red
+        # firma válida + tipo no manejado (ni preapproval ni payment) → ignorado
+        # SIN llamar a la red. (payment y preapproval SÍ se procesan.)
         out = await handle_webhook(
-            None, data_id=did, notif_type="payment",
+            None, data_id=did, notif_type="merchant_order",
             x_signature=sig, x_request_id=rid,
         )
         assert out["status"] == "ignored"
