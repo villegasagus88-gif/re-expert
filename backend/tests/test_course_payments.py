@@ -110,7 +110,8 @@ async def test_apply_payment_estado_pendiente_no_toca():
 
 @pytest.mark.anyio
 async def test_apply_payment_idempotente_no_degrada_approved():
-    purchase = SimpleNamespace(status="approved", mp_payment_id="PAY-OLD")
+    purchase = SimpleNamespace(id=uuid4(), user_id=uuid4(), course_id="c-1",
+                               status="approved", mp_payment_id="PAY-OLD")
     # un webhook 'approved' repetido no cambia nada
     await mp._apply_payment_to_purchase(
         _FakeDB(purchase), {"status": "approved", "external_reference": str(uuid4()), "id": "PAY-2"})
@@ -128,6 +129,82 @@ async def test_apply_payment_external_reference_invalido():
         _FakeDB(purchase), {"status": "approved", "external_reference": "no-uuid"})
     assert res is None
     assert purchase.status == "pending"
+
+
+# ── Carrito: preference multi-item + webhook por orden ──
+
+@pytest.mark.anyio
+async def test_create_cart_preference_payload(monkeypatch):
+    """La preference del carrito lleva TODOS los items (precio del catálogo) y
+    external_reference = order_id para que el webhook resuelva la orden."""
+    monkeypatch.setattr(settings, "MP_ACCESS_TOKEN", "TESTTOKEN", raising=False)
+    monkeypatch.setattr(settings, "MP_PLAN_ID", "PLAN123", raising=False)
+    captured = {}
+
+    class _Resp:
+        status_code = 201
+        def json(self):
+            return {"init_point": "https://mp/checkout/cart", "id": "PREF-CART"}
+
+    class _Client:
+        def __init__(self, *a, **k): ...
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, url, json=None, headers=None):
+            captured["json"] = json
+            return _Resp()
+
+    monkeypatch.setattr(mp.httpx, "AsyncClient", _Client)
+    user = SimpleNamespace(id=uuid4(), email="u@x.com")
+    out = await mp.create_cart_preference(
+        user, order_id="ORD-1",
+        items=[{"title": "Curso A", "price_ars": 220000},
+               {"title": "Curso B", "price_ars": 150000}],
+    )
+    assert out["url"] == "https://mp/checkout/cart"
+    items = captured["json"]["items"]
+    assert len(items) == 2
+    assert items[0]["unit_price"] == 220000.0 and items[1]["unit_price"] == 150000.0
+    assert all(i["currency_id"] == "ARS" and i["quantity"] == 1 for i in items)
+    assert captured["json"]["external_reference"] == "ORD-1"
+
+
+class _FakeDBOrder:
+    """Query por id → None (no es compra suelta); query por order_id → rows;
+    queries anti-duplicado (scalars().first()) → None."""
+    def __init__(self, rows): self._rows = rows; self._calls = 0
+    async def execute(self, *_a, **_k):
+        self._calls += 1
+        rows = self._rows if self._calls == 2 else []
+        class _R:
+            def __init__(self, rs): self._rs = rs
+            def scalar_one_or_none(self): return None
+            def scalars(self):
+                rs = self._rs
+                class _S:
+                    def first(self): return rs[0] if rs else None
+                    def all(self): return rs
+                return _S()
+        return _R(rows)
+
+
+@pytest.mark.anyio
+async def test_apply_payment_orden_aplica_a_todas_las_compras():
+    """external_reference = order_id → todas las filas de la orden pasan a approved."""
+    order = uuid4()
+    rows = [
+        SimpleNamespace(id=uuid4(), user_id=uuid4(), course_id=f"c-{i}",
+                        status="pending", mp_payment_id=None, order_id=order)
+        for i in range(3)
+    ]
+    # OJO: _FakeDBOrder devuelve rows en la 2da execute; las queries anti-dup
+    # de cada fila (3ra, 4ta, 5ta) devuelven [] → sin duplicados.
+    res = await mp._apply_payment_to_purchase(
+        _FakeDBOrder(rows),
+        {"status": "approved", "external_reference": str(order), "id": "PAY-9"})
+    assert res == str(order)
+    assert all(r.status == "approved" for r in rows)
+    assert all(r.mp_payment_id == "PAY-9" for r in rows)
 
 
 # ── _apply_payment_to_purchase: pago duplicado no viola el unique parcial ──

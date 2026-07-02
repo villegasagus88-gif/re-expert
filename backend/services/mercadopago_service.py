@@ -193,6 +193,48 @@ async def create_course_preference(
     return {"url": url, "preference_id": str(data.get("id", ""))}
 
 
+async def create_cart_preference(
+    user: User, *, order_id: str, items: list[dict]
+) -> dict[str, str]:
+    """Crea UNA preference de Checkout Pro con varios cursos (carrito) y devuelve
+    `{url, preference_id}`. `items` = [{"title": ..., "price_ars": ...}, ...] con
+    precios que SIEMPRE salen del catálogo del backend. `external_reference` =
+    order_id: el webhook aplica el pago a todas las compras de la orden."""
+    _require_mp()
+    base = _back_url()
+    payload = {
+        "items": [
+            {
+                "title": str(it["title"])[:250], "quantity": 1,
+                "unit_price": float(it["price_ars"]), "currency_id": "ARS",
+            }
+            for it in items
+        ],
+        "external_reference": str(order_id),
+        "payer": {"email": user.email},
+        "back_urls": {"success": base, "failure": base, "pending": base},
+        "auto_return": "approved",
+        "metadata": {"kind": "course_cart", "order_id": str(order_id), "user_id": str(user.id)},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            resp = await client.post(
+                f"{MP_API}/checkout/preferences", json=payload, headers=_auth_headers()
+            )
+    except httpx.HTTPError as exc:
+        logger.warning("MP create_cart_preference: error de red — %s", exc)
+        raise HTTPException(status_code=502, detail="No se pudo contactar a Mercado Pago.") from exc
+    if resp.status_code >= 300:
+        logger.warning("MP create_cart_preference falló %s — %s", resp.status_code, resp.text[:500])
+        raise HTTPException(status_code=502, detail="No se pudo iniciar el pago en Mercado Pago.")
+    data = resp.json()
+    url = data.get("init_point") or data.get("sandbox_init_point")
+    if not url:
+        logger.error("MP create_cart_preference: sin init_point — %s", str(data)[:300])
+        raise HTTPException(status_code=502, detail="Mercado Pago no devolvió un link de pago.")
+    return {"url": url, "preference_id": str(data.get("id", ""))}
+
+
 async def fetch_payment(payment_id: str) -> dict:
     """Consulta un pago por id en MP. Raises 502 si MP falla."""
     _require_mp()
@@ -220,34 +262,16 @@ _PAYMENT_STATUS_TO_PURCHASE = {
 }
 
 
-async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | None:
-    """Aplica el estado de un pago de MP a su CoursePurchase (external_reference =
-    purchase_id). Idempotente: no degrada un approved salvo refund."""
+async def _apply_status_to_row(db: AsyncSession, purchase, new_status: str, payment_id) -> None:
+    """Aplica el estado de un pago a UNA fila de CoursePurchase. Idempotente
+    (no degrada un approved salvo refund) y anti-duplicado: si OTRA fila del
+    mismo (user, curso) ya tiene acceso, aprobar esta violaría el unique
+    parcial (uq_course_purchases_owned) y el webhook quedaría en 500 con MP
+    reintentando — se marca "duplicate" para conciliar/reembolsar a mano."""
     from models.course_purchase import CoursePurchase
 
-    ext_ref = payment.get("external_reference") or ""
-    new_status = _PAYMENT_STATUS_TO_PURCHASE.get((payment.get("status") or "").lower())
-    if new_status is None:
-        logger.info("MP webhook payment: estado %r sin acción", payment.get("status"))
-        return None
-    try:
-        pid = UUID(str(ext_ref))
-    except (ValueError, TypeError):
-        logger.warning("MP webhook payment: external_reference inválido=%r", ext_ref)
-        return None
-    purchase = (
-        await db.execute(select(CoursePurchase).where(CoursePurchase.id == pid))
-    ).scalar_one_or_none()
-    if not purchase:
-        logger.warning("MP webhook payment: compra %s no encontrada", pid)
-        return None
-    # Idempotencia: una compra ya aprobada no se pisa salvo por un refund.
     if purchase.status == "approved" and new_status != "refunded":
-        return str(pid)
-    # Anti-duplicado: si OTRA fila del mismo (user, curso) ya tiene acceso,
-    # aprobar esta violaría el unique parcial (uq_course_purchases_owned) y el
-    # webhook quedaría en 500 con MP reintentando. La marcamos "duplicate" para
-    # conciliar/reembolsar a mano: el usuario pagó dos veces el mismo curso.
+        return
     if new_status == "approved":
         other = (
             await db.execute(
@@ -261,7 +285,6 @@ async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | N
         ).scalars().first()
         if other is not None:
             purchase.status = "duplicate"
-            payment_id = payment.get("id")
             if payment_id is not None:
                 purchase.mp_payment_id = str(payment_id)
             logger.warning(
@@ -269,12 +292,47 @@ async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | N
                 "requiere reembolso manual",
                 purchase.course_id, purchase.user_id, payment_id,
             )
-            return str(pid)
+            return
     purchase.status = new_status
-    payment_id = payment.get("id")
     if payment_id is not None:
         purchase.mp_payment_id = str(payment_id)
-    logger.info("MP webhook payment: compra %s → %s", pid, new_status)
+    logger.info("MP webhook payment: compra %s → %s", purchase.id, new_status)
+
+
+async def _apply_payment_to_purchase(db: AsyncSession, payment: dict) -> str | None:
+    """Aplica el estado de un pago de MP a su/s CoursePurchase. El
+    external_reference es un purchase_id (compra suelta) o un order_id
+    (carrito: se aplica a TODAS las compras de la orden)."""
+    from models.course_purchase import CoursePurchase
+
+    ext_ref = payment.get("external_reference") or ""
+    new_status = _PAYMENT_STATUS_TO_PURCHASE.get((payment.get("status") or "").lower())
+    if new_status is None:
+        logger.info("MP webhook payment: estado %r sin acción", payment.get("status"))
+        return None
+    try:
+        pid = UUID(str(ext_ref))
+    except (ValueError, TypeError):
+        logger.warning("MP webhook payment: external_reference inválido=%r", ext_ref)
+        return None
+    payment_id = payment.get("id")
+
+    purchase = (
+        await db.execute(select(CoursePurchase).where(CoursePurchase.id == pid))
+    ).scalar_one_or_none()
+    if purchase is not None:
+        await _apply_status_to_row(db, purchase, new_status, payment_id)
+        return str(pid)
+
+    # Carrito: external_reference = order_id → todas las compras de la orden.
+    rows = list((
+        await db.execute(select(CoursePurchase).where(CoursePurchase.order_id == pid))
+    ).scalars().all())
+    if not rows:
+        logger.warning("MP webhook payment: compra/orden %s no encontrada", pid)
+        return None
+    for row in rows:
+        await _apply_status_to_row(db, row, new_status, payment_id)
     return str(pid)
 
 

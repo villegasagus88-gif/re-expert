@@ -36,6 +36,11 @@ class CoursePurchase(Base):
     )
     course_id: Mapped[str] = mapped_column(String(80), nullable=False)
     course_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Carrito: las compras de un mismo checkout comparten order_id (la
+    # preference de MP lleva external_reference=order_id). Null = compra suelta.
+    order_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), nullable=True, index=True,
+    )
     price_ars: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, server_default="0")
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
     mp_preference_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

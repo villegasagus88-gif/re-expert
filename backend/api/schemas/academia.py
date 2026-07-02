@@ -99,6 +99,20 @@ class CourseCheckoutResponse(BaseModel):
     status: str
 
 
+class CartCheckoutRequest(BaseModel):
+    course_ids: list[str] = Field(min_length=1, max_length=20)
+
+
+class CartCheckoutResponse(BaseModel):
+    # "redirect" → pagar en MP los cursos pagos; "enrolled" → todo era gratis.
+    kind: Literal["redirect", "enrolled"]
+    url: str = ""
+    enrolled: list[str] = Field(default_factory=list)   # gratis, ya inscriptos
+    pending: list[str] = Field(default_factory=list)    # pagos, esperando MP
+    skipped: list[str] = Field(default_factory=list)    # ya los tenía
+    total_ars: int = 0
+
+
 class OwnedCourse(BaseModel):
     course_id: str
     course_title: str

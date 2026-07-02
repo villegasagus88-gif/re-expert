@@ -12,8 +12,11 @@ Endpoints:
 import json
 from functools import lru_cache
 from pathlib import Path
+from uuid import uuid4
 
 from api.schemas.academia import (
+    CartCheckoutRequest,
+    CartCheckoutResponse,
     CourseCheckoutRequest,
     CourseCheckoutResponse,
     CourseDemand,
@@ -183,6 +186,109 @@ async def checkout_course(
     await db.commit()
     return CourseCheckoutResponse(
         kind="redirect", url=pref["url"], course_id=body.course_id, status="pending",
+    )
+
+
+@router.post(
+    "/checkout-cart",
+    response_model=CartCheckoutResponse,
+    summary="Comprar varios cursos en un solo pago (carrito)",
+    responses={
+        401: {"description": "Token inválido o ausente"},
+        404: {"description": "Algún curso no existe"},
+        409: {"description": "Ya tenés todos esos cursos"},
+        422: {"description": "Curso pago sin precio configurado"},
+        503: {"description": "Mercado Pago no configurado"},
+    },
+)
+async def checkout_cart(
+    body: CartCheckoutRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CartCheckoutResponse:
+    # Dedup preservando orden; el precio SIEMPRE sale del catálogo del backend.
+    ids = list(dict.fromkeys(body.course_ids))
+    courses = []
+    for cid in ids:
+        c = _find_course(cid)
+        if not c:
+            raise HTTPException(status_code=404, detail=f"Curso no encontrado: {cid}")
+        courses.append(c)
+
+    owned_ids = {
+        r.course_id
+        for r in (await db.execute(
+            select(CoursePurchase).where(
+                CoursePurchase.user_id == user.id,
+                CoursePurchase.course_id.in_(ids),
+                CoursePurchase.status.in_(("approved", "free")),
+            )
+        )).scalars().all()
+    }
+    skipped = [c["id"] for c in courses if c["id"] in owned_ids]
+    to_buy = [c for c in courses if c["id"] not in owned_ids]
+    if not to_buy:
+        raise HTTPException(status_code=409, detail="Ya tenés acceso a todos esos cursos.")
+
+    free_courses = [c for c in to_buy if c.get("is_free")]
+    paid_courses = [c for c in to_buy if not c.get("is_free")]
+    for c in paid_courses:
+        if int(c.get("price_ars") or 0) <= 0:
+            raise HTTPException(
+                status_code=422,
+                detail=f"El curso {c['id']} no tiene precio configurado.",
+            )
+
+    # Gratis → inscripción directa, sin MP.
+    for c in free_courses:
+        db.add(CoursePurchase(
+            user_id=user.id, course_id=c["id"],
+            course_title=str(c.get("title", ""))[:255], price_ars=0, status="free",
+        ))
+
+    if not paid_courses:
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Race (doble click): otro request ya inscribió alguno — mismo resultado.
+            await db.rollback()
+        return CartCheckoutResponse(
+            kind="enrolled", enrolled=[c["id"] for c in free_courses], skipped=skipped,
+        )
+
+    # Pagos → una orden (order_id) con N compras pending + UNA preference de MP.
+    order_id = uuid4()
+    pendings = []
+    for c in paid_courses:
+        p = CoursePurchase(
+            user_id=user.id, course_id=c["id"],
+            course_title=str(c.get("title", ""))[:255],
+            price_ars=int(c["price_ars"]), status="pending", order_id=order_id,
+        )
+        db.add(p)
+        pendings.append(p)
+    await db.flush()
+
+    from services.mercadopago_service import create_cart_preference
+    pref = await create_cart_preference(
+        user, order_id=str(order_id),
+        items=[{"title": c["title"], "price_ars": int(c["price_ars"])} for c in paid_courses],
+    )
+    for p in pendings:
+        p.mp_preference_id = pref.get("preference_id") or None
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Algún curso ya estaba comprado. Refrescá e intentá de nuevo.",
+        ) from None
+    return CartCheckoutResponse(
+        kind="redirect", url=pref["url"],
+        enrolled=[c["id"] for c in free_courses],
+        pending=[c["id"] for c in paid_courses], skipped=skipped,
+        total_ars=sum(int(c["price_ars"]) for c in paid_courses),
     )
 
 
