@@ -80,7 +80,7 @@
   <div id="authModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px">
     <div style="background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-xl);width:100%;max-width:400px;padding:32px;box-shadow:var(--shadow-xl)">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-        <div style="width:40px;height:40px;background:#09090b;color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">RE</div>
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,var(--accent-brand),#8f3d02);color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">RE</div>
         <div>
           <div style="font-weight:700;font-size:16px;color:var(--text-0)">RE Expert</div>
           <div style="font-size:12px;color:var(--text-2)" id="authModalSubtitle">Iniciar sesión</div>
@@ -99,8 +99,8 @@
           <label style="font-size:12px;font-weight:500;color:var(--text-1);margin-bottom:6px;display:block">Contraseña</label>
           <input type="password" id="authPassword" required minlength="6" style="width:100%;padding:10px 12px;border:1px solid var(--border-0);border-radius:var(--radius-md);background:var(--bg-input);color:var(--text-0);font-size:14px;font-family:var(--font)" autocomplete="current-password">
         </div>
-        <div id="authError" style="display:none;color:#dc2626;font-size:12px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm)"></div>
-        <button type="submit" id="authSubmit" style="padding:10px;background:#18181b;color:#fff;border:none;border-radius:var(--radius-md);font-weight:600;font-size:14px;cursor:pointer;margin-top:4px">Iniciar sesión</button>
+        <div id="authError" style="display:none;color:#dc2626;font-size:12px;padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius-sm)"></div>
+        <button type="submit" id="authSubmit" style="padding:10px;background:var(--accent);color:var(--bg-0);border:none;border-radius:var(--radius-md);font-weight:600;font-size:14px;cursor:pointer;margin-top:4px">Iniciar sesión</button>
       </form>
       <div style="margin-top:16px;text-align:center;font-size:13px;color:var(--text-2)">
         <span id="authToggleText">¿No tenés cuenta?</span>
@@ -450,14 +450,17 @@
             </button>
           </div>
 
-          <!-- FAB del carrito: fijo abajo a la derecha, solo visible con items
-               (la vista inactiva lo oculta sola por display:none del .view) -->
-          <button class="acad-cart-fab" id="acadCartFab" style="display:none" aria-label="Ver carrito">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            <span class="acad-cart-fab-count" id="acadCartFabCount">0</span>
-          </button>
-
         </div>
+
+        <!-- FAB del carrito: fijo abajo a la derecha, solo visible con items.
+             FUERA de .section-view a propósito: su animation fadeIn deja un
+             transform residual que convertiría este position:fixed en un
+             absolute relativo al contenedor (containing block). La vista
+             inactiva lo oculta sola por display:none del .view. -->
+        <button class="acad-cart-fab" id="acadCartFab" style="display:none" aria-label="Ver carrito">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span class="acad-cart-fab-count" id="acadCartFabCount">0</span>
+        </button>
       </div>
 
       <!-- SOL VIEW -->
@@ -2906,7 +2909,7 @@ function renderProyectoCronograma(data){
     <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
       <div class="kpi-card"><div class="kpi-label">Inicio</div><div class="kpi-value" style="font-size:18px">${p.fecha_inicio?fmtMonth(p.fecha_inicio):'—'}</div></div>
       <div class="kpi-card"><div class="kpi-label">Entrega programada</div><div class="kpi-value" style="font-size:18px">${p.fecha_entrega_programada?fmtMonth(p.fecha_entrega_programada):'—'}</div></div>
-      ${p.fecha_entrega_estimada?`<div class="kpi-card"><div class="kpi-label">Entrega estimada real</div><div class="kpi-value" style="font-size:18px;color:#eab308">${fmtMonth(p.fecha_entrega_estimada)}</div></div>`:''}
+      ${p.fecha_entrega_estimada?`<div class="kpi-card"><div class="kpi-label">Entrega estimada real</div><div class="kpi-value" style="font-size:18px;color:var(--warn-text)">${fmtMonth(p.fecha_entrega_estimada)}</div></div>`:''}
       <div class="kpi-card"><div class="kpi-label">Avance real vs plan</div><div class="kpi-value" style="font-size:18px">${p.avance_real_pct.toFixed(1)}% <span style="font-size:12px;color:var(--text-3);font-weight:600">vs ${p.avance_plan_pct.toFixed(1)}%</span></div><div class="kpi-bar" style="margin-top:8px"><div class="kpi-bar-fill yellow" style="width:${Math.min(100,p.avance_real_pct)}%"></div></div></div>
     </div>
     ${ms.length?`<div class="section-block"><div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Detalle de hitos</div><div class="milestone-track"><div class="milestone-line"></div>${ms.map(m=>`<div class="milestone"><div class="milestone-dot ${m.estado}"></div><div class="milestone-head"><span class="milestone-name">${esc(m.nombre)}</span><span class="milestone-status ${m.estado}">${esc(lbl[m.estado]||m.estado)}</span></div><div class="milestone-date">Plan ${fmtMonth(m.fecha_objetivo)}${m.fecha_real?' · real '+fmtMonth(m.fecha_real):''}</div>${m.detalle?`<div class="milestone-detail">${esc(m.detalle)}</div>`:''}</div>`).join('')}</div></div>`:''}
@@ -3923,10 +3926,10 @@ function solAppendToolChip(toolName, status, result){
     if (result.whatsapp_link || result.telegram_link){
       const links = [];
       if (result.whatsapp_link){
-        links.push(`<a href="${escAttr(result.whatsapp_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#25D366">📱 WhatsApp a ${escapeHtml(result.contact && result.contact.name || 'contacto')}</a>`);
+        links.push(`<a href="${escAttr(result.whatsapp_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:var(--wa-link)">📱 WhatsApp a ${escapeHtml(result.contact && result.contact.name || 'contacto')}</a>`);
       }
       if (result.telegram_link){
-        links.push(`<a href="${escAttr(result.telegram_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:#229ED9">✈️ Telegram</a>`);
+        links.push(`<a href="${escAttr(result.telegram_link)}" target="_blank" rel="noopener" class="sol-tool-link" style="color:var(--tg-link)">✈️ Telegram</a>`);
       }
       if (result.pdf_url){
         links.unshift(`<a href="${escAttr(result.pdf_url)}" target="_blank" rel="noopener" class="sol-tool-link">📥 Ver PDF</a>`);
@@ -5012,7 +5015,7 @@ const _SCAN_VEREDICTO={avanzar:'Avanzar con prioridad',due_diligence:'Avanzar co
 const _SCAN_REC_LABEL={recomendada:'Recomendada',precaucion:'Precaución',rechazada:'Descartar'};
 const _SCAN_SEV={alta:'Alta',media:'Media',baja:'Baja'};
 
-function _scanScoreColor(s){const v=Number(s);return s==null||isNaN(v)?'var(--text-3)':v>=75?'#16a34a':v>=60?'#ea7317':v>=40?'#eab308':'#dc2626';}
+function _scanScoreColor(s){const v=Number(s);return s==null||isNaN(v)?'var(--text-3)':v>=75?'#16a34a':v>=60?'#ea7317':v>=40?'var(--warn-text)':'#dc2626';}
 function _scanRecClass(r){return r==='recomendada'?'good':r==='rechazada'?'bad':'warn';}
 
 function _scanScoreRing(score){
