@@ -793,7 +793,13 @@ select.pay-form-input{cursor:pointer}
 .acad-d-cta .btn-primary{padding:11px 22px;font-size:13.5px}
 .acad-inscribir-msg{font-size:12px;line-height:1.5;margin-bottom:10px;display:none}
 .acad-inscribir-msg.ok{display:block;color:#16a34a;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:var(--radius-md);padding:10px 12px}
+.acad-inscribir-msg.err{display:block;color:#dc2626;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-md);padding:10px 12px}
+.acad-d-cta .btn-primary:disabled{opacity:.65;cursor:default;box-shadow:none;transform:none}
 .acad-d-disclaimer{font-size:10.5px;color:var(--text-3);line-height:1.5}
+/* Badge "ya tenés este curso" en la tarjeta del catálogo */
+.acad-owned-badge{position:absolute;top:0;left:0;z-index:2;background:#16a34a;color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 9px;border-bottom-right-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.acad-owned-badge.pending{background:#d97706}
+.acad-card.is-owned{border-color:rgba(34,197,94,.4)}
 @media(max-width:680px){
   .acad-d-meta{grid-template-columns:repeat(2,1fr)}
   .acad-d-cols,.acad-syllabus{grid-template-columns:1fr}
