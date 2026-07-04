@@ -107,14 +107,25 @@
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
       if (!resp.ok) {
-        redirectToLogin();
+        // Solo un rechazo REAL del token (401/400/403) invalida la sesión.
+        // Un 5xx/429 transitorio (deploy, rate limit, hipo del server) NO
+        // debe desloguear al usuario ni borrar su refresh token: se reintenta
+        // en ~30s y la sesión sobrevive.
+        if (resp.status === 400 || resp.status === 401 || resp.status === 403) {
+          redirectToLogin();
+          return null;
+        }
+        if (_refreshTimer) clearTimeout(_refreshTimer);
+        _refreshTimer = setTimeout(doRefresh, 30000);
         return null;
       }
       const data = await resp.json();
       _storeSession(data.access_token, data.refresh_token, data.user || null);
       return data.access_token;
     } catch {
-      redirectToLogin();
+      // Error de red (offline, DNS): conservar la sesión y reintentar.
+      if (_refreshTimer) clearTimeout(_refreshTimer);
+      _refreshTimer = setTimeout(doRefresh, 30000);
       return null;
     }
   }

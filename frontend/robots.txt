@@ -7,4 +7,9 @@ Disallow: /app.html
 Disallow: /account.html
 Disallow: /success.html
 
-Sitemap: https://re-expert.app/sitemap.xml
+Sitemap: https://re-expert.netlify.app/sitemap.xml
+Disallow: /admin.html
+Disallow: /admin-creditos.html
+Disallow: /admin-academia.html
+Disallow: /forgot-password.html
+Disallow: /reset-password.html

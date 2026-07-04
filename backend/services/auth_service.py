@@ -15,6 +15,7 @@ from models.user import User
 from services.jwt_service import create_token_pair, decode_token
 from services.mercadopago_service import mp_enabled
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 
 def _hash_password(password: str) -> str:
@@ -81,7 +82,16 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
             last_login=datetime.now(UTC),
         )
         db.add(user)
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Race: dos registros simultáneos con el mismo email pasan ambos
+            # el SELECT previo; el unique index corta al segundo → 409, no 500.
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una cuenta con este email",
+            ) from None
         await db.refresh(user)
 
         # Generate tokens (incluye token_version actual del usuario)

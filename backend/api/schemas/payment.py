@@ -13,7 +13,9 @@ from pydantic import BaseModel, Field
 class CreatePaymentRequest(BaseModel):
     concepto: SanitizedStr = Field(min_length=1, max_length=500)
     proveedor: SanitizedOptStr = Field(default=None, max_length=255)
-    monto: Decimal = Field(gt=0, decimal_places=2)
+    # le= acorde a la columna Numeric(12,2): sin tope, un monto gigante
+    # revienta en el INSERT con 500 en vez de un 422 claro.
+    monto: Decimal = Field(gt=0, le=9_999_999_999, decimal_places=2)
     fecha: date
     estado: str = Field(default="pendiente", pattern="^(pendiente|pagado|cancelado)$")
     categoria: SanitizedOptStr = Field(default=None, max_length=100)
@@ -26,7 +28,7 @@ class CreatePaymentRequest(BaseModel):
 class UpdatePaymentRequest(BaseModel):
     concepto: SanitizedOptStr = Field(default=None, min_length=1, max_length=500)
     proveedor: SanitizedOptStr = Field(default=None, max_length=255)
-    monto: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    monto: Decimal | None = Field(default=None, gt=0, le=9_999_999_999, decimal_places=2)
     fecha: date | None = None
     estado: str | None = Field(default=None, pattern="^(pendiente|pagado|cancelado)$")
     categoria: SanitizedOptStr = Field(default=None, max_length=100)

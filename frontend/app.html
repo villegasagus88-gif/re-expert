@@ -125,7 +125,7 @@
 
     <button class="btn-new-chat" id="newChatBtn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Nueva conversacion
+      Nueva conversación
     </button>
 
     <nav class="sidebar-nav">
@@ -135,11 +135,11 @@
       </button>
       <button class="sidebar-nav-item" data-view="planos">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        Analisis de Planos
+        Análisis de Planos
       </button>
       <button class="sidebar-nav-item" data-view="materiales">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        Cotizacion Materiales
+        Cotización Materiales
       </button>
       <button class="sidebar-nav-item" data-view="proyecto">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -317,7 +317,7 @@
       <div class="view" id="viewPlanos">
         <div class="section-view">
           <div class="section-header">
-            <h2>Analisis de Planos</h2>
+            <h2>Análisis de Planos</h2>
             <p>Carga tus planos y la IA calcula materiales, cantidades y estimaciones para tu obra.</p>
           </div>
           <div class="upload-zone" id="uploadZone">
@@ -356,13 +356,13 @@
       <div class="view" id="viewMateriales">
         <div class="section-view">
           <div class="section-header">
-            <h2>Cotizacion de Materiales</h2>
-            <p>Precios actualizados, seguimiento de aumentos y pronosticos basados en analisis economico.</p>
+            <h2>Cotización de Materiales</h2>
+            <p>Precios de referencia, seguimiento de aumentos y proyecciones basadas en análisis económico.</p>
           </div>
           <div class="section-tabs">
             <button class="section-tab active" data-mat-tab="precios">Precios actuales</button>
             <button class="section-tab" data-mat-tab="seguimiento">Seguimiento</button>
-            <button class="section-tab" data-mat-tab="pronosticos">Pronosticos</button>
+            <button class="section-tab" data-mat-tab="pronosticos">Pronósticos</button>
           </div>
           <div id="matTabPrecios" class="mat-tab-content">
             <div class="mat-meta" id="matMeta">
@@ -380,27 +380,17 @@
             </div>
           </div>
           <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
-            <table class="data-table">
-              <thead><tr><th>Material</th><th>Ene</th><th>Feb</th><th>Mar</th><th>Variacion</th></tr></thead>
-              <tbody>
-                <tr><td>Cemento Portland</td><td>$7.200</td><td>$7.850</td><td>$8.450</td><td><span class="stat-card-trend trend-up">+17.4%</span></td></tr>
-                <tr><td>Hierro 10mm</td><td>$11.200</td><td>$12.100</td><td>$12.800</td><td><span class="stat-card-trend trend-up">+14.3%</span></td></tr>
-                <tr><td>Ladrillo hueco</td><td>$175</td><td>$180</td><td>$185</td><td><span class="stat-card-trend trend-stable">+5.7%</span></td></tr>
-                <tr><td>Arena gruesa</td><td>$29.000</td><td>$29.200</td><td>$28.500</td><td><span class="stat-card-trend trend-down">-1.7%</span></td></tr>
-              </tbody>
-            </table>
+            <!-- Se puebla con los datos reales del catálogo (renderMatSeguimiento) -->
+            <div id="matSeguimientoWrap"></div>
           </div>
           <div id="matTabPronosticos" class="mat-tab-content" style="display:none">
-            <div class="cards-grid">
-              <div class="stat-card"><div class="stat-card-label">Cemento — Pronostico Abr</div><div class="stat-card-value">$8.900</div><div class="stat-card-sub">Tendencia alcista por costos energeticos</div><div class="stat-card-trend trend-up">+5.3% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Hierro — Pronostico Abr</div><div class="stat-card-value">$13.200</div><div class="stat-card-sub">Presion por demanda estacional</div><div class="stat-card-trend trend-up">+3.1% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Arena — Pronostico Abr</div><div class="stat-card-value">$28.200</div><div class="stat-card-sub">Estable, oferta sostenida</div><div class="stat-card-trend trend-down">-1.1% estimado</div></div>
-              <div class="stat-card"><div class="stat-card-label">Ladrillo — Pronostico Abr</div><div class="stat-card-value">$190</div><div class="stat-card-sub">Leve ajuste por inflacion</div><div class="stat-card-trend trend-stable">+2.7% estimado</div></div>
-            </div>
+            <!-- Proyección lineal calculada de la variación mensual real (renderMatPronosticos) -->
+            <div class="cards-grid" id="matPronosticosGrid"></div>
+            <div class="acad-d-disclaimer" id="matPronosticosNote" style="margin-top:10px;display:none">Proyección lineal simple: asume que la última variación mensual se repite. Es una referencia, no un pronóstico profesional — para eso está el análisis con IA.</div>
             <div style="margin-top:16px">
               <button class="btn-primary" id="deepAnalysisBtn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                Analisis profundo con IA
+                Análisis profundo con IA
               </button>
             </div>
           </div>
@@ -645,72 +635,7 @@
               <button class="news-filter" data-category="financiacion">Financiación</button>
               <button class="news-filter" data-category="regulacion">Regulación</button>
             </div>
-            <div class="news-feed" id="newsFeedUltimas">
-              <div class="news-feed-item" data-cat="macro">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Dólar blue retrocede a $1.180 y achica brecha al 8%</div>
-                  <div class="news-feed-sub">La estabilidad cambiaria refuerza la dolarización de costos de construcción en niveles más predecibles.</div>
-                  <div class="news-feed-meta">Ámbito · Hace 25 min</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="costos">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">YPF sube precio del gas industrial 6.5%: impacto en producción de cemento y cerámicos</div>
-                  <div class="news-feed-sub">Los productores adelantan que trasladarán el aumento al precio final en 30 días.</div>
-                  <div class="news-feed-meta">Cronista · Hace 1h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="mercado">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Córdoba: se lanzaron 12 nuevos proyectos multifamily en el primer trimestre</div>
-                  <div class="news-feed-sub">Récord histórico para la ciudad. La zona sur lidera con 5 emprendimientos.</div>
-                  <div class="news-feed-meta">La Voz · Hace 2h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="financiacion">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Banco Hipotecario relanza créditos para construcción de vivienda individual</div>
-                  <div class="news-feed-sub">Hasta $80M, plazo de 20 años, UVA + 4.5%. Requiere terreno propio y planos aprobados.</div>
-                  <div class="news-feed-meta">Infobae · Hace 3h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="regulacion">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Provincia de Buenos Aires simplifica trámite de final de obra para edificios sub-500m²</div>
-                  <div class="news-feed-sub">El nuevo régimen reduce los plazos de habilitación de 120 a 45 días.</div>
-                  <div class="news-feed-meta">CPAU · Hace 4h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="costos">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Aluminio sube 9% en commodities internacionales: impacto en aberturas y carpintería</div>
-                  <div class="news-feed-sub">Proveedores locales anticipan ajuste del 5-7% en puertas y ventanas de aluminio.</div>
-                  <div class="news-feed-meta">Bloomberg Línea · Hace 5h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="mercado">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Precio del m² en Palermo alcanza USD 3.450: máximo en 3 años</div>
-                  <div class="news-feed-sub">Palermo Hollywood y Soho lideran la suba. Inversores ven señales de recuperación plena.</div>
-                  <div class="news-feed-meta">Zonaprop · Hace 6h</div>
-                </div>
-              </div>
-              <div class="news-feed-item" data-cat="macro">
-                <div class="news-feed-num">·</div>
-                <div class="news-feed-body">
-                  <div class="news-feed-title">Inflación de marzo: 2.1% mensual, la más baja en 4 años</div>
-                  <div class="news-feed-sub">La desaceleración sostiene el atractivo de créditos UVA y da previsibilidad a costos de obra.</div>
-                  <div class="news-feed-meta">INDEC · Hace 8h</div>
-                </div>
-              </div>
-            </div>
+            <div class="news-feed" id="newsFeedUltimas"><!-- tab legacy sin uso: el feed real es #newsLiveFeed --></div>
             <div id="newsFeedFooter" style="margin-top:16px;display:flex;justify-content:center">
               <button id="newsLoadMore" class="btn-secondary" style="display:none">Cargar más</button>
             </div>
@@ -878,7 +803,7 @@
     <div class="modal-overlay" id="exportModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>Exportar conversacion</h3>
+          <h3>Exportar conversación</h3>
           <button class="btn-icon" id="exportModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body">
@@ -1229,7 +1154,7 @@ function switchView(v){
   $$('.sidebar-nav-item').forEach(el=>{if(el.dataset.view)el.classList.toggle('active',el.dataset.view===v)});
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
-  const titles={chat:'Chat Experto',planos:'Analisis de Planos',materiales:'Cotizacion de Materiales',pagos:'Gestion de Pagos',proyecto:'Panel de Proyecto',scanner:'Opportunity Scanner',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
+  const titles={chat:'Chat Experto',planos:'Análisis de Planos',materiales:'Cotización de Materiales',pagos:'Gestión de Pagos',proyecto:'Panel de Proyecto',scanner:'Opportunity Scanner',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
   if(v==='workspace')els.topbarTitle.textContent=state.activeWorkspace?.name||'Proyecto';
   else els.topbarTitle.textContent=titles[v]||'';
   if(typeof updateWsActiveBar==='function')updateWsActiveBar();
@@ -1325,7 +1250,13 @@ async function loadConversationsFromCloud(append=false){
     renderHistory();
   }catch(e){
     console.error('Error listando conversaciones:',e);
-    if(!append)renderHistory();
+    // Error ≠ historial vacío: si falla la carga, el cliente NO puede creer
+    // que perdió sus chats. Estado de error con reintento.
+    if(!append&&!state.conversations.length){
+      els.chatHistory.innerHTML='<div class="history-empty">No pudimos cargar tus chats.<br><button class="sol-toast-link" id="histRetry" style="pointer-events:auto;margin-top:6px">Reintentar</button></div>';
+      const rb=document.getElementById('histRetry');
+      if(rb)rb.addEventListener('click',()=>loadConversationsFromCloud());
+    }else if(!append){renderHistory();}
   }finally{
     historyMeta.loading=false;
     if(loader)loader.style.display='none';
@@ -1575,7 +1506,7 @@ async function renameConversation(id,title){
     const c1=state.conversations.find(c=>c.id===id);if(c1)c1.title=title;
     const c2=(state._workspaceChats||[]).find(c=>c.id===id);if(c2)c2.title=title;
     if(state.currentConversation?.id===id){state.currentConversation.title=title;els.topbarTitle.textContent=title}
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 async function moveConversation(id,wsId){
   try{
@@ -1589,7 +1520,7 @@ async function moveConversation(id,wsId){
     await loadConversationsFromCloud();
     if(state.activeWorkspace)await loadWorkspaceChats(state.activeWorkspace.id);
     await loadWorkspaces();
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 async function deleteConversationById(id){
   if(!confirm('¿Eliminar esta conversación? No se puede deshacer.'))return;
@@ -1602,7 +1533,7 @@ async function deleteConversationById(id){
     renderHistory();
     if(state.currentView==='workspace')renderWorkspaceChats();
     loadWorkspaces();
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 // ── Acción de proyecto ──
 async function deleteWorkspaceById(id){
@@ -1612,7 +1543,7 @@ async function deleteWorkspaceById(id){
     if(!r.ok&&r.status!==204)throw new Error('No se pudo eliminar el proyecto');
     if(state.activeWorkspace?.id===id){exitWorkspace();switchView('chat')}
     await loadWorkspaces();
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 // Aplica un color: actualiza estado, swatch activo y el dot grande del input.
 function setWorkspaceColor(color){
@@ -1638,7 +1569,7 @@ async function saveWorkspace(){
   const name=document.getElementById('wsNameInput').value.trim();
   const description=document.getElementById('wsDescInput').value.trim();
   const color=state._editingColor||'#6366f1';
-  if(!name){alert('El nombre es obligatorio');return}
+  if(!name){uiError('El nombre es obligatorio');return}
   const payload={name,description,color};
   try{
     let r;
@@ -1664,7 +1595,7 @@ async function saveWorkspace(){
       const n=document.getElementById('wsvNewChatName');if(n)n.textContent=ws.name;
       if(state.currentView==='workspace')els.topbarTitle.textContent=ws.name;
     }
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 async function deleteWorkspace(){
   if(!state._editingWorkspaceId)return;
@@ -1675,7 +1606,7 @@ async function deleteWorkspace(){
     closeWorkspaceModal();
     if(state.activeWorkspace?.id===state._editingWorkspaceId){exitWorkspace();switchView('chat')}
     await loadWorkspaces();
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
 
 // ===== PROFILE (memoria global) =====
@@ -1696,11 +1627,12 @@ function renderProfile(){
   const list=document.getElementById('profileList');
   if(!list)return;
   if(!state.profile.length){list.innerHTML='<div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>';return}
-  list.innerHTML=state.profile.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly title="${esc(it.source||'')}"><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  // data-id: el backend identifica los items por UUID (it.id), no por la key.
+  list.innerHTML=state.profile.map(it=>`<div class="mem-item" data-id="${esc(it.id)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly title="${esc(it.source||'')}"><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
   list.querySelectorAll('.mem-item').forEach(row=>{
-    const key=row.dataset.key;
-    row.querySelector('.mem-val').addEventListener('change',e=>updateProfileItem(key,e.target.value));
-    row.querySelector('.mem-del').addEventListener('click',()=>deleteProfileItem(key));
+    const id=row.dataset.id;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateProfileItem(id,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteProfileItem(id));
   });
 }
 async function addProfileItem(){
@@ -1713,20 +1645,22 @@ async function addProfileItem(){
     document.getElementById('profileKeyInput').value='';
     document.getElementById('profileValueInput').value='';
     await loadProfile();renderProfile();
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
-async function updateProfileItem(key,value){
+async function updateProfileItem(id,value){
   try{
-    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+    if(!r.ok)throw new Error('No se pudo guardar el cambio');
     await loadProfile();
-  }catch(e){console.error(e)}
+  }catch(e){uiError(e.message);}
 }
-async function deleteProfileItem(key){
+async function deleteProfileItem(id){
   if(!confirm('¿Eliminar este dato del perfil?'))return;
   try{
-    await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(key),{method:'DELETE'});
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile/'+encodeURIComponent(id),{method:'DELETE'});
+    if(!r.ok&&r.status!==404)throw new Error('No se pudo eliminar');
     await loadProfile();renderProfile();
-  }catch(e){console.error(e)}
+  }catch(e){uiError(e.message);}
 }
 
 // ===== WORKSPACE MEMORY =====
@@ -1739,7 +1673,7 @@ async function loadWorkspaceMemory(wsId){
   }catch(e){console.error('loadWorkspaceMemory:',e);return[]}
 }
 function openMemoryModal(){
-  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  if(!state.activeWorkspace){uiError('Abrí un proyecto primero.');return}
   document.getElementById('memoryModalTitle').textContent='Memoria — '+state.activeWorkspace.name;
   loadWorkspaceMemory(state.activeWorkspace.id).then(items=>{
     state._currentMemoryItems=items;
@@ -1749,7 +1683,7 @@ function openMemoryModal(){
 }
 function closeMemoryModal(){document.getElementById('memoryModal').classList.remove('active')}
 async function exportWorkspaceMemory(fmt,btn){
-  if(!state.activeWorkspace){alert('Abrí un proyecto primero.');return}
+  if(!state.activeWorkspace){uiError('Abrí un proyecto primero.');return}
   if(btn)btn.disabled=true;
   try{
     const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/export?format='+encodeURIComponent(fmt));
@@ -1760,17 +1694,18 @@ async function exportWorkspaceMemory(fmt,btn){
     const fn=(m&&m[1])||('memoria.'+(fmt==='pdf'?'pdf':'csv'));
     const u=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
-  }catch(e){alert(e.message)}finally{if(btn)btn.disabled=false}
+  }catch(e){uiError(e.message)}finally{if(btn)btn.disabled=false}
 }
 function renderMemoryList(items){
   const list=document.getElementById('memoryList');
   if(!list)return;
   if(!items.length){list.innerHTML='<div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>';return}
-  list.innerHTML=items.map(it=>`<div class="mem-item" data-key="${esc(it.key)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
+  // data-id: el backend identifica los items por UUID (it.id), no por la key.
+  list.innerHTML=items.map(it=>`<div class="mem-item" data-id="${esc(it.id)}"><input class="mem-key" type="text" value="${esc(it.key)}" readonly><input class="mem-val" type="text" value="${esc(it.value)}" maxlength="1000"><button class="mem-del" title="Eliminar">×</button></div>`).join('');
   list.querySelectorAll('.mem-item').forEach(row=>{
-    const key=row.dataset.key;
-    row.querySelector('.mem-val').addEventListener('change',e=>updateMemoryItem(key,e.target.value));
-    row.querySelector('.mem-del').addEventListener('click',()=>deleteMemoryItem(key));
+    const id=row.dataset.id;
+    row.querySelector('.mem-val').addEventListener('change',e=>updateMemoryItem(id,e.target.value));
+    row.querySelector('.mem-del').addEventListener('click',()=>deleteMemoryItem(id));
   });
 }
 async function addMemoryItem(){
@@ -1785,22 +1720,24 @@ async function addMemoryItem(){
     document.getElementById('memoryValueInput').value='';
     const items=await loadWorkspaceMemory(state.activeWorkspace.id);
     renderMemoryList(items);
-  }catch(e){alert(e.message)}
+  }catch(e){uiError(e.message)}
 }
-async function updateMemoryItem(key,value){
+async function updateMemoryItem(id,value){
   if(!state.activeWorkspace)return;
   try{
-    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
-  }catch(e){console.error(e)}
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value})});
+    if(!r.ok)throw new Error('No se pudo guardar el cambio');
+  }catch(e){uiError(e.message);}
 }
-async function deleteMemoryItem(key){
+async function deleteMemoryItem(id){
   if(!state.activeWorkspace)return;
   if(!confirm('¿Eliminar este dato de memoria?'))return;
   try{
-    await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(key),{method:'DELETE'});
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/workspaces/'+state.activeWorkspace.id+'/memory/'+encodeURIComponent(id),{method:'DELETE'});
+    if(!r.ok&&r.status!==404)throw new Error('No se pudo eliminar');
     const items=await loadWorkspaceMemory(state.activeWorkspace.id);
     renderMemoryList(items);
-  }catch(e){console.error(e)}
+  }catch(e){uiError(e.message);}
 }
 
 function showMessagesLoading(){const l=$('#messagesLoading');if(l)l.style.display='flex';els.welcomeScreen.style.display='none';els.messagesEl.style.display='none'}
@@ -1988,7 +1925,7 @@ async function loadAccessState(){
     // Onboarding pago-only / corte seco: si no hay acceso (inactive o trial
     // vencido) mostramos el paywall apenas carga. Cubre el registro con tarjeta
     // upfront (MP): el usuario nuevo arranca inactive y debe suscribirse.
-    if(accessState.loaded && !accessState.hasAccess){ showUpgradeModal(); }
+    if(accessState.loaded && !accessState.hasAccess && !window.__mpSubReturn){ showUpgradeModal(); }
   }catch(e){/* optimista: el backend corta con 403 si hace falta */}
 }
 
@@ -2009,7 +1946,7 @@ function renderTrialBanner(){
 
 async function sendMessage(text,opts){
   if(!text.trim()||state.isStreaming)return;
-  if(!window.REAuthService||!window.REAuthService.authFetch){alert('Sesion no inicializada');return}
+  if(!window.REAuthService||!window.REAuthService.authFetch){uiError('Sesión no inicializada');return}
   const userMsg=text.trim();
   const attachments=(opts&&opts.attachments)||[];
   const isNewConv=!state.currentConversation;
@@ -2097,7 +2034,19 @@ async function sendMessage(text,opts){
       }
     }
     state.messages.push({role:'assistant',content:full});finalizeStreaming();
-  }catch(e){updateStreaming('Error: '+e.message);finalizeStreaming()}
+  }catch(e){
+    // Corte a mitad del stream: NUNCA pisar lo ya recibido con el error crudo
+    // del browser. Se conserva el parcial + un aviso claro en español.
+    const aviso='⚠️ *Se cortó la conexión antes de terminar la respuesta. Volvé a preguntar para completarla.*';
+    if(full){
+      updateStreaming(full+'\n\n'+aviso);
+      const last=state.messages[state.messages.length-1];
+      if(!last||last.role!=='assistant'||last.content!==full)state.messages.push({role:'assistant',content:full});
+    }else{
+      updateStreaming('No pudimos completar la respuesta por un problema de conexión. Revisá tu internet y volvé a intentar.');
+    }
+    finalizeStreaming();
+  }
   state.isStreaming=false;updateSendBtn();els.messageInput.focus();
 }
 
@@ -2259,6 +2208,39 @@ function renderMaterialesCards(){
   grid.innerHTML=items.map(matCardHTML).join('');
 }
 
+// Seguimiento: los materiales que MÁS se movieron en el mes, con datos reales
+// del catálogo (nada de números inventados en un producto pago).
+function renderMatSeguimiento(){
+  const wrap=$('#matSeguimientoWrap');if(!wrap)return;
+  const items=(materialesState.items||[]).slice()
+    .sort((a,b)=>Math.abs(Number(b.variacion_mensual_pct)||0)-Math.abs(Number(a.variacion_mensual_pct)||0))
+    .slice(0,10);
+  if(!items.length){wrap.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">Sin datos de seguimiento</div><div class="empty-desc">Cuando el catálogo de precios cargue, acá vas a ver los materiales con mayor variación mensual.</div></div>';return}
+  const rows=items.map(it=>{
+    const v=Number(it.variacion_mensual_pct)||0;
+    const cls=v>2?'trend-up':v<-0.5?'trend-down':'trend-stable';
+    return `<tr><td>${esc(it.material)}</td><td>${esc(it.categoria)}</td><td>$${Number(it.precio_ars).toLocaleString('es-AR')} <span style="color:var(--text-3);font-size:11px">/ ${esc(it.unidad)}</span></td><td><span class="stat-card-trend ${cls}">${v>0?'+':''}${v.toFixed(1)}% mensual</span></td><td style="color:var(--text-3);font-size:11.5px">${formatDate(it.fecha_actualizacion)}</td></tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="data-table"><thead><tr><th>Material</th><th>Categoría</th><th>Precio actual</th><th>Variación</th><th>Actualizado</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// Pronósticos: proyección lineal del precio del próximo mes usando la
+// variación mensual REAL de cada material, con disclaimer explícito.
+function renderMatPronosticos(){
+  const grid=$('#matPronosticosGrid'),note=$('#matPronosticosNote');if(!grid)return;
+  const items=(materialesState.items||[]).slice()
+    .sort((a,b)=>Math.abs(Number(b.variacion_mensual_pct)||0)-Math.abs(Number(a.variacion_mensual_pct)||0))
+    .slice(0,4);
+  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:32px 20px;grid-column:1/-1"><div class="empty-title">Sin datos para proyectar</div></div>';if(note)note.style.display='none';return}
+  grid.innerHTML=items.map(it=>{
+    const v=Number(it.variacion_mensual_pct)||0;
+    const proy=Math.round(Number(it.precio_ars)*(1+v/100));
+    const cls=v>2?'trend-up':v<-0.5?'trend-down':'trend-stable';
+    return `<div class="stat-card"><div class="stat-card-label">${esc(it.material)}</div><div class="stat-card-value">$${proy.toLocaleString('es-AR')}</div><div class="stat-card-sub">Próximo mes si se repite la variación actual ($${Number(it.precio_ars).toLocaleString('es-AR')} hoy)</div><div class="stat-card-trend ${cls}">${v>0?'+':''}${v.toFixed(1)}% proyectado</div></div>`;
+  }).join('');
+  if(note)note.style.display='';
+}
+
 async function loadMateriales(force=false){
   if(materialesState.loading)return;
   if(materialesState.loaded&&!force){renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();return}
@@ -2277,8 +2259,9 @@ async function loadMateriales(force=false){
     materialesState.updatedAt=data.updated_at;
     materialesState.loaded=true;
     renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
+    renderMatSeguimiento();renderMatPronosticos();
   }catch(e){
-    if(g)g.innerHTML='<div style="padding:20px;color:var(--text-2);font-size:13px">No se pudieron cargar los precios. '+esc(e.message)+'</div>';
+    if(g)g.innerHTML='<div style="padding:20px;color:var(--text-2);font-size:13px">No se pudieron cargar los precios. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('materiales:',e);
   }finally{
     materialesState.loading=false;
     if(l)l.style.display='none';
@@ -2377,7 +2360,7 @@ async function loadPagos(force=false){
     pagosState.loaded=true;
     renderPagosStats();renderPagosTable();
   }catch(e){
-    if(w)w.innerHTML='<div class="pay-empty">No se pudieron cargar los pagos. '+esc(e.message)+'</div>';
+    if(w)w.innerHTML='<div class="pay-empty">No se pudieron cargar los pagos. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('pagos:',e);
   }finally{
     pagosState.loading=false;
     if(l)l.style.display='none';
@@ -2481,7 +2464,7 @@ async function deletePayment(id){
     renderPagosStats();renderPagosTable();
     proyectoState.loaded=false;
     if(typeof loadProyecto==='function')loadProyecto(true);
-  }catch(e){alert('No se pudo eliminar: '+e.message)}
+  }catch(e){uiError('No se pudo eliminar: '+e.message)}
 }
 
 function initPagosTabs(){
@@ -2788,7 +2771,7 @@ function renderProyectoResumen(data){
 // Exporta un reporte ejecutivo imprimible del proyecto (Guardar como PDF).
 function exportarProyectoPDF(){
   const data=proyectoState.data;
-  if(!data){alert('No hay datos del proyecto para exportar.');return;}
+  if(!data){uiError('No hay datos del proyecto para exportar.');return;}
   const p=data.project,ind=data.indicators,ms=data.milestones||[];
   const v=_projVerdict(p,ind);
   const fis=Number(p.avance_real_pct)||0,fin=Number(ind.pct_ejecutado)||0;
@@ -2825,7 +2808,7 @@ function exportarProyectoPDF(){
   <div class="ft">Generado por RE Expert · ${today} · Datos de referencia; verificá antes de decidir. Proyección (EAC) e índices son estimaciones según el avance cargado.</div>
   <scr`+`ipt>window.onload=function(){setTimeout(function(){window.print()},250)}</scr`+`ipt></body></html>`;
   const w=window.open('','_blank');
-  if(!w){alert('Tu navegador bloqueó la ventana emergente. Permitila para exportar el PDF.');return;}
+  if(!w){uiError('Tu navegador bloqueó la ventana emergente. Permitila para exportar el PDF.');return;}
   w.document.open();w.document.write(html);w.document.close();
 }
 
@@ -2985,7 +2968,7 @@ async function loadProyecto(force=false){
     proyectoState.data=data;proyectoState.loaded=true;
     renderProyectoResumen(data);renderProyectoCostos(data);renderProyectoCronograma(data);
   }catch(e){
-    ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML='<div class="pay-empty">Error: '+esc(e.message)+'</div>';});
+    ['#projResumenContent','#projCostosContent','#projCronogramaContent'].forEach(id=>{const el=$(id);if(el)el.innerHTML='<div class="pay-empty">No pudimos cargar el panel. Revisá tu conexión y probá de nuevo en unos segundos.</div>';});console.error('proyecto:',e);
   }finally{
     proyectoState.loading=false;
   }
@@ -3451,7 +3434,7 @@ async function loadAcademia(force=false){
     _renderAcademiaCourses(academiaState.courses);
     _renderAcademiaPaths(academiaState.paths);
   }catch(e){
-    if(coursesCont)coursesCont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">No pudimos cargar los cursos</div><div class="empty-desc">'+esc(e.message)+'</div></div>';
+    if(coursesCont)coursesCont.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">No pudimos cargar los cursos</div><div class="empty-desc">Revisá tu conexión y probá de nuevo en unos segundos.</div></div>';console.error('academia:',e);
   }finally{
     academiaState.loading=false;
   }
@@ -3463,6 +3446,27 @@ async function loadAcademia(force=false){
 function _acadHandleMpReturn(){
   let params;
   try{params=new URLSearchParams(window.location.search);}catch(e){return;}
+  // Retorno del checkout de SUSCRIPCIÓN (preapproval): mientras el webhook
+  // activa el plan, suprimimos el paywall y pooleamos el estado — el cliente
+  // que acaba de autorizar el débito no puede ver "Función exclusiva Pro".
+  if(params.has('preapproval_id')){
+    window.__mpSubReturn=true;
+    if(typeof hideUpgradeModal==='function')hideUpgradeModal(); // por si el paywall ganó la carrera
+    try{window.history.replaceState({},document.title,window.location.pathname+window.location.hash);}catch(e){}
+    if(typeof showSolToast==='function')showSolToast({type:'success',title:'¡Suscripción autorizada!',meta:'Estamos activando tu acceso, tarda unos segundos…'});
+    let t=0;
+    const pollSub=()=>{loadAccessState().then(()=>{
+      if(accessState.hasAccess){
+        window.__mpSubReturn=false;
+        if(typeof showSolToast==='function')showSolToast({type:'success',title:'Plan Pro activo',meta:'Ya tenés acceso completo. ¡Bienvenido/a!'});
+      }else if(++t<10){setTimeout(pollSub,3000);}
+      else{window.__mpSubReturn=false;
+        if(typeof showSolToast==='function')showSolToast({type:'error',title:'Activación demorada',meta:'El pago está registrado pero la activación tarda. Recargá en unos minutos o escribinos.'});
+      }
+    });};
+    setTimeout(pollSub,2500);
+    return;
+  }
   // Checkout Pro (cursos) trae payment_id/collection_id; las suscripciones no.
   if(!params.has('payment_id')&&!params.has('collection_id')&&!params.has('collection_status'))return;
   const status=(params.get('collection_status')||params.get('status')||'').toLowerCase();
@@ -3534,7 +3538,7 @@ async function loadCreditos(force=false){
     const dd=$('#credDisclaimer');if(dd)dd.textContent=(creditosState.disclaimer||'')+(creditosState.updatedAt?` · Última actualización: ${creditosState.updatedAt}.`:'');
     renderCreditos();
   }catch(e){
-    if(grid)grid.innerHTML='<div class="empty-state">No se pudieron cargar los créditos. '+esc(e.message)+'</div>';
+    if(grid)grid.innerHTML='<div class="empty-state">No se pudieron cargar los créditos. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('creditos:',e);
   }finally{creditosState.loading=false}
 }
 
@@ -3742,7 +3746,7 @@ function closeCredModal(){$('#credModal').classList.remove('active')}
 function initCreditos(){
   $('#credAnalizarBtn')?.addEventListener('click',()=>{
     const s=getCredSituacion();
-    if(!s.ingreso||!s.valorUSD){alert('Cargá al menos tu ingreso mensual y el valor de la propiedad.');return}
+    if(!s.ingreso||!s.valorUSD){uiError('Cargá al menos tu ingreso mensual y el valor de la propiedad.');return}
     creditosState.situacion=s;
     $('#credSort').style.display='';
     const tgl=$('#credFormToggle');if(tgl)tgl.style.display='';
@@ -4065,7 +4069,16 @@ async function solSend(text){
     solFinalizeStreaming();
     solState._toolModeBubbleClosed = false;
   }catch(e){
-    solUpdateStreaming('Error: '+(e.message||e));
+    // Igual que el chat: conservar el parcial y avisar en español, sin
+    // mostrar 'Failed to fetch' como si fuera la respuesta del asistente.
+    const avisoSol='⚠️ *Se cortó la conexión antes de terminar. Volvé a intentar.*';
+    if(typeof full==='string'&&full){
+      solUpdateStreaming(full+'\n\n'+avisoSol);
+      const lastS=solState.messages[solState.messages.length-1];
+      if(!lastS||lastS.role!=='assistant'||lastS.content!==full)solState.messages.push({role:'assistant',content:full});
+    }else{
+      solUpdateStreaming('No pudimos completar la respuesta por un problema de conexión. Probá de nuevo en un momento.');
+    }
     solFinalizeStreaming();
     solState._toolModeBubbleClosed = false;
   }
@@ -4177,6 +4190,12 @@ async function solIngestData(detail){
 // Toast renderer. opts: {type:'success'|'error', title, meta?, badge?, icon?, view?}
 // - success → check verde animado + (opcional) link "Ver" que cambia de view.
 // - error   → ícono ! rojo, sin link.
+// Error no bloqueante con la estética de la app (reemplaza a los alert()).
+function uiError(msg){
+  try{showSolToast({type:'error',title:'No se pudo completar',meta:String(msg||'Error inesperado. Probá de nuevo.')});}
+  catch(_){alert(msg);}
+}
+
 function showSolToast(opts){
   const c=document.getElementById('solToastContainer');
   if(!c)return;
@@ -4630,7 +4649,7 @@ async function loadNewsDestacadas(force=false){
     newsDestacadasState.loaded=true;
     _renderNewsDestacadas(newsDestacadasState.data);
   }catch(e){
-    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las destacadas</div><div class="empty-desc">${esc(e.message)}</div></div>`;
+    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las destacadas</div><div class="empty-desc">Revisá tu conexión y probá de nuevo en unos segundos.</div></div>`;console.error('destacadas:',e);
   }finally{
     newsDestacadasState.loading=false;
   }
@@ -4656,7 +4675,7 @@ async function loadNewsOpinion(force=false){
     newsOpinionState.loaded=true;
     _renderNewsOpinion(newsOpinionState.data);
   }catch(e){
-    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las opiniones</div><div class="empty-desc">${esc(e.message)}</div></div>`;
+    if(take)take.innerHTML=`<div class="empty-state" style="padding:24px 16px"><div class="empty-title">No pudimos cargar las opiniones</div><div class="empty-desc">Revisá tu conexión y probá de nuevo en unos segundos.</div></div>`;console.error('opiniones:',e);
   }finally{
     newsOpinionState.loading=false;
   }
@@ -4733,14 +4752,14 @@ function initSectionActions(){
   $('#analyzePlanosBtn')?.addEventListener('click',async()=>{
     // Solo los archivos SELECCIONADOS (no mezclar con planos de otra obra).
     const all=state.uploadedFiles.filter(f=>f._planoSel!==false);
-    if(!all.length){alert('Marcá al menos un plano para analizar.');return}
+    if(!all.length){uiError('Marcá al menos un plano para analizar.');return}
     const images=all.filter(f=>PLANOS_IMG_RE.test(f.type||''));
     const oversized=images.filter(f=>f.size>PLANOS_MAX_BYTES);
     const nonImages=all.filter(f=>!PLANOS_IMG_RE.test(f.type||''));
 
     // Validaciones
     if(oversized.length){
-      alert(`Algunas imágenes son muy grandes (>6MB):\n${oversized.map(f=>`• ${f.name} (${(f.size/1024/1024).toFixed(1)}MB)`).join('\n')}\n\nReducí su tamaño antes de subir.`);
+      uiError(`Imágenes muy grandes (>6MB): ${oversized.map(f=>f.name).join(', ')}. Reducí su tamaño antes de subir.`);
       return;
     }
     const usable=images.slice(0,PLANOS_MAX_FILES);
@@ -4752,7 +4771,7 @@ function initSectionActions(){
       try{
         attachments=await Promise.all(usable.map(readImageAsAttachment));
       }catch(e){
-        alert('No pude leer los planos: '+e.message);
+        uiError('No pude leer los planos: '+e.message);
         return;
       }
     }
@@ -5143,7 +5162,7 @@ async function _scanAnalyze(ev){
     scannerState.lastReport=analyzed;scannerState.loaded=false;
     renderScannerReport(analyzed);
   }catch(e){
-    rep.innerHTML=`<div class="pay-empty">Error: ${esc(e.message)}</div>`;
+    rep.innerHTML=`<div class="pay-empty">No pudimos generar el análisis. Revisá tu conexión y probá de nuevo en unos segundos.</div>`;console.error('scanner:',e);
   }finally{
     btn.disabled=false;btn.classList.remove('is-loading');
   }
@@ -5292,7 +5311,7 @@ async function _scanDelete(id){
     const r=await window.REAuthService.authFetch(apiBase()+'/api/opportunities/'+id,{method:'DELETE'});
     if(r.status!==204&&!r.ok)throw new Error();
     scannerState.loaded=false;loadScanner(true);
-  }catch(e){alert('No se pudo eliminar.');}
+  }catch(e){uiError('No se pudo eliminar.');}
 }
 
 function initScanner(){
@@ -5316,7 +5335,7 @@ function initScanner(){
 // Export PDF del informe (print-to-PDF, mismo patrón que exportarProyectoPDF).
 function exportarOportunidadPDF(){
   const opp=scannerState.lastReport;
-  if(!opp){alert('Generá un análisis primero.');return;}
+  if(!opp){uiError('Generá un análisis primero.');return;}
   const a=opp.analysis||{},fin=a.finanzas||{},rec=a.recomendacion||{};
   const M=v=>v==null?'—':fmtM(v),pct=v=>v==null?'—':Number(v).toFixed(1)+'%';
   const today=new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'});
@@ -5350,7 +5369,7 @@ function exportarOportunidadPDF(){
   ${a.lectura_mercado?`<h2>Lectura de mercado</h2><p>${esc(a.lectura_mercado)}</p>`:''}
   <div class="ft">Generado por RE Expert · ${today} · Estimación según datos y supuestos cargados; no constituye asesoramiento profesional definitivo.</div>
   <scr`+`ipt>window.onload=function(){setTimeout(function(){window.print()},250)}</scr`+`ipt></body></html>`;
-  const w=window.open('','_blank');if(!w){alert('Permití las ventanas emergentes para exportar el PDF.');return;}
+  const w=window.open('','_blank');if(!w){uiError('Permití las ventanas emergentes para exportar el PDF.');return;}
   w.document.open();w.document.write(html);w.document.close();
 }
 
@@ -5541,7 +5560,7 @@ async function solLoadReminders(){
       });
     }
   }catch(e){
-    body.innerHTML=`<div class="sol-empty">Error cargando recordatorios.<br><small>${(e.message||e)}</small></div>`;
+    body.innerHTML=`<div class="sol-empty">No pudimos cargar los recordatorios. Probá de nuevo en unos segundos.</div>`;console.error('recordatorios:',e);
   }
 }
 
@@ -5605,7 +5624,7 @@ async function solOpenTelegramFlow(){
       <p style="margin-top:14px;font-size:11px;color:var(--text-3)">El link expira en 1 hora.</p>
     `;
   }catch(e){
-    body.innerHTML=`<div class="sol-empty">Error: ${(e.message||e)}</div>`;
+    body.innerHTML=`<div class="sol-empty">No se pudo completar. Probá de nuevo en unos segundos.</div>`;console.error('sol:',e);
   }
 }
 

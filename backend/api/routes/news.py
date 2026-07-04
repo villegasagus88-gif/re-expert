@@ -24,7 +24,8 @@ from pathlib import Path
 
 from api.schemas.news import NewsResponse, OpinionResponse, SpotlightResponse
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from core.rate_limit import limiter
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from models.user import User
 from services.news_live import CATEGORIES, fetch_feed, make_digest
 from services.news_service import list_news
@@ -124,7 +125,9 @@ async def get_news_live(
     summary="Lector: digest IA (transformativo) de una nota, para leer dentro de la plataforma",
     responses={401: {"description": "Token inválido o ausente"}},
 )
+@limiter.limit("10/minute")  # cada digest no cacheado paga una llamada al LLM
 async def get_news_digest(
+    request: Request,
     url: str = Query(..., max_length=2000, description="URL de la nota original"),
     title: str = Query("", max_length=300),
     source: str = Query("", max_length=120),

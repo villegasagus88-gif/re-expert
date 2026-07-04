@@ -63,7 +63,16 @@ def _r2(x: float | None) -> float | None:
 
 
 def _npv(rate: float, flows: list[float]) -> float:
-    return sum(cf / ((1.0 + rate) ** i) for i, cf in enumerate(flows))
+    # (1+rate)**i underflowea a 0.0 con rate≈-1 e i grande (~81 meses con el
+    # piso -0.9999 de la bisección) → ZeroDivisionError. Cortamos el término:
+    # descuento infinito ≈ contribución que domina con el signo del flujo.
+    total = 0.0
+    for i, cf in enumerate(flows):
+        denom = (1.0 + rate) ** i
+        if denom == 0.0:
+            return float("inf") if cf > 0 else float("-inf") if cf < 0 else total
+        total += cf / denom
+    return total
 
 
 def _irr_monthly(flows: list[float]) -> float | None:
@@ -107,8 +116,11 @@ def _cashflow_irr(
     comision_venta: float, preventa_pct: float, mo_obra: int, mo_venta: int,
 ) -> tuple[float | None, float | None]:
     """Arma un flujo mensual aproximado y devuelve (tir_anual_pct, necesidad_max_caja)."""
-    mo_obra = max(1, int(mo_obra or 1))
-    mo_venta = max(1, int(mo_venta or 1))
+    # Clamp anti-DoS: los plazos vienen del JSONB `inputs` sin validar; sin
+    # tope, [0.0]*(T+1) con plazo_obra_meses=1e12 alocaría terabytes y
+    # tumbaría el container. 600 meses (50 años) sobra para real estate.
+    mo_obra = min(600, max(1, int(mo_obra or 1)))
+    mo_venta = min(600, max(1, int(mo_venta or 1)))
     T = mo_obra + mo_venta
     flows = [0.0] * (T + 1)
     flows[0] -= upfront

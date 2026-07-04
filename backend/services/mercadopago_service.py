@@ -104,6 +104,36 @@ async def create_subscription(user: User) -> dict[str, str]:
     if user.plan == "pro":
         raise HTTPException(status_code=400, detail="Ya tenés una suscripción activa.")
 
+    # Anti-doble-débito: si el user ya tiene un preapproval vivo en MP (dos
+    # tabs, reintento tras un webhook demorado), NO crear otro. authorized →
+    # ya está suscripto; pending → reutilizar el link de pago existente.
+    # Best-effort: si el search falla, seguimos con la creación normal.
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            s = await client.get(
+                f"{MP_API}/preapproval/search",
+                params={"external_reference": str(user.id)},
+                headers=_auth_headers(),
+            )
+        if s.status_code < 300:
+            for r in (s.json() or {}).get("results") or []:
+                st = (r.get("status") or "").lower()
+                if st in ("authorized", "paused"):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Ya tenés una suscripción activa en Mercado Pago. "
+                               "Si no ves el acceso, esperá un minuto y recargá.",
+                    )
+                if st == "pending":
+                    prev_url = r.get("init_point") or r.get("sandbox_init_point")
+                    if prev_url:
+                        logger.info("MP create_subscription: reutilizo preapproval pending %s", r.get("id"))
+                        return {"url": prev_url, "preapproval_id": str(r.get("id", ""))}
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 — el guard nunca bloquea el checkout
+        logger.warning("MP create_subscription: search previo falló — %s", exc)
+
     payload = {
         "preapproval_plan_id": settings.MP_PLAN_ID,
         "payer_email": user.email,

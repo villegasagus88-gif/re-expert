@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <script src="config.js"></script>
   <script src="sentry.js"></script>
   <style>
@@ -159,9 +159,10 @@
     /* ── PLAN CARDS ── */
     .plans-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
+      max-width: 520px;
+      margin: 0 auto 48px;
       gap: 20px;
-      margin-bottom: 48px;
     }
 
     @media (max-width: 640px) {
@@ -509,7 +510,7 @@
     <div class="hero">
       <div class="hero-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        Elegí el plan que mejor se adapta a vos
+        Un solo plan. Todo incluido.
       </div>
       <h1>Potenciá tu gestión<br>inmobiliaria con <span>IA</span></h1>
       <p>Hasta 200 mensajes/día, presupuestos automatizados y seguimiento de obra — todo en un solo lugar.</p>
@@ -614,7 +615,7 @@
           ¿La información es específica de Argentina?
           <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </div>
-        <div class="faq-answer">Sí. La base de conocimiento de RE Expert incluye normativa local (Código de Edificación de CABA, Ley 13.512, etc.), índices de materiales del mercado argentino y rendimientos típicos de la construcción en Argentina.</div>
+        <div class="faq-answer">Sí. La base de conocimiento de RE Expert incluye normativa local (Código de Edificación de CABA, propiedad horizontal según el Código Civil y Comercial, etc.), índices de materiales del mercado argentino y rendimientos típicos de la construcción en Argentina.</div>
       </div>
 
       <div class="faq-item">
@@ -699,7 +700,7 @@
         const data = await resp.json();
 
         if (!resp.ok) {
-          showAlert(data.detail || 'Error al iniciar el pago. Intentá de nuevo.');
+          showAlert(resp.status === 503 ? 'Estamos terminando de habilitar los pagos online. Escribinos y te avisamos apenas estén activos.' : (data.detail || 'Error al iniciar el pago. Intentá de nuevo.'));
           return;
         }
 
@@ -730,6 +731,7 @@
         if (resp.ok && data.url) {
           window.location.href = data.url;
         } else {
+          if (resp.status === 503 || resp.status === 400) { window.location.href = 'account.html'; return; }
           showAlert(data.detail || 'No se pudo abrir el portal de facturación.');
           btn.disabled = false;
           btn.innerHTML = `
