@@ -1,0 +1,387 @@
+{
+  "updated_at": "2026-07-01",
+  "errors": [
+    {
+      "id": "puerta-bano-barre-vanitory",
+      "title": "Puerta del baño barre contra el vanitory o el inodoro",
+      "category": "puertas_interferencias",
+      "description": "Verificar en planta el radio de barrido de la hoja del baño contra la posición de vanitory, inodoro y bidet; mirar especialmente baños compactos con puerta de 0,70 m abriendo hacia adentro. Ojo cuando el artefacto está acotado contra el muro de la puerta o el barrido no está dibujado.",
+      "typical_risk": "Se detecta recién al colocar artefactos: obliga a invertir el sentido de apertura, cambiar a corrediza o reubicar el vanitory con la sanitaria ya hecha. Adicional de obra, rotura de revestimiento terminado y reclamo del comprador.",
+      "suggested_recommendation": "Punto a verificar con el proyectista: solicitar que se dibuje el barrido de puerta con artefactos acotados y, de confirmarse la interferencia, definir cambio de sentido de apertura o puerta corrediza antes de ejecutar la sanitaria.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "sanitaria"
+      ]
+    },
+    {
+      "id": "puertas-enfrentadas-choque-hojas",
+      "title": "Puertas enfrentadas o contiguas que chocan entre sí al abrir",
+      "category": "puertas_interferencias",
+      "description": "Revisar en planta los encuentros de puertas de dormitorio, placard y baño en pasillos y antecámaras: superponer los radios de barrido y detectar hojas que se golpean entre sí o que bloquean la circulación cuando quedan abiertas. Mirar también puertas de placard que impiden abrir la de ingreso al ambiente.",
+      "typical_risk": "Genera roturas de hojas y herrajes en el uso diario, quejas en posventa y arreglos de carpintería con la obra entregada; en unidades chicas puede inutilizar el placard.",
+      "suggested_recommendation": "Requiere validación del proyectista: pedir replanteo de sentidos de apertura o cambio a hojas corredizas en los encuentros conflictivos antes de encargar las carpinterías.",
+      "priority_default": "media",
+      "disciplines": [
+        "arquitectura"
+      ]
+    },
+    {
+      "id": "pasillo-estrangulado-ancho-insuficiente",
+      "title": "Pasillo interno estrangulado por muros, columnas o mobiliario",
+      "category": "circulaciones",
+      "description": "Medir en planta el ancho libre real de pasillos y pasos entre ambientes, descontando columnas, muebles fijos dibujados y espesores de terminación; detectar puntos donde la circulación baja de aproximadamente 0,90 m libres. Prestar atención a pasos junto a mesadas, escaleras y placares.",
+      "typical_risk": "Circulación incómoda que castiga la percepción de calidad de la unidad y complica el paso de muebles y camillas; corregirlo tarde implica demoler tabiques o resignar superficie de ambientes.",
+      "suggested_recommendation": "Punto a verificar en etapa de proyecto: acotar los anchos libres reales en los estrangulamientos y validar con el proyectista si corresponde ajustar tabiques o mobiliario fijo.",
+      "priority_default": "media",
+      "disciplines": [
+        "arquitectura"
+      ]
+    },
+    {
+      "id": "circulacion-excesiva-superficie-perdida",
+      "title": "Circulaciones excesivas que consumen superficie vendible",
+      "category": "circulaciones",
+      "description": "Comparar la superficie destinada a pasillos y distribuidores contra la superficie útil de la unidad o del piso; detectar recorridos largos en L o en U para llegar a dormitorios y núcleos, y palieres sobredimensionados sin función. Mirar la relación entre metros de pasillo y cantidad de ambientes servidos.",
+      "typical_risk": "Metros cuadrados construidos que no se venden ni se usan: pérdida directa de incidencia económica del proyecto y unidades que comparan mal contra la competencia en m2 útiles.",
+      "suggested_recommendation": "Requiere revisión de layout con el proyectista: cuantificar el porcentaje de circulación por unidad y evaluar alternativas de distribución antes de congelar la documentación.",
+      "priority_default": "media",
+      "disciplines": [
+        "arquitectura"
+      ]
+    },
+    {
+      "id": "bano-interior-sin-conducto-ventilacion",
+      "title": "Baño interior sin ventana ni conducto de ventilación indicado",
+      "category": "ventilacion",
+      "description": "Identificar baños y toilettes sin abertura al exterior y verificar que el plano indique conducto de ventilación (individual o colectivo), rejilla y extractor con su descarga; seguir el conducto en cortes y plantas superiores hasta su salida a azotea. Ojo con baños interiores que solo muestran un extractor sin conducto dibujado.",
+      "typical_risk": "Observación del organismo de aprobación que demora el final de obra (y en consecuencia la escrituración), condensación y hongos en posventa, y ejecución tardía de conductos rompiendo losas o resignando un pleno no previsto.",
+      "suggested_recommendation": "Punto a verificar con el proyectista y el instalador: solicitar el trazado completo del conducto de ventilación con su salida a cubierta y confirmar su compatibilidad con la estructura; requiere validación profesional según normativa local.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "hvac",
+        "detalles"
+      ]
+    },
+    {
+      "id": "cocina-gas-sin-ventilacion-permanente",
+      "title": "Cocina con artefactos a gas sin ventilación permanente ni extracción prevista",
+      "category": "ventilacion",
+      "description": "Verificar que las cocinas con anafe u horno a gas tengan indicadas rejillas de ventilación permanente y previsión de campana o extractor con su salida (conducto o muro exterior); mirar especialmente cocinas integradas interiores en monoambientes. Cruzar con el plano de gas para confirmar coherencia de artefactos.",
+      "typical_risk": "La distribuidora de gas puede rechazar la habilitación del medidor con la obra terminada, frenando la entrega de unidades; resolverlo tarde implica abrir muros o cambiar a cocina eléctrica con adicional de potencia.",
+      "suggested_recommendation": "Coordinar con el matriculado de gas la verificación de ventilaciones y volumen del local antes de cerrar tabiques; punto que requiere validación profesional frente a la normativa de la distribuidora.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "gas",
+        "hvac"
+      ]
+    },
+    {
+      "id": "azotea-sin-pendientes-ni-embudos",
+      "title": "Cubierta plana o terraza sin pendientes ni embudos indicados",
+      "category": "pendientes_desagues",
+      "description": "Revisar la planta de techos: deben figurar pendientes con flechas y porcentajes, embudos con cota, y su correspondencia con las bajadas pluviales en plantas inferiores. Desconfiar de terrazas grandes con un solo embudo, o donde el plano de arquitectura y el sanitario ubican los embudos en lugares distintos.",
+      "typical_risk": "Charcos y filtraciones sistemáticas sobre las unidades del último piso, uno de los reclamos de posventa más caros de reparar porque implica rehacer carpetas y membranas con el edificio ocupado.",
+      "suggested_recommendation": "Solicitar al proyectista plano de pendientes completo con cotas de nivel en embudos y babetas, y coordinarlo con el sanitarista antes de ejecutar las carpetas.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "sanitaria",
+        "detalles"
+      ]
+    },
+    {
+      "id": "desagues-lejos-de-montantes-contrapendiente",
+      "title": "Desagües de duchas, balcones o rejillas lejos de la bajada o con contrapendiente probable",
+      "category": "pendientes_desagues",
+      "description": "Trazar en planta el recorrido de cada desagüe (ducha, rejilla de piso, balcón, terraza) hasta su montante o bajada: detectar tramos horizontales largos, cruces de vigas y balcones sin desagüe dibujado. Verificar que el espesor de contrapiso disponible permita la pendiente del tramo.",
+      "typical_risk": "Cañerías que no llegan con pendiente y quedan sifonadas: rejillas que devuelven agua, olores y roturas de contrapiso terminado para recolocar tramos; en balcones, agua estancada que degrada la impermeabilización.",
+      "suggested_recommendation": "Punto a verificar con el sanitarista: pedir cortes con cotas de contrapiso en los tramos largos y confirmar la ubicación de montantes antes de hormigonar o llenar contrapisos.",
+      "priority_default": "alta",
+      "disciplines": [
+        "sanitaria",
+        "arquitectura",
+        "estructura"
+      ]
+    },
+    {
+      "id": "cochera-modulo-maniobra-insuficiente",
+      "title": "Módulos de cochera con maniobra de entrada/salida dudosa",
+      "category": "cocheras",
+      "description": "Verificar en planta el ancho y largo de cada módulo y el ancho del pasillo de maniobra frente a las cocheras perpendiculares; trazar o exigir los radios de giro, en especial en módulos contra muros o columnas y en cocheras en esquina al final del pasillo. Desconfiar de plantas de cochera sin radios de giro dibujados.",
+      "typical_risk": "Cocheras que en la práctica no se pueden usar con un vehículo mediano: unidades invendibles o vendidas con reclamo posterior, y rediseño de la planta de cocheras con la estructura ya ejecutada.",
+      "suggested_recommendation": "Requiere validación del proyectista: solicitar la verificación gráfica de maniobra (radios de giro con vehículo tipo) para los módulos comprometidos antes de aprobar la planta de estructura.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "estructura"
+      ]
+    },
+    {
+      "id": "rampa-cochera-pendiente-sin-transiciones",
+      "title": "Rampa de cochera con pendiente fuerte sin tramos de transición",
+      "category": "cocheras",
+      "description": "Revisar en corte la pendiente de la rampa vehicular, la existencia de tramos de transición arriba y abajo, la altura libre bajo losas y vigas en todo el recorrido, y la interferencia del barrido del portón con la calzada. Verificar también el desagüe con rejilla al pie de la rampa.",
+      "typical_risk": "Autos que rozan la panza o el paragolpes en los quiebres, techos que no dan altura para camionetas, y agua de lluvia entrando al subsuelo: correcciones en hormigón terminado con costo y atraso relevantes.",
+      "suggested_recommendation": "Punto a verificar: pedir corte longitudinal completo de la rampa con pendientes, transiciones y alturas libres acotadas, y coordinarlo con estructura y desagües antes de hormigonar.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "estructura",
+        "sanitaria"
+      ]
+    },
+    {
+      "id": "banos-cocinas-no-apilados-entre-plantas",
+      "title": "Baños y cocinas no apilados entre plantas",
+      "category": "nucleos_humedos",
+      "description": "Superponer las plantas tipo y detectar núcleos húmedos que no coinciden en vertical entre pisos: baños de un nivel cayendo sobre dormitorios o estares del nivel inferior, o cocinas desplazadas que obligan a tramos horizontales largos de cloacal. Verificar la continuidad de montantes en toda la altura.",
+      "typical_risk": "Cañerías colgadas cruzando ambientes ajenos, cajones de yeso no previstos, ruidos de descarga sobre dormitorios y conflictos entre copropietarios; corregirlo implica rediseñar plantas o convivir con una patología de por vida.",
+      "suggested_recommendation": "Requiere revisión conjunta de arquitecto y sanitarista: verificar el apilado de núcleos en todas las plantas y documentar el recorrido de cada montante antes de avanzar con la documentación de obra.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "sanitaria",
+        "estructura"
+      ]
+    },
+    {
+      "id": "nucleo-humedo-sin-pleno-sanitario",
+      "title": "Núcleo húmedo sin pleno sanitario o con pleno subdimensionado y sin acceso",
+      "category": "nucleos_humedos",
+      "description": "Verificar que junto a baños y cocinas exista un pleno dibujado y acotado con espacio real para montantes cloacales, pluviales, de agua y ventilaciones, y que tenga tapa o puerta de inspección indicada. Desconfiar de plenos de menos de 25-30 cm que deben alojar varias cañerías más aislaciones.",
+      "typical_risk": "Las montantes terminan pasando por dentro de muros o cajones improvisados: cada arreglo futuro implica romper revestimientos de una unidad ocupada, con conflicto de consorcio incluido.",
+      "suggested_recommendation": "Punto a coordinar con el sanitarista: pedir sección del pleno con todas las cañerías dibujadas a escala y confirmar la posición de las tapas de inspección por nivel.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "sanitaria",
+        "detalles"
+      ]
+    },
+    {
+      "id": "columna-invade-cochera-o-ambiente",
+      "title": "Columna que cae dentro de un módulo de cochera o en medio de un ambiente",
+      "category": "estructura_funcionalidad",
+      "description": "Superponer la planta de estructura con la de arquitectura y detectar columnas que invaden módulos de cochera, su pasillo de maniobra, o que quedan exentas en medio de estares, dormitorios o locales comerciales. Verificar también coincidencia de dimensiones de columnas entre ambos planos.",
+      "typical_risk": "Una columna hormigonada en el lugar equivocado no se mueve: se pierden cocheras vendibles o se entregan ambientes con una columna al medio, con impacto comercial directo y posible reclamo de compradores en pozo.",
+      "suggested_recommendation": "Requiere compatibilización inmediata entre calculista y arquitecto: superponer plantas de estructura y arquitectura de todos los niveles antes de ejecutar cada losa.",
+      "priority_default": "critica",
+      "disciplines": [
+        "estructura",
+        "arquitectura"
+      ]
+    },
+    {
+      "id": "viga-descolgada-reduce-altura-libre",
+      "title": "Viga descolgada que reduce altura libre sobre circulaciones o aberturas",
+      "category": "estructura_funcionalidad",
+      "description": "Revisar en cortes y planta de vigas los descuelgues sobre pasillos, puertas, ventanas y cocinas: verificar que la altura libre bajo viga sea compatible con el dintel de las carpinterías y con cielorrasos previstos, y que las vigas no corten conductos o campanas. Ojo con vigas invertidas en azoteas que interrumpen pendientes de desagüe.",
+      "typical_risk": "Carpinterías que no entran en el vano real, cielorrasos escalonados no previstos y adicionales de herrería y yesería; en azoteas, agua retenida contra la viga invertida y filtraciones.",
+      "suggested_recommendation": "Punto a verificar: cruzar planta de vigas con planilla de carpinterías y cortes de arquitectura, y pedir al calculista alternativas (viga chata o invertida) donde el descuelgue comprometa alturas.",
+      "priority_default": "alta",
+      "disciplines": [
+        "estructura",
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "escalera-alzadas-pedadas-fuera-de-rango",
+      "title": "Escalera con alzadas y pedadas fuera del rango de confort",
+      "category": "escaleras",
+      "description": "Contar los escalones dibujados y dividir el desnivel real entre plantas (verificado en corte, incluyendo espesores de piso terminado) para obtener la alzada; verificar pedada en planta y aplicar la relación 2 alzadas + 1 pedada entre 60 y 64 cm. Desconfiar de escaleras que cierran en planta pero no en corte, y de compensadas muy forzadas.",
+      "typical_risk": "Escaleras incómodas o directamente rechazadas en la inspección final: demoler y rehacer una escalera de hormigón es de los retrabajos más caros y disruptivos de la obra.",
+      "suggested_recommendation": "Requiere verificación del proyectista: pedir el desarrollo completo de la escalera en corte con desnivel real, cantidad de alzadas y su valor acotado, antes de armar el encofrado.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "estructura"
+      ]
+    },
+    {
+      "id": "escalera-altura-de-paso-bajo-viga",
+      "title": "Altura de paso insuficiente bajo viga o losa en el recorrido de la escalera",
+      "category": "escaleras",
+      "description": "Verificar en corte la altura libre de paso sobre la línea de huella en todo el desarrollo de la escalera, en especial bajo losas de descanso, vigas del hueco y arranques bajo escaleras superiores; buscar puntos con menos de 2,00 m libres. Este control suele faltar cuando la escalera solo está resuelta en planta.",
+      "typical_risk": "Se descubre con la estructura hormigonada: cabezazos garantizados, observación en la inspección y soluciones parche (rebajar escalones, desplazar el arranque) que degradan la escalera.",
+      "suggested_recommendation": "Punto a verificar antes de hormigonar: exigir corte longitudinal de la escalera con alturas de paso acotadas en los puntos críticos y validarlo con el calculista.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "estructura"
+      ]
+    },
+    {
+      "id": "aberturas-sin-nomenclatura-ni-planilla",
+      "title": "Aberturas sin nomenclatura ni planilla de carpinterías",
+      "category": "aberturas_sin_detalle",
+      "description": "Verificar que cada abertura en planta tenga su designación (P1, V2, etc.) y que exista planilla de carpinterías con medidas, material, tipo de apertura, vidrio y herrajes; controlar que no queden aberturas dibujadas sin código ni códigos sin planilla.",
+      "typical_risk": "Imposible pedir cotizaciones comparables: cada carpintero presupuesta lo que interpreta, aparecen adicionales al momento de fabricar y errores de medida que se pagan con vanos picados o aberturas rehechas.",
+      "suggested_recommendation": "Solicitar al proyectista la planilla de carpinterías completa y cruzarla contra todas las plantas antes de salir a licitar el rubro.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "vanos-planta-no-coinciden-con-planilla",
+      "title": "Medidas de vano en planta que no coinciden con la planilla de carpinterías",
+      "category": "aberturas_sin_detalle",
+      "description": "Cruzar las medidas acotadas de vanos en plantas y cortes contra las medidas de la planilla de carpinterías, verificando también alturas de antepecho y dintel; detectar además la falta de detalle de premarcos, anclajes y resolución del encuentro con el vano.",
+      "typical_risk": "Carpinterías fabricadas que no entran o que quedan nadando en el vano: amolado, picado y sellados de emergencia, con atraso en cerramiento de fachada que frena los rubros interiores.",
+      "suggested_recommendation": "Punto a verificar antes de encargar la fabricación: conciliar planta, corte y planilla, y exigir replanteo de vanos en obra firmado antes de confirmar medidas al carpintero.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "planta-y-corte-descoordinados",
+      "title": "Planta y corte muestran distinta posición de muros, niveles o aberturas",
+      "category": "versiones_descoordinadas",
+      "description": "Cruzar cada corte con las plantas por donde pasa: verificar que coincidan posición de tabiques, aberturas, niveles de piso, alturas de losa y escaleras. Desconfiar cuando el corte muestra un elemento (viga, desnivel, doble altura) que la planta no refleja o viceversa.",
+      "typical_risk": "En obra cada gremio construye según la lámina que tiene en la mano: se ejecutan versiones distintas del mismo sector y la corrección implica demolición, adicional y discusión sobre quién paga el error.",
+      "suggested_recommendation": "Requiere compatibilización del estudio proyectista: reportar cada inconsistencia planta-corte por escrito y pedir lámina corregida antes de ejecutar el sector afectado.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "estructura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "laminas-con-revisiones-distintas",
+      "title": "Láminas con fechas y revisiones distintas: cambios no propagados a todo el legajo",
+      "category": "versiones_descoordinadas",
+      "description": "Controlar el rótulo de todas las láminas: fecha, número de revisión y descripción del cambio; detectar juegos donde una planta está en revisión C y sus cortes, detalles o instalaciones siguen en revisión A. Verificar que las modificaciones (un baño movido, un tabique eliminado) aparezcan en todas las láminas afectadas.",
+      "typical_risk": "El clásico de obra: se construye con la lámina vieja porque nadie retiró la versión anterior del obrador, y el error aparece semanas después, con retrabajos cuya responsabilidad es difícil de asignar.",
+      "suggested_recommendation": "Implementar control documental: exigir listado maestro de láminas con revisión vigente, sellar como anuladas las versiones viejas y verificar la propagación de cada cambio al legajo completo.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "estructura",
+        "sanitaria",
+        "electrica",
+        "gas",
+        "hvac",
+        "detalles"
+      ]
+    },
+    {
+      "id": "sin-detalle-impermeabilizacion-terrazas-banos",
+      "title": "Falta detalle de impermeabilización en terrazas, baños y encuentros con muros",
+      "category": "detalles_faltantes",
+      "description": "Verificar que el legajo incluya detalles a escala de la impermeabilización de terrazas y baños: babetas, altura de zócalos hidrófugos, encuentro membrana-embudo, encuentro carga-muro y solape bajo umbrales de puertas ventana. La ausencia total de estos detalles en un edificio con terrazas es una señal de alarma.",
+      "typical_risk": "Las filtraciones por encuentros mal resueltos son la patología más frecuente y cara de la posventa: reparar implica levantar solados terminados sobre unidades ocupadas, con años de reclamos.",
+      "suggested_recommendation": "Solicitar al proyectista los detalles constructivos de impermeabilización de todos los encuentros críticos antes de ejecutar carpetas, y dejarlos aprobados por la dirección de obra.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "detalles",
+        "sanitaria"
+      ]
+    },
+    {
+      "id": "sin-detalle-encuentro-carpinteria-fachada",
+      "title": "Falta detalle del encuentro carpintería-antepecho-goterón en fachada",
+      "category": "detalles_faltantes",
+      "description": "Buscar en el legajo el detalle en corte del encuentro entre carpintería, antepecho, dintel y jamba: goterón, pendiente del antepecho, sellados, babeta sobre dintel y resolución de la mocheta. Si las fachadas tienen revestimientos especiales (piedra, EIFS, ventilada), la falta de estos detalles es aún más crítica.",
+      "typical_risk": "Filtraciones perimetrales en cada ventana y chorreado de fachada: reparación en altura con silletas o balancín, costo alto y daño a la imagen del edificio recién entregado.",
+      "suggested_recommendation": "Punto a verificar antes de colocar carpinterías: pedir el detalle tipo de cada encuentro de fachada y validar en obra una colocación de muestra con la dirección de obra.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "sin-planilla-de-locales-terminaciones",
+      "title": "Falta planilla de locales con terminaciones por ambiente",
+      "category": "info_presupuesto",
+      "description": "Verificar que exista planilla de locales indicando para cada ambiente piso, zócalo, revestimiento (con altura), cielorraso y pintura; controlar que cubra todos los locales incluidos los comunes (palieres, sum, cocheras) y que sea coherente con lo dibujado en plantas y cortes.",
+      "typical_risk": "Sin planilla de locales el cómputo y presupuesto es adivinanza: las ofertas llegan con supuestos distintos, y en obra cada indefinición se transforma en adicional o en discusión con el comitente sobre qué estaba incluido.",
+      "suggested_recommendation": "Solicitar la planilla de locales completa como condición previa a la licitación, y congelarla como documento contractual junto con los planos.",
+      "priority_default": "alta",
+      "disciplines": [
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "especificaciones-genericas-a-definir",
+      "title": "Especificaciones genéricas: materiales 'símil', 'a definir' o sin calidad indicada",
+      "category": "info_presupuesto",
+      "description": "Rastrear en planos y pliego las especificaciones vagas: 'porcelanato símil madera', 'grifería de primera calidad', 'a definir por la dirección', sin marca de referencia, modelo, formato ni gama de precio. Detectar también rubros completos sin especificación (herrería, mesadas, equipamiento fijo).",
+      "typical_risk": "Diferencias de cotización enormes entre oferentes y conflicto asegurado al momento de comprar: el comitente espera una calidad y el presupuesto contempla otra, terminando en adicionales o en degradación de la calidad prometida en la venta.",
+      "suggested_recommendation": "Pedir al proyectista que cada especificación abierta se cierre con marca/modelo de referencia o 'calidad equivalente a', y documentar por nota las definiciones que queden pendientes con fecha límite.",
+      "priority_default": "media",
+      "disciplines": [
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "sanitario-no-coincide-con-arquitectura",
+      "title": "Plano sanitario con artefactos o núcleos en posición distinta a la arquitectura",
+      "category": "arquitectura_vs_instalaciones",
+      "description": "Superponer el plano sanitario con la planta de arquitectura vigente: verificar que coincidan posición de inodoros, duchas, bachas, piletas de cocina y lavarropas, y que el sanitario no responda a una versión anterior del layout. Controlar también que las bajadas y montantes del sanitario tengan su pleno o muro portante en arquitectura.",
+      "typical_risk": "El instalador deja las cañerías donde dice su plano y los artefactos no coinciden: romper contrapisos y losas para mover desagües cloacales es retrabajo caro, sucio y con atraso en cadena sobre los rubros de terminación.",
+      "suggested_recommendation": "Requiere compatibilización formal: exigir que el sanitarista reemita su documentación sobre la última revisión de arquitectura y verificar el replanteo de desagües en obra antes del llenado.",
+      "priority_default": "critica",
+      "disciplines": [
+        "arquitectura",
+        "sanitaria"
+      ]
+    },
+    {
+      "id": "electrica-gas-descoordinadas-con-layout",
+      "title": "Bocas eléctricas y puntos de gas descoordinados con el equipamiento dibujado",
+      "category": "arquitectura_vs_instalaciones",
+      "description": "Cruzar el plano eléctrico y el de gas con el equipamiento de arquitectura: tomas que caen detrás de heladeras o bajo mesadas sin coordinar, bocas en muros que arquitectura eliminó, punto de gas donde arquitectura dibuja anafe eléctrico, tablero ubicado dentro de un placard o baño. Verificar también termotanque/caldera con su ventilación prevista en ambas documentaciones.",
+      "typical_risk": "Canalizaciones amuradas que hay que picar y rehacer con las paredes terminadas, y en gas, observaciones del matriculado que demoran la habilitación del servicio y la entrega de las unidades.",
+      "suggested_recommendation": "Punto a coordinar en reunión de compatibilización con electricista y gasista, verificando cada boca contra el equipamiento fijo antes de amurar cañerías; requiere validación del instalador matriculado.",
+      "priority_default": "alta",
+      "disciplines": [
+        "electrica",
+        "gas",
+        "arquitectura"
+      ]
+    },
+    {
+      "id": "tanque-reserva-sin-acceso-mantenimiento",
+      "title": "Tanque de reserva o sala de máquinas sin acceso ni espacio de mantenimiento",
+      "category": "mantenimiento",
+      "description": "Verificar en planta de azotea y cortes cómo se accede al tanque de reserva, colectores y equipos presurizadores: escalera o gato de acceso dibujado, espacio libre alrededor del colector para operar válvulas, altura suficiente sobre la tapa de inspección del tanque. Lo mismo para salas de bombas en subsuelo y su desagote.",
+      "typical_risk": "Limpiezas de tanque semestrales imposibles de hacer en condiciones seguras, válvulas inaccesibles en una emergencia y reclamos permanentes del consorcio; adaptar accesos después implica herrería y roturas no presupuestadas.",
+      "suggested_recommendation": "Punto a verificar con el sanitarista y el proyectista: pedir detalle del acceso a tanque y colector con espacios de trabajo acotados, y validar la maniobra de recambio de bombas.",
+      "priority_default": "alta",
+      "disciplines": [
+        "sanitaria",
+        "arquitectura",
+        "detalles"
+      ]
+    },
+    {
+      "id": "camaras-y-equipos-inaccesibles-posventa",
+      "title": "Cámaras de inspección, plenos y equipos sin acceso previsto para posventa",
+      "category": "mantenimiento",
+      "description": "Recorrer el plano buscando todo elemento que requiera acceso futuro: cámaras de inspección y bocas de desagüe bajo pisos terminados o bajo cocheras asignadas, tapas de pleno no dibujadas, condensadoras de aire acondicionado en fachada o azotea sin recorrido de acceso seguro, llaves de paso que quedan detrás de muebles fijos. Verificar que cada uno tenga su tapa o acceso indicado.",
+      "typical_risk": "Cada destapación o reparación implica romper pisos o revestimientos de un espacio privado, con costo, conflicto entre vecinos y honorarios de administración; los equipos inaccesibles directamente no reciben mantenimiento.",
+      "suggested_recommendation": "Requiere revisión de coordinación: listar todos los puntos de inspección y equipos del proyecto, verificar que cada uno tenga acceso dibujado y consensuar con las instalaciones su reubicación cuando caigan en lugares comprometidos.",
+      "priority_default": "media",
+      "disciplines": [
+        "sanitaria",
+        "hvac",
+        "electrica",
+        "gas",
+        "arquitectura",
+        "detalles"
+      ]
+    }
+  ]
+}

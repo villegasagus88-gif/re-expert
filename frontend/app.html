@@ -313,42 +313,78 @@
         </div>
       </div>
 
-      <!-- PLANOS VIEW -->
+      <!-- PLANOS VIEW — Panel inteligente de planos por proyecto -->
       <div class="view" id="viewPlanos">
-        <div class="section-view">
-          <div class="section-header">
-            <h2>Análisis de Planos</h2>
-            <p>Carga tus planos y la IA calcula materiales, cantidades y estimaciones para tu obra.</p>
-          </div>
-          <div class="upload-zone" id="uploadZone">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p>Arrastra tus planos aqui o haz click para seleccionar</p>
-            <small>PDF, JPG, PNG — Planos arquitectonicos, estructurales o de instalaciones</small>
-            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple>
-          </div>
-          <div id="planosUploaded" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap">
-              <h3 style="font-size:14px;font-weight:600">Archivos cargados <span id="planosSelCount" style="font-weight:400;color:var(--text-3)"></span></h3>
-              <div style="display:flex;gap:8px">
-                <button class="btn-secondary" id="clearPlanosBtn">Limpiar</button>
-                <button class="btn-primary" id="analyzePlanosBtn">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                  Analizar seleccionados
-                </button>
+        <div class="section-view pln-section">
+
+          <!-- Pantalla 1: Dashboard multi-proyecto -->
+          <div id="plnDashboard">
+            <div class="section-header pln-dash-header">
+              <div>
+                <h2>Análisis de Planos</h2>
+                <p>Subí tus planos y obtené una <strong>revisión inteligente antes de obra</strong>: riesgos priorizados, inconsistencias, checklist, tareas y reportes — organizado por proyecto.</p>
+              </div>
+              <div class="pln-dash-actions">
+                <button class="btn-secondary" id="plnBibliotecaBtn">📚 Errores frecuentes</button>
+                <button class="btn-primary" id="plnNewProjectBtn">+ Nuevo proyecto</button>
               </div>
             </div>
-            <p style="font-size:11.5px;color:var(--text-3);margin:0 0 10px">Marcá solo los planos de la obra que querés analizar. Cada análisis abre un chat nuevo y usa únicamente los seleccionados.</p>
-            <div id="fileList"></div>
+            <div id="plnDashKpis" class="pln-kpis"></div>
+            <div class="pln-dash-filters" id="plnDashFilters"></div>
+            <div id="plnProjectsGrid" class="pln-projects-grid"></div>
+            <div class="pln-disclaimer">El análisis IA es una herramienta de asistencia y revisión preliminar. No reemplaza la validación de arquitectos, ingenieros, calculistas, instaladores ni profesionales matriculados.</div>
           </div>
-          <div id="planosResults" style="display:none">
-            <h3 style="font-size:14px;font-weight:600;margin:20px 0 10px">Estimacion de Materiales</h3>
-            <div id="planosResultContent"></div>
+
+          <!-- Pantalla 2: Proyecto (planos + tareas + análisis) -->
+          <div id="plnProject" style="display:none">
+            <div class="pln-topbar">
+              <button class="btn-secondary pln-back" id="plnBackDash">← Proyectos</button>
+              <div class="pln-topbar-actions">
+                <button class="btn-secondary" id="plnEditProjectBtn">Editar proyecto</button>
+              </div>
+            </div>
+            <div id="plnProjectHeader"></div>
+            <div class="upload-zone pln-upload" id="plnUploadZone">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p>Arrastrá planos acá o hacé click para seleccionar</p>
+              <small>PDF, PNG, JPG o WEBP · hasta 8 MB por archivo · varias láminas a la vez. La IA los clasifica automáticamente.</small>
+              <input type="file" id="plnFileInput" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple>
+            </div>
+            <div id="plnUploadStatus"></div>
+            <div id="plnClassifySummary"></div>
+            <div class="section-tabs pln-tabs">
+              <button class="section-tab active" data-pln-tab="planos">Planos <span id="plnTabPlanosCount"></span></button>
+              <button class="section-tab" data-pln-tab="tareas">Tareas <span id="plnTabTareasCount"></span></button>
+              <button class="section-tab" data-pln-tab="historial">Historial de análisis</button>
+            </div>
+            <div id="plnTabPlanos" class="pln-tab-content"></div>
+            <div id="plnTabTareas" class="pln-tab-content" style="display:none"></div>
+            <div id="plnTabHistorial" class="pln-tab-content" style="display:none"></div>
           </div>
-          <div class="empty-state" id="planosEmpty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            <p>Aun no se cargaron planos</p>
-            <small>Subi tus archivos para obtener un analisis detallado de materiales</small>
+
+          <!-- Pantalla 3: Plano (visor + panel de análisis) -->
+          <div id="plnPlan" style="display:none">
+            <div class="pln-topbar">
+              <button class="btn-secondary pln-back" id="plnBackProject">← Proyecto</button>
+              <div class="pln-topbar-actions" id="plnPlanActions"></div>
+            </div>
+            <div id="plnPlanHeader"></div>
+            <div class="pln-split">
+              <div class="pln-viewer-wrap">
+                <div class="pln-viewer-toolbar" id="plnViewerToolbar"></div>
+                <div class="pln-viewer" id="plnViewer">
+                  <div class="pln-viewer-inner" id="plnViewerInner">
+                    <canvas id="plnCanvas" style="display:none"></canvas>
+                    <img id="plnImage" alt="" style="display:none">
+                    <div class="pln-pins-layer" id="plnPinsLayer"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="pln-panel" id="plnPanel"></div>
+            </div>
+            <div class="pln-disclaimer">El análisis IA es una herramienta de asistencia y revisión preliminar. No reemplaza la validación de arquitectos, ingenieros, calculistas, instaladores ni profesionales matriculados.</div>
           </div>
+
         </div>
       </div>
 
@@ -796,6 +832,14 @@
           <div id="acadCartMsg" class="acad-inscribir-msg"></div>
           <div class="acad-d-disclaimer">Un solo pago seguro por todos los cursos. Los gratuitos se inscriben al instante, sin cargo.</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Planos: modal genérico (proyecto, tarea, comparar, reporte, observación, versión, biblioteca, clasificación) -->
+    <div class="modal-overlay" id="plnModal">
+      <div class="modal modal-wide pln-modal">
+        <button class="btn-icon pln-modal-close" id="plnModalClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <div class="modal-body" id="plnModalBody"></div>
       </div>
     </div>
 
@@ -2053,14 +2097,460 @@ async function sendMessage(text,opts){
 function updateSendBtn(){els.sendBtn.disabled=!els.messageInput.value.trim()||state.isStreaming}
 function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px'}
 
-// Planos upload
+// ===== ANÁLISIS DE PLANOS — panel inteligente por proyecto =====
+const plnState={
+  loaded:false,projects:[],project:null,plans:[],tasks:[],analysesIdx:[],
+  plan:null,analysis:null,alerts:[],screen:'dashboard',tab:'planos',panelTab:'resumen',
+  prioFilter:'todas',dashFilters:{stage:'',obra:'',risk:''},
+  viewer:{pdf:null,page:1,pages:1,zoom:1,fit:1,pinsVisible:true,pinTarget:null},
+  _blobs:{},biblioteca:null,uploading:false,
+};
+const PLN_PRIO={critica:['Crítica','#dc2626'],alta:['Alta','#ea580c'],media:['Media','#ca8a04'],baja:['Baja','#64748b'],informativa:['Informativa','#0ea5e9']};
+const PLN_RISK={bajo:['Bajo','#16a34a'],medio:['Medio','#ca8a04'],alto:['Alto','#ea580c'],critico:['Crítico','#dc2626']};
+const PLN_OBRA={vivienda_unifamiliar:'Vivienda unifamiliar',vivienda_multifamiliar:'Vivienda multifamiliar',edificio:'Edificio',local_comercial:'Local comercial',desarrollo_inmobiliario:'Desarrollo inmobiliario',obra_industrial:'Obra industrial',reforma:'Reforma / remodelación',otro:'Otro'};
+const PLN_STAGE={idea:'Idea inicial',anteproyecto:'Anteproyecto',ejecutivo:'Proyecto ejecutivo',aprobacion:'En aprobación',presupuesto:'En presupuesto',obra:'En obra',revision_final:'Revisión final'};
+const PLN_GOAL={entender:'Entender el plano',detectar_errores:'Detectar errores',constructibilidad:'Revisar constructibilidad',comparar_versiones:'Comparar versiones',reunion_tecnica:'Preparar reunión técnica',presupuestar:'Revisar antes de presupuestar',iniciar_obra:'Revisar antes de iniciar obra'};
+const PLN_PSTATUS={cargado:['Cargado','#64748b'],procesando:['Procesando…','#0ea5e9'],clasificado:['Clasificado','#0ea5e9'],analizado:['Analizado','#16a34a'],revision_recomendada:['Revisión recomendada','#ea580c'],error:['Error de procesamiento','#dc2626'],pendiente_clasificacion:['Pendiente de clasificación','#ca8a04'],version_anterior:['Versión anterior','#94a3b8']};
+const PLN_ASTATUS={pendiente:'Pendiente',en_revision:'En revisión',validado:'Validado',rechazado:'Rechazado',resuelto:'Resuelto',ignorado:'Ignorado'};
+const PLN_TSTATUS={pendiente:'Pendiente',en_curso:'En curso',en_revision:'En revisión',resuelta:'Resuelta',cancelada:'Cancelada'};
+const PLN_CSTATUS={pendiente:'Pendiente',en_revision:'En revisión',validado:'Validado',no_aplica:'No aplica',resuelto:'Resuelto'};
+const PLN_MODES={errores:'Revisión de errores potenciales',simple:'Explicación simple',desarrollador:'Análisis para desarrollador',constructor:'Análisis para constructor / obra'};
+const PLN_PROFILES={'':'Perfil: general',no_tecnico:'Perfil: no técnico',constructor:'Perfil: constructor',desarrollador:'Perfil: desarrollador',jefe_obra:'Perfil: jefe de obra',arquitecto:'Perfil: arquitecto'};
+const PLN_TYPES=['arquitectura','estructura','electrica','sanitaria','gas','hvac','detalles','implantacion','corte','fachada','municipal','ejecutivo','otro'];
+const PLN_DISCLAIMER='El análisis IA es una herramienta de asistencia y revisión preliminar. No reemplaza la validación de arquitectos, ingenieros, calculistas, instaladores ni profesionales matriculados.';
+
+async function plnApi(path,opts={}){
+  const init={method:opts.method||'GET'};
+  if(opts.body instanceof FormData){init.body=opts.body;}
+  else if(opts.body!==undefined){init.headers={'Content-Type':'application/json'};init.body=JSON.stringify(opts.body);}
+  const r=await window.REAuthService.authFetch(apiBase()+'/api/planos'+path,init);
+  if(r.status===401){window.REAuthService.logout();throw new Error('Sesión expirada');}
+  if(!r.ok){let d='';try{const j=await r.json();d=typeof j.detail==='string'?j.detail:'';}catch(e){}throw new Error(d||('Error '+r.status));}
+  return r.status===204?null:r.json();
+}
+function plnPrioChip(p){const[l,c]=PLN_PRIO[p]||[p,'#64748b'];return `<span class="pln-chip" style="background:${c}18;color:${c};border-color:${c}40">${l}</span>`;}
+function plnRiskChip(r){if(!r)return '<span class="pln-chip">Sin análisis</span>';const[l,c]=PLN_RISK[r]||[r,'#64748b'];return `<span class="pln-chip" style="background:${c}18;color:${c};border-color:${c}40">Riesgo ${l}</span>`;}
+function plnStatusChip(s){const[l,c]=PLN_PSTATUS[s]||[s,'#64748b'];return `<span class="pln-chip" style="background:${c}15;color:${c};border-color:${c}35">${l}</span>`;}
+function plnFmtDate(iso){if(!iso)return '';try{return new Date(iso).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});}catch(e){return '';}}
+function plnShow(screen){
+  plnState.screen=screen;
+  $('#plnDashboard').style.display=screen==='dashboard'?'':'none';
+  $('#plnProject').style.display=screen==='project'?'':'none';
+  $('#plnPlan').style.display=screen==='plan'?'':'none';
+}
+function plnModalOpen(html){$('#plnModalBody').innerHTML=html;$('#plnModal').classList.add('active');}
+function plnModalClose(){$('#plnModal').classList.remove('active');}
+function plnToast(msg,ok=true){
+  const el=document.createElement('div');el.className='pln-toast'+(ok?'':' err');el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.classList.add('show'),10);
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},3500);
+}
+
+// ── Dashboard multi-proyecto ──
+async function plnLoadDashboard(force=false){
+  if(plnState.loaded&&!force){plnRenderDashboard();return;}
+  $('#plnProjectsGrid').innerHTML='<div class="pln-loading">Cargando proyectos…</div>';
+  try{
+    const d=await plnApi('/projects');
+    plnState.projects=d.projects||[];plnState.loaded=true;
+    plnRenderDashboard();
+  }catch(e){$('#plnProjectsGrid').innerHTML=`<div class="empty-state" style="padding:30px"><div class="empty-title">No pudimos cargar los proyectos</div><div class="empty-desc">${esc(e.message)}</div></div>`;}
+}
+function plnRenderDashboard(){
+  const ps=plnState.projects;
+  const tot={planos:0,criticas:0,altas:0,tareas:0};
+  ps.forEach(p=>{tot.planos+=p.plans_count||0;tot.criticas+=p.critical_alerts||0;tot.altas+=p.high_alerts||0;tot.tareas+=p.pending_tasks||0;});
+  $('#plnDashKpis').innerHTML=[['Proyectos',ps.length],['Planos',tot.planos],['Obs. críticas',tot.criticas,'#dc2626'],['Obs. altas',tot.altas,'#ea580c'],['Tareas pendientes',tot.tareas]]
+    .map(([l,n,c])=>`<div class="pln-kpi"><div class="pln-kpi-num"${c?` style="color:${c}"`:''}>${n}</div><div class="pln-kpi-lbl">${l}</div></div>`).join('');
+  const f=plnState.dashFilters;
+  $('#plnDashFilters').innerHTML=ps.length?`
+    <select id="plnFStage" class="pln-select"><option value="">Todas las etapas</option>${Object.entries(PLN_STAGE).map(([k,v])=>`<option value="${k}"${f.stage===k?' selected':''}>${v}</option>`).join('')}</select>
+    <select id="plnFObra" class="pln-select"><option value="">Todos los tipos</option>${Object.entries(PLN_OBRA).map(([k,v])=>`<option value="${k}"${f.obra===k?' selected':''}>${v}</option>`).join('')}</select>
+    <select id="plnFRisk" class="pln-select"><option value="">Todos los riesgos</option>${Object.entries(PLN_RISK).map(([k,[v]])=>`<option value="${k}"${f.risk===k?' selected':''}>Riesgo ${v}</option>`).join('')}</select>`:'';
+  ['plnFStage','plnFObra','plnFRisk'].forEach((id,i)=>{const el=$('#'+id);if(el)el.addEventListener('change',()=>{plnState.dashFilters[['stage','obra','risk'][i]]=el.value;plnRenderDashboard();});});
+  const vis=ps.filter(p=>(!f.stage||p.stage===f.stage)&&(!f.obra||p.obra_type===f.obra)&&(!f.risk||p.general_risk===f.risk));
+  if(!ps.length){
+    $('#plnProjectsGrid').innerHTML=`<div class="empty-state" style="padding:40px 20px"><div class="empty-title">Todavía no tenés proyectos</div><div class="empty-desc">Creá tu primer proyecto y subí los planos para obtener la revisión IA.</div><button class="btn-primary" style="margin-top:14px" onclick="plnProjectForm()">+ Crear mi primer proyecto</button></div>`;
+    return;
+  }
+  $('#plnProjectsGrid').innerHTML=vis.map(p=>`
+    <div class="pln-project-card" data-pid="${p.id}">
+      <div class="pln-pc-head">
+        <div class="pln-pc-name">${esc(p.name)}</div>
+        ${plnRiskChip(p.general_risk)}
+      </div>
+      <div class="pln-pc-meta">${esc(PLN_OBRA[p.obra_type]||p.obra_type)} · ${esc(PLN_STAGE[p.stage]||p.stage)}${p.location?' · '+esc(p.location):''}</div>
+      <div class="pln-pc-stats">
+        <span>📐 ${p.plans_count||0} planos</span>
+        ${p.critical_alerts?`<span class="pln-stat-crit">● ${p.critical_alerts} críticas</span>`:''}
+        ${p.high_alerts?`<span class="pln-stat-high">● ${p.high_alerts} altas</span>`:''}
+        ${p.pending_tasks?`<span>☑ ${p.pending_tasks} tareas</span>`:''}
+      </div>
+      <div class="pln-pc-foot">
+        <span class="pln-pc-date">${p.last_analysis?'Última revisión: '+plnFmtDate(p.last_analysis):'Sin análisis todavía'}</span>
+        <button class="btn-primary pln-pc-open">Ingresar →</button>
+      </div>
+    </div>`).join('')||'<div class="pln-loading">Ningún proyecto coincide con los filtros.</div>';
+  $('#plnProjectsGrid').querySelectorAll('.pln-project-card').forEach(card=>{
+    card.addEventListener('click',()=>plnOpenProject(card.dataset.pid));
+  });
+}
+
+// ── Alta / edición de proyecto ──
+function plnProjectForm(existing){
+  const p=existing||{};
+  const sel=(id,obj,cur)=>`<select id="${id}" class="pln-input">${Object.entries(obj).map(([k,v])=>`<option value="${k}"${cur===k?' selected':''}>${v}</option>`).join('')}</select>`;
+  plnModalOpen(`
+    <h3 class="pln-m-title">${existing?'Editar proyecto':'Nuevo proyecto'}</h3>
+    <div class="pln-form">
+      <label>Nombre del proyecto *<input id="plnFName" class="pln-input" maxlength="255" value="${esc(p.name||'')}" placeholder="Ej: Edificio Av. Libertador 4520"></label>
+      <div class="pln-form-row">
+        <label>Tipo de obra${sel('plnFObraT',PLN_OBRA,p.obra_type||'otro')}</label>
+        <label>Etapa${sel('plnFStageT',PLN_STAGE,p.stage||'anteproyecto')}</label>
+      </div>
+      <div class="pln-form-row">
+        <label>Ubicación<input id="plnFLoc" class="pln-input" maxlength="255" value="${esc(p.location||'')}" placeholder="Ciudad / barrio"></label>
+        <label>Superficie estimada<input id="plnFArea" class="pln-input" maxlength="60" value="${esc(p.estimated_area||'')}" placeholder="Ej: 1.200 m²"></label>
+      </div>
+      <div class="pln-form-row">
+        <label>Objetivo del análisis${sel('plnFGoal',PLN_GOAL,p.analysis_goal||'entender')}</label>
+        <label>Cliente / responsable (opcional)<input id="plnFClient" class="pln-input" maxlength="255" value="${esc(p.client_name||'')}"></label>
+      </div>
+      <label>Descripción general (opcional)<textarea id="plnFDesc" class="pln-input" rows="3" maxlength="4000">${esc(p.description||'')}</textarea></label>
+      <div class="pln-form-actions">
+        ${existing?'<button class="btn-secondary" id="plnFDelete" style="color:#dc2626">Eliminar proyecto</button>':'<span></span>'}
+        <button class="btn-primary" id="plnFSave">${existing?'Guardar cambios':'Crear proyecto'}</button>
+      </div>
+    </div>`);
+  $('#plnFSave').addEventListener('click',async()=>{
+    const body={name:$('#plnFName').value.trim(),obra_type:$('#plnFObraT').value,stage:$('#plnFStageT').value,
+      location:$('#plnFLoc').value.trim(),estimated_area:$('#plnFArea').value.trim(),
+      analysis_goal:$('#plnFGoal').value,client_name:$('#plnFClient').value.trim(),description:$('#plnFDesc').value.trim()};
+    if(!body.name){plnToast('Poné un nombre al proyecto',false);return;}
+    try{
+      if(existing){await plnApi('/projects/'+existing.id,{method:'PUT',body});plnToast('Proyecto actualizado');}
+      else{const np=await plnApi('/projects',{method:'POST',body});plnToast('Proyecto creado');plnModalClose();await plnLoadDashboard(true);plnOpenProject(np.id);return;}
+      plnModalClose();await plnLoadDashboard(true);
+      if(plnState.project&&existing)plnOpenProject(existing.id);
+    }catch(e){plnToast(e.message,false);}
+  });
+  const del=$('#plnFDelete');if(del)del.addEventListener('click',async()=>{
+    if(!confirm('¿Eliminar el proyecto con todos sus planos, análisis y tareas? Esta acción no se puede deshacer.'))return;
+    try{await plnApi('/projects/'+existing.id,{method:'DELETE'});plnToast('Proyecto eliminado');plnModalClose();plnShow('dashboard');await plnLoadDashboard(true);}
+    catch(e){plnToast(e.message,false);}
+  });
+}
+
+// ── Pantalla proyecto ──
+async function plnOpenProject(pid){
+  plnShow('project');
+  $('#plnProjectHeader').innerHTML='<div class="pln-loading">Cargando proyecto…</div>';
+  $('#plnTabPlanos').innerHTML='';$('#plnTabTareas').innerHTML='';$('#plnTabHistorial').innerHTML='';
+  try{
+    const d=await plnApi('/projects/'+pid);
+    plnState.project=d.project;plnState.plans=d.plans||[];plnState.tasks=d.tasks||[];plnState.analysesIdx=d.analyses||[];
+    plnRenderProject();
+  }catch(e){$('#plnProjectHeader').innerHTML=`<div class="empty-state"><div class="empty-title">${esc(e.message)}</div></div>`;}
+}
+function plnRenderProject(){
+  const p=plnState.project;if(!p)return;
+  $('#plnProjectHeader').innerHTML=`
+    <div class="pln-proj-header">
+      <div>
+        <h2 class="pln-proj-name">${esc(p.name)}</h2>
+        <div class="pln-proj-meta">
+          <span class="pln-chip">${esc(PLN_OBRA[p.obra_type]||p.obra_type)}</span>
+          <span class="pln-chip">${esc(PLN_STAGE[p.stage]||p.stage)}</span>
+          <span class="pln-chip">🎯 ${esc(PLN_GOAL[p.analysis_goal]||p.analysis_goal)}</span>
+          ${p.location?`<span class="pln-chip">📍 ${esc(p.location)}</span>`:''}
+          ${p.estimated_area?`<span class="pln-chip">${esc(p.estimated_area)}</span>`:''}
+          ${p.client_name?`<span class="pln-chip">👤 ${esc(p.client_name)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  plnRenderClassifySummary();
+  plnRenderPlansTab();plnRenderTasksTab();plnRenderHistorialTab();
+  plnSetTab(plnState.tab||'planos');
+}
+function plnSetTab(tab){
+  plnState.tab=tab;
+  $$('[data-pln-tab]').forEach(t=>t.classList.toggle('active',t.dataset.plnTab===tab));
+  ['planos','tareas','historial'].forEach(t=>{$('#plnTab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=t===tab?'':'none';});
+}
+function plnRenderClassifySummary(){
+  const plans=plnState.plans.filter(f=>f.is_current_version);
+  const el=$('#plnClassifySummary');
+  if(!plans.length){el.innerHTML='';return;}
+  const byType={};let unclassified=0;
+  plans.forEach(f=>{if(f.detected_plan_type)byType[f.detected_plan_type]=(byType[f.detected_plan_type]||0)+1;else unclassified++;});
+  const parts=Object.entries(byType).map(([t,n])=>`${n} de ${t}`);
+  if(!parts.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="pln-classify-banner">🤖 Detectamos <strong>${plans.length} plano${plans.length!==1?'s':''} vigente${plans.length!==1?'s':''}</strong>: ${parts.join(', ')}${unclassified?` — ${unclassified} sin clasificar`:''}. <strong>Revisá la clasificación antes de continuar</strong> (podés editarla en cada plano).</div>`;
+}
+function plnRenderPlansTab(){
+  const plans=plnState.plans;
+  $('#plnTabPlanosCount').textContent=plans.length?`(${plans.length})`:'';
+  if(!plans.length){
+    $('#plnTabPlanos').innerHTML='<div class="empty-state" style="padding:28px"><div class="empty-title">Sin planos cargados</div><div class="empty-desc">Subí la documentación del proyecto (PDF o imágenes) para clasificarla y analizarla con IA.</div></div>';
+    return;
+  }
+  $('#plnTabPlanos').innerHTML=plans.map(f=>`
+    <div class="pln-plan-row${f.is_current_version?'':' pln-old-version'}" data-plid="${f.id}">
+      <div class="pln-plan-icon">${f.file_type==='pdf'?'📄':'🖼️'}</div>
+      <div class="pln-plan-main">
+        <div class="pln-plan-name">${esc(f.file_name)} <span class="pln-ver">v${f.version}</span></div>
+        <div class="pln-plan-chips">
+          ${f.detected_plan_type?`<span class="pln-chip">${esc(f.detected_plan_type)}</span>`:''}
+          ${f.sheet_number?`<span class="pln-chip">Lámina ${esc(f.sheet_number)}</span>`:''}
+          ${f.scale?`<span class="pln-chip">${esc(f.scale)}</span>`:''}
+          ${f.floor_level?`<span class="pln-chip">${esc(f.floor_level)}</span>`:''}
+          ${plnStatusChip(f.status)}
+        </div>
+        <div class="pln-plan-meta">Subido ${plnFmtDate(f.uploaded_at)} · ${(f.file_size/1024/1024).toFixed(1)} MB${f.analyzed_at?' · Analizado '+plnFmtDate(f.analyzed_at):''}</div>
+      </div>
+      <div class="pln-plan-actions">
+        <button class="btn-primary pln-a-open">Abrir</button>
+        <button class="btn-secondary pln-a-menu" title="Más acciones">⋯</button>
+      </div>
+    </div>`).join('');
+  $('#plnTabPlanos').querySelectorAll('.pln-plan-row').forEach(row=>{
+    const id=row.dataset.plid;
+    row.querySelector('.pln-a-open').addEventListener('click',e=>{e.stopPropagation();plnOpenPlan(id);});
+    row.querySelector('.pln-a-menu').addEventListener('click',e=>{e.stopPropagation();plnPlanMenu(id);});
+    row.addEventListener('click',()=>plnOpenPlan(id));
+  });
+}
+function plnPlanMenu(planId){
+  const f=plnState.plans.find(x=>x.id===planId);if(!f)return;
+  plnModalOpen(`
+    <h3 class="pln-m-title">${esc(f.file_name)} <span class="pln-ver">v${f.version}</span></h3>
+    <div class="pln-menu-list">
+      <button class="pln-menu-item" id="plnMOpen">📂 Abrir en el visor</button>
+      <button class="pln-menu-item" id="plnMClassify">🤖 Clasificar con IA</button>
+      <button class="pln-menu-item" id="plnMEdit">✏️ Editar datos del plano</button>
+      <button class="pln-menu-item" id="plnMVersion">⬆️ Subir nueva versión</button>
+      <button class="pln-menu-item" id="plnMHistory">🕘 Historial de versiones</button>
+      <button class="pln-menu-item" id="plnMDelete" style="color:#dc2626">🗑 Eliminar plano</button>
+    </div>`);
+  $('#plnMOpen').addEventListener('click',()=>{plnModalClose();plnOpenPlan(planId);});
+  $('#plnMClassify').addEventListener('click',async()=>{
+    plnModalClose();plnToast('Clasificando con IA…');
+    try{const upd=await plnApi('/plans/'+planId+'/classify',{method:'POST'});plnPatchPlan(upd);plnToast('Plano clasificado: '+(upd.detected_plan_type||'sin datos legibles'));}
+    catch(e){plnToast(e.message,false);}
+  });
+  $('#plnMEdit').addEventListener('click',()=>plnClassifyForm(f));
+  $('#plnMVersion').addEventListener('click',()=>plnVersionForm(f));
+  $('#plnMHistory').addEventListener('click',()=>plnVersionHistory(f));
+  $('#plnMDelete').addEventListener('click',async()=>{
+    if(!confirm('¿Eliminar este plano con sus análisis y observaciones?'))return;
+    try{await plnApi('/plans/'+planId,{method:'DELETE'});plnModalClose();plnToast('Plano eliminado');plnOpenProject(plnState.project.id);}
+    catch(e){plnToast(e.message,false);}
+  });
+}
+function plnPatchPlan(updated){
+  const i=plnState.plans.findIndex(x=>x.id===updated.id);
+  if(i>=0)plnState.plans[i]=updated;
+  if(plnState.plan&&plnState.plan.id===updated.id)plnState.plan=updated;
+  plnRenderClassifySummary();plnRenderPlansTab();
+}
+function plnClassifyForm(f){
+  plnModalOpen(`
+    <h3 class="pln-m-title">Datos del plano</h3>
+    <p class="pln-m-sub">Detectados por IA — corregí lo que haga falta.</p>
+    <div class="pln-form">
+      <div class="pln-form-row">
+        <label>Tipo de plano<select id="plnCType" class="pln-input">${PLN_TYPES.map(t=>`<option value="${t}"${f.detected_plan_type===t?' selected':''}>${t}</option>`).join('')}</select></label>
+        <label>Especialidad<input id="plnCDisc" class="pln-input" maxlength="40" value="${esc(f.discipline||'')}"></label>
+      </div>
+      <div class="pln-form-row">
+        <label>Lámina<input id="plnCSheet" class="pln-input" maxlength="60" value="${esc(f.sheet_number||'')}" placeholder="A-02"></label>
+        <label>Escala<input id="plnCScale" class="pln-input" maxlength="40" value="${esc(f.scale||'')}" placeholder="1:100"></label>
+      </div>
+      <div class="pln-form-row">
+        <label>Planta / nivel<input id="plnCLevel" class="pln-input" maxlength="80" value="${esc(f.floor_level||'')}" placeholder="Planta baja"></label>
+        <label>Fecha del plano<input id="plnCDate" class="pln-input" maxlength="40" value="${esc(f.plan_date||'')}"></label>
+      </div>
+      <div class="pln-form-actions"><span></span><button class="btn-primary" id="plnCSave">Guardar</button></div>
+    </div>`);
+  $('#plnCSave').addEventListener('click',async()=>{
+    try{
+      const upd=await plnApi('/plans/'+f.id,{method:'PATCH',body:{
+        detected_plan_type:$('#plnCType').value,discipline:$('#plnCDisc').value.trim(),
+        sheet_number:$('#plnCSheet').value.trim(),scale:$('#plnCScale').value.trim(),
+        floor_level:$('#plnCLevel').value.trim(),plan_date:$('#plnCDate').value.trim()}});
+      plnPatchPlan(upd);plnModalClose();plnToast('Datos guardados');
+      if(plnState.screen==='plan')plnRenderPlanHeader();
+    }catch(e){plnToast(e.message,false);}
+  });
+}
+function plnVersionForm(f){
+  plnModalOpen(`
+    <h3 class="pln-m-title">Nueva versión de "${esc(f.file_name)}"</h3>
+    <p class="pln-m-sub">La versión actual (v${f.version}) queda guardada como versión anterior. La nueva pasa a ser la vigente y vas a poder compararlas.</p>
+    <div class="pln-form">
+      <label>Archivo nuevo<input type="file" id="plnVFile" class="pln-input" accept=".pdf,.jpg,.jpeg,.png,.webp"></label>
+      <label>Notas de la versión (qué cambió)<textarea id="plnVNotes" class="pln-input" rows="2" maxlength="2000" placeholder="Ej: Rev. C — se movió el núcleo sanitario de la unidad B"></textarea></label>
+      <div class="pln-form-actions"><span></span><button class="btn-primary" id="plnVUpload">Subir versión</button></div>
+    </div>`);
+  $('#plnVUpload').addEventListener('click',async()=>{
+    const file=$('#plnVFile').files[0];
+    if(!file){plnToast('Elegí el archivo de la nueva versión',false);return;}
+    if(file.size>8*1024*1024){plnToast('Máximo 8 MB por archivo',false);return;}
+    const fd=new FormData();fd.append('file',file);fd.append('version_of',f.id);fd.append('version_notes',$('#plnVNotes').value.trim());
+    $('#plnVUpload').disabled=true;$('#plnVUpload').textContent='Subiendo…';
+    try{
+      const np=await plnApi('/projects/'+plnState.project.id+'/plans',{method:'POST',body:fd});
+      plnModalClose();plnToast('Versión v'+np.version+' subida. Clasificando…');
+      await plnOpenProject(plnState.project.id);
+      try{const upd=await plnApi('/plans/'+np.id+'/classify',{method:'POST'});plnPatchPlan(upd);}catch(e){}
+    }catch(e){plnToast(e.message,false);$('#plnVUpload').disabled=false;$('#plnVUpload').textContent='Subir versión';}
+  });
+}
+async function plnVersionHistory(f){
+  plnModalOpen('<h3 class="pln-m-title">Historial de versiones</h3><div class="pln-loading">Cargando…</div>');
+  try{
+    const d=await plnApi('/plans/'+f.id+'/versions');
+    const versions=d.versions||[];
+    plnModalOpen(`
+      <h3 class="pln-m-title">Historial de versiones — ${esc(f.file_name)}</h3>
+      <div class="pln-version-list">${versions.map(v=>`
+        <div class="pln-version-row${v.is_current_version?' current':''}">
+          <div>
+            <strong>v${v.version}</strong> ${v.is_current_version?'<span class="pln-chip" style="background:rgba(34,197,94,.12);color:#16a34a">Vigente</span>':plnStatusChip(v.status)}
+            <div class="pln-plan-meta">Subida ${plnFmtDate(v.uploaded_at)}${v.version_notes?' · '+esc(v.version_notes):''}</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-secondary" data-open="${v.id}">Ver</button>
+            ${!v.is_current_version?`<button class="btn-secondary" data-compare="${v.id}" title="Comparar con la vigente">Comparar con vigente</button>`:''}
+          </div>
+        </div>`).join('')}</div>`);
+    const current=versions.find(v=>v.is_current_version);
+    $('#plnModalBody').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{plnModalClose();plnOpenPlan(b.dataset.open);}));
+    $('#plnModalBody').querySelectorAll('[data-compare]').forEach(b=>b.addEventListener('click',()=>{
+      if(current)plnRunCompare(b.dataset.compare,current.id,'Comparación entre versión anterior y versión vigente del mismo plano');
+    }));
+  }catch(e){plnModalOpen('<div class="empty-state"><div class="empty-title">'+esc(e.message)+'</div></div>');}
+}
+
+// ── Upload de planos (multi-archivo + clasificación automática) ──
+async function plnHandleUpload(files){
+  const list=Array.from(files||[]).filter(f=>/\.(pdf|png|jpe?g|webp)$/i.test(f.name));
+  if(!list.length){plnToast('Formato no soportado: usá PDF, PNG, JPG o WEBP',false);return;}
+  if(plnState.uploading)return;
+  plnState.uploading=true;
+  const st=$('#plnUploadStatus');
+  for(let i=0;i<list.length;i++){
+    const f=list[i];
+    st.innerHTML=`<div class="pln-upload-progress">Subiendo ${i+1}/${list.length}: <strong>${esc(f.name)}</strong>…</div>`;
+    if(f.size>8*1024*1024){plnToast(`${f.name}: supera 8 MB, quedó afuera`,false);continue;}
+    try{
+      const fd=new FormData();fd.append('file',f);
+      const np=await plnApi('/projects/'+plnState.project.id+'/plans',{method:'POST',body:fd});
+      plnState.plans.unshift(np);plnRenderPlansTab();
+      st.innerHTML=`<div class="pln-upload-progress">🤖 Clasificando ${i+1}/${list.length}: <strong>${esc(f.name)}</strong>…</div>`;
+      try{const upd=await plnApi('/plans/'+np.id+'/classify',{method:'POST'});plnPatchPlan(upd);}
+      catch(e){/* clasificación manual disponible */}
+    }catch(e){plnToast(`${f.name}: ${e.message}`,false);}
+  }
+  st.innerHTML='';plnState.uploading=false;
+  plnRenderClassifySummary();plnRenderPlansTab();
+  plnToast('Planos cargados y clasificados. Revisá la clasificación y ejecutá el análisis.');
+}
+
+// ── Tareas ──
+function plnRenderTasksTab(){
+  const ts=plnState.tasks;
+  $('#plnTabTareasCount').textContent=ts.length?`(${ts.filter(t=>['pendiente','en_curso'].includes(t.status)).length})`:'';
+  $('#plnTabTareas').innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn-primary" id="plnNewTaskBtn">+ Nueva tarea</button></div>
+    ${ts.length?ts.map(t=>`
+      <div class="pln-task-row">
+        <div class="pln-task-main">
+          <div class="pln-task-title">${esc(t.title)} ${plnPrioChip(t.priority)}</div>
+          ${t.description?`<div class="pln-task-desc">${esc(t.description)}</div>`:''}
+          <div class="pln-plan-meta">${t.responsible?'👤 '+esc(t.responsible)+' · ':''}${t.due_date?'📅 '+esc(t.due_date)+' · ':''}Creada ${plnFmtDate(t.created_at)}</div>
+        </div>
+        <select class="pln-select pln-task-status" data-tid="${t.id}">${Object.entries(PLN_TSTATUS).map(([k,v])=>`<option value="${k}"${t.status===k?' selected':''}>${v}</option>`).join('')}</select>
+      </div>`).join(''):'<div class="empty-state" style="padding:24px"><div class="empty-title">Sin tareas</div><div class="empty-desc">Convertí observaciones del análisis en tareas, o creá una manual.</div></div>'}`;
+  $('#plnNewTaskBtn').addEventListener('click',()=>plnTaskForm());
+  $('#plnTabTareas').querySelectorAll('.pln-task-status').forEach(sel=>sel.addEventListener('change',async()=>{
+    try{await plnApi('/tasks/'+sel.dataset.tid,{method:'PATCH',body:{status:sel.value}});plnToast('Tarea actualizada');}
+    catch(e){plnToast(e.message,false);}
+  }));
+}
+function plnTaskForm(prefill){
+  const pf=prefill||{};
+  plnModalOpen(`
+    <h3 class="pln-m-title">Nueva tarea</h3>
+    <div class="pln-form">
+      <label>Título *<input id="plnTTitle" class="pln-input" maxlength="255" value="${esc(pf.title||'')}"></label>
+      <label>Descripción<textarea id="plnTDesc" class="pln-input" rows="3" maxlength="4000">${esc(pf.description||'')}</textarea></label>
+      <div class="pln-form-row">
+        <label>Prioridad<select id="plnTPrio" class="pln-input">${Object.entries(PLN_PRIO).map(([k,[v]])=>`<option value="${k}"${(pf.priority||'media')===k?' selected':''}>${v}</option>`).join('')}</select></label>
+        <label>Fecha límite<input id="plnTDue" class="pln-input" maxlength="20" placeholder="AAAA-MM-DD"></label>
+      </div>
+      <label>Responsable<input id="plnTResp" class="pln-input" maxlength="120" placeholder="Ej: Proyectista / Calculista"></label>
+      <div class="pln-form-actions"><span></span><button class="btn-primary" id="plnTSave">Crear tarea</button></div>
+    </div>`);
+  $('#plnTSave').addEventListener('click',async()=>{
+    const title=$('#plnTTitle').value.trim();
+    if(!title){plnToast('Poné un título',false);return;}
+    try{
+      const t=await plnApi('/projects/'+plnState.project.id+'/tasks',{method:'POST',body:{
+        title,description:$('#plnTDesc').value.trim(),priority:$('#plnTPrio').value,
+        due_date:$('#plnTDue').value.trim(),responsible:$('#plnTResp').value.trim(),
+        plan_id:pf.plan_id||null,alert_id:pf.alert_id||null}});
+      plnState.tasks.unshift(t);plnRenderTasksTab();plnModalClose();plnToast('Tarea creada');
+    }catch(e){plnToast(e.message,false);}
+  });
+}
+
+// ── Historial de análisis del proyecto ──
+function plnRenderHistorialTab(){
+  const an=plnState.analysesIdx;
+  $('#plnTabHistorial').innerHTML=an.length?an.map(a=>{
+    const plan=plnState.plans.find(p=>p.id===a.plan_id);
+    return `<div class="pln-task-row" style="cursor:pointer" data-aid="${a.id}" data-plid="${a.plan_id}">
+      <div class="pln-task-main">
+        <div class="pln-task-title">${a.mode==='comparacion'?'🔀 Comparación':'🔍 '+(PLN_MODES[a.mode]||a.mode)} — ${esc(plan?plan.file_name:'plano')}</div>
+        <div class="pln-plan-meta">${plnFmtDate(a.created_at)} · Confianza ${a.confidence}%</div>
+      </div>
+      ${plnRiskChip(a.general_risk)}
+    </div>`;}).join(''):'<div class="empty-state" style="padding:24px"><div class="empty-title">Sin análisis todavía</div><div class="empty-desc">Abrí un plano y ejecutá el análisis IA.</div></div>';
+  $('#plnTabHistorial').querySelectorAll('[data-aid]').forEach(row=>row.addEventListener('click',()=>{
+    plnOpenPlan(row.dataset.plid,row.dataset.aid);
+  }));
+}
+
 function initPlanos(){
-  const zone=$('#uploadZone'),input=$('#fileInput');
-  zone.addEventListener('click',()=>input.click());
-  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover')});
-  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
-  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
-  input.addEventListener('change',()=>handleFiles(input.files));
+  // Navegación entre pantallas + carga perezosa del dashboard
+  const navBtn=document.querySelector('[data-view="planos"]');
+  if(navBtn)navBtn.addEventListener('click',()=>plnLoadDashboard());
+  $('#plnBackDash')?.addEventListener('click',()=>{plnShow('dashboard');plnLoadDashboard(true);});
+  $('#plnBackProject')?.addEventListener('click',()=>{if(plnState.project)plnOpenProject(plnState.project.id);else plnShow('dashboard');});
+  $('#plnNewProjectBtn')?.addEventListener('click',()=>plnProjectForm());
+  $('#plnEditProjectBtn')?.addEventListener('click',()=>{if(plnState.project)plnProjectForm(plnState.project);});
+  $('#plnBibliotecaBtn')?.addEventListener('click',plnShowBiblioteca);
+  $('#plnModalClose')?.addEventListener('click',plnModalClose);
+  $('#plnModal')?.addEventListener('click',e=>{if(e.target.id==='plnModal')plnModalClose();});
+  $$('[data-pln-tab]').forEach(t=>t.addEventListener('click',()=>plnSetTab(t.dataset.plnTab)));
+  // Upload multi-archivo
+  const zone=$('#plnUploadZone'),input=$('#plnFileInput');
+  if(zone&&input){
+    zone.addEventListener('click',()=>input.click());
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+    zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');plnHandleUpload(e.dataTransfer.files);});
+    input.addEventListener('change',()=>{plnHandleUpload(input.files);input.value='';});
+  }
+  // Colocación de pins sobre el plano
+  $('#plnPinsLayer')?.addEventListener('click',plnPinsLayerClick);
+  // Re-ajustar el visor al cambiar el tamaño de la ventana
+  window.addEventListener('resize',()=>{
+    if(plnState.screen!=='plan'||!plnState.plan)return;
+    clearTimeout(plnState._rzT);
+    plnState._rzT=setTimeout(()=>{if(plnState.plan.file_type==='pdf')plnRenderPdfPage();else plnApplyImgZoom();},250);
+  });
 }
 
 // Convierte un File de imagen a un ChatAttachment listo para enviar al
@@ -2136,37 +2626,501 @@ function readImageAsAttachment(file){
 const PLANOS_IMG_RE=/^image\/(png|jpe?g|gif|webp)$/i;
 const PLANOS_MAX_FILES=4;
 const PLANOS_MAX_BYTES=6*1024*1024; // 6 MB binarios por imagen
-function handleFiles(files){
-  if(!files.length)return;
-  // Cada archivo arranca seleccionado. Guardamos un id estable para el checkbox.
-  const nuevos=Array.from(files).map(f=>{f._planoSel=true;f._planoId=(crypto.randomUUID?crypto.randomUUID():String(Math.random()));return f});
-  state.uploadedFiles=[...state.uploadedFiles,...nuevos];
-  $('#planosEmpty').style.display='none';$('#planosUploaded').style.display='';
-  renderFileList();
-  // Reseteamos el input para poder volver a elegir el mismo archivo si hace falta.
-  const inp=$('#fileInput');if(inp)inp.value='';
+// ── Pantalla plano: visor + panel de análisis ──
+let _pdfjsPromise=null;
+function plnEnsurePdfjs(){
+  if(window.pdfjsLib)return Promise.resolve();
+  if(_pdfjsPromise)return _pdfjsPromise;
+  _pdfjsPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve();};
+    s.onerror=()=>reject(new Error('No se pudo cargar el visor de PDF'));
+    document.head.appendChild(s);
+  });
+  return _pdfjsPromise;
 }
-function updatePlanosSelCount(){
-  const sel=state.uploadedFiles.filter(f=>f._planoSel!==false).length;
-  const el=$('#planosSelCount');if(el)el.textContent=sel?`(${sel} seleccionado${sel!==1?'s':''})`:'(ninguno seleccionado)';
+async function plnFetchBytes(planId){
+  if(plnState._blobs[planId])return plnState._blobs[planId];
+  const r=await window.REAuthService.authFetch(apiBase()+'/api/planos/plans/'+planId+'/content');
+  if(!r.ok)throw new Error('No se pudo cargar el archivo del plano');
+  const blob=await r.blob();
+  const entry={blob,url:URL.createObjectURL(blob)};
+  plnState._blobs[planId]=entry;
+  return entry;
 }
-function clearPlanos(){
-  state.uploadedFiles=[];
-  $('#planosUploaded').style.display='none';
-  $('#planosEmpty').style.display='';
-  $('#fileList').innerHTML='';
+async function plnOpenPlan(planId,analysisId){
+  let plan=plnState.plans.find(p=>p.id===planId);
+  if(!plan&&plnState.project){await plnOpenProject(plnState.project.id);plan=plnState.plans.find(p=>p.id===planId);}
+  if(!plan){plnToast('Plano no encontrado',false);return;}
+  plnState.plan=plan;plnState.analysis=null;plnState.alerts=[];
+  plnState.viewer={pdf:null,page:1,pages:1,zoom:1,fit:1,pinsVisible:true,pinTarget:null};
+  plnState.prioFilter='todas';plnState.panelTab='resumen';
+  plnShow('plan');
+  plnRenderPlanHeader();plnRenderPlanActions();plnRenderPanel();
+  plnRenderViewer();
+  try{
+    const d=await plnApi('/plans/'+planId+'/analyses');
+    plan._analyses=d.analyses||[];
+    const target=analysisId||(plan._analyses[0]&&plan._analyses[0].id);
+    if(target)await plnLoadAnalysis(target);
+    else{plnRenderPlanActions();plnRenderPanel();}
+  }catch(e){/* panel queda en "sin análisis" */}
 }
-function renderFileList(){
-  const list=$('#fileList');if(!list)return;
-  list.innerHTML=state.uploadedFiles.map((f,i)=>`<div class="plano-file" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-2);border-radius:var(--radius-sm);margin-bottom:4px;font-size:12px"><input type="checkbox" class="plano-check" data-id="${f._planoId}" ${f._planoSel!==false?'checked':''} style="width:16px;height:16px;cursor:pointer;flex-shrink:0;accent-color:var(--accent-brand)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span><span style="color:var(--text-3);flex-shrink:0">${(f.size/1024).toFixed(0)} KB</span><button class="plano-remove" data-id="${f._planoId}" title="Quitar" style="background:transparent;border:none;color:var(--text-3);cursor:pointer;padding:2px 6px;flex-shrink:0;font-size:16px;line-height:1">×</button></div>`).join('');
-  list.querySelectorAll('.plano-check').forEach(c=>c.addEventListener('change',()=>{
-    const f=state.uploadedFiles.find(x=>x._planoId===c.dataset.id);if(f)f._planoSel=c.checked;updatePlanosSelCount();
+async function plnLoadAnalysis(analysisId){
+  try{
+    const a=await plnApi('/analyses/'+analysisId);
+    plnState.analysis=a;plnState.alerts=a.alerts||[];
+    plnRenderPlanHeader();plnRenderPlanActions();plnRenderPanel();plnRenderPins();
+  }catch(e){plnToast(e.message,false);}
+}
+function plnRenderPlanHeader(){
+  const f=plnState.plan,a=plnState.analysis;if(!f)return;
+  const crit=plnState.alerts.filter(x=>x.priority==='critica'&&!['resuelto','rechazado','ignorado'].includes(x.status)).length;
+  const altas=plnState.alerts.filter(x=>x.priority==='alta'&&!['resuelto','rechazado','ignorado'].includes(x.status)).length;
+  $('#plnPlanHeader').innerHTML=`
+    <div class="pln-plan-header">
+      <div class="pln-ph-main">
+        <div class="pln-ph-title">${esc(f.file_name)} <span class="pln-ver">v${f.version}</span> ${f.is_current_version?'':'<span class="pln-chip" style="color:#ca8a04">Versión anterior</span>'}</div>
+        <div class="pln-ph-sub">Proyecto: <strong>${esc(plnState.project?plnState.project.name:'')}</strong>${f.detected_plan_type?' · '+esc(f.detected_plan_type):''}${f.sheet_number?' · Lámina '+esc(f.sheet_number):''}${f.floor_level?' · '+esc(f.floor_level):''}</div>
+      </div>
+      <div class="pln-ph-stats">
+        ${plnStatusChip(f.status)}
+        ${a?plnRiskChip(a.general_risk):''}
+        ${a?`<span class="pln-chip" title="Observaciones críticas" style="color:#dc2626">● ${crit} críticas</span>`:''}
+        ${a?`<span class="pln-chip" title="Observaciones altas" style="color:#ea580c">● ${altas} altas</span>`:''}
+        ${a?`<span class="pln-chip" title="Información faltante">📋 ${(a.missing_info||[]).length} faltantes</span>`:''}
+        ${a?`<span class="pln-chip" title="Confianza del análisis IA">🎯 ${a.confidence}% confianza</span>`:''}
+      </div>
+    </div>`;
+}
+function plnRenderPlanActions(){
+  const f=plnState.plan;if(!f)return;
+  const analyses=f._analyses||[];
+  $('#plnPlanActions').innerHTML=`
+    ${analyses.length>1?`<select id="plnAnalysisSel" class="pln-select">${analyses.map(a=>`<option value="${a.id}"${plnState.analysis&&plnState.analysis.id===a.id?' selected':''}>${a.mode==='comparacion'?'🔀 Comparación':PLN_MODES[a.mode]||a.mode} · ${plnFmtDate(a.created_at)}</option>`).join('')}</select>`:''}
+    <select id="plnModeSel" class="pln-select">${Object.entries(PLN_MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+    <select id="plnProfileSel" class="pln-select">${Object.entries(PLN_PROFILES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+    <button class="btn-primary" id="plnAnalyzeBtn">🔍 Analizar con IA</button>
+    <button class="btn-secondary" id="plnCompareBtn">🔀 Comparar…</button>
+    <button class="btn-secondary" id="plnReportBtn"${plnState.analysis?'':' disabled'}>📄 Reporte</button>`;
+  $('#plnAnalysisSel')?.addEventListener('change',e=>plnLoadAnalysis(e.target.value));
+  $('#plnAnalyzeBtn').addEventListener('click',plnRunAnalysis);
+  $('#plnCompareBtn').addEventListener('click',()=>plnCompareForm());
+  $('#plnReportBtn')?.addEventListener('click',()=>plnReportForm());
+}
+async function plnRunAnalysis(){
+  const f=plnState.plan;if(!f)return;
+  const mode=$('#plnModeSel').value,profile=$('#plnProfileSel').value;
+  const btn=$('#plnAnalyzeBtn');btn.disabled=true;
+  const msgs=['Leyendo el plano…','Detectando ambientes y medidas…','Buscando riesgos e inconsistencias…','Armando checklist y preguntas…','Redactando el informe…'];
+  let mi=0;btn.textContent='⏳ '+msgs[0];
+  const iv=setInterval(()=>{mi=(mi+1)%msgs.length;btn.textContent='⏳ '+msgs[mi];},9000);
+  try{
+    const a=await plnApi('/plans/'+f.id+'/analyze',{method:'POST',body:{mode,profile}});
+    plnState.analysis=a;plnState.alerts=a.alerts||[];
+    f.status=plnState.alerts.some(x=>['critica','alta'].includes(x.priority))?'revision_recomendada':'analizado';
+    f._analyses=[{id:a.id,mode:a.mode,general_risk:a.general_risk,confidence:a.confidence,created_at:a.created_at},...(f._analyses||[])];
+    plnPatchPlan({...f});
+    plnRenderPlanHeader();plnRenderPlanActions();plnRenderPanel();plnRenderPins();
+    plnToast('Análisis completo: riesgo '+(PLN_RISK[a.general_risk]?PLN_RISK[a.general_risk][0]:a.general_risk));
+  }catch(e){plnToast(e.message,false);}
+  finally{clearInterval(iv);btn.disabled=false;btn.textContent='🔍 Analizar con IA';}
+}
+function plnCompareForm(){
+  const f=plnState.plan;
+  const others=plnState.plans.filter(p=>p.id!==f.id);
+  if(!others.length){plnToast('Subí otro plano o versión para comparar',false);return;}
+  plnModalOpen(`
+    <h3 class="pln-m-title">Comparar planos</h3>
+    <p class="pln-m-sub">Compará este plano contra otra lámina (ej: arquitectura vs sanitaria) o contra otra versión. La IA detecta cambios, inconsistencias y riesgos.</p>
+    <div class="pln-form">
+      <label>Plano A (actual)<input class="pln-input" disabled value="${esc(f.file_name)} — v${f.version}"></label>
+      <label>Plano B<select id="plnCmpB" class="pln-input">${others.map(p=>`<option value="${p.id}">${esc(p.file_name)} — v${p.version}${p.detected_plan_type?' ('+esc(p.detected_plan_type)+')':''}</option>`).join('')}</select></label>
+      <label>Foco de la comparación (opcional)<input id="plnCmpFocus" class="pln-input" maxlength="500" placeholder="Ej: coordinación de núcleos sanitarios"></label>
+      <div class="pln-form-actions"><span></span><button class="btn-primary" id="plnCmpRun">Comparar con IA</button></div>
+    </div>`);
+  $('#plnCmpRun').addEventListener('click',()=>plnRunCompare(f.id,$('#plnCmpB').value,$('#plnCmpFocus').value.trim()));
+}
+async function plnRunCompare(planA,planB,focus){
+  plnModalOpen('<h3 class="pln-m-title">Comparando planos…</h3><div class="pln-loading">La IA está leyendo ambos planos y detectando cambios e inconsistencias. Puede tardar un minuto.</div>');
+  try{
+    const a=await plnApi('/compare',{method:'POST',body:{plan_a:planA,plan_b:planB,focus:focus||''}});
+    plnModalClose();
+    if(!plnState.plan||plnState.plan.id!==planA)await plnOpenPlan(planA,a.id);
+    else{plnState.plan._analyses=[{id:a.id,mode:'comparacion',general_risk:a.general_risk,confidence:a.confidence,created_at:a.created_at},...(plnState.plan._analyses||[])];await plnLoadAnalysis(a.id);}
+    plnToast('Comparación lista');
+  }catch(e){plnModalClose();plnToast(e.message,false);}
+}
+
+// ── Visor (pdf.js / imagen) + zoom + páginas ──
+async function plnRenderViewer(){
+  const f=plnState.plan;if(!f)return;
+  const canvas=$('#plnCanvas'),img=$('#plnImage');
+  canvas.style.display='none';img.style.display='none';
+  $('#plnViewerToolbar').innerHTML='<div class="pln-loading">Cargando plano…</div>';
+  try{
+    const entry=await plnFetchBytes(f.id);
+    if(f.file_type==='pdf'){
+      await plnEnsurePdfjs();
+      if(!entry.pdf)entry.pdf=await window.pdfjsLib.getDocument({data:await entry.blob.arrayBuffer()}).promise;
+      plnState.viewer.pdf=entry.pdf;plnState.viewer.pages=entry.pdf.numPages;
+      await plnRenderPdfPage();
+    }else{
+      img.src=entry.url;img.style.display='';
+      await new Promise(res=>{if(img.complete)res();else img.onload=res;});
+      plnApplyImgZoom();
+    }
+    plnRenderViewerToolbar();plnRenderPins();
+  }catch(e){$('#plnViewerToolbar').innerHTML=`<div class="pln-loading" style="color:#dc2626">${esc(e.message)}</div>`;}
+}
+async function plnRenderPdfPage(){
+  const v=plnState.viewer;if(!v.pdf)return;
+  const page=await v.pdf.getPage(v.page);
+  const container=$('#plnViewer');
+  const base=page.getViewport({scale:1});
+  v.fit=Math.max(.2,(container.clientWidth-28)/base.width);
+  const viewport=page.getViewport({scale:v.fit*v.zoom});
+  const canvas=$('#plnCanvas'),ctx=canvas.getContext('2d');
+  canvas.width=viewport.width;canvas.height=viewport.height;
+  canvas.style.display='';
+  await page.render({canvasContext:ctx,viewport}).promise;
+  plnRenderPins();
+}
+function plnApplyImgZoom(){
+  const img=$('#plnImage'),container=$('#plnViewer');
+  const fitW=container.clientWidth-28;
+  img.style.width=Math.round(fitW*plnState.viewer.zoom)+'px';
+  plnRenderPins();
+}
+function plnRenderViewerToolbar(){
+  const v=plnState.viewer,isPdf=plnState.plan.file_type==='pdf';
+  $('#plnViewerToolbar').innerHTML=`
+    <div class="pln-vt-group">
+      <button class="btn-icon" id="plnZoomOut" title="Alejar">−</button>
+      <span class="pln-vt-zoom">${Math.round(v.zoom*100)}%</span>
+      <button class="btn-icon" id="plnZoomIn" title="Acercar">+</button>
+      <button class="btn-icon" id="plnZoomFit" title="Ajustar">⤢</button>
+    </div>
+    ${isPdf&&v.pages>1?`<div class="pln-vt-group"><button class="btn-icon" id="plnPrevPage">‹</button><span class="pln-vt-zoom">Lámina ${v.page}/${v.pages}</span><button class="btn-icon" id="plnNextPage">›</button></div>`:''}
+    <div class="pln-vt-group">
+      <button class="btn-secondary${v.pinsVisible?' pln-vt-on':''}" id="plnPinsToggle">📍 Pins</button>
+      <button class="btn-secondary${v.pinTarget==='new'?' pln-vt-on':''}" id="plnPinAdd" title="${plnState.analysis?'Click en el plano para agregar una observación manual':'Ejecutá un análisis primero'}"${plnState.analysis?'':' disabled'}>➕ Pin manual</button>
+    </div>`;
+  const rez=async()=>{if(plnState.plan.file_type==='pdf')await plnRenderPdfPage();else plnApplyImgZoom();plnRenderViewerToolbar();};
+  $('#plnZoomIn').addEventListener('click',()=>{plnState.viewer.zoom=Math.min(4,plnState.viewer.zoom*1.25);rez();});
+  $('#plnZoomOut').addEventListener('click',()=>{plnState.viewer.zoom=Math.max(.4,plnState.viewer.zoom/1.25);rez();});
+  $('#plnZoomFit').addEventListener('click',()=>{plnState.viewer.zoom=1;rez();});
+  $('#plnPrevPage')?.addEventListener('click',()=>{if(v.page>1){v.page--;plnRenderPdfPage().then(plnRenderViewerToolbar);}});
+  $('#plnNextPage')?.addEventListener('click',()=>{if(v.page<v.pages){v.page++;plnRenderPdfPage().then(plnRenderViewerToolbar);}});
+  $('#plnPinsToggle').addEventListener('click',()=>{v.pinsVisible=!v.pinsVisible;plnRenderPins();plnRenderViewerToolbar();});
+  $('#plnPinAdd')?.addEventListener('click',()=>{v.pinTarget=v.pinTarget==='new'?null:'new';plnRenderViewerToolbar();plnToast(v.pinTarget==='new'?'Hacé click sobre el plano donde va la observación':'Modo pin cancelado');});
+}
+function plnRenderPins(){
+  const layer=$('#plnPinsLayer');if(!layer)return;
+  const v=plnState.viewer;
+  const content=plnState.plan&&plnState.plan.file_type==='pdf'?$('#plnCanvas'):$('#plnImage');
+  if(!content||content.style.display==='none'){layer.innerHTML='';return;}
+  layer.style.width=content.offsetWidth+'px';layer.style.height=content.offsetHeight+'px';
+  if(!v.pinsVisible){layer.innerHTML='';return;}
+  const statusFilter=a=>!['rechazado','ignorado'].includes(a.status);
+  const pins=plnState.alerts.filter(a=>a.pin_x!=null&&a.pin_y!=null&&(a.pin_page||1)===v.page&&statusFilter(a)&&(plnState.prioFilter==='todas'||a.priority===plnState.prioFilter));
+  layer.innerHTML=pins.map((a,i)=>{
+    const idx=plnState.alerts.indexOf(a)+1;
+    const c=a.status==='resuelto'?'#16a34a':(PLN_PRIO[a.priority]||['','#64748b'])[1];
+    return `<div class="pln-pin" data-aid="${a.id}" style="left:${a.pin_x}%;top:${a.pin_y}%;background:${c}" title="${esc(a.title)}">${idx}</div>`;
+  }).join('');
+  layer.querySelectorAll('.pln-pin').forEach(pin=>pin.addEventListener('click',e=>{
+    e.stopPropagation();plnFocusAlert(pin.dataset.aid);
   }));
-  list.querySelectorAll('.plano-remove').forEach(b=>b.addEventListener('click',()=>{
-    state.uploadedFiles=state.uploadedFiles.filter(x=>x._planoId!==b.dataset.id);
-    if(!state.uploadedFiles.length){clearPlanos();}else{renderFileList();}
+}
+function plnFocusAlert(alertId){
+  plnState.panelTab='observaciones';plnRenderPanel();
+  const card=$('#plnPanel').querySelector(`[data-alert="${alertId}"]`);
+  if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('pln-flash');setTimeout(()=>card.classList.remove('pln-flash'),1600);}
+}
+
+// ── Panel lateral de análisis ──
+function plnRenderPanel(){
+  const a=plnState.analysis,panel=$('#plnPanel');if(!panel)return;
+  if(!a){
+    panel.innerHTML=`<div class="empty-state" style="padding:30px 18px"><div class="empty-title">Este plano todavía no tiene análisis</div><div class="empty-desc">Elegí el modo (errores, explicación simple, desarrollador o constructor) y el perfil, y ejecutá <strong>Analizar con IA</strong>. Vas a obtener riesgos priorizados, checklist previo a obra, preguntas para el proyectista y un Plan Score explicado.</div></div>`;
+    return;
+  }
+  const openAlerts=plnState.alerts.filter(x=>!['resuelto','rechazado','ignorado'].includes(x.status));
+  const tabs=[['resumen','Resumen'],['observaciones',`Observaciones (${openAlerts.length})`],['score','Score'],['checklist',`Checklist (${(a.checklist||[]).length})`],['preguntas',`Preguntas (${(a.suggested_questions||[]).length})`]];
+  let body='';
+  const t=plnState.panelTab;
+  if(t==='resumen')body=plnPanelResumen(a);
+  else if(t==='observaciones')body=plnPanelObservaciones();
+  else if(t==='score')body=plnPanelScore(a);
+  else if(t==='checklist')body=plnPanelChecklist(a);
+  else body=plnPanelPreguntas(a);
+  panel.innerHTML=`
+    <div class="pln-panel-tabs">${tabs.map(([k,l])=>`<button class="pln-ptab${t===k?' active':''}" data-ptab="${k}">${l}</button>`).join('')}</div>
+    <div class="pln-panel-body">${body}</div>`;
+  panel.querySelectorAll('[data-ptab]').forEach(b=>b.addEventListener('click',()=>{plnState.panelTab=b.dataset.ptab;plnRenderPanel();}));
+  plnBindPanelEvents();
+}
+function plnPanelResumen(a){
+  const dd=a.detected_data||{};
+  const isCmp=a.mode==='comparacion';
+  const list=(arr,cls)=>arr&&arr.length?`<ul class="pln-list${cls?' '+cls:''}">${arr.map(x=>`<li>${esc(typeof x==='string'?x:JSON.stringify(x))}</li>`).join('')}</ul>`:'';
+  return `
+    <div class="pln-sec"><div class="pln-sec-h">Resumen ejecutivo</div><p class="pln-summary">${esc(a.summary)}</p></div>
+    ${isCmp?`
+      ${list(dd.changes)?`<div class="pln-sec"><div class="pln-sec-h">Cambios relevantes</div>${list(dd.changes)}</div>`:''}
+      ${list(dd.added)?`<div class="pln-sec"><div class="pln-sec-h">Elementos agregados</div>${list(dd.added)}</div>`:''}
+      ${list(dd.removed)?`<div class="pln-sec"><div class="pln-sec-h">Elementos eliminados</div>${list(dd.removed)}</div>`:''}
+      ${list(dd.measure_changes)?`<div class="pln-sec"><div class="pln-sec-h">Cambios de medidas / ubicación</div>${list(dd.measure_changes)}</div>`:''}
+      ${list(dd.impact)?`<div class="pln-sec"><div class="pln-sec-h">Impacto posible</div>${list(dd.impact)}</div>`:''}
+    `:`
+      ${dd.que_es?`<div class="pln-sec"><div class="pln-sec-h">Qué plano es</div><p>${esc(dd.que_es)}</p></div>`:''}
+      ${dd.que_muestra?`<div class="pln-sec"><div class="pln-sec-h">Qué muestra</div><p>${esc(dd.que_muestra)}</p></div>`:''}
+      ${(dd.ambientes||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Ambientes / sectores</div><div class="pln-tags">${dd.ambientes.map(x=>`<span class="pln-chip">${esc(x)}</span>`).join('')}</div></div>`:''}
+      ${(dd.medidas_relevantes||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Medidas relevantes</div>${list(dd.medidas_relevantes)}</div>`:''}
+      ${(a.strengths||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Puntos fuertes</div>${list(a.strengths,'pln-ok')}</div>`:''}
+    `}
+    ${(a.missing_info||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Información faltante</div>${list(a.missing_info,'pln-warn')}</div>`:''}
+    ${(a.inconsistencies||[]).length&&!isCmp?`<div class="pln-sec"><div class="pln-sec-h">Inconsistencias</div>${list(a.inconsistencies,'pln-warn')}</div>`:''}
+    ${(a.recommendations||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Recomendaciones</div>${list(a.recommendations)}</div>`:''}
+    <div class="pln-sec pln-conf">Confianza del análisis: <strong>${a.confidence}%</strong> · ${esc(PLN_MODES[a.mode]||a.mode)}${a.profile?' · '+esc(PLN_PROFILES[a.profile]||a.profile):''} · ${plnFmtDate(a.created_at)}</div>`;
+}
+function plnPanelObservaciones(){
+  const alerts=plnState.alerts;
+  const counts={todas:alerts.length};
+  Object.keys(PLN_PRIO).forEach(p=>counts[p]=alerts.filter(a=>a.priority===p).length);
+  const filters=['todas',...Object.keys(PLN_PRIO)].filter(p=>p==='todas'||counts[p]);
+  const vis=alerts.filter(a=>plnState.prioFilter==='todas'||a.priority===plnState.prioFilter);
+  return `
+    <div class="pln-prio-filters">${filters.map(p=>`<button class="pln-pf${plnState.prioFilter===p?' active':''}" data-pf="${p}">${p==='todas'?'Todas':PLN_PRIO[p][0]} (${counts[p]})</button>`).join('')}</div>
+    ${vis.length?vis.map(a=>{
+      const idx=alerts.indexOf(a)+1;
+      const[pl,pc]=PLN_PRIO[a.priority]||[a.priority,'#64748b'];
+      return `<div class="pln-alert${a.status==='resuelto'?' pln-alert-done':''}" data-alert="${a.id}">
+        <div class="pln-alert-head">
+          <span class="pln-pin-badge" style="background:${a.status==='resuelto'?'#16a34a':pc}">${idx}</span>
+          <div class="pln-alert-title">${esc(a.title)}</div>
+          ${plnPrioChip(a.priority)}
+        </div>
+        ${a.location?`<div class="pln-alert-loc">📍 ${esc(a.location)}${a.category?' · '+esc(a.category):''}</div>`:''}
+        <div class="pln-alert-desc">${esc(a.description)}</div>
+        ${a.risk?`<div class="pln-alert-field"><strong>Riesgo:</strong> ${esc(a.risk)}</div>`:''}
+        ${a.impact?`<div class="pln-alert-field"><strong>Impacto:</strong> ${esc(a.impact)}</div>`:''}
+        ${a.recommendation?`<div class="pln-alert-field pln-alert-rec"><strong>Recomendación:</strong> ${esc(a.recommendation)}</div>`:''}
+        <div class="pln-alert-meta">Confianza IA: ${a.confidence}%${a.suggested_action?' · '+esc(a.suggested_action):''}</div>
+        <div class="pln-alert-actions">
+          <select class="pln-select pln-al-status" data-aid="${a.id}">${Object.entries(PLN_ASTATUS).map(([k,v])=>`<option value="${k}"${a.status===k?' selected':''}>${v}</option>`).join('')}</select>
+          <select class="pln-select pln-al-prio" data-aid="${a.id}">${Object.entries(PLN_PRIO).map(([k,[v]])=>`<option value="${k}"${a.priority===k?' selected':''}>${v}</option>`).join('')}</select>
+          <button class="btn-secondary pln-al-task" data-aid="${a.id}">＋ Tarea</button>
+          <button class="btn-secondary pln-al-pin" data-aid="${a.id}">${a.pin_x!=null?'📍 Mover pin':'📍 Ubicar'}</button>
+        </div>
+      </div>`;}).join(''):'<div class="pln-loading">Sin observaciones con este filtro.</div>'}`;
+}
+function plnPanelScore(a){
+  const s=a.plan_score||{};
+  const AX={calidad_general:'Calidad general del plano',comprension_documental:'Comprensión documental',coherencia:'Coherencia entre planos',constructibilidad:'Constructibilidad',eficiencia_comercial:'Eficiencia comercial'};
+  const axes=Object.entries(AX).filter(([k])=>s[k]);
+  if(!axes.length)return '<div class="pln-loading">Este análisis no incluye Plan Score.</div>';
+  return axes.map(([k,label])=>{
+    const ax=s[k];const c=ax.score>=80?'#16a34a':ax.score>=60?'#ca8a04':'#dc2626';
+    return `<div class="pln-score-axis">
+      <div class="pln-score-head"><span>${label}</span><strong style="color:${c}">${ax.score}/100</strong></div>
+      <div class="pln-score-bar"><div style="width:${ax.score}%;background:${c}"></div></div>
+      <div class="pln-score-why">${esc(ax.why||'')}</div>
+      ${ax.improve?`<div class="pln-score-improve">↗ Para subirlo: ${esc(ax.improve)}</div>`:''}
+    </div>`;}).join('')+`<div class="pln-sec pln-conf">Riesgo general: <strong>${(PLN_RISK[a.general_risk]||[a.general_risk])[0]}</strong> · Información faltante: <strong>${(a.missing_info||[]).length} punto${(a.missing_info||[]).length!==1?'s':''}</strong></div>`;
+}
+function plnPanelChecklist(a){
+  const items=a.checklist||[];
+  if(!items.length)return '<div class="pln-loading">Este análisis no generó checklist.</div>';
+  return `<p class="pln-m-sub">Checklist previo a obra generado desde este plano. Marcá el estado de cada punto.</p>`+items.map((it,i)=>`
+    <div class="pln-check-row${['validado','resuelto','no_aplica'].includes(it.status)?' done':''}">
+      <div class="pln-check-main">${plnPrioChip(it.priority||'media')} ${esc(it.item)}</div>
+      <select class="pln-select pln-check-status" data-idx="${i}">${Object.entries(PLN_CSTATUS).map(([k,v])=>`<option value="${k}"${(it.status||'pendiente')===k?' selected':''}>${v}</option>`).join('')}</select>
+    </div>`).join('');
+}
+function plnPanelPreguntas(a){
+  const qs=a.suggested_questions||[];
+  if(!qs.length)return '<div class="pln-loading">Este análisis no generó preguntas.</div>';
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><p class="pln-m-sub" style="margin:0">Preguntas sugeridas para el proyectista / responsable técnico.</p><button class="btn-secondary" id="plnCopyQs">📋 Copiar todas</button></div>`+qs.map(q=>`
+    <div class="pln-question">
+      <div class="pln-q-text">${esc(q.question)}</div>
+      <div class="pln-plan-meta">${plnPrioChip(q.priority||'media')} ${q.category?esc(q.category)+' · ':''}👤 ${esc(q.responsible||'proyectista')}</div>
+      ${q.reason?`<div class="pln-q-reason">${esc(q.reason)}</div>`:''}
+    </div>`).join('');
+}
+function plnBindPanelEvents(){
+  const panel=$('#plnPanel');
+  panel.querySelectorAll('[data-pf]').forEach(b=>b.addEventListener('click',()=>{plnState.prioFilter=b.dataset.pf;plnRenderPanel();plnRenderPins();}));
+  panel.querySelectorAll('.pln-al-status').forEach(sel=>sel.addEventListener('change',async()=>{
+    try{
+      const upd=await plnApi('/alerts/'+sel.dataset.aid,{method:'PATCH',body:{status:sel.value}});
+      const i=plnState.alerts.findIndex(x=>x.id===upd.id);if(i>=0)plnState.alerts[i]=upd;
+      plnRenderPlanHeader();plnRenderPanel();plnRenderPins();
+    }catch(e){plnToast(e.message,false);}
   }));
-  updatePlanosSelCount();
+  panel.querySelectorAll('.pln-al-prio').forEach(sel=>sel.addEventListener('change',async()=>{
+    try{
+      const upd=await plnApi('/alerts/'+sel.dataset.aid,{method:'PATCH',body:{priority:sel.value}});
+      const i=plnState.alerts.findIndex(x=>x.id===upd.id);if(i>=0)plnState.alerts[i]=upd;
+      plnRenderPlanHeader();plnRenderPanel();plnRenderPins();
+    }catch(e){plnToast(e.message,false);}
+  }));
+  panel.querySelectorAll('.pln-al-task').forEach(b=>b.addEventListener('click',()=>{
+    const a=plnState.alerts.find(x=>x.id===b.dataset.aid);if(!a)return;
+    plnTaskForm({title:a.title,description:(a.description||'')+(a.recommendation?'\n\nRecomendación: '+a.recommendation:''),priority:a.priority==='informativa'?'baja':a.priority,plan_id:a.plan_id,alert_id:a.id});
+  }));
+  panel.querySelectorAll('.pln-al-pin').forEach(b=>b.addEventListener('click',()=>{
+    plnState.viewer.pinTarget=b.dataset.aid;
+    plnToast('Hacé click sobre el plano donde va el pin de esta observación');
+  }));
+  panel.querySelectorAll('.pln-check-status').forEach(sel=>sel.addEventListener('change',async()=>{
+    try{
+      const d=await plnApi('/analyses/'+plnState.analysis.id+'/checklist',{method:'PATCH',body:{index:+sel.dataset.idx,status:sel.value}});
+      plnState.analysis.checklist=d.checklist;plnRenderPanel();
+    }catch(e){plnToast(e.message,false);}
+  }));
+  $('#plnCopyQs')?.addEventListener('click',()=>{
+    const txt=(plnState.analysis.suggested_questions||[]).map((q,i)=>`${i+1}. ${q.question} (${(PLN_PRIO[q.priority]||[q.priority])[0]} — ${q.responsible||'proyectista'})`).join('\n');
+    navigator.clipboard.writeText(txt).then(()=>plnToast('Preguntas copiadas al portapapeles'));
+  });
+}
+
+// ── Colocación de pins sobre el plano ──
+function plnPinsLayerClick(e){
+  const v=plnState.viewer;if(!v.pinTarget)return;
+  const layer=$('#plnPinsLayer');const rect=layer.getBoundingClientRect();
+  const x=Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100));
+  const y=Math.max(0,Math.min(100,(e.clientY-rect.top)/rect.height*100));
+  const target=v.pinTarget;v.pinTarget=null;
+  if(target==='new'){
+    plnManualAlertForm(+x.toFixed(2),+y.toFixed(2));plnRenderViewerToolbar();
+  }else{
+    plnApi('/alerts/'+target,{method:'PATCH',body:{pin_x:+x.toFixed(2),pin_y:+y.toFixed(2),pin_page:v.page}})
+      .then(upd=>{const i=plnState.alerts.findIndex(a=>a.id===upd.id);if(i>=0)plnState.alerts[i]=upd;plnRenderPins();plnRenderPanel();plnToast('Pin ubicado');})
+      .catch(err=>plnToast(err.message,false));
+  }
+}
+function plnManualAlertForm(x,y){
+  plnModalOpen(`
+    <h3 class="pln-m-title">Nueva observación manual</h3>
+    <p class="pln-m-sub">Queda marcada con un pin en el punto que elegiste (lámina ${plnState.viewer.page}).</p>
+    <div class="pln-form">
+      <label>Título *<input id="plnMATitle" class="pln-input" maxlength="255" placeholder="Ej: Verificar medida del pasillo"></label>
+      <label>Descripción<textarea id="plnMADesc" class="pln-input" rows="3" maxlength="4000"></textarea></label>
+      <div class="pln-form-row">
+        <label>Prioridad<select id="plnMAPrio" class="pln-input">${Object.entries(PLN_PRIO).map(([k,[v]])=>`<option value="${k}"${k==='media'?' selected':''}>${v}</option>`).join('')}</select></label>
+        <label>Ubicación (texto)<input id="plnMALoc" class="pln-input" maxlength="255" placeholder="Ej: Dormitorio 2"></label>
+      </div>
+      <label>Recomendación<input id="plnMARec" class="pln-input" maxlength="2000"></label>
+      <div class="pln-form-actions"><span></span><button class="btn-primary" id="plnMASave">Crear observación</button></div>
+    </div>`);
+  $('#plnMASave').addEventListener('click',async()=>{
+    const title=$('#plnMATitle').value.trim();
+    if(!title){plnToast('Poné un título',false);return;}
+    try{
+      const alert=await plnApi('/alerts',{method:'POST',body:{
+        analysis_id:plnState.analysis.id,title,description:$('#plnMADesc').value.trim(),
+        priority:$('#plnMAPrio').value,location:$('#plnMALoc').value.trim(),
+        recommendation:$('#plnMARec').value.trim(),pin_x:x,pin_y:y,pin_page:plnState.viewer.page}});
+      plnState.alerts.push(alert);plnModalClose();
+      plnRenderPlanHeader();plnRenderPanel();plnRenderPins();plnToast('Observación creada');
+    }catch(e){plnToast(e.message,false);}
+  });
+}
+
+// ── Reporte profesional (vista imprimible → PDF) ──
+function plnReportForm(){
+  if(!plnState.analysis){plnToast('Ejecutá un análisis primero',false);return;}
+  plnModalOpen(`
+    <h3 class="pln-m-title">Generar reporte</h3>
+    <p class="pln-m-sub">Se abre una vista imprimible: desde ahí guardás como PDF (Imprimir → Guardar como PDF).</p>
+    <div class="pln-menu-list">
+      <button class="pln-menu-item" data-rep="ejecutivo">📊 Reporte ejecutivo — resumen, riesgo y hallazgos clave</button>
+      <button class="pln-menu-item" data-rep="tecnico">🔧 Reporte técnico — el análisis completo con todo el detalle</button>
+      <button class="pln-menu-item" data-rep="obra">🏗️ Reporte para obra — observaciones críticas, checklist y pendientes</button>
+      <button class="pln-menu-item" data-rep="cliente">🤝 Reporte para cliente — claro, sin tecnicismos</button>
+    </div>`);
+  $('#plnModalBody').querySelectorAll('[data-rep]').forEach(b=>b.addEventListener('click',()=>{plnModalClose();plnBuildReport(b.dataset.rep);}));
+}
+function plnBuildReport(enfoque){
+  const a=plnState.analysis,f=plnState.plan,p=plnState.project;
+  const alerts=plnState.alerts;
+  const prioOrder=['critica','alta','media','baja','informativa'];
+  const byPrio=prioOrder.map(pr=>[pr,alerts.filter(x=>x.priority===pr)]).filter(([,l])=>l.length);
+  const names={ejecutivo:'Reporte ejecutivo',tecnico:'Reporte técnico',obra:'Reporte para obra',cliente:'Reporte para el cliente'};
+  const today=new Date().toLocaleDateString('es-AR');
+  const li=arr=>(arr||[]).map(x=>`<li>${esc(typeof x==='string'?x:JSON.stringify(x))}</li>`).join('');
+  const alertRow=x=>`<div class="al"><div class="al-h"><span class="prio p-${x.priority}">${(PLN_PRIO[x.priority]||[x.priority])[0]}</span> <strong>${esc(x.title)}</strong>${x.location?` <em>· ${esc(x.location)}</em>`:''}</div><div>${esc(x.description)}</div>${x.risk&&enfoque!=='cliente'?`<div><b>Riesgo:</b> ${esc(x.risk)}</div>`:''}${x.recommendation?`<div><b>Recomendación:</b> ${esc(x.recommendation)}</div>`:''}${enfoque==='tecnico'?`<div class="meta">Confianza IA ${x.confidence}% · Estado: ${PLN_ASTATUS[x.status]||x.status}</div>`:''}</div>`;
+  const simple=enfoque==='cliente';
+  const showAlerts=simple?alerts.filter(x=>['critica','alta'].includes(x.priority)):alerts;
+  const scoreRows=Object.entries({calidad_general:'Calidad general',comprension_documental:'Comprensión documental',coherencia:'Coherencia',constructibilidad:'Constructibilidad',eficiencia_comercial:'Eficiencia comercial'})
+    .filter(([k])=>a.plan_score&&a.plan_score[k])
+    .map(([k,l])=>`<tr><td>${l}</td><td><b>${a.plan_score[k].score}/100</b></td><td>${esc(a.plan_score[k].why||'')}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${names[enfoque]} — ${esc(p.name)}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1e293b;padding:36px 42px;font-size:13px;line-height:1.55}
+  h1{font-size:22px;margin-bottom:4px}h2{font-size:15px;margin:22px 0 8px;border-bottom:2px solid #BE5103;padding-bottom:4px;color:#8f3d02}
+  .cover{border-bottom:3px solid #BE5103;padding-bottom:14px;margin-bottom:18px}
+  .meta{color:#64748b;font-size:11px}.sub{color:#475569;font-size:12.5px}
+  .risk{display:inline-block;padding:3px 12px;border-radius:99px;font-weight:700;font-size:12px}
+  ul{padding-left:20px;margin:6px 0}li{margin-bottom:4px}
+  .al{border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .al-h{margin-bottom:4px}.al div{margin-top:3px}
+  .prio{display:inline-block;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase}
+  .p-critica{background:#fee2e2;color:#dc2626}.p-alta{background:#ffedd5;color:#ea580c}.p-media{background:#fef9c3;color:#ca8a04}.p-baja{background:#f1f5f9;color:#64748b}.p-informativa{background:#e0f2fe;color:#0284c7}
+  table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid #e2e8f0;padding:6px 9px;text-align:left;font-size:12px}
+  .disc{margin-top:26px;padding:12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;font-size:11px;color:#92400e}
+  .ft{margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:10px}
+  @media print{body{padding:10px 0}}</style></head><body>
+  <div class="cover">
+    <div class="meta">RE Expert · Análisis de Planos · ${names[enfoque]}</div>
+    <h1>${esc(p.name)}</h1>
+    <div class="sub">Plano: <strong>${esc(f.file_name)} (v${f.version})</strong>${f.detected_plan_type?' · '+esc(f.detected_plan_type):''}${f.sheet_number?' · Lámina '+esc(f.sheet_number):''} · Análisis del ${plnFmtDate(a.created_at)} · Generado el ${today}</div>
+    <div style="margin-top:8px">Riesgo general: <span class="risk" style="background:${(PLN_RISK[a.general_risk]||['','#64748b'])[1]}20;color:${(PLN_RISK[a.general_risk]||['','#64748b'])[1]}">${(PLN_RISK[a.general_risk]||[a.general_risk])[0]}</span>
+    &nbsp; Confianza del análisis: <strong>${a.confidence}%</strong></div>
+  </div>
+  <h2>${simple?'Qué se revisó y estado general':'Resumen ejecutivo'}</h2><p>${esc(a.summary)}</p>
+  ${!simple&&a.detected_data&&a.detected_data.que_muestra?`<h2>Datos detectados</h2><p>${esc(a.detected_data.que_muestra)}</p>${(a.detected_data.ambientes||[]).length?`<p class="sub">Ambientes: ${a.detected_data.ambientes.map(esc).join(' · ')}</p>`:''}`:''}
+  ${enfoque!=='obra'&&scoreRows?`<h2>Plan Score</h2><table><tr><th>Eje</th><th>Puntaje</th><th>Fundamento</th></tr>${scoreRows}</table>`:''}
+  <h2>${simple?'Principales puntos detectados':'Observaciones por prioridad'}</h2>
+  ${byPrio.filter(([pr])=>!simple||['critica','alta'].includes(pr)).map(([pr,items])=>items.map(alertRow).join('')).join('')||'<p>Sin observaciones abiertas.</p>'}
+  ${(a.inconsistencies||[]).length&&!simple?`<h2>Inconsistencias detectadas</h2><ul>${li(a.inconsistencies)}</ul>`:''}
+  ${(a.missing_info||[]).length?`<h2>${simple?'Qué está pendiente de definición':'Información faltante'}</h2><ul>${li(a.missing_info)}</ul>`:''}
+  ${(a.recommendations||[]).length?`<h2>${simple?'Qué conviene resolver ahora':'Recomendaciones técnicas'}</h2><ul>${li(a.recommendations)}</ul>`:''}
+  ${(a.suggested_questions||[]).length&&enfoque!=='cliente'?`<h2>Preguntas sugeridas para el proyectista</h2><ul>${(a.suggested_questions).map(q=>`<li>${esc(q.question)} <span class="meta">(${(PLN_PRIO[q.priority]||[q.priority])[0]} — ${esc(q.responsible||'proyectista')})</span></li>`).join('')}</ul>`:''}
+  ${(a.checklist||[]).length&&enfoque!=='cliente'?`<h2>Checklist previo a obra</h2><table><tr><th>Punto</th><th>Prioridad</th><th>Estado</th></tr>${a.checklist.map(c=>`<tr><td>${esc(c.item)}</td><td>${(PLN_PRIO[c.priority]||[c.priority])[0]}</td><td>${PLN_CSTATUS[c.status]||c.status||'Pendiente'}</td></tr>`).join('')}</table>`:''}
+  ${simple?'<h2>Próximos pasos</h2><ul><li>Revisar los puntos detectados con el profesional responsable del proyecto.</li><li>Resolver las definiciones pendientes antes de avanzar a la próxima etapa.</li><li>Actualizar la documentación y volver a analizar la nueva versión.</li></ul>':''}
+  <div class="disc"><strong>Limitaciones del análisis IA:</strong> ${PLN_DISCLAIMER} El análisis se basa exclusivamente en la legibilidad del documento provisto; medidas y detalles no legibles pueden no estar contemplados.</div>
+  <div class="ft">Generado por RE Expert — re-expert.netlify.app · ${today}</div>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){plnToast('Permití las ventanas emergentes para generar el reporte',false);return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},400);
+}
+
+// ── Biblioteca de errores frecuentes ──
+async function plnShowBiblioteca(){
+  plnModalOpen('<h3 class="pln-m-title">📚 Errores frecuentes en planos</h3><div class="pln-loading">Cargando…</div>');
+  try{
+    if(!plnState.biblioteca)plnState.biblioteca=(await plnApi('/biblioteca')).errors||[];
+    const byCat={};
+    plnState.biblioteca.forEach(e=>{(byCat[e.category]=byCat[e.category]||[]).push(e);});
+    plnModalOpen(`
+      <h3 class="pln-m-title">📚 Errores frecuentes en planos</h3>
+      <p class="pln-m-sub">Biblioteca curada de RE Expert: los patrones que más plata y tiempo cuestan en obra. El análisis IA los revisa activamente.</p>
+      <div class="pln-biblio">${Object.entries(byCat).map(([cat,errs])=>`
+        <div class="pln-biblio-cat">
+          <div class="pln-sec-h">${esc(cat.replace(/_/g,' '))}</div>
+          ${errs.map(e=>`<div class="pln-biblio-item">
+            <div class="pln-alert-head">${plnPrioChip(e.priority_default)} <strong>${esc(e.title)}</strong></div>
+            <div class="pln-alert-desc">${esc(e.description)}</div>
+            <div class="pln-alert-field"><strong>Riesgo típico:</strong> ${esc(e.typical_risk)}</div>
+            <div class="pln-alert-field pln-alert-rec"><strong>Recomendación:</strong> ${esc(e.suggested_recommendation)}</div>
+          </div>`).join('')}
+        </div>`).join('')}</div>`);
+  }catch(e){plnModalOpen('<div class="empty-state"><div class="empty-title">'+esc(e.message)+'</div></div>');}
 }
 
 // ===== MATERIALES =====
@@ -4748,76 +5702,6 @@ function initProyectoTabs(){
 
 // AI actions for sections
 function initSectionActions(){
-  $('#clearPlanosBtn')?.addEventListener('click',()=>clearPlanos());
-  $('#analyzePlanosBtn')?.addEventListener('click',async()=>{
-    // Solo los archivos SELECCIONADOS (no mezclar con planos de otra obra).
-    const all=state.uploadedFiles.filter(f=>f._planoSel!==false);
-    if(!all.length){uiError('Marcá al menos un plano para analizar.');return}
-    const images=all.filter(f=>PLANOS_IMG_RE.test(f.type||''));
-    const oversized=images.filter(f=>f.size>PLANOS_MAX_BYTES);
-    const nonImages=all.filter(f=>!PLANOS_IMG_RE.test(f.type||''));
-
-    // Validaciones
-    if(oversized.length){
-      uiError(`Imágenes muy grandes (>6MB): ${oversized.map(f=>f.name).join(', ')}. Reducí su tamaño antes de subir.`);
-      return;
-    }
-    const usable=images.slice(0,PLANOS_MAX_FILES);
-    const dropped=images.length-usable.length;
-
-    // Leer las imágenes como base64
-    let attachments=[];
-    if(usable.length){
-      try{
-        attachments=await Promise.all(usable.map(readImageAsAttachment));
-      }catch(e){
-        uiError('No pude leer los planos: '+e.message);
-        return;
-      }
-    }
-
-    // Construir el prompt
-    let prompt;
-    if(attachments.length){
-      const extras=[];
-      if(dropped>0)extras.push(`${dropped} ${dropped===1?'imagen':'imágenes'} más quedaron afuera (límite ${PLANOS_MAX_FILES} por mensaje)`);
-      if(nonImages.length)extras.push(`adjuntos no procesables como imagen: ${nonImages.map(f=>f.name).join(', ')}`);
-      const note=extras.length?` _(${extras.join('; ')})_`:'';
-      prompt=`Analizá los planos que te adjunto y estimá los materiales necesarios para la obra.${note}
-
-Quiero un desglose con:
-1. **Identificación**: qué tipo de plano es (planta, corte, fachada, instalaciones) y nivel/sector.
-2. **Dimensiones aproximadas** que se puedan inferir (superficie cubierta, alturas, longitudes de muros).
-3. **Cómputo por rubro** con cantidades estimadas:
-   - Mampostería (m² de muro, ladrillos)
-   - Estructura (m³ de hormigón, kg de hierro)
-   - Cubierta (m² de techo)
-   - Pisos y revestimientos (m²)
-   - Aberturas (cantidad y dimensiones)
-   - Instalaciones sanitaria/eléctrica/gas (puntos)
-4. **Costo estimado** por rubro usando precios de referencia abril 2026.
-5. **Observaciones técnicas** o inconsistencias que veas en el plano.
-
-Si no podés leer algo del plano, decímelo en vez de inventarlo.`;
-    }else{
-      // Fallback: no hay imágenes utilizables, mando solo nombres
-      const names=all.map(f=>f.name).join(', ');
-      prompt=`Subí estos archivos pero no son imágenes que pueda procesar: ${names}.
-
-Por ahora solo puedo analizar planos en formato PNG, JPG, GIF o WEBP. Los PDFs requieren exportar cada página como imagen.
-
-¿Querés que te oriente sobre cómo convertir tus archivos para que los pueda analizar?`;
-    }
-
-    // Cada análisis de planos abre un CHAT LIMPIO (no se mezcla con la conversación
-    // anterior ni con análisis previos de otra obra).
-    if(state.activeWorkspace)exitWorkspace();
-    state.currentConversation=null;state.messages=[];
-    els.messagesEl.innerHTML='';renderHistory();showWelcome();
-    els.exportBtn.style.display='none';
-    switchView('chat');
-    setTimeout(()=>sendMessage(prompt,{attachments}),100);
-  });
   $('#refreshPricesBtn')?.addEventListener('click',()=>loadMateriales(true));
   $('#deepAnalysisBtn')?.addEventListener('click',()=>{
     switchView('chat');
