@@ -213,9 +213,99 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
             )
             return {"ok": True, "no_token": True}
 
-    # Mensaje libre — saludo amable
-    await send_message(
-        chat_id,
-        "Soy SOL 👋 Acá te aviso recordatorios y resúmenes. Para chatear largo, entrá a la app web.",
-    )
-    return {"ok": True, "echoed": True}
+    # ── Mensaje libre → SOL agente completo (modo Jarvis) ──
+    # El webhook debe responder RÁPIDO (Telegram reintenta si tarda), así que
+    # el agente corre en un task de fondo con sesión de DB propia y responde
+    # por sendMessage cuando termina.
+    if not text:
+        return {"ok": True, "skipped": "empty_text"}
+
+    row = (
+        await db.execute(
+            select(UserChannel).where(
+                UserChannel.channel == "telegram",
+                UserChannel.address == chat_id,
+                UserChannel.verified.is_(True),
+            )
+        )
+    ).scalars().first()
+    if not row:
+        await send_message(
+            chat_id,
+            "Hola! Soy SOL 👋 Para hablar conmigo, primero conectá tu cuenta: "
+            "abrí RE Expert y tocá *Conectar Telegram* en la sección SOL.",
+        )
+        return {"ok": True, "unpaired": True}
+
+    if len(text) > 1500:
+        await send_message(chat_id, "Uy, ese mensaje es muy largo. ¿Me lo resumís en menos palabras?")
+        return {"ok": True, "too_long": True}
+
+    import asyncio
+
+    asyncio.create_task(_agent_reply(chat_id, row.user_id, text))
+    return {"ok": True, "agent_dispatched": True}
+
+
+async def _agent_reply(chat_id: str, user_id, text: str) -> None:
+    """Corre el agente SOL con sesión propia y responde por Telegram.
+    Nunca lanza: cualquier error termina en un mensaje amable al usuario."""
+    from core.plan_gate import has_access
+    from models.base import get_session_factory
+    from models.user import User
+
+    try:
+        # "escribiendo…" mientras piensa (best-effort)
+        if is_configured():
+            try:
+                async with httpx.AsyncClient(timeout=5) as cli:
+                    await cli.post(_api_url("sendChatAction"),
+                                   json={"chat_id": chat_id, "action": "typing"})
+            except Exception:  # noqa: BLE001
+                pass
+
+        SessionLocal = get_session_factory()
+        async with SessionLocal() as session:
+            user = (await session.execute(
+                select(User).where(User.id == user_id)
+            )).scalars().first()
+            if not user:
+                await send_message(chat_id, "No encontré tu cuenta. Reconectá desde la app.")
+                return
+            if not has_access(user):
+                await send_message(
+                    chat_id,
+                    "Tu plan no está activo 😕 Entrá a RE Expert para reactivar tu "
+                    "suscripción y seguimos por acá.",
+                )
+                return
+
+            from services.agent_service import run_agent
+
+            final_text = ""
+            tools_usadas: list[str] = []
+            async for ev in run_agent(session, user, history=[], user_message=text):
+                if ev.get("type") == "tool_use":
+                    tools_usadas.append(ev.get("name", ""))
+                elif ev.get("type") == "done":
+                    final_text = ev.get("final_text") or final_text
+                elif ev.get("type") == "error":
+                    final_text = ""
+                    break
+
+        if not final_text:
+            await send_message(
+                chat_id,
+                "No pude procesar eso ahora 😕 Probá de nuevo en un momento, "
+                "o escribime desde la app.",
+            )
+            return
+        # Telegram corta en 4096 chars por mensaje
+        for i in range(0, len(final_text), 3900):
+            await send_message(chat_id, final_text[i:i + 3900])
+    except Exception:  # noqa: BLE001 — un task de fondo no debe morir en silencio
+        logger.exception("Telegram agent_reply falló (chat %s)", chat_id)
+        try:
+            await send_message(chat_id, "Algo salió mal de mi lado 😕 Probá de nuevo en un rato.")
+        except Exception:  # noqa: BLE001
+            pass

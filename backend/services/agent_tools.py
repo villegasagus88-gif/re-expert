@@ -453,6 +453,58 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "required": ["contact_id", "message"],
         },
     },
+    {
+        "name": "get_news",
+        "description": (
+            "Titulares recientes del mercado inmobiliario/economía argentina "
+            "(mismo feed que la sección Noticias de la app). Usala cuando el "
+            "usuario pregunte qué está pasando, por el dólar, costos, tasas, "
+            "o pida un resumen de noticias. Devuelve título, fuente, categoría "
+            "y link de cada nota."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "todas|macro|mercado|costos|financiacion|regulacion",
+                },
+                "limit": {"type": "integer", "minimum": 1, "maximum": 12},
+            },
+        },
+    },
+    {
+        "name": "search_chats",
+        "description": (
+            "Busca en las conversaciones PASADAS del usuario con el Chat Experto "
+            "de RE Expert. Usala cuando pregunte '¿qué me dijiste de X?', "
+            "'¿qué habíamos hablado sobre el terreno de Y?' o para retomar un "
+            "tema anterior. Devuelve fragmentos con título del chat y fecha."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "minLength": 2, "maxLength": 120},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "get_opportunities",
+        "description": (
+            "Lista los análisis de oportunidades del Deal Room del usuario "
+            "(Opportunity Scanner): título, zona, score, recomendación y métricas "
+            "clave. Usala cuando pregunte por sus deals, qué oportunidad conviene, "
+            "o quiera comparar análisis que ya hizo."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "minimum": 1, "maximum": 20},
+            },
+        },
+    },
 ]
 
 
@@ -474,13 +526,9 @@ def _serialize_decimal(v: Any) -> Any:
     return v
 
 
-async def _tool_query_project_status(db: AsyncSession, user: User, **_: Any) -> dict:
-    res = await db.execute(select(Project).where(Project.user_id == user.id))
-    proj = res.scalar_one_or_none()
-    if not proj:
-        return {"has_project": False, "message": "El usuario no tiene proyecto cargado."}
+def _project_to_dict(proj: Project) -> dict:
     return {
-        "has_project": True,
+        "id": str(proj.id),
         "nombre": proj.nombre,
         "estado": proj.estado,
         "estado_texto": proj.estado_texto,
@@ -498,6 +546,25 @@ async def _tool_query_project_status(db: AsyncSession, user: User, **_: Any) -> 
             proj.fecha_entrega_estimada.isoformat() if proj.fecha_entrega_estimada else None
         ),
         "notas": proj.notas,
+    }
+
+
+async def _tool_query_project_status(db: AsyncSession, user: User, **_: Any) -> dict:
+    # Multi-proyecto: el usuario puede tener N proyectos — devolvemos todos
+    # (scalar_one_or_none() reventaba con MultipleResultsFound con 2+).
+    rows = list((
+        await db.execute(
+            select(Project).where(Project.user_id == user.id).order_by(Project.created_at)
+        )
+    ).scalars().all())
+    if not rows:
+        return {"has_project": False, "message": "El usuario no tiene proyecto cargado."}
+    return {
+        "has_project": True,
+        "count": len(rows),
+        "projects": [_project_to_dict(p) for p in rows],
+        # Compat con prompts/consumidores viejos: el primero como "principal".
+        **_project_to_dict(rows[0]),
     }
 
 
@@ -1068,6 +1135,105 @@ async def _tool_compose_message_to_contact(db: AsyncSession, user: User, **input
 # ════════════════════════════════════════════════════════════════════
 # Registry tool name → impl.
 # ════════════════════════════════════════════════════════════════════
+async def _tool_get_news(
+    db: AsyncSession, user: User, category: str = "todas", limit: int = 6, **_: Any
+) -> dict:
+    """Titulares del mismo feed cacheado que usa la vista Noticias (sin red extra
+    si el cache está caliente)."""
+    from services.news_live import fetch_feed
+
+    try:
+        feed = await fetch_feed(category=category or "todas",
+                                per_page=min(max(int(limit or 6), 1), 12))
+    except Exception as e:  # noqa: BLE001 — SOL degrada con gracia
+        logger.warning("get_news falló: %s", e)
+        return {"error": "No pude traer las noticias ahora. Probá en un rato."}
+    items = [
+        {
+            "titulo": it.get("title"),
+            "fuente": it.get("source"),
+            "categoria": it.get("category"),
+            "resumen": (it.get("snippet") or "")[:220],
+            "url": it.get("url"),
+        }
+        for it in (feed.get("items") or [])
+    ]
+    return {"count": len(items), "items": items}
+
+
+async def _tool_search_chats(
+    db: AsyncSession, user: User, query: str = "", limit: int = 5, **_: Any
+) -> dict:
+    """Búsqueda simple (ILIKE) en las conversaciones del PROPIO usuario."""
+    from models.conversation import Conversation
+    from models.message import Message
+
+    q = (query or "").strip()
+    if len(q) < 2:
+        return {"error": "Necesito al menos 2 caracteres para buscar."}
+    limit = min(max(int(limit or 5), 1), 10)
+    rows = (
+        await db.execute(
+            select(Message, Conversation.title)
+            .join(Conversation, Message.conversation_id == Conversation.id)
+            .where(
+                Conversation.user_id == user.id,
+                Message.content.ilike(f"%{q}%"),
+            )
+            .order_by(Message.created_at.desc())
+            .limit(limit)
+        )
+    ).all()
+    items = []
+    for msg, conv_title in rows:
+        content = msg.content or ""
+        idx = content.lower().find(q.lower())
+        start = max(0, idx - 120)
+        snippet = ("…" if start > 0 else "") + content[start:start + 320] + (
+            "…" if len(content) > start + 320 else ""
+        )
+        items.append({
+            "conversacion": conv_title,
+            "conversation_id": str(msg.conversation_id),
+            "rol": msg.role,
+            "fecha": msg.created_at.isoformat() if msg.created_at else None,
+            "fragmento": snippet,
+        })
+    return {"count": len(items), "items": items}
+
+
+async def _tool_get_opportunities(
+    db: AsyncSession, user: User, limit: int = 10, **_: Any
+) -> dict:
+    from models.opportunity import Opportunity
+
+    rows = list((
+        await db.execute(
+            select(Opportunity)
+            .where(Opportunity.user_id == user.id)
+            .order_by(Opportunity.updated_at.desc())
+            .limit(min(max(int(limit or 10), 1), 20))
+        )
+    ).scalars().all())
+    items = []
+    for o in rows:
+        fin = (o.analysis or {}).get("finanzas") or {}
+        items.append({
+            "id": str(o.id),
+            "titulo": o.titulo,
+            "zona": o.zona,
+            "ciudad": o.ciudad,
+            "tipo": o.tipo_inmueble,
+            "estado_pipeline": o.estado_pipeline,
+            "score": o.score,
+            "recomendacion": o.recomendacion,
+            "margen_neto_pct": fin.get("margen_neto_pct"),
+            "tir_anual_pct": fin.get("tir_anual_pct"),
+            "ultimo_analisis": o.last_analyzed_at.isoformat() if o.last_analyzed_at else None,
+        })
+    return {"count": len(items), "items": items}
+
+
 TOOL_IMPLS = {
     "query_project_status": _tool_query_project_status,
     "query_payments": _tool_query_payments,
@@ -1096,6 +1262,10 @@ TOOL_IMPLS = {
     # Compartir docs / mensajes
     "share_pdf_with_contact": _tool_share_pdf_with_contact,
     "compose_message_to_contact": _tool_compose_message_to_contact,
+    # Contexto Jarvis: noticias, chats pasados, deal room
+    "get_news": _tool_get_news,
+    "search_chats": _tool_search_chats,
+    "get_opportunities": _tool_get_opportunities,
 }
 
 

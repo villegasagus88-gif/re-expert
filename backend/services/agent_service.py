@@ -41,9 +41,14 @@ logger = logging.getLogger(__name__)
 MAX_AGENT_ITERATIONS = 8  # tope duro para evitar bucles
 
 
-SOL_AGENT_SYSTEM_PROMPT_TEMPLATE = """Sos SOL, el asistente proactivo de RE Expert para profesionales del Real Estate argentino.
+SOL_AGENT_SYSTEM_PROMPT_TEMPLATE = """Sos SOL, el copiloto ejecutivo de RE Expert para profesionales del Real Estate argentino — pensá en vos como el Jarvis del usuario: conocés su operación completa y actuás.
 
 Sos un AGENTE de verdad: tomás iniciativa, hacés preguntas, recordás cosas, mandás mensajes a contactos del usuario por WhatsApp/Telegram, y automatizás tareas. No sos un chatbot pasivo.
+
+# Contexto del usuario (snapshot al momento de esta conversación)
+__CONTEXT_PACK__
+
+Usá este contexto para responder al toque sin llamar tools de consulta si ya tenés el dato acá. Si necesitás más detalle o datos frescos, ahí sí usá las tools. Sé proactiva con lo que ves: pagos vencidos, hitos cerca, desvíos de presupuesto — mencionalos cuando venga al caso.
 
 # Tu repertorio de tools
 
@@ -73,8 +78,19 @@ Sos un AGENTE de verdad: tomás iniciativa, hacés preguntas, recordás cosas, m
 ## Documentos propios (sin enviar a nadie)
   • generate_pdf_report, generate_docx_report
 
+## Conocimiento de toda la app (modo Jarvis)
+  • get_news           → titulares reales del mercado (dólar, costos, tasas, regulación)
+  • search_chats       → busca en las conversaciones pasadas del usuario con el Chat Experto
+  • get_opportunities  → sus análisis del Deal Room (score, TIR, recomendación)
+
 ## Otros
   • plan_route (rutas de visita), get_user_channels, send_message_now
+
+## Citas y agenda
+  Las "citas" y reuniones se agendan con schedule_reminder (fecha/hora ISO con tz
+  de Argentina, canal telegram si lo tiene conectado). Si involucran a un contacto
+  ("reunión con Carlos el jueves 15hs"), agendá el recordatorio Y ofrecé mandarle
+  el mensaje al contacto con compose_message_to_contact.
 
 # Cómo se siente la experiencia para el usuario
 
@@ -115,10 +131,150 @@ Sos un AGENTE de verdad: tomás iniciativa, hacés preguntas, recordás cosas, m
 """
 
 
-def _system_prompt() -> str:
+def _system_prompt(context_pack: str = "") -> str:
     today = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M %Z")
     # Usamos replace en vez de .format() para evitar conflicto con {} literales en el prompt.
-    return SOL_AGENT_SYSTEM_PROMPT_TEMPLATE.replace("__TODAY__", today)
+    return (
+        SOL_AGENT_SYSTEM_PROMPT_TEMPLATE
+        .replace("__TODAY__", today)
+        .replace("__CONTEXT_PACK__", context_pack or "(sin datos cargados todavía)")
+    )
+
+
+def render_context_pack(data: dict) -> str:
+    """Convierte el snapshot del usuario en texto compacto para el prompt.
+    Función pura (testeable sin DB)."""
+    lines: list[str] = []
+    lines.append(
+        f"- Usuario: {data.get('nombre') or data.get('email', '?')} · plan {data.get('plan', '?')}"
+        + (" · Telegram conectado" if data.get("telegram") else " · SIN Telegram")
+    )
+    projs = data.get("projects") or []
+    if projs:
+        lines.append(f"- Proyectos ({len(projs)}):")
+        for p in projs[:5]:
+            desvio = ""
+            try:
+                if p.get("presupuesto_base") and p.get("costo_real") is not None:
+                    d = (float(p["costo_real"]) / float(p["presupuesto_base"]) - 1) * 100
+                    if abs(d) >= 1:
+                        desvio = f", costo {'+' if d > 0 else ''}{d:.0f}% vs presupuesto"
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
+            lines.append(
+                f"    · {p.get('nombre')}: avance {p.get('avance_real_pct', 0):.0f}% "
+                f"(plan {p.get('avance_plan_pct', 0):.0f}%){desvio}"
+            )
+    else:
+        lines.append("- Proyectos: ninguno cargado aún (ofrecé crear el primero desde el Panel).")
+    pagos = data.get("pagos_pendientes") or []
+    if pagos:
+        tot = sum(float(p.get("monto") or 0) for p in pagos)
+        prox = ", ".join(
+            f"{p.get('concepto')} ({p.get('fecha')})" for p in pagos[:3]
+        )
+        lines.append(f"- Pagos pendientes: {len(pagos)} por ${tot:,.0f} — próximos: {prox}")
+    rems = data.get("reminders") or []
+    if rems:
+        lines.append(
+            "- Recordatorios próximos: "
+            + "; ".join(f"{r.get('message')} ({r.get('due_at')})" for r in rems[:3])
+        )
+    if data.get("contacts_count"):
+        lines.append(f"- Contactos en agenda: {data['contacts_count']}")
+    opps = data.get("opportunities") or []
+    if opps:
+        lines.append(
+            "- Deal Room: "
+            + "; ".join(
+                f"{o.get('titulo')} (score {o.get('score')}, {o.get('recomendacion') or 's/rec'})"
+                for o in opps[:3]
+            )
+        )
+    prefs = data.get("automation_prefs") or {}
+    if prefs:
+        activas = [k for k, v in prefs.items() if v]
+        if activas:
+            lines.append(f"- Automatizaciones activas: {', '.join(activas)}")
+    return "\n".join(lines)
+
+
+async def build_context_pack(db: AsyncSession, user: User) -> str:
+    """Junta el snapshot del usuario (pocas queries chicas) y lo renderiza.
+    Best-effort: ante cualquier fallo devuelve pack vacío — SOL funciona igual."""
+    try:
+        from models.contact import Contact
+        from models.opportunity import Opportunity
+        from models.payment import Payment
+        from models.project import Project
+        from models.reminder import Reminder
+        from models.user_channel import UserChannel
+        from sqlalchemy import func as sqlfunc
+        from sqlalchemy import select
+
+        projs = list((await db.execute(
+            select(Project).where(Project.user_id == user.id).order_by(Project.created_at)
+        )).scalars().all())
+        pagos = list((await db.execute(
+            select(Payment).where(
+                Payment.user_id == user.id, Payment.estado == "pendiente"
+            ).order_by(Payment.fecha).limit(8)
+        )).scalars().all())
+        rems = list((await db.execute(
+            select(Reminder).where(
+                Reminder.user_id == user.id, Reminder.status == "pending"
+            ).order_by(Reminder.due_at).limit(5)
+        )).scalars().all())
+        opps = list((await db.execute(
+            select(Opportunity).where(Opportunity.user_id == user.id)
+            .order_by(Opportunity.updated_at.desc()).limit(3)
+        )).scalars().all())
+        n_contacts = (await db.execute(
+            select(sqlfunc.count()).select_from(Contact).where(Contact.user_id == user.id)
+        )).scalar() or 0
+        tg = (await db.execute(
+            select(UserChannel).where(
+                UserChannel.user_id == user.id,
+                UserChannel.channel == "telegram",
+                UserChannel.verified.is_(True),
+            )
+        )).scalars().first()
+
+        data = {
+            "nombre": user.full_name,
+            "email": user.email,
+            "plan": user.plan,
+            "telegram": bool(tg),
+            "automation_prefs": user.automation_prefs or {},
+            "contacts_count": int(n_contacts),
+            "projects": [
+                {
+                    "nombre": p.nombre,
+                    "avance_real_pct": float(p.avance_real_pct or 0),
+                    "avance_plan_pct": float(p.avance_plan_pct or 0),
+                    "presupuesto_base": float(p.presupuesto_base or 0),
+                    "costo_real": float(p.costo_real or 0),
+                }
+                for p in projs
+            ],
+            "pagos_pendientes": [
+                {"concepto": p.concepto, "monto": float(p.monto or 0),
+                 "fecha": p.fecha.isoformat() if p.fecha else None}
+                for p in pagos
+            ],
+            "reminders": [
+                {"message": r.message, "due_at": r.due_at.isoformat() if r.due_at else None}
+                for r in rems
+            ],
+            "opportunities": [
+                {"titulo": o.titulo, "score": o.score, "recomendacion": o.recomendacion}
+                for o in opps
+            ],
+        }
+        return render_context_pack(data)
+    except Exception:  # noqa: BLE001 — el pack nunca debe romper a SOL
+        logger.exception("build_context_pack falló; sigo sin contexto")
+        return ""
 
 
 async def run_agent(
@@ -136,7 +292,8 @@ async def run_agent(
     Anthropic; el provider Gemini hace la traducción internamente.
     """
     provider = get_provider()
-    system = _system_prompt()
+    context_pack = await build_context_pack(db, user)
+    system = _system_prompt(context_pack)
     messages: list[dict] = [
         *[{"role": m["role"], "content": m["content"]} for m in history],
         {"role": "user", "content": user_message},

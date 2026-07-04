@@ -87,6 +87,54 @@ async def _process_due_reminders(db: AsyncSession) -> int:
 # el "último run" se pierde (in-memory) y vuelve a correr el cleanup,
 # que es idempotente (DELETE WHERE expires_at < now()).
 _CLEANUP_PERIOD = timedelta(hours=24)
+
+# ── Daily digest (modo Jarvis de SOL) ─────────────────────────────────
+# Los usuarios activan automation_prefs (daily_summary, alert_overruns, …) vía
+# SOL; este job las EJECUTA: resumen matutino por Telegram con el estado de
+# sus proyectos, pagos por vencer y recordatorios del día.
+_DIGEST_HOUR_UTC = 11  # ~08:00 en Argentina (UTC-3)
+_last_digest_date: str | None = None  # YYYY-MM-DD (AR) del último envío
+
+
+async def _run_daily_digest(db: AsyncSession) -> int:
+    """Manda el resumen diario a los usuarios que lo pidieron. Devuelve cuántos."""
+    from models.user_channel import UserChannel
+    from services.agent_service import build_context_pack
+
+    # Solo usuarios con daily_summary activo Y telegram verificado: sin canal
+    # push no hay digest (in_app sería spam invisible).
+    rows = (
+        await db.execute(
+            select(User, UserChannel)
+            .join(
+                UserChannel,
+                (UserChannel.user_id == User.id)
+                & (UserChannel.channel == "telegram")
+                & (UserChannel.verified.is_(True)),
+            )
+        )
+    ).all()
+    sent = 0
+    for user, _ch in rows:
+        prefs = user.automation_prefs or {}
+        if not prefs.get("daily_summary"):
+            continue
+        try:
+            pack = await build_context_pack(db, user)
+            if not pack:
+                continue
+            body = (
+                "☀️ *Tu resumen de hoy*\n\n"
+                + pack
+                + "\n\n_Escribime acá si querés el detalle de algo._"
+            )
+            res = await dispatch(db, user, channel="telegram",
+                                 title="", body=body)
+            if res.get("ok"):
+                sent += 1
+        except Exception:  # noqa: BLE001 — un usuario no debe frenar al resto
+            logger.exception("Daily digest falló para user %s", user.id)
+    return sent
 _STRIPE_EVENTS_RETENTION = timedelta(days=30)
 _last_cleanup_at: datetime | None = None
 
@@ -122,7 +170,7 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
 
 async def _scheduler_loop():
     """Loop principal. Sale cuando _stop_event se setea."""
-    global _last_cleanup_at
+    global _last_cleanup_at, _last_digest_date
     interval = settings.SCHEDULER_POLL_INTERVAL_SECONDS
     SessionLocal = get_session_factory()
     logger.info("Scheduler arrancado (poll cada %ss)", interval)
@@ -133,6 +181,19 @@ async def _scheduler_loop():
                 fired = await _process_due_reminders(db)
                 if fired:
                     logger.info("Scheduler disparó %d recordatorios", fired)
+
+                # Daily digest de SOL: una vez por día a partir de las
+                # _DIGEST_HOUR_UTC (≈08:00 AR). La marca es por fecha AR.
+                now_utc = datetime.now(timezone.utc)
+                today_ar = (now_utc - timedelta(hours=3)).date().isoformat()
+                if now_utc.hour >= _DIGEST_HOUR_UTC and _last_digest_date != today_ar:
+                    try:
+                        n = await _run_daily_digest(db)
+                        if n:
+                            logger.info("Daily digest enviado a %d usuarios", n)
+                        _last_digest_date = today_ar
+                    except Exception as e:
+                        logger.exception("Daily digest error: %s", e)
 
                 # Cleanup diario: corre si nunca corrió o pasaron 24h.
                 now = datetime.now(timezone.utc)
