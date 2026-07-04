@@ -6,6 +6,7 @@ from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
 from api.routes.channels import router as channels_router
+from api.routes.channels import webhook_router as channels_webhook_router
 from api.routes.chat import router as chat_router
 from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
@@ -278,6 +279,9 @@ app.include_router(workspaces_router, dependencies=_paid)
 app.include_router(agent_router, dependencies=_paid)
 app.include_router(reminders_router, dependencies=_paid)
 app.include_router(channels_router, dependencies=_paid)
+# El webhook de Telegram va SIN gate de plan: Telegram pega sin JWT y se
+# autentica por secret header. Detrás de require_access devolvía 401 → canal roto.
+app.include_router(channels_webhook_router)
 app.include_router(contacts_router, dependencies=_paid)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.

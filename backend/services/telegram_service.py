@@ -23,11 +23,65 @@ from typing import Any
 
 import httpx
 from config.settings import settings
+from fastapi import HTTPException
 from models.user_channel import UserChannel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+# Dedupe de updates (ver handle_webhook_update). Acotado en memoria; 1 worker.
+from collections import deque  # noqa: E402
+
+_SEEN_UPDATES: set[int] = set()
+_SEEN_ORDER: deque[int] = deque()
+_SEEN_MAX = 2000
+
+# Referencias fuertes a los tasks de fondo del agente (sin esto el GC los mata).
+_BG_TASKS: set = set()
+
+# Máximo de mensajes de historial que cargamos para el hilo de Telegram.
+_TG_HISTORY_MAX = 14
+
+
+async def _load_telegram_history(session, user_id):
+    """Devuelve (conversation, history) del hilo dedicado de Telegram del usuario.
+    Reusa Conversation section='sol_telegram'; la crea si no existe."""
+    from models.conversation import Conversation
+    from models.message import Message
+    from sqlalchemy import select as _select
+
+    conv = (await session.execute(
+        _select(Conversation).where(
+            Conversation.user_id == user_id,
+            Conversation.section == "sol_telegram",
+        ).order_by(Conversation.created_at).limit(1)
+    )).scalars().first()
+    if conv is None:
+        conv = Conversation(user_id=user_id, title="SOL — Telegram", section="sol_telegram")
+        session.add(conv)
+        await session.flush()
+        return conv, []
+    rows = list((await session.execute(
+        _select(Message).where(Message.conversation_id == conv.id)
+        .order_by(Message.created_at.desc()).limit(_TG_HISTORY_MAX)
+    )).scalars().all())
+    rows.reverse()
+    history = [{"role": m.role, "content": m.content} for m in rows if m.content]
+    return conv, history
+
+
+async def _save_telegram_turn(session, conv, user_text: str, assistant_text: str) -> None:
+    """Persiste el par (user, assistant) del turno de Telegram."""
+    from models.message import Message
+
+    session.add(Message(conversation_id=conv.id, role="user", content=user_text))
+    session.add(Message(conversation_id=conv.id, role="assistant", content=assistant_text))
+    try:
+        await session.commit()
+    except Exception:  # noqa: BLE001 — persistir el historial no debe romper la respuesta
+        await session.rollback()
+        logger.warning("No se pudo persistir el turno de Telegram (conv %s)", conv.id)
 
 
 def _api_url(method: str) -> str:
@@ -161,6 +215,18 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
       - mensaje libre del usuario → eco simple "Hola, soy SOL. Te avisaré por aquí."
         (No procesamos comandos arbitrarios todavía; eso vendría en Fase 2.)
     """
+    # Dedupe: Telegram re-entrega el mismo update si el webhook devolvió error o
+    # tardó. Sin esto, un update reprocesado = doble ejecución del agente. Cache
+    # en memoria acotado (Railway = 1 worker; multi-worker requeriría Redis).
+    update_id = payload.get("update_id")
+    if update_id is not None:
+        if update_id in _SEEN_UPDATES:
+            return {"ok": True, "skipped": "duplicate_update"}
+        _SEEN_UPDATES.add(update_id)
+        _SEEN_ORDER.append(update_id)
+        if len(_SEEN_ORDER) > _SEEN_MAX:
+            _SEEN_UPDATES.discard(_SEEN_ORDER.popleft())
+
     msg = payload.get("message") or payload.get("edited_message")
     if not msg:
         return {"ok": True, "skipped": "no_message"}
@@ -243,7 +309,9 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
 
     import asyncio
 
-    asyncio.create_task(_agent_reply(chat_id, row.user_id, text))
+    task = asyncio.create_task(_agent_reply(chat_id, row.user_id, text))
+    _BG_TASKS.add(task)  # guardar referencia: sin esto el GC puede matar el task
+    task.add_done_callback(_BG_TASKS.discard)
     return {"ok": True, "agent_dispatched": True}
 
 
@@ -253,6 +321,7 @@ async def _agent_reply(chat_id: str, user_id, text: str) -> None:
     from core.plan_gate import has_access
     from models.base import get_session_factory
     from models.user import User
+    from services.rate_limit_service import check_user_rate_limit
 
     try:
         # "escribiendo…" mientras piensa (best-effort)
@@ -280,18 +349,43 @@ async def _agent_reply(chat_id: str, user_id, text: str) -> None:
                 )
                 return
 
+            # Mismo cupo que el chat in-app: un mensaje por Telegram cuesta lo
+            # mismo (hasta 8 iteraciones de LLM). Sin esto, spam = gasto ilimitado.
+            try:
+                await check_user_rate_limit(session, user)
+            except HTTPException:
+                await send_message(
+                    chat_id,
+                    "Llegaste al límite de mensajes por ahora 😅 Probá de nuevo más tarde.",
+                )
+                return
+
             from services.agent_service import run_agent
 
+            # Historial persistente: la confirmación de acciones necesita que el
+            # token del turno anterior siga en el hilo. Reusamos una conversación
+            # dedicada de Telegram por usuario.
+            conv, history = await _load_telegram_history(session, user_id)
+
             final_text = ""
-            tools_usadas: list[str] = []
-            async for ev in run_agent(session, user, history=[], user_message=text):
-                if ev.get("type") == "tool_use":
-                    tools_usadas.append(ev.get("name", ""))
-                elif ev.get("type") == "done":
+            pending_confirms: list = []
+            async for ev in run_agent(session, user, history=history, user_message=text):
+                if ev.get("type") == "done":
                     final_text = ev.get("final_text") or final_text
+                    pending_confirms = ev.get("pending_confirmations") or []
                 elif ev.get("type") == "error":
                     final_text = ""
                     break
+
+            # Persistir el turno. Al content del assistant le anexamos el
+            # marcador oculto de confirmaciones pendientes (igual que in-app);
+            # lo que se ENVÍA por Telegram es final_text limpio, sin marcador.
+            if final_text:
+                from services.agent_service import append_confirm_marker
+                await _save_telegram_turn(
+                    session, conv, text,
+                    append_confirm_marker(final_text, pending_confirms),
+                )
 
         if not final_text:
             await send_message(

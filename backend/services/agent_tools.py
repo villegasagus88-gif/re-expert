@@ -42,6 +42,7 @@ from models.project import Project
 from models.reminder import Reminder
 from models.user import User
 from models.user_channel import UserChannel
+from sqlalchemy import func as sqlfunc
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -505,6 +506,39 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "name": "get_payments_summary",
+        "description": (
+            "Totales REALES de pagos del usuario calculados en la base "
+            "(cantidad y suma por estado). Usala SIEMPRE que el usuario pida "
+            "'cuánto debo', 'total pendiente', 'cuánto pagué' — NO sumes los "
+            "pagos vos: pedí el total acá para no equivocarte."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "estado": {"type": "string", "enum": ["pendiente", "pagado", "cancelado"],
+                           "description": "Filtrar por estado; omitir para el desglose completo."},
+            },
+        },
+    },
+    {
+        "name": "confirm_action",
+        "description": (
+            "Ejecuta una acción de escritura que quedó pendiente de confirmación. "
+            "Las tools de registrar/agendar/contacto NO ejecutan directo: devuelven "
+            "un resumen y un confirm_token. Mostrale el resumen al usuario, esperá "
+            "que responda que SÍ, y RECIÉN AHÍ (en tu próximo turno) llamá esta tool "
+            "con ese token. Nunca la llames en el mismo turno que generaste el token."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "confirm_token": {"type": "string", "description": "El token devuelto por la tool de escritura."},
+            },
+            "required": ["confirm_token"],
+        },
+    },
 ]
 
 
@@ -524,6 +558,30 @@ def _serialize_decimal(v: Any) -> Any:
     if isinstance(v, UUID):
         return str(v)
     return v
+
+
+async def _tool_get_payments_summary(
+    db: AsyncSession, user: User, estado: str | None = None, **_: Any
+) -> dict:
+    """Totales reales por estado (count + sum) calculados en SQL — el modelo
+    NO debe sumar filas a mano. Siempre filtrado por user.id."""
+    q = (
+        select(Payment.estado, sqlfunc.count(Payment.id),
+               sqlfunc.coalesce(sqlfunc.sum(Payment.monto), 0))
+        .where(Payment.user_id == user.id)
+        .group_by(Payment.estado)
+    )
+    if estado:
+        q = q.where(Payment.estado == estado)
+    rows = (await db.execute(q)).all()
+    por_estado = {
+        r[0]: {"count": int(r[1]), "total": float(r[2])} for r in rows
+    }
+    return {
+        "por_estado": por_estado,
+        "total_general": float(sum(v["total"] for v in por_estado.values())),
+        "moneda": "ARS",
+    }
 
 
 def _project_to_dict(proj: Project) -> dict:
@@ -1266,18 +1324,66 @@ TOOL_IMPLS = {
     "get_news": _tool_get_news,
     "search_chats": _tool_search_chats,
     "get_opportunities": _tool_get_opportunities,
+    "get_payments_summary": _tool_get_payments_summary,
 }
 
 
 async def run_tool(
     name: str, db: AsyncSession, user: User, inputs: dict[str, Any]
 ) -> dict:
-    """Despacha la ejecución de la tool. Devuelve siempre un dict."""
+    """Despacha la ejecución de la tool. Devuelve siempre un dict.
+
+    Las acciones de escritura (WRITE_ACTIONS) NO se ejecutan directo: se validan
+    server-side y se devuelve un preview firmado (needs_confirmation). La
+    escritura real ocurre cuando el modelo llama confirm_action con ese token.
+    """
+    from services import agent_confirm as _confirm
+
+    inputs = inputs or {}
+
+    # 1) Confirmación → verificar token y ejecutar la escritura real.
+    if name == "confirm_action":
+        try:
+            action, payload = _confirm.verify_token(inputs.get("confirm_token", ""))
+        except _confirm.ValidationError as e:
+            return {"error": str(e)}
+        impl = TOOL_IMPLS.get(action)
+        if impl is None:
+            return {"error": f"Acción a confirmar desconocida: {action}"}
+        try:
+            res = await impl(db, user, **payload)
+            if isinstance(res, dict):
+                res.setdefault("confirmed", True)
+            # Marcar el token como usado SOLO si la escritura salió bien: evita
+            # re-ejecutar la misma acción (doble pago) si reaparece en el historial.
+            if not (isinstance(res, dict) and res.get("error")):
+                _confirm.mark_used(inputs.get("confirm_token", ""))
+            return res
+        except Exception as e:  # noqa: BLE001
+            await db.rollback()  # no envenenar la sesión para las tools siguientes
+            logger.exception("confirm_action(%s) falló", action)
+            return {"error": f"No se pudo ejecutar {action}: {e}"}
+
+    # 2) Write action sin confirmar → validar y devolver preview firmado.
+    if name in _confirm.WRITE_ACTIONS:
+        try:
+            payload, resumen = _confirm.validate(name, inputs)
+        except _confirm.ValidationError as e:
+            return {"error": str(e)}
+        return {
+            "needs_confirmation": True,
+            "action": name,
+            "resumen": resumen,
+            "confirm_token": _confirm.make_token(name, payload),
+        }
+
+    # 3) Tools de lectura / bajo riesgo → ejecución directa.
     impl = TOOL_IMPLS.get(name)
     if impl is None:
         return {"error": f"Tool desconocida: {name}"}
     try:
-        return await impl(db, user, **(inputs or {}))
+        return await impl(db, user, **inputs)
     except Exception as e:
+        await db.rollback()  # una tool que falló no debe envenenar el resto del turno
         logger.exception("Tool %s raised", name)
         return {"error": f"Tool {name} falló: {e}"}

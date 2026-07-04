@@ -45,6 +45,79 @@ def test_context_pack_usuario_nuevo():
     assert "SIN Telegram" in pack
 
 
+def test_context_pack_no_miente_totales():
+    """GROUNDING: con 20 pagos totales pero 8 en el preview, el pack muestra el
+    total REAL (no la suma de los 8) y marca cuántos quedan fuera."""
+    data = {
+        "email": "x", "plan": "pro",
+        "pagos_pendientes": [{"concepto": f"p{i}", "monto": 1000, "fecha": "2026-07-10"}
+                             for i in range(8)],
+        "pagos_pendientes_count": 20,
+        "pagos_pendientes_total": 50000.0,
+    }
+    pack = agent_service.render_context_pack(data)
+    assert "20 por $50,000" in pack   # total real, no $8.000
+    assert "+12 más" in pack          # marca los que no están en el preview
+
+
+@pytest.mark.anyio
+async def test_get_payments_summary_agrega_en_sql():
+    """La tool de agregación devuelve count+sum por estado (el modelo no suma)."""
+    class _AggDB:
+        async def execute(self, *_a, **_k):
+            rows = [("pendiente", 3, 15000.0), ("pagado", 2, 8000.0)]
+            class _R:
+                def all(self): return rows
+            return _R()
+    out = await agent_tools._tool_get_payments_summary(_AggDB(), SimpleNamespace(id=uuid4()))
+    assert out["por_estado"]["pendiente"] == {"count": 3, "total": 15000.0}
+    assert out["total_general"] == 23000.0
+
+
+class _CtxDB:
+    """DB fake que devuelve, en orden, los resultados de las 7 queries de
+    build_context_pack: projects, pagos, pagos_agg, reminders, opps, count, tg.
+    Cada item puede ser una lista (scalars().all/first) o una tupla (first())."""
+    def __init__(self, results):
+        self._results = list(results)
+    async def execute(self, *_a, **_k):
+        val = self._results.pop(0)
+        class _R:
+            def __init__(self, v): self._v = v
+            def scalar(self): return self._v
+            def first(self):
+                # tupla → agregación; lista → primera fila o None
+                if isinstance(self._v, tuple): return self._v
+                return self._v[0] if isinstance(self._v, list) and self._v else None
+            def scalars(self):
+                v = self._v
+                class _S:
+                    def all(self): return v if isinstance(v, list) else []
+                    def first(self): return v[0] if isinstance(v, list) and v else None
+                return _S()
+        return _R(val)
+
+
+@pytest.mark.anyio
+async def test_build_context_pack_no_se_cae_con_reminders():
+    """REGRESIÓN bug B: un Reminder real tiene .title, NO .message. El código
+    usaba r.message → AttributeError tragado por el try/except → pack vacío para
+    cualquiera con recordatorios pendientes (SOL perdía TODO el contexto)."""
+    from datetime import datetime
+    user = SimpleNamespace(
+        id=uuid4(), full_name="Mati", email="m@x.com", plan="pro",
+        automation_prefs={},
+    )
+    # SimpleNamespace NO tiene .message → si el código lo usa, revienta.
+    reminder = SimpleNamespace(title="Pagar hormigón", due_at=datetime(2026, 7, 10))
+    # Orden: projects, pagos, pagos_agg(count,sum), reminders, opps, count, tg
+    db = _CtxDB([[], [], (0, 0), [reminder], [], 0, []])
+    pack = await agent_service.build_context_pack(db, user)
+    assert pack != ""  # el pack NO se cayó
+    assert "Pagar hormigón" in pack  # el título del reminder está presente
+    assert "Mati" in pack
+
+
 def test_system_prompt_inyecta_pack():
     s = agent_service._system_prompt("- Usuario: Test · plan pro")
     assert "- Usuario: Test · plan pro" in s
@@ -168,6 +241,28 @@ async def test_telegram_mensaje_libre_sin_pairing(monkeypatch):
     )
     assert out.get("unpaired") is True
     assert any("Conectar Telegram" in t for t in sent)
+
+
+@pytest.mark.anyio
+async def test_telegram_dedupe_update_id(monkeypatch):
+    """El mismo update_id no se procesa dos veces (Telegram re-entrega ante error)."""
+    async def _fake_send(chat_id, text): return {"ok": True}
+    monkeypatch.setattr(telegram_service, "send_message", _fake_send)
+
+    class _DB:
+        async def execute(self, *_a, **_k):
+            class _S:
+                def first(self): return None
+            class _R:
+                def scalars(self): return _S()
+            return _R()
+
+    uid = 987654321  # update_id único para este test
+    payload = {"update_id": uid, "message": {"chat": {"id": 5}, "text": "hola"}}
+    first = await telegram_service.handle_webhook_update(_DB(), payload)
+    second = await telegram_service.handle_webhook_update(_DB(), payload)
+    assert first.get("unpaired") is True  # se procesó
+    assert second.get("skipped") == "duplicate_update"  # el reenvío se ignoró
 
 
 @pytest.mark.anyio

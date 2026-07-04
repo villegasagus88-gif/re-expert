@@ -9,6 +9,7 @@ Permite al usuario:
 """
 # Nota: evitar `from __future__ import annotations` en archivos de rutas FastAPI
 # (los body params quedan como ForwardRef y rompen el OpenAPI).
+import hmac
 import logging
 from uuid import UUID
 
@@ -26,6 +27,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/channels", tags=["channels"])
+
+# Router aparte para el webhook de Telegram: se monta SIN el gate de plan
+# (require_access) porque Telegram pega sin JWT. Se autentica con el secret
+# header. Montarlo detrás de require_access devolvía 401/402 a Telegram y
+# rompía TODO el canal entrante.
+webhook_router = APIRouter(prefix="/api/channels", tags=["channels"])
 
 
 @router.get("", response_model=ChannelListResponse)
@@ -98,7 +105,7 @@ async def disconnect_channel(
 # ─── Webhook Telegram (no auth) ───────────────────────────────────────
 # Telegram pega aquí. Validamos vía X-Telegram-Bot-Api-Secret-Token igualando
 # settings.TELEGRAM_WEBHOOK_SECRET. Si no coincide → 403.
-@router.post("/telegram/webhook")
+@webhook_router.post("/telegram/webhook")
 async def telegram_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -106,8 +113,15 @@ async def telegram_webhook(
 ):
     if not telegram_service.is_configured():
         raise HTTPException(503, "telegram_not_configured")
-    if settings.TELEGRAM_WEBHOOK_SECRET:
-        if x_telegram_bot_api_secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
+    secret = settings.TELEGRAM_WEBHOOK_SECRET
+    if secret:
+        if not hmac.compare_digest(x_telegram_bot_api_secret_token or "", secret):
             raise HTTPException(403, "bad_secret")
+    elif not settings.DEBUG:
+        # Fail-closed: en producción SIN secret configurado no verificamos nada y
+        # cualquiera podría inyectar updates forjados (accionar SOL como otro
+        # usuario). Rechazamos hasta que se cargue TELEGRAM_WEBHOOK_SECRET.
+        logger.error("Telegram webhook rechazado: falta TELEGRAM_WEBHOOK_SECRET en producción")
+        raise HTTPException(503, "telegram_webhook_not_configured")
     payload = await request.json()
     return await telegram_service.handle_webhook_update(db, payload)

@@ -27,6 +27,7 @@ from models.base import get_db
 from models.conversation import Conversation
 from models.message import Message
 from models.user import User
+from services import agent_service
 from services.agent_service import run_agent
 from services.rate_limit_service import check_user_rate_limit
 from services.token_usage_service import log_token_usage
@@ -116,6 +117,7 @@ async def sol_agent(
         full_text = ""
         in_tok = 0
         out_tok = 0
+        pending_confirms: list = []
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
                 async for ev in run_agent(db, current_user, history, body.message):
@@ -124,6 +126,7 @@ async def sol_agent(
                     if ev["type"] == "done":
                         in_tok = ev.get("input_tokens", 0)
                         out_tok = ev.get("output_tokens", 0)
+                        pending_confirms = ev.get("pending_confirmations") or []
                     yield _sse(ev)
         except TimeoutError:
             yield _sse({"type": "error", "message": "Timeout SOL agent"})
@@ -133,12 +136,16 @@ async def sol_agent(
             yield _sse({"type": "error", "message": str(e)})
             return
 
-        # Persistir respuesta del agente
+        # Persistir respuesta del agente. Al content persistido le anexamos, si
+        # hay, el marcador oculto con los tokens de confirmación pendientes: el
+        # usuario ya vio el texto limpio por el stream; el marcador solo lo lee
+        # el modelo en el próximo turno para poder confirmar.
+        persisted = agent_service.append_confirm_marker(full_text, pending_confirms)
         try:
             assistant = Message(
                 conversation_id=conv.id,
                 role="assistant",
-                content=full_text,
+                content=persisted,
                 tokens_used=(in_tok + out_tok) or None,
             )
             db.add(assistant)

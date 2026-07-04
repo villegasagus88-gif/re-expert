@@ -118,16 +118,40 @@ Usá este contexto para responder al toque sin llamar tools de consulta si ya te
    convertí "mañana 10am" a ISO 8601 con tz America/Argentina/Buenos_Aires (UTC-3),
    y schedule_reminder(channel=preferido_del_user_o_in_app).
 
+# Confirmación de acciones (OBLIGATORIO)
+
+  Registrar pago/hito/precio, agendar recordatorio y crear/editar contacto son
+  acciones de DOS PASOS. Cuando llamás una de esas tools NO se ejecuta: te
+  devuelve `{needs_confirmation, resumen, confirm_token}`.
+  El flujo correcto es:
+    1. Llamás la tool con los datos.
+    2. Le mostrás al usuario el `resumen` tal cual y le preguntás si confirma
+       ("Voy a registrar un pago de $X. ¿Lo confirmo?"). TERMINÁS tu turno ahí.
+    3. Recién cuando el usuario responde que SÍ (en un mensaje nuevo), llamás
+       `confirm_action(confirm_token)` con el token que recibiste.
+  NUNCA llames confirm_action en el mismo turno que generaste el token: el
+  sistema lo rechaza. Si el usuario dice que no o cambia un dato, descartá el
+  token y volvé a empezar con los datos nuevos.
+  Si en el historial ves un marcador `<!--sol-confirm:TOKEN-->` (es la acción
+  que dejaste pendiente el turno anterior) y el usuario ahora confirma, llamá
+  confirm_action con ESE token. El marcador es interno: no lo menciones ni lo
+  repitas en tus respuestas.
+
 # Reglas
 
   1. Español rioplatense, cálido pero pro. Sé concisa, no monologues.
-  2. Antes de registrar un dato (pago, hito, material), confirmá brevemente.
+  2. GROUNDING: respondé SOLO con datos del aplicativo. Para cualquier cifra o
+     dato de proyecto/pago/deal, usá la tool correspondiente ANTES de afirmarlo.
+     Si el dato no está, decí "no tengo ese dato cargado" — NUNCA lo inventes ni
+     lo estimes. No traés información de la web.
   3. Hoy es __TODAY__ (zona AR). Convertí siempre fechas relativas a ISO 8601 con tz.
-  4. Si una tool devuelve un objeto con campo "error", explicale al usuario y pedile más info si hace falta.
-  5. NO inventes teléfonos, fechas ni datos: si no los tenés, consultá con la tool correspondiente o preguntale.
+  4. Si una tool devuelve un objeto con campo "error", explicale al usuario en
+     lenguaje claro y pedile lo que falte. No reintentes el mismo dato inválido.
+  5. NO inventes teléfonos, fechas, montos ni datos: si no los tenés, consultá
+     con la tool o preguntale al usuario.
   6. Markdown simple. Para links, formato [texto](url).
-  7. Cuando ejecutás una acción, confirmala en UNA línea ("✓ Recordatorio para mañana 10am.").
-  8. Si get_my_profile devuelve phone null Y el usuario te dio un número en su mensaje, guardalo automáticamente con set_my_phone (no lo preguntes dos veces).
+  7. Cuando una acción se confirma y ejecuta OK, avisalo en UNA línea ("✓ Pago registrado.").
+  8. Si get_my_profile devuelve phone null Y el usuario te dio un número en su mensaje, guardalo con set_my_phone (no lo preguntes dos veces).
 """
 
 
@@ -169,11 +193,20 @@ def render_context_pack(data: dict) -> str:
         lines.append("- Proyectos: ninguno cargado aún (ofrecé crear el primero desde el Panel).")
     pagos = data.get("pagos_pendientes") or []
     if pagos:
-        tot = sum(float(p.get("monto") or 0) for p in pagos)
+        # Totales REALES (count/sum de toda la tabla), no de las 8 filas del
+        # preview: presentar la suma de 8 como si fuera el total era mentir.
+        n_tot = data.get("pagos_pendientes_count", len(pagos))
+        monto_tot = data.get("pagos_pendientes_total")
+        if monto_tot is None:  # sin agregación → sumamos lo que hay, marcando que es parcial
+            monto_tot = sum(float(p.get("monto") or 0) for p in pagos)
         prox = ", ".join(
             f"{p.get('concepto')} ({p.get('fecha')})" for p in pagos[:3]
         )
-        lines.append(f"- Pagos pendientes: {len(pagos)} por ${tot:,.0f} — próximos: {prox}")
+        extra = f" (+{n_tot - len(pagos)} más)" if n_tot > len(pagos) else ""
+        lines.append(
+            f"- Pagos pendientes: {n_tot} por ${float(monto_tot):,.0f} — "
+            f"próximos: {prox}{extra}"
+        )
     rems = data.get("reminders") or []
     if rems:
         lines.append(
@@ -220,6 +253,13 @@ async def build_context_pack(db: AsyncSession, user: User) -> str:
                 Payment.user_id == user.id, Payment.estado == "pendiente"
             ).order_by(Payment.fecha).limit(8)
         )).scalars().all())
+        # Agregación real (no la suma de las 8 filas de arriba).
+        pagos_agg = (await db.execute(
+            select(sqlfunc.count(Payment.id), sqlfunc.coalesce(sqlfunc.sum(Payment.monto), 0))
+            .where(Payment.user_id == user.id, Payment.estado == "pendiente")
+        )).first()
+        pagos_count = int(pagos_agg[0]) if pagos_agg else len(pagos)
+        pagos_total = float(pagos_agg[1]) if pagos_agg else 0.0
         rems = list((await db.execute(
             select(Reminder).where(
                 Reminder.user_id == user.id, Reminder.status == "pending"
@@ -262,8 +302,13 @@ async def build_context_pack(db: AsyncSession, user: User) -> str:
                  "fecha": p.fecha.isoformat() if p.fecha else None}
                 for p in pagos
             ],
+            "pagos_pendientes_count": pagos_count,
+            "pagos_pendientes_total": pagos_total,
             "reminders": [
-                {"message": r.message, "due_at": r.due_at.isoformat() if r.due_at else None}
+                # Reminder tiene title/body, NO message. Este bug tiraba
+                # AttributeError → el pack entero (try/except de abajo) se caía
+                # en silencio para cualquier usuario con recordatorios pendientes.
+                {"message": r.title, "due_at": r.due_at.isoformat() if r.due_at else None}
                 for r in rems
             ],
             "opportunities": [
@@ -302,6 +347,10 @@ async def run_agent(
     total_input = 0
     total_output = 0
     full_text = ""
+    # Tokens de confirmación emitidos EN ESTE turno: si el modelo intenta
+    # confirmar uno de estos en la misma vuelta, se rechaza (ver loop abajo).
+    tokens_emitidos_turno: set[str] = set()
+    tokens_confirmados_turno: set[str] = set()
 
     for iteration in range(max_iterations):
         yield {"type": "thinking", "iteration": iteration, "provider": provider.name}
@@ -371,7 +420,23 @@ async def run_agent(
         tool_results_blocks: list[dict] = []
         for tu in tool_uses:
             yield {"type": "tool_use", "name": tu["name"], "input": tu["input"]}
-            result = await run_tool(tu["name"], db, user, tu["input"])
+            # Human-in-the-loop server-side: no dejar que el modelo confirme una
+            # acción cuyo token generó en ESTE mismo turno. La confirmación tiene
+            # que venir tras un nuevo mensaje del usuario (turno siguiente).
+            if (tu["name"] == "confirm_action"
+                    and (tu["input"] or {}).get("confirm_token") in tokens_emitidos_turno):
+                result = {"error": (
+                    "El usuario todavía no confirmó esta acción. Mostrale el resumen "
+                    "y esperá que responda que sí; recién en tu próximo turno confirmá."
+                )}
+            else:
+                result = await run_tool(tu["name"], db, user, tu["input"])
+            if isinstance(result, dict) and result.get("confirm_token"):
+                tokens_emitidos_turno.add(result["confirm_token"])
+            # Si el modelo confirmó OK, ese token ya no está pendiente.
+            if (tu["name"] == "confirm_action" and isinstance(result, dict)
+                    and result.get("confirmed")):
+                tokens_confirmados_turno.add((tu["input"] or {}).get("confirm_token"))
             yield {"type": "tool_result", "name": tu["name"], "result": result}
             tool_results_blocks.append(
                 {
@@ -384,13 +449,41 @@ async def run_agent(
         # Mandar los tool_results en un mensaje de rol "user" (es el formato Anthropic)
         messages.append({"role": "user", "content": tool_results_blocks})
 
+    # Tokens de confirmación que quedaron PENDIENTES (preview mostrado, usuario
+    # todavía no dijo que sí). Se persisten como marcador oculto en el historial
+    # para que el modelo pueda confirmarlos en el próximo turno (el historial
+    # guarda solo texto, no los tool_result blocks).
+    pendientes = sorted(tokens_emitidos_turno - tokens_confirmados_turno)
     yield {
         "type": "done",
         "input_tokens": total_input,
         "output_tokens": total_output,
         "tokens_used": total_input + total_output,
         "final_text": full_text,
+        "pending_confirmations": pendientes,
     }
+
+
+# Marcador (comentario HTML, invisible en el render) para llevar el/los tokens
+# de confirmación pendientes dentro del texto persistido del assistant.
+_CONFIRM_MARK_RE = None  # se compila lazy en strip_confirm_marker
+
+
+def append_confirm_marker(text: str, tokens: list[str]) -> str:
+    """Anexa los tokens pendientes como comentario HTML al final del texto que
+    se PERSISTE (no el que se muestra al usuario)."""
+    if not tokens:
+        return text
+    return f"{text}\n<!--sol-confirm:{','.join(tokens)}-->"
+
+
+def strip_confirm_marker(text: str) -> str:
+    """Quita el marcador (por si alguna vista muestra el content persistido)."""
+    import re
+    global _CONFIRM_MARK_RE
+    if _CONFIRM_MARK_RE is None:
+        _CONFIRM_MARK_RE = re.compile(r"\n?<!--sol-confirm:[^>]*-->")
+    return _CONFIRM_MARK_RE.sub("", text or "")
 
 
 # ════════════════════════════════════════════════════════════════════
