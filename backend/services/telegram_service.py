@@ -66,8 +66,13 @@ async def _load_telegram_history(session, user_id):
         _select(Message).where(Message.conversation_id == conv.id)
         .order_by(Message.created_at.desc()).limit(_TG_HISTORY_MAX)
     )).scalars().all())
-    rows.reverse()
+    # El par user/assistant de un turno comparte created_at (misma transacción,
+    # func.now() = transaction_timestamp): desempatamos poniendo user primero.
+    rows.sort(key=lambda m: (m.created_at, 0 if m.role == "user" else 1))
     history = [{"role": m.role, "content": m.content} for m in rows if m.content]
+    # Anthropic exige que el historial arranque con rol "user".
+    while history and history[0]["role"] != "user":
+        history.pop(0)
     return conv, history
 
 
@@ -211,9 +216,11 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
     Procesa un update del webhook de Telegram.
 
     Soportamos los casos:
-      - /start <pairing_token>  → matchear y verificar canal
-      - mensaje libre del usuario → eco simple "Hola, soy SOL. Te avisaré por aquí."
-        (No procesamos comandos arbitrarios todavía; eso vendría en Fase 2.)
+      - /start <pairing_token>  → matchear y verificar canal.
+      - mensaje libre de un usuario PAIREADO → si TELEGRAM_AGENT_ENABLED, corre
+        el agente SOL completo en un task de fondo; si está apagado (default),
+        responde un texto fijo indicando usar la app.
+      - mensaje de un chat NO paireado → instrucciones para conectar la cuenta.
     """
     # Dedupe: Telegram re-entrega el mismo update si el webhook devolvió error o
     # tardó. Sin esto, un update reprocesado = doble ejecución del agente. Cache
@@ -286,17 +293,6 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
     if not text:
         return {"ok": True, "skipped": "empty_text"}
 
-    # Flag: el agente por Telegram está apagado por decisión de producto hasta
-    # nuevo aviso (TELEGRAM_AGENT_ENABLED). El pairing de arriba y los envíos
-    # salientes (recordatorios/digest) NO dependen de esto.
-    if not settings.TELEGRAM_AGENT_ENABLED:
-        await send_message(
-            chat_id,
-            "Soy SOL 👋 Por acá te aviso recordatorios y resúmenes. "
-            "Para chatear conmigo, entrá a RE Expert → sección SOL.",
-        )
-        return {"ok": True, "agent_disabled": True}
-
     row = (
         await db.execute(
             select(UserChannel).where(
@@ -313,6 +309,18 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
             "abrí RE Expert y tocá *Conectar Telegram* en la sección SOL.",
         )
         return {"ok": True, "unpaired": True}
+
+    # Flag: el agente por Telegram está apagado por decisión de producto hasta
+    # nuevo aviso (TELEGRAM_AGENT_ENABLED). El pairing de arriba y los envíos
+    # salientes (recordatorios/digest) NO dependen de esto. Solo los usuarios
+    # YA paireados reciben este aviso (a los demás no les prometemos nada).
+    if not settings.TELEGRAM_AGENT_ENABLED:
+        await send_message(
+            chat_id,
+            "Soy SOL 👋 Por acá te aviso recordatorios y resúmenes. "
+            "Para chatear conmigo, entrá a RE Expert → sección SOL.",
+        )
+        return {"ok": True, "agent_disabled": True}
 
     if len(text) > 1500:
         await send_message(chat_id, "Uy, ese mensaje es muy largo. ¿Me lo resumís en menos palabras?")

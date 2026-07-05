@@ -5,7 +5,6 @@ All endpoints are protected and scoped to the authenticated user's
 conversations only. No user can access another user's data.
 """
 import math
-
 from uuid import UUID
 
 from api.schemas.conversation import (

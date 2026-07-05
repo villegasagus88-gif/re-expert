@@ -298,6 +298,51 @@ async def test_telegram_mensaje_libre_despacha_agente(monkeypatch):
 
 
 @pytest.mark.anyio
+async def test_telegram_flag_apagado_no_despacha_agente(monkeypatch):
+    """Con TELEGRAM_AGENT_ENABLED=False (default de prod), un usuario paireado
+    recibe el texto fijo y el agente NO corre; uno sin pairing sigue recibiendo
+    las instrucciones de conexión (el flag no las tapa)."""
+    monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', False, raising=False)
+    sent = []
+    async def _fake_send(chat_id, text):
+        sent.append(text); return {"ok": True}
+    monkeypatch.setattr(telegram_service, "send_message", _fake_send)
+    async def _boom(*_a, **_k):
+        raise AssertionError("el agente no debe despacharse con el flag apagado")
+    monkeypatch.setattr(telegram_service, "_agent_reply", _boom)
+
+    paired = SimpleNamespace(user_id=uuid4())
+
+    class _DBPaired:
+        async def execute(self, *_a, **_k):
+            class _S:
+                def first(self): return paired
+            class _R:
+                def scalars(self): return _S()
+            return _R()
+
+    class _DBUnpaired:
+        async def execute(self, *_a, **_k):
+            class _S:
+                def first(self): return None
+            class _R:
+                def scalars(self): return _S()
+            return _R()
+
+    out = await telegram_service.handle_webhook_update(
+        _DBPaired(), {"message": {"chat": {"id": 71}, "text": "hola"}}
+    )
+    assert out.get("agent_disabled") is True and "agent_dispatched" not in out
+    assert any("sección SOL" in t for t in sent)
+
+    out2 = await telegram_service.handle_webhook_update(
+        _DBUnpaired(), {"message": {"chat": {"id": 72}, "text": "hola"}}
+    )
+    assert out2.get("unpaired") is True
+    assert any("Conectar Telegram" in t for t in sent)
+
+
+@pytest.mark.anyio
 async def test_telegram_mensaje_muy_largo(monkeypatch):
     monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', True, raising=False)
     sent = []

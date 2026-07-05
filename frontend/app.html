@@ -4995,9 +4995,14 @@ async function solSend(text){
             // No-op visual; el typing-indicator ya está visible.
           } else if (ev.type==='tool_use'){
             // Antes del primer tool_use de esta vuelta, finalizamos el streaming
-            // bubble actual para que las chips no queden adentro.
+            // bubble actual para que las chips no queden adentro. Si el modelo
+            // fue directo a la tool SIN texto, el bubble sigue en "Procesando…":
+            // lo removemos para que no quede pegado para siempre.
             if(!solState._toolModeBubbleClosed){
-              solFinalizeStreaming(); solState._toolModeBubbleClosed = true;
+              const sm=$('#solStreamMsg');
+              if(sm&&sm.querySelector('.typing-indicator'))sm.remove();
+              else solFinalizeStreaming();
+              solState._toolModeBubbleClosed = true;
             }
             const chip = solAppendToolChip(ev.name, 'running', null);
             toolChips.push({name: ev.name, el: chip});

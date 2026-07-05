@@ -16,7 +16,7 @@ from uuid import UUID
 from api.schemas.channel import ChannelListResponse, ChannelOut, ConnectTelegramResponse
 from config.settings import settings
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from models.base import get_db
 from models.user import User
 from models.user_channel import UserChannel

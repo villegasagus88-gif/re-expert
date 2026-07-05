@@ -231,27 +231,41 @@ def _secret() -> bytes:
 # confirme con calma, pero acotada.
 TOKEN_TTL_SECONDS = 1800  # 30 min
 
-# Anti-reuso dentro del proceso: un token ya confirmado no se vuelve a ejecutar
-# (cubre la reconfirmación en la misma sesión; el TTL cubre el resto). Acotado.
+# Anti-reuso, capa 1 (rápida, in-memory): un token confirmado no se re-ejecuta
+# en este proceso. La capa 2 (persistente, sobrevive redeploys) son los nonces
+# consumidos guardados en user.automation_prefs — ver consume_nonce/nonce_used.
 _USED_TOKENS: set[str] = set()
 _USED_ORDER: list[str] = []
 _USED_MAX = 5000
 
+_NONCES_KEY = "_used_confirm_nonces"
+_NONCES_MAX = 30  # por usuario; sobra para la ventana de TTL de 30 min
 
-def make_token(action: str, payload: dict, *, now: int | None = None) -> str:
-    """Devuelve '<b64(body)>.<hexsig>' donde body = {action, payload, ts}."""
-    ts = now if now is not None else int(__import__("time").time())
-    body = json.dumps({"a": action, "p": payload, "t": ts}, ensure_ascii=False,
-                      sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+def make_token(action: str, payload: dict, *, user_id: str = "",
+               now: int | None = None) -> str:
+    """Devuelve '<b64(body)>.<hexsig>' donde body = {a, p, t, u, n}.
+    - u: user_id → el token solo lo puede confirmar quien lo generó.
+    - n: nonce único → dos acciones idénticas generan tokens distintos, y el
+      nonce consumido se persiste (anti doble-ejecución entre redeploys)."""
+    import time
+    import uuid
+    ts = now if now is not None else int(time.time())
+    body = json.dumps(
+        {"a": action, "p": payload, "t": ts, "u": str(user_id), "n": uuid.uuid4().hex},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
     b64 = base64.urlsafe_b64encode(body).decode("ascii")
     sig = hmac.new(_secret(), b64.encode("ascii"), hashlib.sha256).hexdigest()
     return f"{b64}.{sig}"
 
 
-def verify_token(token: str, *, now: int | None = None) -> tuple[str, dict]:
-    """Valida firma + TTL + no-reuso y devuelve (action, payload).
-    Raises ValidationError. NO marca el token como usado (eso lo hace
-    mark_used tras ejecutar OK)."""
+def verify_token(token: str, *, user_id: str = "", used_nonces: list | None = None,
+                 now: int | None = None) -> tuple[str, dict, str]:
+    """Valida firma + TTL + dueño + no-reuso y devuelve (action, payload, nonce).
+    `used_nonces`: nonces ya consumidos del usuario (persistidos en prefs).
+    Raises ValidationError. NO marca el token como usado."""
+    import time
     try:
         b64, sig = str(token).split(".", 1)
     except (ValueError, AttributeError) as e:
@@ -264,19 +278,42 @@ def verify_token(token: str, *, now: int | None = None) -> tuple[str, dict]:
     except (ValueError, TypeError) as e:
         raise ValidationError("Token de confirmación corrupto.") from e
     ts = int(data.get("t", 0))
-    cur = now if now is not None else int(__import__("time").time())
+    cur = now if now is not None else int(time.time())
     if cur - ts > TOKEN_TTL_SECONDS:
         raise ValidationError(
             "La confirmación venció (pasaron más de 30 min). Pedime la acción de nuevo."
         )
-    if token in _USED_TOKENS:
+    # El token pertenece a quien lo generó: otro usuario no puede consumirlo.
+    if user_id and str(data.get("u", "")) != str(user_id):
+        raise ValidationError("Token de confirmación inválido o adulterado.")
+    nonce = str(data.get("n", ""))
+    if token in _USED_TOKENS or (nonce and used_nonces and nonce in used_nonces):
         raise ValidationError("Esa acción ya se ejecutó; no la repito.")
-    return data["a"], data["p"]
+    return data["a"], data["p"], nonce
 
 
 def mark_used(token: str) -> None:
-    """Marca un token como consumido tras ejecutar la acción OK."""
+    """Capa in-memory del anti-reuso (rápida; la persistente es el nonce)."""
     _USED_TOKENS.add(token)
     _USED_ORDER.append(token)
     if len(_USED_ORDER) > _USED_MAX:
         _USED_TOKENS.discard(_USED_ORDER.pop(0))
+
+
+def get_used_nonces(user) -> list:
+    """Nonces consumidos del usuario (persistidos en automation_prefs)."""
+    prefs = getattr(user, "automation_prefs", None) or {}
+    v = prefs.get(_NONCES_KEY)
+    return v if isinstance(v, list) else []
+
+
+def persist_nonce(user, nonce: str) -> None:
+    """Agrega el nonce consumido a las prefs del usuario (cap _NONCES_MAX).
+    El caller debe commitear la sesión (idealmente junto con la escritura)."""
+    if not nonce:
+        return
+    prefs = dict(getattr(user, "automation_prefs", None) or {})
+    lst = [n for n in (prefs.get(_NONCES_KEY) or []) if isinstance(n, str)]
+    lst.append(nonce)
+    prefs[_NONCES_KEY] = lst[-_NONCES_MAX:]
+    user.automation_prefs = prefs

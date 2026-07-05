@@ -40,6 +40,10 @@ class Payment(Base):
     )
     categoria: Mapped[str | None] = mapped_column(String(100), nullable=True)
     notas: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Audit trail: 'sol' = registrado por el agente SOL (via confirm_action);
+    # NULL = carga manual del usuario.
+    source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

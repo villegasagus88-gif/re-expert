@@ -54,12 +54,13 @@ def test_telefono_normalizado():
 def test_token_roundtrip_e_integridad():
     p, _ = confirm.validate("register_payment", {
         "concepto": "x", "monto": 5000, "fecha": "2026-07-10", "estado": "pendiente"})
-    tok = confirm.make_token("register_payment", p)
-    action, payload = confirm.verify_token(tok)
+    tok = confirm.make_token("register_payment", p, user_id="user-a")
+    action, payload, nonce = confirm.verify_token(tok, user_id="user-a")
     assert action == "register_payment" and payload["monto"] == 5000.0
+    assert nonce  # todo token lleva nonce único
     # firma adulterada → rechazo
     with pytest.raises(confirm.ValidationError):
-        confirm.verify_token(tok[:-4] + "dead")
+        confirm.verify_token(tok[:-4] + "dead", user_id="user-a")
     # payload adulterado (cambiar el monto) invalida la firma
     import base64
     import json
@@ -69,7 +70,40 @@ def test_token_roundtrip_e_integridad():
     fake_b64 = base64.urlsafe_b64encode(
         json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).decode()
     with pytest.raises(confirm.ValidationError):
-        confirm.verify_token(f"{fake_b64}.{sig}")
+        confirm.verify_token(f"{fake_b64}.{sig}", user_id="user-a")
+
+
+def test_token_atado_al_usuario():
+    """El token de A no lo puede confirmar B (u va firmado en el body)."""
+    p, _ = confirm.validate("register_payment", {
+        "concepto": "x", "monto": 5000, "fecha": "2026-07-10", "estado": "pendiente"})
+    tok = confirm.make_token("register_payment", p, user_id="user-a")
+    with pytest.raises(confirm.ValidationError):
+        confirm.verify_token(tok, user_id="user-b")
+
+
+def test_nonces_distintos_y_rechazo_por_nonce_persistido():
+    """Dos tokens del mismo payload llevan nonces distintos; un nonce ya
+    consumido (persistido en prefs) rechaza el token aunque el proceso
+    se haya reiniciado (no depende de _USED_TOKENS in-memory)."""
+    p, _ = confirm.validate("register_payment", {
+        "concepto": "x", "monto": 5000, "fecha": "2026-07-10", "estado": "pendiente"})
+    t1 = confirm.make_token("register_payment", p, user_id="u")
+    t2 = confirm.make_token("register_payment", p, user_id="u")
+    assert t1 != t2
+    _, _, n1 = confirm.verify_token(t1, user_id="u")
+    # simular redeploy: el nonce quedó en prefs, la memoria está limpia
+    with pytest.raises(confirm.ValidationError):
+        confirm.verify_token(t1, user_id="u", used_nonces=[n1])
+    # el otro token sigue vivo
+    assert confirm.verify_token(t2, user_id="u", used_nonces=[n1])[0] == "register_payment"
+
+
+def test_persist_nonce_en_prefs():
+    user = SimpleNamespace(id=uuid4(), automation_prefs={"daily_summary": True})
+    confirm.persist_nonce(user, "abc123")
+    assert "abc123" in confirm.get_used_nonces(user)
+    assert user.automation_prefs["daily_summary"] is True  # no pisa lo previo
 
 
 # ── run_tool: preview no ejecuta; confirm ejecuta ──
@@ -99,7 +133,7 @@ async def test_run_tool_write_action_no_ejecuta_devuelve_preview():
 @pytest.mark.anyio
 async def test_run_tool_confirm_ejecuta_con_token_valido():
     db = _FakeDB()
-    user = SimpleNamespace(id=uuid4())
+    user = SimpleNamespace(id=uuid4(), automation_prefs=None)
     prev = await agent_tools.run_tool("register_payment", db, user, {
         "concepto": "Hormigón", "monto": 5000, "fecha": "2026-07-10", "estado": "pendiente"})
     out = await agent_tools.run_tool("confirm_action", db, user,
@@ -107,6 +141,20 @@ async def test_run_tool_confirm_ejecuta_con_token_valido():
     assert out.get("ok") is True and out.get("confirmed") is True
     assert len(db.added) == 1  # ahora SÍ se escribió el Payment
     assert str(db.added[0].concepto) == "Hormigón"
+    # el nonce consumido quedó persistido en las prefs (anti-replay post-redeploy)
+    assert len(confirm.get_used_nonces(user)) == 1
+
+
+@pytest.mark.anyio
+async def test_run_tool_confirm_rechaza_token_de_otro_usuario():
+    db = _FakeDB()
+    user_a = SimpleNamespace(id=uuid4(), automation_prefs=None)
+    user_b = SimpleNamespace(id=uuid4(), automation_prefs=None)
+    prev = await agent_tools.run_tool("register_payment", db, user_a, {
+        "concepto": "x", "monto": 6100, "fecha": "2026-07-10", "estado": "pendiente"})
+    out = await agent_tools.run_tool("confirm_action", db, user_b,
+                                     {"confirm_token": prev["confirm_token"]})
+    assert "error" in out and db.added == []
 
 
 @pytest.mark.anyio
@@ -122,21 +170,21 @@ def test_token_ttl_y_reuso():
     from services.agent_service import append_confirm_marker, strip_confirm_marker
     p, _ = confirm.validate("register_payment", {
         "concepto": "x", "monto": 7777, "fecha": "2026-07-10", "estado": "pendiente"})
-    tok = confirm.make_token("register_payment", p)
+    tok = confirm.make_token("register_payment", p, user_id="u")
     # marcador oculto persiste el token y el strip lo saca
     persisted = append_confirm_marker("¿Confirmás?", [tok])
     assert tok in persisted and "<!--sol-confirm:" in persisted
     assert strip_confirm_marker(persisted) == "¿Confirmás?"
     # token fresco OK
-    assert confirm.verify_token(tok)[0] == "register_payment"
+    assert confirm.verify_token(tok, user_id="u")[0] == "register_payment"
     # vencido → rechazo
-    viejo = confirm.make_token("register_payment", p, now=int(_t.time()) - 2000)
+    viejo = confirm.make_token("register_payment", p, user_id="u", now=int(_t.time()) - 2000)
     with pytest.raises(confirm.ValidationError):
-        confirm.verify_token(viejo)
+        confirm.verify_token(viejo, user_id="u")
     # usado → rechazo
     confirm.mark_used(tok)
     with pytest.raises(confirm.ValidationError):
-        confirm.verify_token(tok)
+        confirm.verify_token(tok, user_id="u")
 
 
 @pytest.mark.anyio

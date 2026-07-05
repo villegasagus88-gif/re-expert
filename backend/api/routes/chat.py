@@ -127,6 +127,13 @@ async def _get_or_create_conversation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversación no encontrada",
         )
+    # Las conversaciones de SOL (agente) tienen su propio endpoint y prompt;
+    # mezclar el chat principal sobre ellas corrompe el historial del agente.
+    if getattr(conv, "section", None) in ("sol", "sol_telegram"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversación no encontrada",
+        )
     return conv
 
 

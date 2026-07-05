@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date as Date
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -752,6 +752,7 @@ async def _tool_register_payment(db: AsyncSession, user: User, **inputs: Any) ->
             proveedor=inputs.get("proveedor"),
             categoria=inputs.get("categoria"),
             notas=inputs.get("notas"),
+            source="sol",  # audit trail: este pago lo registró el agente
         )
         db.add(p)
         await db.commit()
@@ -1344,7 +1345,11 @@ async def run_tool(
     # 1) Confirmación → verificar token y ejecutar la escritura real.
     if name == "confirm_action":
         try:
-            action, payload = _confirm.verify_token(inputs.get("confirm_token", ""))
+            action, payload, nonce = _confirm.verify_token(
+                inputs.get("confirm_token", ""),
+                user_id=str(user.id),
+                used_nonces=_confirm.get_used_nonces(user),
+            )
         except _confirm.ValidationError as e:
             return {"error": str(e)}
         impl = TOOL_IMPLS.get(action)
@@ -1352,12 +1357,18 @@ async def run_tool(
             return {"error": f"Acción a confirmar desconocida: {action}"}
         try:
             res = await impl(db, user, **payload)
-            if isinstance(res, dict):
-                res.setdefault("confirmed", True)
-            # Marcar el token como usado SOLO si la escritura salió bien: evita
-            # re-ejecutar la misma acción (doble pago) si reaparece en el historial.
-            if not (isinstance(res, dict) and res.get("error")):
+            ok = not (isinstance(res, dict) and res.get("error"))
+            if ok:
+                if isinstance(res, dict):
+                    res.setdefault("confirmed", True)
+                # Anti doble-ejecución: capa in-memory + nonce PERSISTIDO en las
+                # prefs del usuario (sobrevive redeploys dentro del TTL).
                 _confirm.mark_used(inputs.get("confirm_token", ""))
+                _confirm.persist_nonce(user, nonce)
+                try:
+                    await db.commit()
+                except Exception:  # noqa: BLE001 — persistir el nonce es best-effort
+                    await db.rollback()
             return res
         except Exception as e:  # noqa: BLE001
             await db.rollback()  # no envenenar la sesión para las tools siguientes
@@ -1374,7 +1385,7 @@ async def run_tool(
             "needs_confirmation": True,
             "action": name,
             "resumen": resumen,
-            "confirm_token": _confirm.make_token(name, payload),
+            "confirm_token": _confirm.make_token(name, payload, user_id=str(user.id)),
         }
 
     # 3) Tools de lectura / bajo riesgo → ejecución directa.
