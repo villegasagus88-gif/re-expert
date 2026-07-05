@@ -91,6 +91,9 @@ async def list_conversations(
     page: int = Query(1, ge=1, description="Pagina (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items por pagina"),
     section: str | None = Query(None, description="Filtrar por seccion"),
+    exclude_sol: bool = Query(
+        False, description="Excluir conversaciones del agente SOL (sol / sol_telegram)"
+    ),
     workspace_id: str | None = Query(
         None,
         description=(
@@ -103,6 +106,8 @@ async def list_conversations(
     base_filter = Conversation.user_id == current_user.id
     if section:
         base_filter = base_filter & (Conversation.section == section)
+    if exclude_sol:
+        base_filter = base_filter & Conversation.section.notin_(["sol", "sol_telegram"])
     if workspace_id is not None:
         if workspace_id == "none":
             base_filter = base_filter & Conversation.workspace_id.is_(None)
