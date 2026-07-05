@@ -461,6 +461,7 @@ async def run_agent(
         "tokens_used": total_input + total_output,
         "final_text": full_text,
         "pending_confirmations": pendientes,
+        "model": getattr(provider, "model", provider.name),
     }
 
 

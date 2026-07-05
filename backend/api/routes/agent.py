@@ -58,6 +58,10 @@ async def _get_or_create_conv(
     conv = await db.get(Conversation, conversation_id)
     if conv is None or conv.user_id != user_id:
         raise HTTPException(404, "Conversación no encontrada")
+    # SOL no debe escribir en conversaciones del Chat Experto (otra sección):
+    # mezclaría hilos y contaminaría el dominio del chat.
+    if conv.section != "sol":
+        raise HTTPException(404, "Conversación no encontrada")
     return conv
 
 
@@ -76,11 +80,16 @@ async def _load_history(db: AsyncSession, conv_id, limit: int = MAX_HISTORY_MESS
     )
     rows.reverse()
     # Convertir a formato Anthropic. Filtramos contenidos vacíos por las dudas.
-    return [
+    msgs = [
         {"role": m.role, "content": m.content}
         for m in rows
         if m.content
     ]
+    # El historial DEBE arrancar con rol "user" (Anthropic rechaza si empieza
+    # con assistant). Al truncar a N puede quedar un assistant colgado adelante.
+    while msgs and msgs[0]["role"] != "user":
+        msgs.pop(0)
+    return msgs
 
 
 @router.post(
@@ -118,6 +127,7 @@ async def sol_agent(
         in_tok = 0
         out_tok = 0
         pending_confirms: list = []
+        used_model = settings.ANTHROPIC_MODEL
         try:
             async with asyncio.timeout(STREAM_TIMEOUT_SECONDS):
                 async for ev in run_agent(db, current_user, history, body.message):
@@ -127,6 +137,7 @@ async def sol_agent(
                         in_tok = ev.get("input_tokens", 0)
                         out_tok = ev.get("output_tokens", 0)
                         pending_confirms = ev.get("pending_confirmations") or []
+                        used_model = ev.get("model") or used_model
                     yield _sse(ev)
         except TimeoutError:
             yield _sse({"type": "error", "message": "Timeout SOL agent"})
@@ -161,7 +172,7 @@ async def sol_agent(
                 user_id=current_user.id,
                 conversation_id=conv.id,
                 message_id=assistant_id,
-                model=settings.ANTHROPIC_MODEL,
+                model=used_model,  # el modelo REAL que respondió (Anthropic o Gemini)
                 input_tokens=in_tok,
                 output_tokens=out_tok,
             )
