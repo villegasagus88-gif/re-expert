@@ -4781,14 +4781,18 @@ function solMsgHTML(role,content){
 }
 
 function parseSolMd(t){
-  let html=typeof marked!=='undefined'?(marked.setOptions({breaks:true,gfm:true}),marked.parse(t)):esc(t).replace(/\n/g,'<br>');
-  // Sanitización XSS antes de inyectar el SVG decorativo (que sí es nuestro).
-  if(typeof DOMPurify!=='undefined'){
-    html=DOMPurify.sanitize(html,{
-      ADD_ATTR:['target','rel'],
-      ALLOWED_URI_REGEXP:/^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-    });
+  // Ocultar el marcador interno de confirmación por si aparece en el texto.
+  t=String(t||'').replace(/\n?<!--sol-confirm:[^>]*-->/g,'');
+  // FAIL-CLOSED: si DOMPurify no cargó (CDN caído/bloqueado) NO inyectamos el
+  // HTML del LLM sin sanitizar — degradamos a texto plano escapado.
+  if(typeof DOMPurify==='undefined'){
+    return esc(t).replace(/\n/g,'<br>');
   }
+  let html=typeof marked!=='undefined'?(marked.setOptions({breaks:true,gfm:true}),marked.parse(t)):esc(t).replace(/\n/g,'<br>');
+  html=DOMPurify.sanitize(html,{
+    ADD_ATTR:['target','rel'],
+    ALLOWED_URI_REGEXP:/^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+  });
   // El reemplazo decorativo se hace DESPUÉS del sanitize porque el SVG
   // que inyectamos es controlado por nosotros (no proviene del LLM).
   html=html.replace(/\[CARGADO→([^\]]+)\]/g,'<div class="sol-routed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Dato cargado en → $1</div>');
@@ -4841,10 +4845,15 @@ const SOL_TOOL_LABELS = {
   query_payments:              {label:'Buscando pagos',                  icon:'💸'},
   query_milestones:            {label:'Buscando hitos',                  icon:'📅'},
   query_materials:             {label:'Buscando materiales',             icon:'🧱'},
-  register_payment:            {label:'Registrando pago',                icon:'💸', refresh:'pagos'},
-  register_milestone:          {label:'Registrando hito',                icon:'📅', refresh:'proyecto'},
-  register_material_price:     {label:'Registrando material',            icon:'🧱', refresh:'materiales'},
-  schedule_reminder:           {label:'Programando recordatorio',        icon:'⏰', emit:'sol:reminders-changed'},
+  get_payments_summary:        {label:'Calculando totales de pagos',     icon:'🧮'},
+  // Write actions: ahora PREVISUALIZAN (piden confirmación); no escriben todavía.
+  register_payment:            {label:'Preparando registro de pago',     icon:'💸'},
+  register_milestone:          {label:'Preparando registro de hito',     icon:'📅'},
+  register_material_price:     {label:'Preparando registro de material', icon:'🧱'},
+  schedule_reminder:           {label:'Preparando recordatorio',         icon:'⏰'},
+  add_contact:                 {label:'Preparando contacto',             icon:'👥'},
+  update_contact:              {label:'Preparando cambios de contacto',  icon:'✏️'},
+  confirm_action:              {label:'Confirmando y guardando',         icon:'✅', refreshAll:true, emit:'sol:reminders-changed'},
   list_reminders:              {label:'Listando recordatorios',          icon:'📋'},
   cancel_reminder:             {label:'Cancelando recordatorio',         icon:'🗑️', emit:'sol:reminders-changed'},
   generate_pdf_report:         {label:'Generando PDF',                   icon:'📄'},
@@ -4852,15 +4861,17 @@ const SOL_TOOL_LABELS = {
   send_message_now:            {label:'Enviando mensaje',                icon:'📨'},
   get_user_channels:           {label:'Consultando canales',             icon:'🔌'},
   plan_route:                  {label:'Armando ruta',                    icon:'🗺️'},
+  // Contexto Jarvis
+  get_news:                    {label:'Leyendo noticias del mercado',    icon:'📰'},
+  search_chats:                {label:'Buscando en tus chats',           icon:'🔎'},
+  get_opportunities:           {label:'Revisando tus deals',             icon:'📈'},
   // Identidad / preferencias
   get_my_profile:              {label:'Leyendo tu perfil',               icon:'👤'},
   set_my_phone:                {label:'Guardando tu teléfono',           icon:'📱'},
   set_automation_prefs:        {label:'Guardando preferencias',          icon:'⚙️'},
-  // Contactos
-  add_contact:                 {label:'Agregando contacto',              icon:'👥'},
+  // Contactos (lectura)
   list_contacts:               {label:'Buscando en agenda',              icon:'👥'},
   find_contact:                {label:'Buscando contacto',               icon:'🔍'},
-  update_contact:              {label:'Actualizando contacto',           icon:'✏️'},
   // Compartir
   share_pdf_with_contact:      {label:'Preparando PDF para enviar',      icon:'📤'},
   compose_message_to_contact:  {label:'Componiendo mensaje',             icon:'💬'},
@@ -4903,6 +4914,10 @@ function solAppendToolChip(toolName, status, result){
       tail = ` · ${escapeHtml(result.name)}${result.phone?' '+escapeHtml(result.phone):''}`;
     } else if (result.already_exists){
       tail = ` · ya existía`;
+    } else if (result.needs_confirmation){
+      tail = ` · <span class="sol-tool-await">esperando tu confirmación</span>`;
+    } else if (result.confirmed){
+      tail = ' ✓ guardado';
     } else if (result.ok && result.id){
       tail = ' ✓';
     } else if (Array.isArray(result.items)){
@@ -4911,7 +4926,8 @@ function solAppendToolChip(toolName, status, result){
   } else if (status === 'done' && result && result.error){
     tail = ` <span class="sol-tool-err">❌ ${escapeHtml(String(result.error).slice(0,80))}</span>`;
   }
-  wrap.innerHTML = `<span class="sol-tool-chip ${status}">${cfg.icon} ${cfg.label}${status==='running'?'…':''}${tail}</span>`;
+  // cfg.label puede ser el nombre crudo de la tool (fallback) → escapar.
+  wrap.innerHTML = `<span class="sol-tool-chip ${status}">${cfg.icon} ${escapeHtml(cfg.label)}${status==='running'?'…':''}${tail}</span>`;
   m.appendChild(wrap);
   $('#solPageContainer').scrollTop = $('#solPageContainer').scrollHeight;
   return wrap;
@@ -4993,12 +5009,18 @@ async function solSend(text){
               toolChips.pop();
             }
             solAppendToolChip(ev.name, 'done', ev.result);
-            // Side effects post-tool
+            // Side effects post-tool. La escritura real ocurre en confirm_action:
+            // ahí refrescamos las vistas que pudieron cambiar (pagos/proyecto/materiales).
             const cfg = SOL_TOOL_LABELS[ev.name];
-            if(cfg && cfg.refresh && ev.result && !ev.result.error){
+            const okResult = ev.result && !ev.result.error;
+            if(cfg && cfg.refresh && okResult){
               window.dispatchEvent(new CustomEvent('sol:data-ingested',{detail:{view:cfg.refresh}}));
             }
-            if(cfg && cfg.emit){
+            if(cfg && cfg.refreshAll && okResult){
+              ['pagos','proyecto','materiales'].forEach(v=>
+                window.dispatchEvent(new CustomEvent('sol:data-ingested',{detail:{view:v}})));
+            }
+            if(cfg && cfg.emit && okResult){
               window.dispatchEvent(new CustomEvent(cfg.emit,{detail:ev.result||{}}));
             }
             pendingToolName = null;
@@ -5023,15 +5045,21 @@ async function solSend(text){
     solFinalizeStreaming();
     solState._toolModeBubbleClosed = false;
   }catch(e){
-    // Igual que el chat: conservar el parcial y avisar en español, sin
-    // mostrar 'Failed to fetch' como si fuera la respuesta del asistente.
+    // Distinguir un error REAL del backend (rate limit, timeout, error del
+    // proveedor) de un corte de red: mostrar el mensaje del backend en vez de
+    // enmascarar todo como "problema de conexión".
+    const raw=String(e&&e.message||'');
+    const esRed=/Failed to fetch|NetworkError|network|load failed/i.test(raw);
     const avisoSol='⚠️ *Se cortó la conexión antes de terminar. Volvé a intentar.*';
     if(typeof full==='string'&&full){
       solUpdateStreaming(full+'\n\n'+avisoSol);
       const lastS=solState.messages[solState.messages.length-1];
       if(!lastS||lastS.role!=='assistant'||lastS.content!==full)solState.messages.push({role:'assistant',content:full});
-    }else{
+    }else if(esRed||!raw){
       solUpdateStreaming('No pudimos completar la respuesta por un problema de conexión. Probá de nuevo en un momento.');
+    }else{
+      // Mensaje real del backend (ya viene en español: rate limit, timeout, etc.)
+      solUpdateStreaming('⚠️ '+raw);
     }
     solFinalizeStreaming();
     solState._toolModeBubbleClosed = false;
@@ -6491,7 +6519,7 @@ async function solOpenTelegramFlow(){
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const detail=typeof e.detail==='object'?(e.detail.hint||JSON.stringify(e.detail)):(e.detail||'No disponible');
-      body.innerHTML=`<div class="sol-empty">⚠️ Telegram no está habilitado todavía.<br><small>${detail}</small></div>`;
+      body.innerHTML=`<div class="sol-empty">⚠️ Telegram no está habilitado todavía.<br><small>${escapeHtml(String(detail))}</small></div>`;
       return;
     }
     const data=await r.json();
@@ -6502,7 +6530,7 @@ async function solOpenTelegramFlow(){
         <li>Pulsá <b>INICIAR</b> dentro de Telegram.</li>
         <li>Listo: vas a quedar verificado y SOL ya puede escribirte.</li>
       </ol>
-      <a class="sol-tg-deeplink" href="${data.deep_link}" target="_blank" rel="noopener">
+      <a class="sol-tg-deeplink" href="${/^https:\/\/t\.me\//.test(String(data.deep_link||''))?String(data.deep_link).replace(/"/g,'&quot;'):'#'}" target="_blank" rel="noopener">
         📲 Abrir Telegram para vincular
       </a>
       <p style="margin-top:14px;font-size:11px;color:var(--text-3)">El link expira en 1 hora.</p>

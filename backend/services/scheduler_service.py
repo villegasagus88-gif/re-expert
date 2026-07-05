@@ -69,17 +69,35 @@ async def _process_due_reminders(db: AsyncSession) -> int:
                 r.status = "sent"
                 r.sent_at = datetime.now(timezone.utc)
                 r.last_error = None
+                fired += 1
             else:
-                r.status = "failed"
-                r.last_error = str(result)
+                _mark_retry_or_fail(r, str(result))
             await db.commit()
-            fired += 1
         except Exception as e:
             logger.exception("Reminder %s dispatch failed", r.id)
-            r.status = "failed"
-            r.last_error = str(e)
+            _mark_retry_or_fail(r, str(e))
             await db.commit()
     return fired
+
+
+_REMINDER_MAX_RETRIES = 3
+_REMINDER_RETRY_DELAY = timedelta(minutes=5)
+
+
+def _mark_retry_or_fail(r: Reminder, error: str) -> None:
+    """Un fallo transitorio de dispatch NO mata el recordatorio: reintenta hasta
+    _REMINDER_MAX_RETRIES corriendo due_at 5 min; recién después queda failed.
+    El contador vive en meta (JSONB) — sin migración."""
+    meta = dict(r.meta or {})
+    attempts = int(meta.get("dispatch_attempts", 0)) + 1
+    meta["dispatch_attempts"] = attempts
+    r.meta = meta
+    r.last_error = error[:1000]
+    if attempts >= _REMINDER_MAX_RETRIES:
+        r.status = "failed"
+    else:
+        # sigue pending; se re-agarra en un tick futuro
+        r.due_at = datetime.now(timezone.utc) + _REMINDER_RETRY_DELAY
 
 
 # Cleanup tablas con TTL natural — corre 1 vez por día desde el mismo
@@ -114,10 +132,16 @@ async def _run_daily_digest(db: AsyncSession) -> int:
             )
         )
     ).all()
+    today_ar = (datetime.now(timezone.utc) - timedelta(hours=3)).date().isoformat()
     sent = 0
     for user, _ch in rows:
         prefs = user.automation_prefs or {}
         if not prefs.get("daily_summary"):
+            continue
+        # Idempotencia REAL (sobrevive reinicios/deploys y crashes a mitad del
+        # loop): marca por usuario en el JSONB de prefs. La marca global
+        # in-memory del tick es solo una optimización.
+        if prefs.get("_last_digest_date") == today_ar:
             continue
         try:
             pack = await build_context_pack(db, user)
@@ -132,8 +156,11 @@ async def _run_daily_digest(db: AsyncSession) -> int:
                                  title="", body=body)
             if res.get("ok"):
                 sent += 1
+                user.automation_prefs = {**prefs, "_last_digest_date": today_ar}
+                await db.commit()
         except Exception:  # noqa: BLE001 — un usuario no debe frenar al resto
             logger.exception("Daily digest falló para user %s", user.id)
+            await db.rollback()
     return sent
 _STRIPE_EVENTS_RETENTION = timedelta(days=30)
 _last_cleanup_at: datetime | None = None

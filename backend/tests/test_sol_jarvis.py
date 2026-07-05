@@ -12,6 +12,7 @@ import services.agent_service as agent_service
 import services.agent_tools as agent_tools
 import services.scheduler_service as scheduler_service
 import services.telegram_service as telegram_service
+from config.settings import settings as _settings
 
 
 # ── render_context_pack (pura) ──
@@ -223,6 +224,7 @@ async def test_get_opportunities_shape():
 
 @pytest.mark.anyio
 async def test_telegram_mensaje_libre_sin_pairing(monkeypatch):
+    monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', True, raising=False)
     sent = []
     async def _fake_send(chat_id, text):
         sent.append(text); return {"ok": True}
@@ -245,6 +247,7 @@ async def test_telegram_mensaje_libre_sin_pairing(monkeypatch):
 
 @pytest.mark.anyio
 async def test_telegram_dedupe_update_id(monkeypatch):
+    monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', True, raising=False)
     """El mismo update_id no se procesa dos veces (Telegram re-entrega ante error)."""
     async def _fake_send(chat_id, text): return {"ok": True}
     monkeypatch.setattr(telegram_service, "send_message", _fake_send)
@@ -267,6 +270,7 @@ async def test_telegram_dedupe_update_id(monkeypatch):
 
 @pytest.mark.anyio
 async def test_telegram_mensaje_libre_despacha_agente(monkeypatch):
+    monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', True, raising=False)
     calls = {}
     async def _fake_reply(chat_id, user_id, text):
         calls["args"] = (chat_id, str(user_id), text)
@@ -295,6 +299,7 @@ async def test_telegram_mensaje_libre_despacha_agente(monkeypatch):
 
 @pytest.mark.anyio
 async def test_telegram_mensaje_muy_largo(monkeypatch):
+    monkeypatch.setattr(_settings, 'TELEGRAM_AGENT_ENABLED', True, raising=False)
     sent = []
     async def _fake_send(chat_id, text):
         sent.append(text); return {"ok": True}
@@ -329,6 +334,8 @@ async def test_daily_digest_respeta_prefs(monkeypatch):
             class _R:
                 def all(self): return [(u_si, ch), (u_no, ch), (u_vacio, ch)]
             return _R()
+        async def commit(self): pass
+        async def rollback(self): pass
 
     async def _fake_pack(db, user):
         return "- Usuario: X · plan pro"
@@ -343,3 +350,9 @@ async def test_daily_digest_respeta_prefs(monkeypatch):
     assert n == 1
     assert dispatched[0][0] == u_si.id and dispatched[0][1] == "telegram"
     assert "Tu resumen de hoy" in dispatched[0][2]
+
+    # IDEMPOTENCIA: el segundo run del mismo día (reinicio/deploy) no re-manda —
+    # la marca _last_digest_date quedó en las prefs del usuario.
+    assert u_si.automation_prefs.get("_last_digest_date")
+    n2 = await scheduler_service._run_daily_digest(_DB())
+    assert n2 == 0 and len(dispatched) == 1

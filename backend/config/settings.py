@@ -124,6 +124,10 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_BASE_URL: str = ""
     # Secret arbitrario para validar requests del webhook (header X-Telegram-Bot-Api-Secret-Token)
     TELEGRAM_WEBHOOK_SECRET: str = ""
+    # Agente SOL por mensaje libre de Telegram. APAGADO por defecto (decisión
+    # 2026-07-04): el pairing y las notificaciones salientes funcionan igual;
+    # el mensaje libre responde un texto fijo hasta prender este flag.
+    TELEGRAM_AGENT_ENABLED: bool = False
 
     # ===== TWILIO / WHATSAPP (opcional) =====
     TWILIO_ACCOUNT_SID: str = ""

@@ -286,6 +286,17 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
     if not text:
         return {"ok": True, "skipped": "empty_text"}
 
+    # Flag: el agente por Telegram está apagado por decisión de producto hasta
+    # nuevo aviso (TELEGRAM_AGENT_ENABLED). El pairing de arriba y los envíos
+    # salientes (recordatorios/digest) NO dependen de esto.
+    if not settings.TELEGRAM_AGENT_ENABLED:
+        await send_message(
+            chat_id,
+            "Soy SOL 👋 Por acá te aviso recordatorios y resúmenes. "
+            "Para chatear conmigo, entrá a RE Expert → sección SOL.",
+        )
+        return {"ok": True, "agent_disabled": True}
+
     row = (
         await db.execute(
             select(UserChannel).where(
