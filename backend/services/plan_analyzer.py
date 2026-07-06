@@ -246,12 +246,25 @@ _COMPARE_TOOL = {
 }
 
 
+_GOAL_LABELS = {
+    "entender": "entender el plano", "detectar_errores": "detectar errores",
+    "constructibilidad": "revisar constructibilidad", "comparar_versiones": "comparar versiones",
+    "reunion_tecnica": "preparar reunión técnica", "presupuestar": "revisar antes de presupuestar",
+    "iniciar_obra": "revisar antes de iniciar obra",
+}
+
+
 def _project_context(project: Any) -> str:
+    goals = [_GOAL_LABELS.get(g, g) for g in (getattr(project, "analysis_goals", None) or [])]
+    custom = getattr(project, "analysis_goal_custom", "") or ""
+    if not goals:
+        goals = [_GOAL_LABELS.get(project.analysis_goal, project.analysis_goal)]
+    goal_txt = ", ".join(goals) + (f'; objetivo propio del usuario: "{custom}"' if custom else "")
     return (
         f"CONTEXTO DEL PROYECTO: '{project.name}' — tipo de obra: {project.obra_type}; "
         f"ubicación: {project.location or 'no informada'}; superficie estimada: "
         f"{project.estimated_area or 'no informada'}; etapa: {project.stage}; "
-        f"objetivo del análisis: {project.analysis_goal}."
+        f"objetivo(s) del análisis: {goal_txt}."
         + (f" Descripción: {project.description}" if project.description else "")
     )
 
@@ -339,6 +352,135 @@ async def analyze_plan(plan: Any, project: Any, mode: str, profile: str) -> dict
         tool_choice={"type": "tool", "name": "informe_analisis_plano"},
     )
     return _extract_tool_input(resp, "informe_analisis_plano")
+
+
+# Tool del análisis INTEGRAL: igual al de plano único, pero cada observación
+# referencia a qué plano pertenece (plan_ref) y el score exige coherencia.
+_PROJECT_ALERT_PROPS = {**_ALERT_PROPS, "plan_ref": {
+    "type": "string",
+    "description": "Nombre EXACTO del archivo del plano al que corresponde la observación (de la lista provista), o \"\" si es general del proyecto",
+}}
+_PROJECT_TOOL = {
+    "name": "informe_analisis_proyecto",
+    "description": "Informe estructurado del análisis integral de todos los planos de un proyecto.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string", "description": "Resumen ejecutivo del proyecto completo (8-14 oraciones): qué documentación hay, estado general, coordinación entre especialidades y conclusión"},
+            "detected_data": {
+                "type": "object",
+                "properties": {
+                    "que_es": {"type": "string", "description": "Qué documentación compone el proyecto"},
+                    "que_muestra": {"type": "string"},
+                    "ambientes": {"type": "array", "items": {"type": "string"}},
+                    "medidas_relevantes": {"type": "array", "items": {"type": "string"}},
+                    "niveles": {"type": "string"},
+                    "elementos_importantes": {"type": "array", "items": {"type": "string"}},
+                    "cobertura_documental": {"type": "string", "description": "Qué especialidades están cubiertas y cuáles faltan"},
+                },
+                "required": ["que_es", "que_muestra", "ambientes", "cobertura_documental"],
+            },
+            "general_risk": {"type": "string", "enum": ["bajo", "medio", "alto", "critico"]},
+            "confidence": {"type": "integer", "minimum": 0, "maximum": 100},
+            "plan_score": {
+                "type": "object",
+                "properties": {
+                    "calidad_general": _SCORE_AXIS,
+                    "comprension_documental": _SCORE_AXIS,
+                    "coherencia": _SCORE_AXIS,
+                    "constructibilidad": _SCORE_AXIS,
+                    "eficiencia_comercial": _SCORE_AXIS,
+                },
+                "required": ["calidad_general", "comprension_documental", "coherencia", "constructibilidad"],
+            },
+            "strengths": {"type": "array", "items": {"type": "string"}},
+            "alerts": {
+                "type": "array", "maxItems": 25,
+                "items": {"type": "object", "properties": _PROJECT_ALERT_PROPS,
+                          "required": ["title", "description", "priority", "confidence", "recommendation", "plan_ref"]},
+                "description": "Observaciones accionables de TODO el proyecto, priorizadas. Incluir especialmente inconsistencias ENTRE planos (arquitectura vs sanitaria, arquitectura vs estructura, etc.)",
+            },
+            "missing_info": {"type": "array", "items": {"type": "string"}},
+            "inconsistencies": {"type": "array", "items": {"type": "string"},
+                                "description": "Inconsistencias entre láminas/especialidades detectadas"},
+            "recommendations": {"type": "array", "items": {"type": "string"}},
+            "suggested_questions": {
+                "type": "array", "maxItems": 12,
+                "items": {"type": "object", "properties": {
+                    "question": {"type": "string"}, "category": {"type": "string"},
+                    "priority": {"type": "string", "enum": ["critica", "alta", "media", "baja"]},
+                    "reason": {"type": "string"}, "responsible": {"type": "string"},
+                }, "required": ["question", "category", "priority", "reason", "responsible"]},
+            },
+            "checklist": {
+                "type": "array", "maxItems": 18,
+                "items": {"type": "object", "properties": {
+                    "item": {"type": "string"},
+                    "priority": {"type": "string", "enum": ["critica", "alta", "media", "baja"]},
+                }, "required": ["item", "priority"]},
+            },
+        },
+        "required": ["summary", "detected_data", "general_risk", "confidence", "plan_score",
+                     "strengths", "alerts", "missing_info", "inconsistencies",
+                     "recommendations", "suggested_questions", "checklist"],
+    },
+}
+
+
+async def analyze_project(plans: list[Any], project: Any, mode: str, profile: str,
+                          focus: str = "") -> dict:
+    """Análisis integral: TODOS los planos del proyecto en una sola pasada.
+
+    El valor diferencial es la COORDINACIÓN: cruzar arquitectura vs estructura
+    vs instalaciones y detectar inconsistencias que un análisis por lámina no ve.
+    """
+    from services.anthropic_service import get_client
+
+    mode_txt = _MODE_INSTRUCTIONS.get(mode, _MODE_INSTRUCTIONS["errores"])
+    profile_txt = _PROFILE_HINTS.get(profile, "")
+    frecuentes = load_frequent_errors()
+    biblioteca = ""
+    if frecuentes:
+        cats = sorted({e["category"] for e in frecuentes})
+        biblioteca = ("\nBIBLIOTECA DE ERRORES FRECUENTES (revisá activamente estos patrones "
+                      "y usá estas categorías): " + ", ".join(cats) + ".")
+
+    system = (
+        "Sos un revisor senior de documentación de obra en Argentina, especializado en "
+        "COORDINACIÓN entre especialidades. Vas a recibir TODOS los planos de un proyecto "
+        "(arquitectura, estructura, instalaciones, detalles…). Tu trabajo:\n"
+        "1. Entender el proyecto completo y su cobertura documental.\n"
+        "2. Detectar riesgos por lámina Y — sobre todo — INCONSISTENCIAS ENTRE LÁMINAS "
+        "(núcleos húmedos vs sanitaria, columnas vs layout, tableros vs eléctrica, "
+        "medidas que no coinciden entre plantas, versiones descoordinadas).\n"
+        "3. Convertir todo en observaciones ACCIONABLES con prioridad honesta. En cada "
+        "observación, plan_ref = nombre EXACTO del archivo al que pertenece (o \"\" si es "
+        "general del proyecto).\n\n" + _PRUDENCE + "\n\n" + mode_txt
+        + ("\n\n" + profile_txt if profile_txt else "") + biblioteca
+    )
+
+    content: list[dict] = []
+    for i, plan in enumerate(plans, 1):
+        content.append({"type": "text", "text": f"PLANO {i} — archivo: {plan.file_name} — {_plan_context(plan)}"})
+        content.append(_media_block(plan.file_type, plan.file_data))
+    focus_txt = f"\nFOCO PEDIDO POR EL USUARIO: {focus}" if focus else ""
+    content.append({"type": "text", "text": (
+        _project_context(project) + focus_txt
+        + f"\n\nAnalizá el proyecto COMPLETO ({len(plans)} planos adjuntos) y devolvé el "
+          "informe integral usando el tool. El eje 'coherencia' del plan_score es central: "
+          "fundamentalo con lo que viste al cruzar las láminas. El checklist y las preguntas "
+          "deben salir de ESTE proyecto, no genéricos."
+    )})
+
+    resp = await get_client().messages.create(
+        model=settings.ANTHROPIC_MODEL,
+        max_tokens=MAX_ANALYSIS_TOKENS,
+        system=system,
+        messages=[{"role": "user", "content": content}],
+        tools=[_PROJECT_TOOL],
+        tool_choice={"type": "tool", "name": "informe_analisis_proyecto"},
+    )
+    return _extract_tool_input(resp, "informe_analisis_proyecto")
 
 
 async def compare_plans(plan_a: Any, plan_b: Any, project: Any, focus: str = "") -> dict:

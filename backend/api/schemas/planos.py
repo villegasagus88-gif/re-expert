@@ -33,7 +33,9 @@ class ProjectCreate(BaseModel):
     location: str = Field(default="", max_length=255)
     estimated_area: str = Field(default="", max_length=60)
     stage: STAGES = "anteproyecto"
-    analysis_goal: GOALS = "entender"
+    analysis_goal: GOALS = "entender"  # compat (primer objetivo seleccionado)
+    analysis_goals: list[GOALS] = Field(default_factory=list, max_length=7)
+    analysis_goal_custom: str = Field(default="", max_length=200)
     client_name: str = Field(default="", max_length=255)
     description: str = Field(default="", max_length=4000)
 
@@ -45,6 +47,8 @@ class ProjectUpdate(BaseModel):
     estimated_area: str | None = Field(default=None, max_length=60)
     stage: STAGES | None = None
     analysis_goal: GOALS | None = None
+    analysis_goals: list[GOALS] | None = Field(default=None, max_length=7)
+    analysis_goal_custom: str | None = Field(default=None, max_length=200)
     client_name: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=4000)
 
@@ -64,6 +68,14 @@ class PlanUpdate(BaseModel):
 class AnalyzeRequest(BaseModel):
     mode: ANALYSIS_MODES = "errores"
     profile: PROFILES = ""
+
+
+class ProjectAnalyzeRequest(BaseModel):
+    """Análisis integral: todos los planos (o los seleccionados) en una pasada."""
+    mode: ANALYSIS_MODES = "errores"
+    profile: PROFILES = ""
+    plan_ids: list[str] = Field(default_factory=list, max_length=12)  # vacío → todos los vigentes
+    focus: str = Field(default="", max_length=500)
 
 
 class CompareRequest(BaseModel):

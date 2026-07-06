@@ -19,6 +19,7 @@ from api.schemas.planos import (
     ChecklistItemUpdate,
     CompareRequest,
     PlanUpdate,
+    ProjectAnalyzeRequest,
     ProjectCreate,
     ProjectUpdate,
     TaskCreate,
@@ -32,6 +33,7 @@ from models.user import User
 from services.plan_analyzer import (
     DISCLAIMER,
     analyze_plan,
+    analyze_project,
     classify_plan,
     compare_plans,
     load_frequent_errors,
@@ -79,6 +81,7 @@ def _project_dict(p: PlanProject, extra: dict | None = None) -> dict:
     d = {
         "id": str(p.id), "name": p.name, "obra_type": p.obra_type, "location": p.location,
         "estimated_area": p.estimated_area, "stage": p.stage, "analysis_goal": p.analysis_goal,
+        "analysis_goals": p.analysis_goals or [], "analysis_goal_custom": p.analysis_goal_custom or "",
         "client_name": p.client_name, "description": p.description,
         "created_at": p.created_at.isoformat() if p.created_at else None,
         "updated_at": p.updated_at.isoformat() if p.updated_at else None,
@@ -105,7 +108,8 @@ def _plan_dict(f: PlanFile) -> dict:
 
 def _alert_dict(a: PlanAlert) -> dict:
     return {
-        "id": str(a.id), "analysis_id": str(a.analysis_id), "plan_id": str(a.plan_id),
+        "id": str(a.id), "analysis_id": str(a.analysis_id),
+        "plan_id": str(a.plan_id) if a.plan_id else None,
         "project_id": str(a.project_id), "title": a.title, "location": a.location,
         "category": a.category, "description": a.description, "risk": a.risk,
         "impact": a.impact, "recommendation": a.recommendation, "priority": a.priority,
@@ -118,7 +122,8 @@ def _alert_dict(a: PlanAlert) -> dict:
 
 def _analysis_dict(an: PlanAnalysis, alerts: list[PlanAlert] | None = None) -> dict:
     d = {
-        "id": str(an.id), "project_id": str(an.project_id), "plan_id": str(an.plan_id),
+        "id": str(an.id), "project_id": str(an.project_id),
+        "plan_id": str(an.plan_id) if an.plan_id else None,
         "mode": an.mode, "profile": an.profile,
         "compare_plan_id": str(an.compare_plan_id) if an.compare_plan_id else None,
         "summary": an.summary, "detected_data": an.detected_data or {},
@@ -237,7 +242,7 @@ async def get_project(project_id: UUID, db: AsyncSession = Depends(get_db),
         "plans": [_plan_dict(f) for f in plans],
         "tasks": [_task_dict(t) for t in tasks],
         "analyses": [{
-            "id": str(a.id), "plan_id": str(a.plan_id), "mode": a.mode,
+            "id": str(a.id), "plan_id": str(a.plan_id) if a.plan_id else None, "mode": a.mode,
             "general_risk": a.general_risk, "confidence": a.confidence,
             "compare_plan_id": str(a.compare_plan_id) if a.compare_plan_id else None,
             "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -454,6 +459,106 @@ async def analyze(plan_id: UUID, body: AnalyzeRequest, db: AsyncSession = Depend
     plan.status = "revision_recomendada" if any(
         al.priority in ("critica", "alta") for al in alerts) else "analizado"
     plan.analyzed_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(analysis)
+    for al in alerts:
+        await db.refresh(al)
+    return _analysis_dict(analysis, alerts)
+
+
+_MAX_PROJECT_ANALYSIS_BYTES = 20 * 1024 * 1024  # límite combinado del análisis integral
+
+
+def _match_plan_ref(ref: str, plans: list[PlanFile]) -> UUID | None:
+    """Mapea el plan_ref devuelto por la IA (nombre de archivo) a un plan_id."""
+    if not ref:
+        return None
+    ref_n = ref.strip().lower()
+    for p in plans:
+        if p.file_name.strip().lower() == ref_n:
+            return p.id
+    for p in plans:  # match laxo: uno contiene al otro
+        n = p.file_name.strip().lower()
+        if ref_n in n or n in ref_n:
+            return p.id
+    return None
+
+
+@router.post("/projects/{project_id}/analyze",
+             summary="Análisis integral del proyecto (todos los planos juntos, IA)")
+async def analyze_whole_project(project_id: UUID, body: ProjectAnalyzeRequest,
+                                db: AsyncSession = Depends(get_db),
+                                user: User = Depends(get_current_user)):
+    project = await _owned_project(db, project_id, user.id)
+
+    q = select(PlanFile).where(PlanFile.project_id == project.id, PlanFile.user_id == user.id)
+    if body.plan_ids:
+        ids = [_parse_uuid(x, "plan_ids") for x in body.plan_ids]
+        q = q.where(PlanFile.id.in_(ids))
+    else:
+        q = q.where(PlanFile.is_current_version.is_(True))
+    plans = list((await db.execute(q.order_by(PlanFile.uploaded_at))).scalars().all())
+
+    if not plans:
+        raise HTTPException(status_code=422, detail="El proyecto no tiene planos para analizar")
+    if len(plans) > 12:
+        raise HTTPException(status_code=422,
+                            detail=f"Máximo 12 planos por análisis integral (seleccionaste {len(plans)}). Destildá algunos.")
+    total = sum(p.file_size for p in plans)
+    if total > _MAX_PROJECT_ANALYSIS_BYTES:
+        raise HTTPException(status_code=413, detail=(
+            f"Los planos seleccionados suman {total / 1024 / 1024:.1f} MB y el máximo por "
+            "análisis integral es 20 MB. Destildá los más pesados o analizalos por separado."))
+
+    try:
+        result = await analyze_project(plans, project, body.mode, body.profile, body.focus)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Planos: análisis integral falló para proyecto %s", project_id)
+        raise HTTPException(status_code=502, detail="El análisis integral falló. Reintentá en unos minutos.") from exc
+
+    checklist = [{"item": c.get("item", ""), "priority": c.get("priority", "media"),
+                  "status": "pendiente", "comment": ""}
+                 for c in (result.get("checklist") or [])]
+    questions = [{**qq, "status": "pendiente"} for qq in (result.get("suggested_questions") or [])]
+    detected = result.get("detected_data") or {}
+    detected["plans_included"] = [p.file_name for p in plans]
+
+    analysis = PlanAnalysis(
+        project_id=project.id, plan_id=None, user_id=user.id,
+        mode=body.mode, profile=body.profile,
+        summary=result.get("summary", ""),
+        detected_data=detected,
+        general_risk=result.get("general_risk", "medio"),
+        confidence=int(result.get("confidence") or 0),
+        plan_score=result.get("plan_score") or {},
+        strengths=result.get("strengths") or [],
+        missing_info=result.get("missing_info") or [],
+        inconsistencies=result.get("inconsistencies") or [],
+        recommendations=result.get("recommendations") or [],
+        suggested_questions=questions,
+        checklist=checklist,
+    )
+    db.add(analysis)
+    await db.flush()
+
+    alerts = []
+    for a in (result.get("alerts") or []):
+        alerts.append(PlanAlert(
+            analysis_id=analysis.id,
+            plan_id=_match_plan_ref(a.get("plan_ref") or "", plans),
+            project_id=project.id, user_id=user.id,
+            title=(a.get("title") or "Observación")[:255],
+            location=(a.get("location") or "")[:255],
+            category=(a.get("category") or "")[:60],
+            description=a.get("description") or "",
+            risk=a.get("risk") or "", impact=a.get("impact") or "",
+            recommendation=a.get("recommendation") or "",
+            priority=a.get("priority") if a.get("priority") in
+                ("critica", "alta", "media", "baja", "informativa") else "media",
+            confidence=int(a.get("confidence") or 0),
+            suggested_action=(a.get("suggested_action") or "")[:255],
+        ))
+    db.add_all(alerts)
     await db.commit()
     await db.refresh(analysis)
     for al in alerts:

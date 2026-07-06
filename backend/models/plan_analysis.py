@@ -50,6 +50,9 @@ class PlanProject(Base):
     estimated_area: Mapped[str] = mapped_column(String(60), nullable=False, server_default="")
     stage: Mapped[str] = mapped_column(String(40), nullable=False, server_default="anteproyecto")
     analysis_goal: Mapped[str] = mapped_column(String(60), nullable=False, server_default="entender")
+    # v2: objetivos múltiples + objetivo libre (analysis_goal queda por compat)
+    analysis_goals: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
+    analysis_goal_custom: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     client_name: Mapped[str] = mapped_column(String(255), nullable=False, server_default="")
     description: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     created_at: Mapped[datetime] = mapped_column(
@@ -113,8 +116,9 @@ class PlanAnalysis(Base):
     project_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("plan_projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    plan_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("plan_files.id", ondelete="CASCADE"), nullable=False, index=True
+    # NULL → análisis INTEGRAL del proyecto (todos los planos juntos)
+    plan_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("plan_files.id", ondelete="CASCADE"), nullable=True, index=True
     )
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
@@ -153,8 +157,9 @@ class PlanAlert(Base):
     analysis_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("plan_analyses.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    plan_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("plan_files.id", ondelete="CASCADE"), nullable=False, index=True
+    # NULL → observación de un análisis integral sin plano puntual asociado
+    plan_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("plan_files.id", ondelete="CASCADE"), nullable=True, index=True
     )
     project_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("plan_projects.id", ondelete="CASCADE"), nullable=False, index=True
