@@ -2603,10 +2603,10 @@ function plnProjectAnalyzeForm(){
       </label>`).join('')}</div>
     <div class="pln-int-total" id="plnIntTotal"></div>
     <div class="pln-form" style="margin-top:10px">
-      <div class="pln-form-row">
-        <label>Modo<select id="plnIntMode" class="pln-input">${Object.entries(PLN_MODES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
-        <label>Perfil<select id="plnIntProfile" class="pln-input">${Object.entries(PLN_PROFILES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
-      </div>
+      <label>Enfoques del análisis (combiná todos los que quieras)
+        <div class="pln-goals-grid">${Object.entries(PLN_MODES).map(([k,v])=>`<label class="pln-goal-check"><input type="checkbox" class="pln-int-mode" value="${k}"${k==='errores'?' checked':''}> ${v}</label>`).join('')}</div>
+      </label>
+      <label>Perfil<select id="plnIntProfile" class="pln-input">${Object.entries(PLN_PROFILES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
       <label>Foco puntual (opcional)<input id="plnIntFocus" class="pln-input" maxlength="500" placeholder="Ej: coordinación sanitaria entre los dos duplex"></label>
       <div class="pln-form-actions"><span class="pln-plan-meta">Puede tardar 2-4 minutos con varios planos.</span><button class="btn-primary" id="plnIntRun">🔍 Analizar todo</button></div>
     </div>`);
@@ -2624,13 +2624,15 @@ function plnProjectAnalyzeForm(){
 }
 async function plnRunProjectAnalysis(){
   const ids=[...document.querySelectorAll('.pln-int-check:checked')].map(c=>c.value);
-  const mode=$('#plnIntMode').value,profile=$('#plnIntProfile').value,focus=$('#plnIntFocus').value.trim();
+  const modes=[...document.querySelectorAll('.pln-int-mode:checked')].map(c=>c.value);
+  if(!modes.length){plnToast('Marcá al menos un enfoque de análisis',false);return;}
+  const profile=$('#plnIntProfile').value,focus=$('#plnIntFocus').value.trim();
   const btn=$('#plnIntRun');btn.disabled=true;
   const msgs=['Leyendo todos los planos…','Cruzando arquitectura vs instalaciones…','Buscando inconsistencias entre láminas…','Priorizando riesgos…','Armando checklist y preguntas…','Redactando el informe integral…'];
   let mi=0;btn.textContent='⏳ '+msgs[0];
   const iv=setInterval(()=>{mi=(mi+1)%msgs.length;btn.textContent='⏳ '+msgs[mi];},12000);
   try{
-    const a=await plnApi('/projects/'+plnState.project.id+'/analyze',{method:'POST',body:{mode,profile,plan_ids:ids,focus}});
+    const a=await plnApi('/projects/'+plnState.project.id+'/analyze',{method:'POST',body:{mode:modes[0],modes,profile,plan_ids:ids,focus}});
     plnState.analysesIdx.unshift({id:a.id,plan_id:null,mode:a.mode,general_risk:a.general_risk,confidence:a.confidence,compare_plan_id:null,created_at:a.created_at});
     plnState.analysis=a;plnState.alerts=a.alerts||[];
     plnState.analysisScope='project';plnState.panelHost='#plnIntegralPanel';plnState.panelTab='resumen';plnState.prioFilter='todas';
@@ -3004,6 +3006,8 @@ function plnPanelResumen(a){
       ${(dd.medidas_relevantes||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Medidas relevantes</div>${list(dd.medidas_relevantes)}</div>`:''}
       ${(a.strengths||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Puntos fuertes</div>${list(a.strengths,'pln-ok')}</div>`:''}
     `}
+    ${(dd.expert_insights||[]).length?`<div class="pln-sec pln-expert"><div class="pln-sec-h">🔎 Ojo experto — lo que no se ve a simple vista</div>${list(dd.expert_insights)}</div>`:''}
+    ${(dd.design_tips||[]).length?`<div class="pln-sec pln-design"><div class="pln-sec-h">💡 Recomendaciones de diseño</div>${list(dd.design_tips)}</div>`:''}
     ${(a.missing_info||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Información faltante</div>${list(a.missing_info,'pln-warn')}</div>`:''}
     ${(a.inconsistencies||[]).length&&!isCmp?`<div class="pln-sec"><div class="pln-sec-h">Inconsistencias</div>${list(a.inconsistencies,'pln-warn')}</div>`:''}
     ${(a.recommendations||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Recomendaciones</div>${list(a.recommendations)}</div>`:''}
@@ -3214,6 +3218,8 @@ function plnBuildReport(enfoque){
   <h2>${simple?'Qué se revisó y estado general':'Resumen ejecutivo'}</h2><p>${esc(a.summary)}</p>
   ${!simple&&a.detected_data&&a.detected_data.que_muestra?`<h2>Datos detectados</h2><p>${esc(a.detected_data.que_muestra)}</p>${(a.detected_data.ambientes||[]).length?`<p class="sub">Ambientes: ${a.detected_data.ambientes.map(esc).join(' · ')}</p>`:''}`:''}
   ${enfoque!=='obra'&&scoreRows?`<h2>Plan Score</h2><table><tr><th>Eje</th><th>Puntaje</th><th>Fundamento</th></tr>${scoreRows}</table>`:''}
+  ${((a.detected_data||{}).expert_insights||[]).length?`<h2>🔎 Ojo experto — lo que no se ve a simple vista</h2><ul>${li(a.detected_data.expert_insights)}</ul>`:''}
+  ${((a.detected_data||{}).design_tips||[]).length?`<h2>💡 Recomendaciones de diseño</h2><ul>${li(a.detected_data.design_tips)}</ul>`:''}
   <h2>${simple?'Principales puntos detectados':'Observaciones por prioridad'}</h2>
   ${byPrio.filter(([pr])=>!simple||['critica','alta'].includes(pr)).map(([pr,items])=>items.map(alertRow).join('')).join('')||'<p>Sin observaciones abiertas.</p>'}
   ${(a.inconsistencies||[]).length&&!simple?`<h2>Inconsistencias detectadas</h2><ul>${li(a.inconsistencies)}</ul>`:''}

@@ -421,12 +421,15 @@ async def analyze(plan_id: UUID, body: AnalyzeRequest, db: AsyncSession = Depend
                   "status": "pendiente", "comment": ""}
                  for c in (result.get("checklist") or [])]
     questions = [{**q, "status": "pendiente"} for q in (result.get("suggested_questions") or [])]
+    detected = result.get("detected_data") or {}
+    detected["expert_insights"] = result.get("expert_insights") or []
+    detected["design_tips"] = result.get("design_tips") or []
 
     analysis = PlanAnalysis(
         project_id=project.id, plan_id=plan.id, user_id=user.id,
         mode=body.mode, profile=body.profile,
         summary=result.get("summary", ""),
-        detected_data=result.get("detected_data") or {},
+        detected_data=detected,
         general_risk=result.get("general_risk", "medio"),
         confidence=int(result.get("confidence") or 0),
         plan_score=result.get("plan_score") or {},
@@ -510,8 +513,9 @@ async def analyze_whole_project(project_id: UUID, body: ProjectAnalyzeRequest,
             f"Los planos seleccionados suman {total / 1024 / 1024:.1f} MB y el máximo por "
             "análisis integral es 20 MB. Destildá los más pesados o analizalos por separado."))
 
+    modes = body.modes or [body.mode]
     try:
-        result = await analyze_project(plans, project, body.mode, body.profile, body.focus)
+        result = await analyze_project(plans, project, modes, body.profile, body.focus)
     except Exception as exc:  # noqa: BLE001
         logger.exception("Planos: análisis integral falló para proyecto %s", project_id)
         raise HTTPException(status_code=502, detail="El análisis integral falló. Reintentá en unos minutos.") from exc
@@ -522,10 +526,13 @@ async def analyze_whole_project(project_id: UUID, body: ProjectAnalyzeRequest,
     questions = [{**qq, "status": "pendiente"} for qq in (result.get("suggested_questions") or [])]
     detected = result.get("detected_data") or {}
     detected["plans_included"] = [p.file_name for p in plans]
+    detected["modes"] = modes
+    detected["expert_insights"] = result.get("expert_insights") or []
+    detected["design_tips"] = result.get("design_tips") or []
 
     analysis = PlanAnalysis(
         project_id=project.id, plan_id=None, user_id=user.id,
-        mode=body.mode, profile=body.profile,
+        mode=modes[0], profile=body.profile,
         summary=result.get("summary", ""),
         detected_data=detected,
         general_risk=result.get("general_risk", "medio"),

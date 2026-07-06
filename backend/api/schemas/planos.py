@@ -72,7 +72,8 @@ class AnalyzeRequest(BaseModel):
 
 class ProjectAnalyzeRequest(BaseModel):
     """Análisis integral: todos los planos (o los seleccionados) en una pasada."""
-    mode: ANALYSIS_MODES = "errores"
+    mode: ANALYSIS_MODES = "errores"                                   # compat (primer modo)
+    modes: list[ANALYSIS_MODES] = Field(default_factory=list, max_length=4)  # multi-modo
     profile: PROFILES = ""
     plan_ids: list[str] = Field(default_factory=list, max_length=12)  # vacío → todos los vigentes
     focus: str = Field(default="", max_length=500)

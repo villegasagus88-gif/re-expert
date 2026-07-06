@@ -77,6 +77,30 @@ def _media_block(file_type: str, file_data: bytes) -> dict:
 
 # ─────────────────────────── prompts base ───────────────────────────
 
+_TEAM_PERSONA = """QUIÉN SOS: la mesa de revisión de documentación técnica más exigente del rubro.
+Trabajan juntos en esta revisión:
+- Un director de obra con 30 años de edificios y viviendas en Argentina (ve los adicionales antes de que pasen).
+- Un arquitecto proyectista senior (calidad de diseño, funcionamiento real de los ambientes, detalles que elevan el producto).
+- Un ingeniero estructural (coordinación estructura-arquitectura, luces, apoyos, pases).
+- Un instalador matriculado de sanitaria/gas/electricidad (bajadas, ventilaciones, tableros, pendientes).
+- Un desarrollador inmobiliario (m² vendibles, calidad comercial, sobrecostos).
+- Un experto en patologías de la construcción (humedad, condensación, filtraciones, mantenimiento futuro).
+El usuario tiene que sentir que este equipo acaba de revisar SU documentación: hallazgos concretos con ubicación, consecuencia real y acción clara — nunca observaciones genéricas que aplicarían a cualquier plano.
+
+OJO EXPERTO (buscá activamente lo que el revisor promedio NO ve; señalá lo que aplique):
+- Ventilación e iluminación de cada baño y cocina (conducto, pleno, ventana): si un baño no tiene NINGUNA ventilación pensada, avisalo SIEMPRE.
+- Barridos de puertas contra artefactos, muebles y otras puertas; sentidos de apertura lógicos.
+- Pendientes y desagües: techos, balcones, duchas, patios; recorridos largos sin bajada cerca.
+- Previsión de aire acondicionado (ubicación de condensadoras y desagüe de condensado) y de campana de cocina.
+- Tablero eléctrico: ubicación accesible, reserva de circuitos, tomas suficientes por ambiente.
+- Acceso para mantenimiento futuro: cámaras, llaves de paso, tanques, equipos en azotea.
+- Riesgos de condensación y puentes térmicos (baños/cocinas contra dormitorios, muros al sur).
+- Acústica y privacidad entre unidades y entre dormitorios y áreas sociales.
+- Medidas reales de uso: ancho útil de pasillos y escaleras, espacio de cama+circulación en dormitorios, mesada útil en cocina, lugar real del lavarropas.
+- Asoleamiento y orientación de los ambientes principales si el plano lo permite inferir.
+- Coordinación entre láminas y versiones: TODO lo que no cierre entre planos es una inconsistencia que hay que reportar explícitamente.
+- Detalles de valor comercial: lo que haría el producto más vendible o más caro de construir sin necesidad."""
+
 _PRUDENCE = """REGLAS DE LENGUAJE (obligatorias):
 - NUNCA afirmes incumplimientos normativos de forma categórica. Usá: "punto a verificar normativamente", "requiere validación profesional", "debe revisarse contra el código local aplicable".
 - NUNCA digas "esto está mal construido", "esto incumple la norma", "este plano no sirve".
@@ -161,6 +185,10 @@ _ANALYZE_TOOL = {
                 "required": ["calidad_general", "comprension_documental", "constructibilidad"],
             },
             "strengths": {"type": "array", "items": {"type": "string"}, "description": "Puntos fuertes del plano"},
+            "expert_insights": {"type": "array", "items": {"type": "string"}, "maxItems": 8,
+                                "description": "3-6 hallazgos de OJO EXPERTO: cosas valiosas que un revisor promedio pasaría por alto (concretas, con ubicación)"},
+            "design_tips": {"type": "array", "items": {"type": "string"}, "maxItems": 6,
+                            "description": "Recomendaciones LEVES de diseño con valor real para el usuario (ej: ventilación de un baño, sentido de una puerta, previsión de AA)"},
             "alerts": {
                 "type": "array", "maxItems": 18,
                 "items": {"type": "object", "properties": _ALERT_PROPS,
@@ -191,8 +219,8 @@ _ANALYZE_TOOL = {
             },
         },
         "required": ["summary", "detected_data", "general_risk", "confidence", "plan_score",
-                     "strengths", "alerts", "missing_info", "recommendations",
-                     "suggested_questions", "checklist"],
+                     "strengths", "expert_insights", "design_tips", "alerts", "missing_info",
+                     "recommendations", "suggested_questions", "checklist"],
     },
 }
 
@@ -329,8 +357,7 @@ async def analyze_plan(plan: Any, project: Any, mode: str, profile: str) -> dict
         )
 
     system = (
-        "Sos un revisor senior de planos para real estate y construcción en Argentina. "
-        "Actuás como segunda revisión inteligente antes de obra: tu trabajo es detectar "
+        _TEAM_PERSONA + "\n\nActuás como segunda revisión inteligente antes de obra: detectar "
         "riesgos, inconsistencias, información faltante y puntos críticos, y convertirlos "
         "en observaciones ACCIONABLES.\n\n" + _PRUDENCE + "\n\n" + mode_txt
         + ("\n\n" + profile_txt if profile_txt else "") + biblioteca
@@ -394,6 +421,10 @@ _PROJECT_TOOL = {
                 "required": ["calidad_general", "comprension_documental", "coherencia", "constructibilidad"],
             },
             "strengths": {"type": "array", "items": {"type": "string"}},
+            "expert_insights": {"type": "array", "items": {"type": "string"}, "maxItems": 10,
+                                "description": "4-8 hallazgos de OJO EXPERTO a nivel proyecto: cosas valiosas que un revisor promedio pasaría por alto"},
+            "design_tips": {"type": "array", "items": {"type": "string"}, "maxItems": 8,
+                            "description": "Recomendaciones LEVES de diseño con valor real (ventilaciones, barridos, previsiones, mantenimiento)"},
             "alerts": {
                 "type": "array", "maxItems": 25,
                 "items": {"type": "object", "properties": _PROJECT_ALERT_PROPS,
@@ -421,13 +452,13 @@ _PROJECT_TOOL = {
             },
         },
         "required": ["summary", "detected_data", "general_risk", "confidence", "plan_score",
-                     "strengths", "alerts", "missing_info", "inconsistencies",
-                     "recommendations", "suggested_questions", "checklist"],
+                     "strengths", "expert_insights", "design_tips", "alerts", "missing_info",
+                     "inconsistencies", "recommendations", "suggested_questions", "checklist"],
     },
 }
 
 
-async def analyze_project(plans: list[Any], project: Any, mode: str, profile: str,
+async def analyze_project(plans: list[Any], project: Any, modes: list[str], profile: str,
                           focus: str = "") -> dict:
     """Análisis integral: TODOS los planos del proyecto en una sola pasada.
 
@@ -436,7 +467,11 @@ async def analyze_project(plans: list[Any], project: Any, mode: str, profile: st
     """
     from services.anthropic_service import get_client
 
-    mode_txt = _MODE_INSTRUCTIONS.get(mode, _MODE_INSTRUCTIONS["errores"])
+    valid_modes = [m for m in (modes or []) if m in _MODE_INSTRUCTIONS] or ["errores"]
+    mode_txt = "\n\n".join(_MODE_INSTRUCTIONS[m] for m in valid_modes)
+    if len(valid_modes) > 1:
+        mode_txt = ("El usuario pidió combinar VARIOS enfoques en esta misma revisión — "
+                    "cubrilos todos:\n\n" + mode_txt)
     profile_txt = _PROFILE_HINTS.get(profile, "")
     frecuentes = load_frequent_errors()
     biblioteca = ""
@@ -446,8 +481,7 @@ async def analyze_project(plans: list[Any], project: Any, mode: str, profile: st
                       "y usá estas categorías): " + ", ".join(cats) + ".")
 
     system = (
-        "Sos un revisor senior de documentación de obra en Argentina, especializado en "
-        "COORDINACIÓN entre especialidades. Vas a recibir TODOS los planos de un proyecto "
+        _TEAM_PERSONA + "\n\nVas a recibir TODOS los planos de un proyecto "
         "(arquitectura, estructura, instalaciones, detalles…). Tu trabajo:\n"
         "1. Entender el proyecto completo y su cobertura documental.\n"
         "2. Detectar riesgos por lámina Y — sobre todo — INCONSISTENCIAS ENTRE LÁMINAS "

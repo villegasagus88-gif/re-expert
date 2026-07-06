@@ -1004,6 +1004,11 @@ select.pay-form-input{cursor:pointer}
 .pln-q-reason{font-size:10.5px;color:var(--text-3);margin-top:5px;font-style:italic}
 .pln-biblio-cat{margin-bottom:16px}
 .pln-biblio-item{border:1px solid var(--border-1);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px;background:var(--bg-1)}
+/* Secciones de valor experto en el resumen */
+.pln-expert{background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.18);border-radius:var(--radius-md);padding:11px 13px}
+.pln-expert .pln-sec-h{color:#0284c7}
+.pln-design{background:var(--accent-brand-light);border:1px solid rgba(190,81,3,.18);border-radius:var(--radius-md);padding:11px 13px}
+.pln-design .pln-sec-h{color:var(--accent-brand)}
 /* Objetivos múltiples del proyecto */
 .pln-goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 12px;margin-top:4px}
 .pln-goal-check{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-size:12px!important;font-weight:500!important;color:var(--text-1)!important;cursor:pointer;padding:4px 2px}
