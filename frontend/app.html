@@ -2168,10 +2168,9 @@ function plnRenderDashboard(){
   const f=plnState.dashFilters;
   $('#plnDashFilters').innerHTML=ps.length?`
     <select id="plnFStage" class="pln-select"><option value="">Todas las etapas</option>${Object.entries(PLN_STAGE).map(([k,v])=>`<option value="${k}"${f.stage===k?' selected':''}>${v}</option>`).join('')}</select>
-    <select id="plnFObra" class="pln-select"><option value="">Todos los tipos</option>${Object.entries(PLN_OBRA).map(([k,v])=>`<option value="${k}"${f.obra===k?' selected':''}>${v}</option>`).join('')}</select>
-    <select id="plnFRisk" class="pln-select"><option value="">Todos los riesgos</option>${Object.entries(PLN_RISK).map(([k,[v]])=>`<option value="${k}"${f.risk===k?' selected':''}>Riesgo ${v}</option>`).join('')}</select>`:'';
-  ['plnFStage','plnFObra','plnFRisk'].forEach((id,i)=>{const el=$('#'+id);if(el)el.addEventListener('change',()=>{plnState.dashFilters[['stage','obra','risk'][i]]=el.value;plnRenderDashboard();});});
-  const vis=ps.filter(p=>(!f.stage||p.stage===f.stage)&&(!f.obra||p.obra_type===f.obra)&&(!f.risk||p.general_risk===f.risk));
+    <select id="plnFObra" class="pln-select"><option value="">Todos los tipos</option>${Object.entries(PLN_OBRA).map(([k,v])=>`<option value="${k}"${f.obra===k?' selected':''}>${v}</option>`).join('')}</select>`:'';
+  ['plnFStage','plnFObra'].forEach((id,i)=>{const el=$('#'+id);if(el)el.addEventListener('change',()=>{plnState.dashFilters[['stage','obra'][i]]=el.value;plnRenderDashboard();});});
+  const vis=ps.filter(p=>(!f.stage||p.stage===f.stage)&&(!f.obra||p.obra_type===f.obra));
   if(!ps.length){
     $('#plnProjectsGrid').innerHTML=`<div class="empty-state" style="padding:40px 20px"><div class="empty-title">Todavía no tenés proyectos</div><div class="empty-desc">Creá tu primer proyecto y subí los planos para obtener la revisión IA.</div><button class="btn-primary" style="margin-top:14px" onclick="plnProjectForm()">+ Crear mi primer proyecto</button></div>`;
     return;
@@ -2180,7 +2179,6 @@ function plnRenderDashboard(){
     <div class="pln-project-card" data-pid="${p.id}">
       <div class="pln-pc-head">
         <div class="pln-pc-name">${esc(p.name)}</div>
-        ${plnRiskChip(p.general_risk)}
       </div>
       <div class="pln-pc-meta">${esc(PLN_OBRA[p.obra_type]||p.obra_type)} · ${esc(PLN_STAGE[p.stage]||p.stage)}${p.location?' · '+esc(p.location):''}</div>
       <div class="pln-pc-stats">
@@ -2528,9 +2526,8 @@ function plnRenderHistorialTab(){
     return `<div class="pln-task-row" style="cursor:pointer" data-aid="${a.id}" data-plid="${a.plan_id||''}" data-integral="${isIntegral?'1':''}">
       <div class="pln-task-main">
         <div class="pln-task-title">${label}</div>
-        <div class="pln-plan-meta">${plnFmtDate(a.created_at)} · Confianza ${a.confidence}%</div>
+        <div class="pln-plan-meta">${plnFmtDate(a.created_at)}</div>
       </div>
-      ${plnRiskChip(a.general_risk)}
     </div>`;}).join(''):'<div class="empty-state" style="padding:24px"><div class="empty-title">Sin análisis todavía</div><div class="empty-desc">Ejecutá el análisis integral del proyecto, o abrí un plano y analizalo individualmente.</div></div>';
   $('#plnTabHistorial').querySelectorAll('[data-aid]').forEach(row=>row.addEventListener('click',()=>{
     if(row.dataset.integral){plnSetTab('integral');plnLoadIntegralAnalysis(row.dataset.aid);}
@@ -2580,7 +2577,7 @@ function plnRenderIntegralHeaderStats(){
   const crit=plnState.alerts.filter(x=>x.priority==='critica'&&!['resuelto','rechazado','ignorado'].includes(x.status)).length;
   const altas=plnState.alerts.filter(x=>x.priority==='alta'&&!['resuelto','rechazado','ignorado'].includes(x.status)).length;
   const nPlanos=((a.detected_data||{}).plans_included||[]).length;
-  el.innerHTML=`${plnRiskChip(a.general_risk)} <span class="pln-chip" style="color:#dc2626">● ${crit} críticas</span> <span class="pln-chip" style="color:#ea580c">● ${altas} altas</span> <span class="pln-chip">📐 ${nPlanos} planos</span> <span class="pln-chip">🎯 ${a.confidence}% confianza</span>`;
+  el.innerHTML=`<span class="pln-chip" style="color:#dc2626">● ${crit} críticas</span> <span class="pln-chip" style="color:#ea580c">● ${altas} altas</span> <span class="pln-chip">📐 ${nPlanos} planos</span> <span class="pln-chip">📋 ${(a.missing_info||[]).length} faltantes</span>`;
 }
 async function plnLoadIntegralAnalysis(analysisId){
   try{
@@ -2638,7 +2635,7 @@ async function plnRunProjectAnalysis(){
     plnState.analysisScope='project';plnState.panelHost='#plnIntegralPanel';plnState.panelTab='resumen';plnState.prioFilter='todas';
     plnModalClose();
     plnRenderIntegralTab();plnRenderHistorialTab();plnSetTab('integral');
-    plnToast('Análisis integral completo: riesgo '+(PLN_RISK[a.general_risk]?PLN_RISK[a.general_risk][0]:a.general_risk));
+    plnToast('Análisis integral completo. Revisá las observaciones del proyecto.');
   }catch(e){plnToast(e.message,false);}
   finally{clearInterval(iv);if(btn){btn.disabled=false;btn.textContent='🔍 Analizar todo';}}
 }
@@ -2809,11 +2806,9 @@ function plnRenderPlanHeader(){
       </div>
       <div class="pln-ph-stats">
         ${plnStatusChip(f.status)}
-        ${a?plnRiskChip(a.general_risk):''}
         ${a?`<span class="pln-chip" title="Observaciones críticas" style="color:#dc2626">● ${crit} críticas</span>`:''}
         ${a?`<span class="pln-chip" title="Observaciones altas" style="color:#ea580c">● ${altas} altas</span>`:''}
         ${a?`<span class="pln-chip" title="Información faltante">📋 ${(a.missing_info||[]).length} faltantes</span>`:''}
-        ${a?`<span class="pln-chip" title="Confianza del análisis IA">🎯 ${a.confidence}% confianza</span>`:''}
       </div>
     </div>`;
 }
@@ -2846,7 +2841,7 @@ async function plnRunAnalysis(){
     f._analyses=[{id:a.id,mode:a.mode,general_risk:a.general_risk,confidence:a.confidence,created_at:a.created_at},...(f._analyses||[])];
     plnPatchPlan({...f});
     plnRenderPlanHeader();plnRenderPlanActions();plnRenderPanel();plnRenderPins();
-    plnToast('Análisis completo: riesgo '+(PLN_RISK[a.general_risk]?PLN_RISK[a.general_risk][0]:a.general_risk));
+    plnToast('Análisis completo. Revisá las observaciones y el checklist.');
   }catch(e){plnToast(e.message,false);}
   finally{clearInterval(iv);btn.disabled=false;btn.textContent='🔍 Analizar con IA';}
 }
@@ -2971,12 +2966,11 @@ function plnRenderPanel(){
     return;
   }
   const openAlerts=plnState.alerts.filter(x=>!['resuelto','rechazado','ignorado'].includes(x.status));
-  const tabs=[['resumen','Resumen'],['observaciones',`Observaciones (${openAlerts.length})`],['score','Score'],['checklist',`Checklist (${(a.checklist||[]).length})`],['preguntas',`Preguntas (${(a.suggested_questions||[]).length})`]];
+  const tabs=[['resumen','Resumen'],['observaciones',`Observaciones (${openAlerts.length})`],['checklist',`Checklist (${(a.checklist||[]).length})`],['preguntas',`Preguntas (${(a.suggested_questions||[]).length})`]];
   let body='';
   const t=plnState.panelTab;
   if(t==='resumen')body=plnPanelResumen(a);
   else if(t==='observaciones')body=plnPanelObservaciones();
-  else if(t==='score')body=plnPanelScore(a);
   else if(t==='checklist')body=plnPanelChecklist(a);
   else body=plnPanelPreguntas(a);
   panel.innerHTML=`
@@ -3011,7 +3005,7 @@ function plnPanelResumen(a){
     ${(a.missing_info||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Información faltante</div>${list(a.missing_info,'pln-warn')}</div>`:''}
     ${(a.inconsistencies||[]).length&&!isCmp?`<div class="pln-sec"><div class="pln-sec-h">Inconsistencias</div>${list(a.inconsistencies,'pln-warn')}</div>`:''}
     ${(a.recommendations||[]).length?`<div class="pln-sec"><div class="pln-sec-h">Recomendaciones</div>${list(a.recommendations)}</div>`:''}
-    <div class="pln-sec pln-conf">Confianza del análisis: <strong>${a.confidence}%</strong> · ${esc(PLN_MODES[a.mode]||a.mode)}${a.profile?' · '+esc(PLN_PROFILES[a.profile]||a.profile):''} · ${plnFmtDate(a.created_at)}</div>`;
+    <div class="pln-sec pln-conf">${esc(PLN_MODES[a.mode]||a.mode)}${a.profile?' · '+esc(PLN_PROFILES[a.profile]||a.profile):''} · ${plnFmtDate(a.created_at)}</div>`;
 }
 function plnPanelObservaciones(){
   const alerts=plnState.alerts;
@@ -3038,7 +3032,7 @@ function plnPanelObservaciones(){
         ${a.risk?`<div class="pln-alert-field"><strong>Riesgo:</strong> ${esc(a.risk)}</div>`:''}
         ${a.impact?`<div class="pln-alert-field"><strong>Impacto:</strong> ${esc(a.impact)}</div>`:''}
         ${a.recommendation?`<div class="pln-alert-field pln-alert-rec"><strong>Recomendación:</strong> ${esc(a.recommendation)}</div>`:''}
-        <div class="pln-alert-meta">Confianza IA: ${a.confidence}%${a.suggested_action?' · '+esc(a.suggested_action):''}</div>
+        ${a.suggested_action?`<div class="pln-alert-meta">${esc(a.suggested_action)}</div>`:''}
         <div class="pln-alert-actions">
           <select class="pln-select pln-al-status" data-aid="${a.id}">${Object.entries(PLN_ASTATUS).map(([k,v])=>`<option value="${k}"${a.status===k?' selected':''}>${v}</option>`).join('')}</select>
           <select class="pln-select pln-al-prio" data-aid="${a.id}">${Object.entries(PLN_PRIO).map(([k,[v]])=>`<option value="${k}"${a.priority===k?' selected':''}>${v}</option>`).join('')}</select>
@@ -3173,8 +3167,45 @@ function plnReportForm(){
       <button class="pln-menu-item" data-rep="tecnico">🔧 Reporte técnico — el análisis completo con todo el detalle</button>
       <button class="pln-menu-item" data-rep="obra">🏗️ Reporte para obra — observaciones críticas, checklist y pendientes</button>
       <button class="pln-menu-item" data-rep="cliente">🤝 Reporte para cliente — claro, sin tecnicismos</button>
+    </div>
+    <div class="pln-sec-h" style="margin:16px 0 8px">Compartir resumen directo</div>
+    <div class="pln-menu-list">
+      <button class="pln-menu-item" id="plnShareWa">📲 Enviar por WhatsApp — resumen con los hallazgos clave</button>
+      <button class="pln-menu-item" id="plnShareMail">✉️ Enviar por mail — resumen con los hallazgos clave</button>
     </div>`);
   $('#plnModalBody').querySelectorAll('[data-rep]').forEach(b=>b.addEventListener('click',()=>{plnModalClose();plnBuildReport(b.dataset.rep);}));
+  $('#plnShareWa').addEventListener('click',()=>{plnModalClose();window.open('https://wa.me/?text='+encodeURIComponent(plnShareText('wa')),'_blank','noopener');});
+  $('#plnShareMail').addEventListener('click',()=>{
+    plnModalClose();
+    const subj='Revisión de planos — '+(plnState.project?plnState.project.name:'proyecto');
+    window.open('mailto:?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(plnShareText('mail')),'_self');
+  });
+}
+
+// Resumen compartible del análisis (WhatsApp usa *negritas*; mail texto plano).
+function plnShareText(via){
+  const a=plnState.analysis,p=plnState.project;
+  const isIntegral=plnState.analysisScope==='project';
+  const b=t=>via==='wa'?('*'+t+'*'):t.toUpperCase();
+  const alerts=plnState.alerts.filter(x=>!['resuelto','rechazado','ignorado'].includes(x.status));
+  const crit=alerts.filter(x=>x.priority==='critica'),altas=alerts.filter(x=>x.priority==='alta');
+  const li=(arr,max)=>arr.slice(0,max).map(x=>'• '+(typeof x==='string'?x:x.title+(x.location?' ('+x.location+')':''))).join('\n');
+  const alcance=isIntegral?('Análisis integral — '+(((a.detected_data||{}).plans_included||[]).length)+' planos'):('Plano: '+(plnState.plan?plnState.plan.file_name:''));
+  const parts=[
+    '🏗️ '+b('Revisión de planos — '+(p?p.name:''))
+    ,alcance+' · '+plnFmtDate(a.created_at)
+    ,''
+    ,b('Resumen')
+    ,(a.summary||'').slice(0,420)+((a.summary||'').length>420?'…':'')
+  ];
+  if(crit.length)parts.push('',b('Observaciones críticas ('+crit.length+')'),li(crit,4));
+  if(altas.length)parts.push('',b('Observaciones altas ('+altas.length+')'),li(altas,4));
+  if((a.missing_info||[]).length)parts.push('',b('Pendientes de definición'),li(a.missing_info,3));
+  if((a.suggested_questions||[]).length)parts.push('',b('Preguntas para el proyectista'),li((a.suggested_questions||[]).map(q=>q.question),3));
+  parts.push('','Generado con RE Expert. Análisis preliminar de asistencia: no reemplaza la validación de profesionales matriculados.');
+  let txt=parts.join('\n');
+  if(txt.length>1800)txt=txt.slice(0,1780)+'…';
+  return txt;
 }
 function plnBuildReport(enfoque){
   const a=plnState.analysis,p=plnState.project;
@@ -3186,12 +3217,10 @@ function plnBuildReport(enfoque){
   const names={ejecutivo:'Reporte ejecutivo',tecnico:'Reporte técnico',obra:'Reporte para obra',cliente:'Reporte para el cliente'};
   const today=new Date().toLocaleDateString('es-AR');
   const li=arr=>(arr||[]).map(x=>`<li>${esc(typeof x==='string'?x:JSON.stringify(x))}</li>`).join('');
-  const alertRow=x=>`<div class="al"><div class="al-h"><span class="prio p-${x.priority}">${(PLN_PRIO[x.priority]||[x.priority])[0]}</span> <strong>${esc(x.title)}</strong>${x.location?` <em>· ${esc(x.location)}</em>`:''}</div><div>${esc(x.description)}</div>${x.risk&&enfoque!=='cliente'?`<div><b>Riesgo:</b> ${esc(x.risk)}</div>`:''}${x.recommendation?`<div><b>Recomendación:</b> ${esc(x.recommendation)}</div>`:''}${enfoque==='tecnico'?`<div class="meta">Confianza IA ${x.confidence}% · Estado: ${PLN_ASTATUS[x.status]||x.status}</div>`:''}</div>`;
+  const alertRow=x=>`<div class="al"><div class="al-h"><span class="prio p-${x.priority}">${(PLN_PRIO[x.priority]||[x.priority])[0]}</span> <strong>${esc(x.title)}</strong>${x.location?` <em>· ${esc(x.location)}</em>`:''}</div><div>${esc(x.description)}</div>${x.risk&&enfoque!=='cliente'?`<div><b>Riesgo:</b> ${esc(x.risk)}</div>`:''}${x.recommendation?`<div><b>Recomendación:</b> ${esc(x.recommendation)}</div>`:''}${enfoque==='tecnico'?`<div class="meta">Estado: ${PLN_ASTATUS[x.status]||x.status}</div>`:''}</div>`;
   const simple=enfoque==='cliente';
   const showAlerts=simple?alerts.filter(x=>['critica','alta'].includes(x.priority)):alerts;
-  const scoreRows=Object.entries({calidad_general:'Calidad general',comprension_documental:'Comprensión documental',coherencia:'Coherencia',constructibilidad:'Constructibilidad',eficiencia_comercial:'Eficiencia comercial'})
-    .filter(([k])=>a.plan_score&&a.plan_score[k])
-    .map(([k,l])=>`<tr><td>${l}</td><td><b>${a.plan_score[k].score}/100</b></td><td>${esc(a.plan_score[k].why||'')}</td></tr>`).join('');
+
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${names[enfoque]} — ${esc(p.name)}</title>
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1e293b;padding:36px 42px;font-size:13px;line-height:1.55}
   h1{font-size:22px;margin-bottom:4px}h2{font-size:15px;margin:22px 0 8px;border-bottom:2px solid #BE5103;padding-bottom:4px;color:#8f3d02}
@@ -3212,12 +3241,9 @@ function plnBuildReport(enfoque){
     <h1>${esc(p.name)}</h1>
     <div class="sub">${f?`Plano: <strong>${esc(f.file_name)} (v${f.version})</strong>${f.detected_plan_type?' · '+esc(f.detected_plan_type):''}${f.sheet_number?' · Lámina '+esc(f.sheet_number):''}`:`Alcance: <strong>Análisis integral — ${((a.detected_data||{}).plans_included||[]).length} planos del proyecto</strong>`} · Análisis del ${plnFmtDate(a.created_at)} · Generado el ${today}</div>
     ${isIntegral&&((a.detected_data||{}).plans_included||[]).length?`<div class="sub" style="margin-top:4px">Planos analizados: ${((a.detected_data||{}).plans_included||[]).map(esc).join(' · ')}</div>`:''}
-    <div style="margin-top:8px">Riesgo general: <span class="risk" style="background:${(PLN_RISK[a.general_risk]||['','#64748b'])[1]}20;color:${(PLN_RISK[a.general_risk]||['','#64748b'])[1]}">${(PLN_RISK[a.general_risk]||[a.general_risk])[0]}</span>
-    &nbsp; Confianza del análisis: <strong>${a.confidence}%</strong></div>
   </div>
   <h2>${simple?'Qué se revisó y estado general':'Resumen ejecutivo'}</h2><p>${esc(a.summary)}</p>
   ${!simple&&a.detected_data&&a.detected_data.que_muestra?`<h2>Datos detectados</h2><p>${esc(a.detected_data.que_muestra)}</p>${(a.detected_data.ambientes||[]).length?`<p class="sub">Ambientes: ${a.detected_data.ambientes.map(esc).join(' · ')}</p>`:''}`:''}
-  ${enfoque!=='obra'&&scoreRows?`<h2>Plan Score</h2><table><tr><th>Eje</th><th>Puntaje</th><th>Fundamento</th></tr>${scoreRows}</table>`:''}
   ${((a.detected_data||{}).expert_insights||[]).length?`<h2>🔎 Ojo experto — lo que no se ve a simple vista</h2><ul>${li(a.detected_data.expert_insights)}</ul>`:''}
   ${((a.detected_data||{}).design_tips||[]).length?`<h2>💡 Recomendaciones de diseño</h2><ul>${li(a.detected_data.design_tips)}</ul>`:''}
   <h2>${simple?'Principales puntos detectados':'Observaciones por prioridad'}</h2>
