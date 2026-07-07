@@ -401,3 +401,47 @@ async def test_daily_digest_respeta_prefs(monkeypatch):
     assert u_si.automation_prefs.get("_last_digest_date")
     n2 = await scheduler_service._run_daily_digest(_DB())
     assert n2 == 0 and len(dispatched) == 1
+
+
+# ── Webhook Telegram: secret fail-closed (capa HTTP real) ──
+
+def test_telegram_webhook_secret_fail_closed(monkeypatch):
+    """La capa HTTP del webhook rechaza forjados: 403 con secret equivocado y
+    503 fail-closed en prod (DEBUG=False) cuando el secret no está configurado."""
+    from fastapi.testclient import TestClient
+
+    from api.routes import channels
+    from main import app
+    from models.base import get_db
+
+    async def _fake_db():
+        yield SimpleNamespace()
+
+    app.dependency_overrides[get_db] = _fake_db
+    # is_configured()=True para llegar a la validación del secret (si no, 503 genérico).
+    monkeypatch.setattr(telegram_service, "is_configured", lambda: True)
+    try:
+        client = TestClient(app)
+        # 1) secret seteado + header equivocado → 403 bad_secret
+        monkeypatch.setattr(
+            channels, "settings",
+            SimpleNamespace(TELEGRAM_WEBHOOK_SECRET="elsecreto", DEBUG=False),
+        )
+        r = client.post(
+            "/api/channels/telegram/webhook",
+            json={"message": {"chat": {"id": 1}, "text": "hola"}},
+            headers={"X-Telegram-Bot-Api-Secret-Token": "malo"},
+        )
+        assert r.status_code == 403
+        # 2) prod (DEBUG=False) SIN secret → 503 fail-closed (no procesa nada)
+        monkeypatch.setattr(
+            channels, "settings",
+            SimpleNamespace(TELEGRAM_WEBHOOK_SECRET="", DEBUG=False),
+        )
+        r2 = client.post(
+            "/api/channels/telegram/webhook",
+            json={"message": {"chat": {"id": 1}, "text": "hola"}},
+        )
+        assert r2.status_code == 503
+    finally:
+        app.dependency_overrides.clear()

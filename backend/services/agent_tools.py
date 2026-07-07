@@ -1356,19 +1356,30 @@ async def run_tool(
         if impl is None:
             return {"error": f"Acción a confirmar desconocida: {action}"}
         try:
+            # Anti doble-ejecución ATÓMICA: marcamos el nonce consumido en la
+            # sesión ANTES de ejecutar, así el commit de la propia tool
+            # (register_payment hace db.commit()) persiste la escritura y el
+            # nonce en la MISMA transacción. Si quedaran en dos commits
+            # separados, un crash entre ambos dejaría el pago durable sin su
+            # nonce → replay del mismo token tras redeploy = pago duplicado.
+            _confirm.persist_nonce(user, nonce)
             res = await impl(db, user, **payload)
             ok = not (isinstance(res, dict) and res.get("error"))
             if ok:
                 if isinstance(res, dict):
                     res.setdefault("confirmed", True)
-                # Anti doble-ejecución: capa in-memory + nonce PERSISTIDO en las
-                # prefs del usuario (sobrevive redeploys dentro del TTL).
                 _confirm.mark_used(inputs.get("confirm_token", ""))
-                _confirm.persist_nonce(user, nonce)
+                # Red de seguridad para impls que no commiteen por su cuenta:
+                # persiste escritura + nonce juntos. Si la tool ya commiteó
+                # (caso register_payment), esto es un no-op.
                 try:
                     await db.commit()
-                except Exception:  # noqa: BLE001 — persistir el nonce es best-effort
+                except Exception:  # noqa: BLE001
                     await db.rollback()
+            else:
+                # La escritura falló: descartamos la marca de nonce que aún no se
+                # commiteó, para no quemar el token de una acción que no ocurrió.
+                await db.rollback()
             return res
         except Exception as e:  # noqa: BLE001
             await db.rollback()  # no envenenar la sesión para las tools siguientes

@@ -211,3 +211,80 @@ async def test_confirm_no_ejecuta_montos_alterados_via_validate():
                                      {"concepto": "x", "monto": -1, "fecha": "2026-07-10",
                                       "estado": "pendiente"})
     assert "error" in out and "confirm_token" not in out
+
+
+# ── Human-in-the-loop server-side: no confirmar en el MISMO turno ──
+
+class _Blk:
+    def __init__(self, **kw): self.__dict__.update(kw)
+
+
+class _Resp:
+    def __init__(self, content, stop_reason):
+        self.content = content
+        self.stop_reason = stop_reason
+        self.usage = {"input_tokens": 1, "output_tokens": 1}
+
+
+class _SameTurnProvider:
+    """Modelo que pide register_payment y en la MISMA vuelta intenta confirmar el
+    token recién emitido (sin esperar al usuario). El corte server-side en
+    run_agent tiene que rechazarlo: la confirmación va en el turno siguiente."""
+    name = "fake"
+    model = "fake-model"
+
+    def __init__(self): self.calls = 0
+
+    async def generate(self, *, system, messages, tools, max_tokens):
+        import json as _j
+        self.calls += 1
+        if self.calls == 1:
+            return _Resp([_Blk(type="tool_use", id="a", name="register_payment",
+                               input={"concepto": "x", "monto": 4321,
+                                      "fecha": "2026-07-10", "estado": "pendiente"})], "tool_use")
+        if self.calls == 2:
+            tok = None
+            for m in reversed(messages):
+                if m.get("role") == "user" and isinstance(m.get("content"), list):
+                    for b in m["content"]:
+                        if isinstance(b, dict) and b.get("type") == "tool_result":
+                            data = _j.loads(b["content"])
+                            if data.get("confirm_token"):
+                                tok = data["confirm_token"]
+                    if tok:
+                        break
+            return _Resp([_Blk(type="tool_use", id="b", name="confirm_action",
+                               input={"confirm_token": tok})], "tool_use")
+        return _Resp([_Blk(type="text", text="ok")], "end_turn")
+
+
+class _CtxlessDB:
+    """Hace fallar build_context_pack (pack vacío, best-effort) y registra escrituras."""
+    def __init__(self): self.added = []
+    async def execute(self, *a, **k): raise RuntimeError("sin contexto en el test")
+    def add(self, o): self.added.append(o)
+    async def commit(self): pass
+    async def refresh(self, o):
+        if not getattr(o, "id", None):
+            o.id = uuid4()
+    async def rollback(self): pass
+
+
+@pytest.mark.anyio
+async def test_run_agent_rechaza_confirmar_en_el_mismo_turno(monkeypatch):
+    """Defensa PRIMARIA: aunque el modelo emita register_payment y confirm_action
+    en la misma vuelta, no se escribe nada — la confirmación exige un turno nuevo."""
+    import services.agent_service as agent_service
+    prov = _SameTurnProvider()
+    monkeypatch.setattr(agent_service, "get_provider", lambda: prov)
+    db = _CtxlessDB()
+    user = SimpleNamespace(id=uuid4(), email="m@x.com", full_name="M", phone=None,
+                           automation_prefs=None, plan="pro")
+    events = []
+    async for ev in agent_service.run_agent(db, user, [], "registrá un pago de 4321"):
+        events.append(ev)
+    confirm_results = [e for e in events
+                       if e.get("type") == "tool_result" and e.get("name") == "confirm_action"]
+    assert confirm_results, "esperaba un tool_result de confirm_action"
+    assert "error" in confirm_results[-1]["result"]
+    assert db.added == []  # NADA se escribió: el pago no se registró en el mismo turno

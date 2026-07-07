@@ -149,12 +149,21 @@ def _system_prompt(context_pack: str = "") -> str:
     )
 
 
+def _safe(v) -> str:
+    """Neutraliza texto libre del usuario antes de interpolarlo en el prompt XML.
+    Reemplaza '<'/'>' por homoglyphs para que un valor controlado por el usuario
+    (nombre de proyecto, concepto de pago, título de oportunidad, etc.) NO pueda
+    abrir/cerrar etiquetas ni inyectar instrucciones dentro del system prompt
+    (prompt-injection / auto-inyección). Cosmético para el modelo; no toca datos."""
+    return str(v).replace("<", "‹").replace(">", "›")
+
+
 def render_context_pack(data: dict) -> str:
     """Convierte el snapshot del usuario en texto compacto para el prompt.
     Función pura (testeable sin DB)."""
     lines: list[str] = []
     lines.append(
-        f"- Usuario: {data.get('nombre') or data.get('email', '?')} · plan {data.get('plan', '?')}"
+        f"- Usuario: {_safe(data.get('nombre') or data.get('email', '?'))} · plan {_safe(data.get('plan', '?'))}"
         + (" · Telegram conectado" if data.get("telegram") else " · SIN Telegram")
     )
     projs = data.get("projects") or []
@@ -170,7 +179,7 @@ def render_context_pack(data: dict) -> str:
             except (TypeError, ValueError, ZeroDivisionError):
                 pass
             lines.append(
-                f"    · {p.get('nombre')}: avance {p.get('avance_real_pct', 0):.0f}% "
+                f"    · {_safe(p.get('nombre'))}: avance {p.get('avance_real_pct', 0):.0f}% "
                 f"(plan {p.get('avance_plan_pct', 0):.0f}%){desvio}"
             )
     else:
@@ -184,7 +193,7 @@ def render_context_pack(data: dict) -> str:
         if monto_tot is None:  # sin agregación → sumamos lo que hay, marcando que es parcial
             monto_tot = sum(float(p.get("monto") or 0) for p in pagos)
         prox = ", ".join(
-            f"{p.get('concepto')} ({p.get('fecha')})" for p in pagos[:3]
+            f"{_safe(p.get('concepto'))} ({p.get('fecha')})" for p in pagos[:3]
         )
         extra = f" (+{n_tot - len(pagos)} más)" if n_tot > len(pagos) else ""
         lines.append(
@@ -195,7 +204,7 @@ def render_context_pack(data: dict) -> str:
     if rems:
         lines.append(
             "- Recordatorios próximos: "
-            + "; ".join(f"{r.get('message')} ({r.get('due_at')})" for r in rems[:3])
+            + "; ".join(f"{_safe(r.get('message'))} ({r.get('due_at')})" for r in rems[:3])
         )
     if data.get("contacts_count"):
         lines.append(f"- Contactos en agenda: {data['contacts_count']}")
@@ -204,7 +213,7 @@ def render_context_pack(data: dict) -> str:
         lines.append(
             "- Deal Room: "
             + "; ".join(
-                f"{o.get('titulo')} (score {o.get('score')}, {o.get('recomendacion') or 's/rec'})"
+                f"{_safe(o.get('titulo'))} (score {o.get('score')}, {_safe(o.get('recomendacion') or 's/rec')})"
                 for o in opps[:3]
             )
         )
