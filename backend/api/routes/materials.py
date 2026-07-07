@@ -13,8 +13,12 @@ from pathlib import Path
 
 from core.auth import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from models.base import get_db
+from models.material_interest import MaterialInterest
 from models.user import User
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/materials", tags=["materials"])
 
@@ -39,6 +43,14 @@ class MaterialsResponse(BaseModel):
     categories: list[str]
     updated_at: str
     total: int
+    # material → cantidad de eventos (search+buy). Ordena el autocompletado
+    # "más buscados primero" en el frontend.
+    popularity: dict[str, int] = Field(default_factory=dict)
+
+
+class MaterialInterestRequest(BaseModel):
+    material: str = Field(min_length=1, max_length=255)
+    action: str = Field(default="search", pattern="^(search|buy)$")
 
 
 def _load_csv() -> list[dict]:
@@ -62,9 +74,19 @@ def _load_csv() -> list[dict]:
 )
 async def get_materials(
     categoria: str | None = Query(None, description="Filtrar por categoría"),
+    db: AsyncSession = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
     rows = _load_csv()
+
+    # Popularidad global (todos los usuarios): eventos de búsqueda + compra.
+    try:
+        pop_rows = (await db.execute(
+            select(MaterialInterest.material, func.count())
+            .group_by(MaterialInterest.material))).all()
+        popularity = {m: n for m, n in pop_rows}
+    except Exception:  # noqa: BLE001 — la popularidad nunca rompe el listado
+        popularity = {}
 
     # Unique categories preserving first-appearance order
     seen: set[str] = set()
@@ -105,4 +127,19 @@ async def get_materials(
         categories=categories,
         updated_at=updated_at,
         total=len(items),
+        popularity=popularity,
     )
+
+
+@router.post(
+    "/interest",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Registrar interés en un material (búsqueda o click de compra)",
+)
+async def record_material_interest(
+    body: MaterialInterestRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    db.add(MaterialInterest(user_id=user.id, material=body.material, action=body.action))
+    await db.commit()

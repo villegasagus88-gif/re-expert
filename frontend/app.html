@@ -404,19 +404,22 @@
             <button class="section-tab" data-mat-tab="pronosticos">Pronósticos</button>
           </div>
           <div id="matTabPrecios" class="mat-tab-content">
-            <div class="mat-meta" id="matMeta">
-              <span class="mat-updated" id="matUpdated"></span>
-              <span class="mat-count" id="matCount"></span>
+            <div class="mat-toolbar">
+              <div class="mat-search" id="matSearchWrap">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="matSearch" type="text" placeholder="Buscá un material… (ej: cemento, hierro, ladrillo)" autocomplete="off" spellcheck="false">
+                <button id="matSearchClear" title="Limpiar búsqueda" style="display:none">×</button>
+                <div class="mat-suggest" id="matSuggest" style="display:none"></div>
+              </div>
+              <div class="mat-toolbar-meta">
+                <span class="mat-updated" id="matUpdated"></span>
+                <button class="btn-icon" id="refreshPricesBtn" title="Recargar precios"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
+              </div>
             </div>
             <div class="mat-filter-row" id="matFilterRow"></div>
-            <div class="mat-loading" id="matLoading"><div class="mat-loading-spinner"></div></div>
-            <div class="cards-grid" id="materialesCards"></div>
-            <div style="margin-top:16px">
-              <button class="btn-secondary" id="refreshPricesBtn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Recargar precios
-              </button>
-            </div>
+            <div class="mat-loading" id="matLoading" style="display:none"><div class="mat-loading-spinner"></div></div>
+            <div class="mat-list" id="materialesCards"></div>
+            <div class="pln-disclaimer" style="margin-top:14px">Precios de referencia del mercado argentino. Tocá un material para abrir la página donde se vende y comprarlo directo.</div>
           </div>
           <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
             <!-- Se puebla con los datos reales del catálogo (renderMatSeguimiento) -->
@@ -3287,22 +3290,69 @@ async function plnShowBiblioteca(){
 }
 
 // ===== MATERIALES =====
-const materialesState={items:[],categories:[],updatedAt:'',loaded:false,loading:false,activeCategory:null};
+const materialesState={items:[],categories:[],updatedAt:'',loaded:false,loading:false,activeCategory:null,popularity:{},query:''};
 
 function formatARS(n){return '$'+Number(n).toLocaleString('es-AR',{maximumFractionDigits:0})}
 function matTrendClass(v){return v>2?'trend-up':v<0.5?'trend-down':'trend-stable'}
 
-function matCardHTML(item){
-  const tc=matTrendClass(item.variacion_mensual_pct);
-  const sign=item.variacion_mensual_pct>=0?'+':'';
-  return `<div class="stat-card"><div class="stat-card-label">${esc(item.material)}</div><div class="stat-card-value">${formatARS(item.precio_ars)}</div><div class="stat-card-sub">${esc(item.unidad)} · ${esc(item.proveedor_ref)}</div><div class="stat-card-trend ${tc}">${sign}${item.variacion_mensual_pct.toFixed(1)}% mensual</div></div>`;
+// ── Lupa inteligente: normalización, ranking y compra directa ──
+function matNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ø/g,'').replace(/[×]/g,'x');}
+// Semilla de popularidad para cuando todavía no hay búsquedas registradas.
+const MAT_SEED=[['cemento',100],['hierro',95],['ladrillo',90],['arena',85],['cal ',80],['hormigon',78],['placa',74],['pintura',70],['ceramic',66],['porcelanato',64],['membrana',60],['cano',58],['caño',58],['cable',54],['perfil',50],['yeso',48]];
+function matSeedScore(name){
+  const n=matNorm(name);
+  for(const[kw,score]of MAT_SEED){if(n.includes(matNorm(kw)))return score;}
+  return 0;
+}
+function matPopularity(name){return materialesState.popularity[name]||0;}
+// Coincidencia por prefijo de palabra: cada término escrito tiene que arrancar
+// alguna palabra del material (o su categoría).
+function matMatches(item,q){
+  const words=matNorm(item.material+' '+item.categoria).split(/[^a-z0-9]+/).filter(Boolean);
+  return matNorm(q).split(/\s+/).filter(Boolean).every(tok=>words.some(w=>w.startsWith(tok)));
+}
+function matRank(a,b){
+  return (matPopularity(b.material)-matPopularity(a.material))
+    ||(matSeedScore(b.material)-matSeedScore(a.material))
+    ||a.material.localeCompare(b.material);
+}
+// Página de compra: listado de MercadoLibre AR con el material exacto.
+function matBuyUrl(item){
+  const slug=matNorm(item.material).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  return 'https://listado.mercadolibre.com.ar/'+slug;
+}
+function matRecordInterest(material,action){
+  try{
+    window.REAuthService.authFetch(apiBase()+'/api/materials/interest',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({material,action}),
+    }).catch(()=>{});
+  }catch(e){/* el tracking nunca rompe la UI */}
+}
+function matBuy(item){
+  matRecordInterest(item.material,'buy');
+  window.open(matBuyUrl(item),'_blank','noopener');
+}
+
+function matRowHTML(item){
+  const v=Number(item.variacion_mensual_pct)||0;
+  const tc=matTrendClass(v);
+  return `<div class="mat-row" data-mat="${esc(item.material)}" title="Abrir dónde comprar ${esc(item.material)}">
+    <div class="mat-row-main">
+      <div class="mat-row-name">${esc(item.material)}</div>
+      <div class="mat-row-sub">${esc(item.categoria)} · ${esc(item.proveedor_ref)}</div>
+    </div>
+    <div class="mat-row-right">
+      <div class="mat-row-price">${formatARS(item.precio_ars)}<span class="mat-row-unit">/ ${esc(item.unidad)}</span></div>
+      <span class="mat-row-trend ${tc}">${v>=0?'+':''}${v.toFixed(1)}%</span>
+      <span class="mat-buy">Comprar <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+    </div>
+  </div>`;
 }
 
 function renderMaterialesMeta(){
-  const items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items;
-  const upd=$('#matUpdated'),cnt=$('#matCount');
-  if(upd)upd.textContent=materialesState.updatedAt?'Actualizado: '+materialesState.updatedAt:'';
-  if(cnt)cnt.textContent=items.length+' materiales';
+  const upd=$('#matUpdated');
+  if(upd)upd.textContent=(matVisibleItems().length+' materiales')+(materialesState.updatedAt?' · Actualizado '+materialesState.updatedAt:'');
 }
 
 function renderMaterialesChips(){
@@ -3318,11 +3368,68 @@ function renderMaterialesChips(){
   });
 }
 
+function matVisibleItems(){
+  let items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items.slice();
+  if(materialesState.query)items=items.filter(i=>matMatches(i,materialesState.query)).sort(matRank);
+  return items;
+}
 function renderMaterialesCards(){
   const grid=$('#materialesCards');if(!grid)return;
-  const items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items;
-  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:40px 20px;grid-column:1/-1"><div class="empty-icon">📦</div><div class="empty-title">Sin materiales</div><div class="empty-desc">No hay materiales para esta categoría.</div></div>';return}
-  grid.innerHTML=items.map(matCardHTML).join('');
+  const items=matVisibleItems();
+  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:36px 20px"><div class="empty-title">Sin resultados</div><div class="empty-desc">'+(materialesState.query?'Ningún material arranca con "'+esc(materialesState.query)+'". Probá con otra palabra.':'No hay materiales para esta categoría.')+'</div></div>';return}
+  grid.innerHTML=items.map(matRowHTML).join('');
+  grid.querySelectorAll('.mat-row').forEach(row=>row.addEventListener('click',()=>{
+    const item=materialesState.items.find(i=>i.material===row.dataset.mat);
+    if(item)matBuy(item);
+  }));
+}
+
+// ── Autocompletado de la lupa (más buscados primero) ──
+function renderMatSuggest(){
+  const box=$('#matSuggest'),input=$('#matSearch');if(!box||!input)return;
+  const q=input.value.trim();
+  if(!q){box.style.display='none';box.innerHTML='';return;}
+  const matches=materialesState.items.filter(i=>matMatches(i,q)).sort(matRank).slice(0,8);
+  if(!matches.length){box.innerHTML='<div class="mat-suggest-empty">Sin coincidencias</div>';box.style.display='';return;}
+  box.innerHTML=matches.map(i=>`<button class="mat-suggest-item" data-mat="${esc(i.material)}">
+    <span class="mat-si-name">${esc(i.material)}</span>
+    <span class="mat-si-meta">${esc(i.categoria)}</span>
+    <span class="mat-si-price">${formatARS(i.precio_ars)}</span>
+  </button>`).join('');
+  box.style.display='';
+  box.querySelectorAll('.mat-suggest-item').forEach(b=>b.addEventListener('click',()=>matPickSuggestion(b.dataset.mat)));
+}
+function matPickSuggestion(name){
+  const input=$('#matSearch');
+  materialesState.query=name;materialesState.activeCategory=null;
+  if(input)input.value=name;
+  $('#matSuggest').style.display='none';
+  $('#matSearchClear').style.display='';
+  matRecordInterest(name,'search');
+  renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
+}
+function matClearSearch(){
+  materialesState.query='';
+  const input=$('#matSearch');if(input)input.value='';
+  $('#matSearchClear').style.display='none';
+  $('#matSuggest').style.display='none';
+  renderMaterialesCards();renderMaterialesMeta();
+}
+function initMatSearch(){
+  const input=$('#matSearch');if(!input)return;
+  input.addEventListener('input',()=>{
+    const q=input.value.trim();
+    $('#matSearchClear').style.display=q?'':'none';
+    materialesState.query=q;
+    renderMatSuggest();renderMaterialesCards();renderMaterialesMeta();
+  });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){const first=$('#matSuggest .mat-suggest-item');if(first)matPickSuggestion(first.dataset.mat);}
+    if(e.key==='Escape')$('#matSuggest').style.display='none';
+  });
+  input.addEventListener('focus',()=>{if(input.value.trim())renderMatSuggest();});
+  document.addEventListener('click',e=>{if(!e.target.closest('#matSearchWrap'))$('#matSuggest').style.display='none';});
+  $('#matSearchClear')?.addEventListener('click',matClearSearch);
 }
 
 // Seguimiento: los materiales que MÁS se movieron en el mes, con datos reales
@@ -3364,8 +3471,8 @@ async function loadMateriales(force=false){
   materialesState.loading=true;
   const l=$('#matLoading'),g=$('#materialesCards');
   if(l)l.style.display='none';
-  const _skCard='<div class="stat-card"><div class="skeleton" style="height:10px;width:80%;border-radius:3px;margin-bottom:8px"></div><div class="skeleton" style="height:22px;width:55%;border-radius:4px;margin-bottom:8px"></div><div class="skeleton" style="height:8px;width:70%;border-radius:3px"></div></div>';
-  if(g)g.innerHTML=_skCard+_skCard+_skCard+_skCard+_skCard+_skCard;
+  const _skRow='<div class="mat-row" style="pointer-events:none"><div class="mat-row-main"><div class="skeleton" style="height:12px;width:55%;border-radius:3px;margin-bottom:6px"></div><div class="skeleton" style="height:9px;width:35%;border-radius:3px"></div></div><div class="skeleton" style="height:16px;width:80px;border-radius:4px"></div></div>';
+  if(g)g.innerHTML=_skRow+_skRow+_skRow+_skRow+_skRow+_skRow;
   try{
     const r=await window.REAuthService.authFetch(apiBase()+'/api/materials');
     if(r.status===401){window.REAuthService.logout();return}
@@ -3374,6 +3481,7 @@ async function loadMateriales(force=false){
     materialesState.items=data.items;
     materialesState.categories=data.categories;
     materialesState.updatedAt=data.updated_at;
+    materialesState.popularity=data.popularity||{};
     materialesState.loaded=true;
     renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
     renderMatSeguimiento();renderMatPronosticos();
@@ -3395,6 +3503,7 @@ function initMaterialesTabs(){
       $(`#matTab${tab.dataset.matTab.charAt(0).toUpperCase()+tab.dataset.matTab.slice(1)}`).style.display='';
     });
   });
+  initMatSearch();
 }
 
 // Pagos
