@@ -400,6 +400,7 @@
           </div>
           <div class="section-tabs">
             <button class="section-tab active" data-mat-tab="precios">Precios actuales</button>
+            <button class="section-tab" data-mat-tab="calculadora">Calculadora</button>
             <button class="section-tab" data-mat-tab="seguimiento">Seguimiento</button>
             <button class="section-tab" data-mat-tab="pronosticos">Pronósticos</button>
           </div>
@@ -416,11 +417,20 @@
                 <button class="btn-icon" id="refreshPricesBtn" title="Recargar precios"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
               </div>
             </div>
+            <div id="matNotice"></div>
             <div class="mat-filter-row" id="matFilterRow"></div>
             <div class="mat-loading" id="matLoading" style="display:none"><div class="mat-loading-spinner"></div></div>
             <div class="mat-list" id="materialesCards"></div>
-            <div class="pln-disclaimer" style="margin-top:14px">Precios de referencia del mercado argentino. Tocá un material para abrir la página donde se vende y comprarlo directo.</div>
+            <div class="pln-disclaimer" style="margin-top:14px">Precios de referencia del mercado argentino. Tocá un material para abrir la página donde se vende y comprarlo directo, o usá el <strong>+</strong> para sumarlo a tu lista de compra.</div>
           </div>
+          <div id="matTabCalculadora" class="mat-tab-content" style="display:none">
+            <p class="pln-m-sub" style="margin-bottom:12px">Cómputo de materiales por rubro, con las dosificaciones usuales de obra. Cargás las cantidades reales (m² de muro, m³ de hormigón…), elegís el desperdicio y te devuelve <strong>cantidades + costo con los precios de la sección</strong>.</p>
+            <div class="mat-calc-rubros" id="matCalcRubros"></div>
+            <div id="matCalcForm"></div>
+            <div id="matCalcResult"></div>
+            <div class="pln-disclaimer" style="margin-top:14px">Cómputo de referencia según dosificaciones usuales (mortero 1:½:4, hormigón H21 en obra, rendimientos de fábrica). Cada obra tiene sus particularidades: validá las cantidades finales con tu profesional antes de comprar.</div>
+          </div>
+          <button id="matListaFab" class="mat-lista-fab" style="display:none" title="Ver lista de compra"></button>
           <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
             <!-- Se puebla con los datos reales del catálogo (renderMatSeguimiento) -->
             <div id="matSeguimientoWrap"></div>
@@ -3340,12 +3350,13 @@ function matRowHTML(item){
   return `<div class="mat-row" data-mat="${esc(item.material)}" title="Abrir dónde comprar ${esc(item.material)}">
     <div class="mat-row-main">
       <div class="mat-row-name">${esc(item.material)}</div>
-      <div class="mat-row-sub">${esc(item.categoria)} · ${esc(item.proveedor_ref)}</div>
+      <div class="mat-row-sub">${esc(item.categoria)} · ${esc(item.proveedor_ref)}${item.live?` · <span class="mat-live" title="Precio actualizado automáticamente${item.fuente?' · fuente: '+esc(item.fuente):''}">actualizado ${esc(formatDate(item.fecha_actualizacion))}</span>`:''}</div>
     </div>
     <div class="mat-row-right">
       <div class="mat-row-price">${formatARS(item.precio_ars)}<span class="mat-row-unit">/ ${esc(item.unidad)}</span></div>
       <span class="mat-row-trend ${tc}">${v>=0?'+':''}${v.toFixed(1)}%</span>
       <span class="mat-buy">Comprar <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+      <button class="mat-add" data-add="${esc(item.material)}" title="Agregar a la lista de compra">+</button>
     </div>
   </div>`;
 }
@@ -3388,6 +3399,9 @@ function renderMaterialesCards(){
   grid.querySelectorAll('.mat-row').forEach(row=>row.addEventListener('click',()=>{
     const item=materialesState.items.find(i=>i.material===row.dataset.mat);
     if(item)matBuy(item);
+  }));
+  grid.querySelectorAll('.mat-add').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();matListaAdd(b.dataset.add,1);
   }));
 }
 
@@ -3437,6 +3451,263 @@ function initMatSearch(){
   input.addEventListener('focus',()=>{if(input.value.trim())renderMatSuggest();});
   document.addEventListener('click',e=>{if(!e.target.closest('#matSearchWrap'))$('#matSuggest').style.display='none';});
   $('#matSearchClear')?.addEventListener('click',matClearSearch);
+}
+
+// ── Aviso mínimo de aumentos (sin alarmismo) ──
+function renderMatNotice(){
+  const box=$('#matNotice');if(!box)return;
+  if(sessionStorage.getItem('re_mat_notice_hide')){box.innerHTML='';return;}
+  const subieron=(materialesState.items||[]).filter(i=>Number(i.variacion_mensual_pct)>5)
+    .sort((a,b)=>b.variacion_mensual_pct-a.variacion_mensual_pct);
+  if(!subieron.length){box.innerHTML='';return;}
+  const tops=subieron.slice(0,3).map(i=>`${esc(i.material)} (+${Number(i.variacion_mensual_pct).toFixed(1)}%)`).join(', ');
+  box.innerHTML=`<div class="mat-notice"><span>${subieron.length} material${subieron.length!==1?'es':''} subi${subieron.length!==1?'eron':'ó'} más de 5% este mes: ${tops}${subieron.length>3?'…':''}</span><button id="matNoticeHide" title="Ocultar">×</button></div>`;
+  $('#matNoticeHide').addEventListener('click',()=>{sessionStorage.setItem('re_mat_notice_hide','1');box.innerHTML='';});
+}
+
+// ── Lista de compra (persistida en el navegador) ──
+function matLista(){try{return JSON.parse(localStorage.getItem('re_mat_lista')||'{}');}catch(e){return {};}}
+function matListaSave(l){localStorage.setItem('re_mat_lista',JSON.stringify(l));matListaFabRender();}
+function matListaCount(){return Object.values(matLista()).reduce((a,n)=>a+n,0);}
+function matListaTotal(){
+  const l=matLista();let t=0;
+  for(const[name,qty]of Object.entries(l)){
+    const it=materialesState.items.find(i=>i.material===name);
+    if(it)t+=it.precio_ars*qty;
+  }
+  return t;
+}
+function matListaAdd(name,qty=1){
+  const l=matLista();l[name]=(l[name]||0)+qty;matListaSave(l);
+  plnToast('Agregado a la lista: '+name.slice(0,40)+(name.length>40?'…':''));
+}
+function matListaFabRender(){
+  const fab=$('#matListaFab');if(!fab)return;
+  const n=matListaCount();
+  if(!n){fab.style.display='none';return;}
+  fab.style.display='';
+  fab.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Lista (${n}) · <strong>${formatARS(matListaTotal())}</strong>`;
+}
+function matListaShareText(){
+  const l=matLista();
+  const lines=Object.entries(l).map(([name,qty])=>{
+    const it=materialesState.items.find(i=>i.material===name);
+    return `• ${qty} ${it?esc(it.unidad):'u'} × ${name}${it?` — ${formatARS(it.precio_ars*qty)}`:''}`;
+  });
+  return `🧱 *Lista de compra de materiales*\n${new Date().toLocaleDateString('es-AR')}\n\n${lines.join('\n')}\n\n*Total estimado: ${formatARS(matListaTotal())}*\n\nPrecios de referencia — RE Expert`;
+}
+function matListaOpen(){
+  const l=matLista();
+  const entries=Object.entries(l);
+  if(!entries.length){plnToast('Tu lista está vacía: agregá materiales con el botón +',false);return;}
+  plnModalOpen(`
+    <h3 class="pln-m-title">🧱 Lista de compra</h3>
+    <p class="pln-m-sub">Ajustá cantidades y compartila con tu corralón o tu equipo.</p>
+    <div class="mat-lista">${entries.map(([name,qty])=>{
+      const it=materialesState.items.find(i=>i.material===name);
+      return `<div class="mat-lista-row" data-name="${esc(name)}">
+        <div class="mat-lista-main">
+          <div class="mat-lista-name">${esc(name)}</div>
+          <div class="mat-row-sub">${it?formatARS(it.precio_ars)+' / '+esc(it.unidad):'precio no disponible'}</div>
+        </div>
+        <div class="mat-lista-qty">
+          <button class="mat-lq-btn" data-d="-1">−</button>
+          <span>${qty}</span>
+          <button class="mat-lq-btn" data-d="1">+</button>
+        </div>
+        <div class="mat-lista-sub">${it?formatARS(it.precio_ars*qty):'—'}</div>
+        <button class="mat-lq-del" title="Quitar">×</button>
+      </div>`;}).join('')}</div>
+    <div class="mat-lista-total"><span>Total estimado</span><strong>${formatARS(matListaTotal())}</strong></div>
+    <div class="mat-lista-actions">
+      <button class="btn-secondary" id="matLCopy">📋 Copiar</button>
+      <button class="btn-secondary" id="matLWa">📲 WhatsApp</button>
+      <button class="btn-secondary" id="matLMail">✉️ Mail</button>
+      <button class="btn-secondary" id="matLClear" style="color:#dc2626;margin-left:auto">Vaciar</button>
+    </div>`);
+  $('#plnModalBody').querySelectorAll('.mat-lista-row').forEach(row=>{
+    const name=row.dataset.name;
+    row.querySelectorAll('.mat-lq-btn').forEach(b=>b.addEventListener('click',()=>{
+      const li=matLista();li[name]=Math.max(0,(li[name]||0)+parseInt(b.dataset.d,10));
+      if(!li[name])delete li[name];
+      matListaSave(li);matListaOpen();
+    }));
+    row.querySelector('.mat-lq-del').addEventListener('click',()=>{
+      const li=matLista();delete li[name];matListaSave(li);
+      if(Object.keys(li).length)matListaOpen();else plnModalClose();
+    });
+  });
+  $('#matLCopy').addEventListener('click',()=>{navigator.clipboard.writeText(matListaShareText().replace(/\*/g,'')).then(()=>plnToast('Lista copiada al portapapeles'));});
+  $('#matLWa').addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent(matListaShareText()),'_blank','noopener'));
+  $('#matLMail').addEventListener('click',()=>window.open('mailto:?subject='+encodeURIComponent('Lista de compra de materiales')+'&body='+encodeURIComponent(matListaShareText().replace(/\*/g,'')),'_self'));
+  $('#matLClear').addEventListener('click',()=>{if(confirm('¿Vaciar la lista de compra?')){matListaSave({});plnModalClose();}});
+}
+
+// ── Calculadora de cantidades por rubro ──
+// Dosificaciones usuales de obra (vademécum): mortero de asiento/revoque 1:½:4
+// por m³ → 5,5 bolsas de cemento + 1,5 bolsas de cal (30kg) + 1,1 m³ de arena.
+const MAT_CALC_STATE={rubro:'mamposteria'};
+const _MORT={cem:5.5,cal:1.5,arena:1.1};
+const _KG_BARRA={'Ø6':2.66,'Ø8':4.74,'Ø10':7.40,'Ø12':10.66,'Ø16':18.96};
+const MAT_CALC={
+  mamposteria:{label:'🧱 Mampostería',inputs:[
+    {id:'m2',label:'m² de muro',type:'number',def:30,min:1},
+    {id:'tipo',label:'Tipo de ladrillo',type:'select',def:'h18',opts:{comun:'Ladrillo común (muro 15cm)',h8:'Hueco 8x18x33',h12:'Hueco 12x18x33',h18:'Hueco 18x18x33',bloque:'Block de cemento 20x20x40'}},
+    {id:'desp',label:'Desperdicio %',type:'number',def:8,min:0}],
+   compute(v){
+     const T={comun:{u:60,m:0.030,mat:'Ladrillo común'},h8:{u:15,m:0.008,mat:'Ladrillo hueco 8x18x33'},h12:{u:16,m:0.012,mat:'Ladrillo hueco 12x18x33'},h18:{u:16,m:0.018,mat:'Ladrillo hueco 18x18x33'},bloque:{u:12.5,m:0.015,mat:'Block de cemento 20x20x40'}}[v.tipo];
+     const d=1+v.desp/100,mort=v.m2*T.m;
+     return {rows:[
+       {label:T.mat,qty:Math.ceil(v.m2*T.u*d),unit:'unidades',match:T.mat},
+       {label:'Cemento (mortero de asiento)',qty:Math.ceil(mort*_MORT.cem),unit:'bolsas 50kg',match:'Cemento Portland CPN40 x 50kg'},
+       {label:'Cal hidráulica',qty:Math.ceil(mort*_MORT.cal),unit:'bolsas 30kg',match:'Cal hidráulica x 30kg'},
+       {label:'Arena gruesa',qty:+(mort*_MORT.arena).toFixed(2),unit:'m³',match:'Arena gruesa lavada'}],
+      notes:['Ladrillos por m²: común 60 · huecos 15-16 · block 12,5. El desperdicio aplica a los ladrillos (rotura y cortes).']};
+   }},
+  revoques:{label:'🏗️ Revoques',inputs:[
+    {id:'m2',label:'m² a revocar',type:'number',def:50,min:1},
+    {id:'grueso',label:'Revoque grueso (2cm)',type:'check',def:true},
+    {id:'fino',label:'Revoque fino (0,5cm)',type:'check',def:true}],
+   compute(v){
+     const rows=[];let cem=0,cal=0,ag=0,af=0;
+     if(v.grueso){const mo=v.m2*0.020;cem+=mo*_MORT.cem;cal+=mo*_MORT.cal;ag+=mo*_MORT.arena;}
+     if(v.fino){cem+=v.m2*0.9/50;cal+=v.m2*1.8/30;af+=v.m2*0.007;}
+     if(cem)rows.push({label:'Cemento',qty:Math.ceil(cem),unit:'bolsas 50kg',match:'Cemento Portland CPN40 x 50kg'});
+     if(cal)rows.push({label:'Cal hidráulica',qty:Math.ceil(cal),unit:'bolsas 30kg',match:'Cal hidráulica x 30kg'});
+     if(ag)rows.push({label:'Arena gruesa',qty:+ag.toFixed(2),unit:'m³',match:'Arena gruesa lavada'});
+     if(af)rows.push({label:'Arena fina',qty:+af.toFixed(2),unit:'m³',match:'Arena fina'});
+     return {rows,notes:['Grueso: mortero 1:½:4, espesor 2cm (0,020 m³/m²). Fino a la cal: 0,5cm.']};
+   }},
+  contrapiso:{label:'🧮 Contrapiso y carpeta',inputs:[
+    {id:'m2',label:'m² de piso',type:'number',def:40,min:1},
+    {id:'esp',label:'Espesor contrapiso (cm)',type:'number',def:10,min:5},
+    {id:'carpeta',label:'Incluir carpeta de nivelación (2cm)',type:'check',def:true}],
+   compute(v){
+     const m3=v.m2*v.esp/100;
+     const rows=[
+       {label:'Cemento (contrapiso)',qty:Math.ceil(m3*2.6),unit:'bolsas 50kg',match:'Cemento Portland CPN40 x 50kg'},
+       {label:'Cal hidráulica',qty:Math.ceil(m3*1),unit:'bolsas 30kg',match:'Cal hidráulica x 30kg'},
+       {label:'Arena gruesa',qty:+(m3*0.6).toFixed(2),unit:'m³',match:'Arena gruesa lavada'},
+       {label:'Cascote molido',qty:+(m3*0.9).toFixed(2),unit:'m³',match:'Cascote molido'}];
+     if(v.carpeta){
+       rows.push({label:'Cemento (carpeta 1:3)',qty:Math.ceil(v.m2*8.5/50),unit:'bolsas 50kg',match:'Cemento Portland CPN40 x 50kg'});
+       rows.push({label:'Arena fina (carpeta)',qty:+(v.m2*0.021).toFixed(2),unit:'m³',match:'Arena fina'});
+     }
+     return {rows,notes:['Contrapiso de hormigón pobre con cascote (1:¼:4:8). Carpeta 1:3 de 2cm.']};
+   }},
+  hormigon:{label:'🏛️ Hormigón y hierro',inputs:[
+    {id:'modo',label:'Modalidad',type:'select',def:'obra',opts:{obra:'Elaborado en obra (H21)',elab21:'Hormigón elaborado H21',elab25:'Hormigón elaborado H25'}},
+    {id:'m3',label:'m³ de hormigón',type:'number',def:5,min:0.5,step:0.5},
+    {id:'kgm3',label:'Hierro (kg por m³) — losas ~80, vigas ~110, columnas ~120',type:'number',def:80,min:0},
+    {id:'diam',label:'Diámetro predominante',type:'select',def:'Ø10',opts:{'Ø6':'Ø6mm','Ø8':'Ø8mm','Ø10':'Ø10mm','Ø12':'Ø12mm','Ø16':'Ø16mm'}}],
+   compute(v){
+     const rows=[];
+     if(v.modo==='obra'){
+       rows.push({label:'Cemento',qty:Math.ceil(v.m3*7),unit:'bolsas 50kg',match:'Cemento Portland CPN40 x 50kg'});
+       rows.push({label:'Arena gruesa',qty:+(v.m3*0.65).toFixed(2),unit:'m³',match:'Arena gruesa lavada'});
+       rows.push({label:'Piedra partida 6/20',qty:+(v.m3*0.67).toFixed(2),unit:'m³',match:'Piedra partida 6/20'});
+     }else{
+       const mat=v.modo==='elab25'?'Hormigón elaborado H25 (bombeable)':'Hormigón elaborado H21 (bombeable)';
+       rows.push({label:mat,qty:+v.m3.toFixed(1),unit:'m³',match:mat});
+       rows.push({label:'Servicio de bombeo',qty:Math.ceil(v.m3/7),unit:'viajes',match:'Servicio de bombeo (por viaje)'});
+     }
+     const kg=v.m3*v.kgm3;
+     if(kg>0){
+       const barra='Barra de hierro '+v.diam+'mm x 12m';
+       rows.push({label:'Hierro '+v.diam+' ('+Math.round(kg)+' kg)',qty:Math.ceil(kg/_KG_BARRA[v.diam]),unit:'barras 12m',match:barra});
+       rows.push({label:'Alambre de atar',qty:Math.max(1,Math.ceil(kg/100)),unit:'kg',match:'Alambre de atar Ø16 x 1kg'});
+     }
+     return {rows,notes:['H21 en obra: 7 bolsas + 0,65 m³ arena + 0,67 m³ piedra por m³. La cuantía de hierro depende del cálculo estructural: usá el valor de tu calculista.']};
+   }},
+  pisos:{label:'⬜ Pisos y revestimientos',inputs:[
+    {id:'m2i',label:'m² interiores (cubiertos)',type:'number',def:40,min:0},
+    {id:'m2g',label:'m² galería / semicubiertos',type:'number',def:0,min:0},
+    {id:'tipo',label:'Material',type:'select',def:'cer30',opts:{cer30:'Cerámico 30x30',cer45:'Cerámico 45x45',porc60:'Porcelanato 60x60',flot:'Piso flotante AC4'}},
+    {id:'desp',label:'Desperdicio % (12-15 si colocás en diagonal)',type:'number',def:10,min:5}],
+   compute(v){
+     const T={cer30:{mat:'Cerámico 30x30 (caja 2.5m²)',caja:2.5,peg:'Pegamento p/ cerámicos (bolsa 30kg)',kg:4},
+              cer45:{mat:'Cerámico 45x45 (caja 2.5m²)',caja:2.5,peg:'Pegamento p/ cerámicos (bolsa 30kg)',kg:4},
+              porc60:{mat:'Porcelanato 60x60 (caja 1.44m²)',caja:1.44,peg:'Pegamento p/ porcelanato (bolsa 30kg)',kg:5},
+              flot:{mat:'Piso flotante AC4 8mm',caja:0,peg:null}}[v.tipo];
+     const base=v.m2i+v.m2g,m2=base*(1+v.desp/100);
+     const rows=[{label:T.mat+(T.caja?` (≈ ${Math.ceil(m2/T.caja)} cajas)`:''),qty:+m2.toFixed(1),unit:'m²',match:T.mat}];
+     if(T.peg){
+       rows.push({label:'Pegamento',qty:Math.ceil(base*T.kg/30),unit:'bolsas 30kg',match:T.peg});
+       rows.push({label:'Pastina',qty:Math.max(1,Math.ceil(base*0.4/5)),unit:'bolsas 5kg',match:'Pastina p/ juntas (bolsa 5kg)'});
+     }
+     const notes=['La galería/semicubierto también lleva piso: se suma al cómputo.'];
+     if(v.tipo==='flot')notes.push('El piso flotante lleva manta niveladora (no incluida en el catálogo).');
+     return {rows,notes};
+   }},
+  pintura:{label:'🎨 Pintura',inputs:[
+    {id:'m2m',label:'m² de muros',type:'number',def:80,min:0},
+    {id:'m2c',label:'m² de cielorrasos',type:'number',def:0,min:0},
+    {id:'manos',label:'Manos',type:'number',def:2,min:1},
+    {id:'tipo',label:'Tipo',type:'select',def:'int',opts:{int:'Látex interior',ext:'Látex exterior'}},
+    {id:'fijador',label:'Incluir fijador/sellador (1 mano)',type:'check',def:true},
+    {id:'enduido',label:'Incluir enduido plástico (2 manos)',type:'check',def:false}],
+   compute(v){
+     const m2=v.m2m+v.m2c;
+     const litros=m2*v.manos/10;
+     const mat=v.tipo==='ext'?'Látex exterior 20L':'Látex interior 20L';
+     const rows=[{label:mat.replace(' 20L','')+` (${Math.ceil(litros)} L)`,qty:Math.max(1,Math.ceil(litros/20)),unit:'latas 20L',match:mat}];
+     if(v.fijador)rows.push({label:'Fijador sellador ('+Math.ceil(m2/12)+' L)',qty:Math.max(1,Math.ceil(m2/12/20)),unit:'latas 20L',match:'Fijador sellador 20L'});
+     if(v.enduido)rows.push({label:'Enduido plástico',qty:Math.max(1,Math.ceil(m2*0.7/32)),unit:'bolsas 32kg',match:'Enduido plástico 32kg'});
+     return {rows,notes:['Rendimiento del látex: ~10 m²/litro por mano sobre superficie sellada.']};
+   }},
+};
+function matCalcInit(){
+  const chips=$('#matCalcRubros');if(!chips)return;
+  chips.innerHTML=Object.entries(MAT_CALC).map(([k,r])=>`<button class="mat-chip${MAT_CALC_STATE.rubro===k?' active':''}" data-rubro="${k}">${r.label}</button>`).join('');
+  chips.querySelectorAll('[data-rubro]').forEach(b=>b.addEventListener('click',()=>{MAT_CALC_STATE.rubro=b.dataset.rubro;matCalcInit();}));
+  matCalcRenderForm();
+}
+function matCalcRenderForm(){
+  const form=$('#matCalcForm');if(!form)return;
+  const r=MAT_CALC[MAT_CALC_STATE.rubro];
+  form.innerHTML=`<div class="mat-calc-form">${r.inputs.map(inp=>{
+    if(inp.type==='select')return `<label class="mat-calc-field">${inp.label}<select class="pln-input" data-in="${inp.id}">${Object.entries(inp.opts).map(([k,v])=>`<option value="${k}"${k===inp.def?' selected':''}>${v}</option>`).join('')}</select></label>`;
+    if(inp.type==='check')return `<label class="mat-calc-check"><input type="checkbox" data-in="${inp.id}"${inp.def?' checked':''}> ${inp.label}</label>`;
+    return `<label class="mat-calc-field">${inp.label}<input class="pln-input" type="number" data-in="${inp.id}" value="${inp.def}" min="${inp.min??0}" step="${inp.step??1}"></label>`;
+  }).join('')}</div>`;
+  form.querySelectorAll('[data-in]').forEach(el=>el.addEventListener('input',matCalcCompute));
+  matCalcCompute();
+}
+function matCalcCompute(){
+  const out=$('#matCalcResult');if(!out)return;
+  const r=MAT_CALC[MAT_CALC_STATE.rubro];
+  const vals={};
+  $('#matCalcForm').querySelectorAll('[data-in]').forEach(el=>{
+    vals[el.dataset.in]=el.type==='checkbox'?el.checked:(el.tagName==='SELECT'?el.value:parseFloat(el.value)||0);
+  });
+  const res=r.compute(vals);
+  if(!res.rows.length){out.innerHTML='';return;}
+  let total=0,hasMissing=false;
+  const rowsHtml=res.rows.map(row=>{
+    const it=materialesState.items.find(i=>i.material===row.match);
+    const sub=it?it.precio_ars*row.qty:null;
+    if(sub!=null)total+=sub;else hasMissing=true;
+    return `<div class="mat-calc-row">
+      <div class="mat-calc-qty">${row.qty} <span>${row.unit}</span></div>
+      <div class="mat-calc-name">${esc(row.label)}</div>
+      <div class="mat-calc-sub">${sub!=null?formatARS(sub):'<span style="color:var(--text-3)">s/precio</span>'}</div>
+    </div>`;
+  }).join('');
+  out.innerHTML=`<div class="mat-calc-result">
+    ${rowsHtml}
+    <div class="mat-calc-total"><span>Costo estimado del rubro${hasMissing?' (parcial)':''}</span><strong>${formatARS(total)}</strong></div>
+    <div class="mat-calc-actions"><button class="btn-primary" id="matCalcToLista">🛒 Agregar todo a la lista de compra</button></div>
+    ${res.notes.length?`<div class="mat-calc-notes">${res.notes.map(n=>'· '+esc(n)).join('<br>')}</div>`:''}
+  </div>`;
+  $('#matCalcToLista').addEventListener('click',()=>{
+    const l=matLista();let added=0;
+    res.rows.forEach(row=>{
+      if(!materialesState.items.find(i=>i.material===row.match))return;
+      l[row.match]=(l[row.match]||0)+Math.max(1,Math.ceil(row.qty));added++;
+    });
+    matListaSave(l);
+    plnToast(added?added+' materiales agregados a la lista':'No hay materiales con precio para agregar',!!added);
+  });
 }
 
 // Seguimiento: los materiales que MÁS se movieron en el mes, con datos reales
@@ -3492,6 +3763,8 @@ async function loadMateriales(force=false){
     materialesState.loaded=true;
     renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
     renderMatSeguimiento();renderMatPronosticos();
+    renderMatNotice();matListaFabRender();
+    if($('#matCalcForm')&&$('#matCalcForm').innerHTML)matCalcCompute();
   }catch(e){
     if(g)g.innerHTML='<div style="padding:20px;color:var(--text-2);font-size:13px">No se pudieron cargar los precios. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('materiales:',e);
   }finally{
@@ -3511,6 +3784,8 @@ function initMaterialesTabs(){
     });
   });
   initMatSearch();
+  matCalcInit();
+  $('#matListaFab')?.addEventListener('click',matListaOpen);
 }
 
 // Pagos

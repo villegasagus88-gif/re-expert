@@ -82,6 +82,13 @@
       <div class="card-title">Cursos por demanda</div>
       <div id="courseTable"><div class="muted">Cargando…</div></div>
     </div>
+
+    <!-- Materiales más buscados (Cotización de Materiales) -->
+    <div class="card">
+      <div class="card-title">🧱 Materiales más buscados y comprados</div>
+      <div class="muted" style="margin-bottom:10px">Eventos de la lupa inteligente (búsquedas elegidas) y clicks de "Comprar" en Cotización de Materiales.</div>
+      <div id="materialsTable"><div class="muted">Cargando…</div></div>
+    </div>
   </div>
 
   <script src="authService.js"></script>
@@ -155,6 +162,29 @@
     </table>`;
   }
 
+  function renderMaterials(d){
+    const rows=d.items||[];
+    const box=$('#materialsTable');
+    if(!rows.length){ box.innerHTML='<div class="muted">Todavía no hay búsquedas ni compras registradas.</div>'; return; }
+    box.innerHTML=`<table>
+      <thead><tr><th>Material</th><th class="num">Búsquedas</th><th class="num">Compras</th><th class="num hide-sm">Total</th></tr></thead>
+      <tbody>${rows.slice(0,25).map(m=>`<tr>
+        <td><div class="c-name">${esc(m.material)}</div></td>
+        <td class="num">${m.search||0}</td>
+        <td class="num">${(m.buy||0)>0?`<span class="pill pill-ins">${m.buy}</span>`:'<span class="pill-zero">0</span>'}</td>
+        <td class="num hide-sm">${m.total||0}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  async function loadMaterialsDemand(){
+    try{
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/materials/demand');
+      if(!r.ok) throw new Error('Error '+r.status);
+      renderMaterials(await r.json());
+    }catch(e){ const box=$('#materialsTable'); if(box) box.innerHTML='<div class="muted">No se pudo cargar la demanda de materiales: '+esc(e.message)+'</div>'; }
+  }
+
   async function loadDemand(){
     clearErr();
     const btn=$('#refreshBtn'); if(btn){ btn.disabled=true; }
@@ -166,6 +196,7 @@
       renderKpis(d); renderTopics(d); renderCourses(d);
     }catch(e){ showErr('No se pudieron cargar los datos de demanda: '+e.message); }
     finally{ if(btn){ btn.disabled=false; } }
+    loadMaterialsDemand();
   }
 
   $('#refreshBtn').addEventListener('click', loadDemand);

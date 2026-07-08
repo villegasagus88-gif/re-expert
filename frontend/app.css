@@ -123,9 +123,49 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .mat-row-trend.trend-down{background:rgba(34,197,94,.1);color:#16a34a}
 .mat-row-trend.trend-stable{background:var(--bg-2);color:var(--text-2)}
 .mat-buy{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--accent-brand);border:1px solid rgba(190,81,3,.3);border-radius:100px;padding:5px 12px;transition:all .15s;white-space:nowrap}
+.mat-add{width:26px;height:26px;border-radius:50%;border:1px solid var(--border-0);background:var(--bg-2);color:var(--text-1);font-size:15px;line-height:1;cursor:pointer;flex-shrink:0;transition:all .15s;font-family:var(--font)}
+.mat-add:hover{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff}
+.mat-live{color:var(--text-3)}
+/* Aviso mínimo de aumentos */
+.mat-notice{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--text-2);border:1px solid var(--border-1);border-left:3px solid var(--border-0);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;background:var(--bg-1)}
+.mat-notice button{background:none;border:none;color:var(--text-3);font-size:14px;cursor:pointer;padding:0 2px;flex-shrink:0}
+/* Lista de compra */
+.mat-lista-fab{position:fixed;bottom:24px;right:24px;z-index:150;display:inline-flex;align-items:center;gap:7px;background:var(--text-0);color:var(--bg-1);border:none;border-radius:100px;padding:11px 18px;font-size:12.5px;font-weight:600;font-family:var(--font);cursor:pointer;box-shadow:var(--shadow-xl);transition:transform .15s}
+.mat-lista-fab:hover{transform:translateY(-2px)}
+[data-theme="dark"] .mat-lista-fab{background:var(--accent-brand);color:#fff}
+.mat-lista{display:flex;flex-direction:column;max-height:46vh;overflow-y:auto}
+.mat-lista-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-1)}
+.mat-lista-main{flex:1;min-width:0}
+.mat-lista-name{font-size:12.5px;font-weight:600;color:var(--text-0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mat-lista-qty{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mat-lista-qty span{font-size:13px;font-weight:700;min-width:22px;text-align:center}
+.mat-lq-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border-0);background:var(--bg-2);color:var(--text-1);cursor:pointer;font-size:14px;line-height:1;font-family:var(--font)}
+.mat-lq-btn:hover{border-color:var(--accent-brand);color:var(--accent-brand)}
+.mat-lista-sub{font-size:12.5px;font-weight:700;min-width:82px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+.mat-lq-del{background:none;border:none;color:var(--text-3);font-size:15px;cursor:pointer;flex-shrink:0;padding:0 2px}
+.mat-lista-total{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-size:13px;color:var(--text-2)}
+.mat-lista-total strong{font-size:18px;color:var(--text-0);letter-spacing:-.3px}
+.mat-lista-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+/* Calculadora */
+.mat-calc-rubros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.mat-calc-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px}
+.mat-calc-field{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--text-2)}
+.mat-calc-check{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--text-1);cursor:pointer;align-self:end;padding:8px 0}
+.mat-calc-check input{width:15px;height:15px;accent-color:var(--accent-brand)}
+.mat-calc-result{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-lg);padding:16px}
+.mat-calc-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-1)}
+.mat-calc-qty{min-width:110px;font-size:14px;font-weight:800;color:var(--text-0);font-variant-numeric:tabular-nums}
+.mat-calc-qty span{font-size:10px;font-weight:600;color:var(--text-3);display:block}
+.mat-calc-name{flex:1;font-size:12.5px;color:var(--text-1)}
+.mat-calc-sub{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.mat-calc-total{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-size:13px;color:var(--text-2)}
+.mat-calc-total strong{font-size:19px;color:var(--text-0);letter-spacing:-.4px}
+.mat-calc-actions{margin-top:10px}
+.mat-calc-notes{margin-top:12px;font-size:10.5px;color:var(--text-3);line-height:1.6}
 @media(max-width:640px){
   .mat-row{flex-wrap:wrap}
   .mat-row-right{width:100%;justify-content:space-between}
+  .mat-lista-fab{bottom:16px;right:16px}
 }
 .mat-updated{font-size:11px;color:var(--text-3)}
 .mat-count{font-size:11px;color:var(--text-3)}

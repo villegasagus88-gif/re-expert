@@ -11,12 +11,14 @@ CSV columns: categoria, material, unidad, precio_ars, proveedor_ref,
 import csv
 from pathlib import Path
 
-from core.auth import get_current_user
+from core.auth import get_current_user, require_admin
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.base import get_db
 from models.material_interest import MaterialInterest
+from models.material_price import MaterialPriceOverride
 from models.user import User
 from pydantic import BaseModel, Field
+from services.material_prices import maybe_refresh_prices
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +38,8 @@ class MaterialItem(BaseModel):
     proveedor_ref: str
     variacion_mensual_pct: float
     fecha_actualizacion: str
+    live: bool = False       # True si el precio viene del actualizador automático
+    fuente: str = ""
 
 
 class MaterialsResponse(BaseModel):
@@ -101,26 +105,41 @@ async def get_materials(
     if categoria:
         rows = [r for r in rows if r.get("categoria", "").strip() == categoria]
 
-    # Parse rows into typed items
+    # Overrides de precios vivos (actualizador automático)
+    try:
+        ov_rows = list((await db.execute(select(MaterialPriceOverride))).scalars().all())
+        overrides = {o.material: o for o in ov_rows}
+        last_live = max((o.updated_at for o in ov_rows), default=None)
+    except Exception:  # noqa: BLE001
+        overrides, last_live = {}, None
+
+    # Parse rows into typed items (override pisa al CSV)
     items: list[MaterialItem] = []
     for row in rows:
         try:
+            name = row["material"].strip()
+            ov = overrides.get(name)
             items.append(
                 MaterialItem(
                     categoria=row["categoria"].strip(),
-                    material=row["material"].strip(),
+                    material=name,
                     unidad=row["unidad"].strip(),
-                    precio_ars=int(float(row["precio_ars"])),
+                    precio_ars=ov.precio_ars if ov else int(float(row["precio_ars"])),
                     proveedor_ref=row["proveedor_ref"].strip(),
-                    variacion_mensual_pct=float(row["variacion_mensual_pct"]),
-                    fecha_actualizacion=row["fecha_actualizacion"].strip(),
+                    variacion_mensual_pct=ov.variacion_mensual_pct if ov else float(row["variacion_mensual_pct"]),
+                    fecha_actualizacion=ov.updated_at.date().isoformat() if ov else row["fecha_actualizacion"].strip(),
+                    live=bool(ov),
+                    fuente=(ov.fuente if ov else ""),
                 )
             )
         except (KeyError, ValueError):
             continue
 
-    dates = [r.get("fecha_actualizacion", "").strip() for r in rows if r.get("fecha_actualizacion", "").strip()]
+    dates = [i.fecha_actualizacion for i in items if i.fecha_actualizacion]
     updated_at = max(dates) if dates else ""
+
+    # "Cada vez que el usuario entra": si la data vieja, refresh en background.
+    maybe_refresh_prices({i.material: i.precio_ars for i in items}, last_live)
 
     return MaterialsResponse(
         items=items,
@@ -143,3 +162,25 @@ async def record_material_interest(
 ):
     db.add(MaterialInterest(user_id=user.id, material=body.material, action=body.action))
     await db.commit()
+
+
+@router.get(
+    "/demand",
+    summary="Materiales más buscados y comprados (solo admin)",
+    responses={403: {"description": "Requiere admin"}},
+)
+async def materials_demand(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    rows = (await db.execute(
+        select(MaterialInterest.material, MaterialInterest.action, func.count())
+        .group_by(MaterialInterest.material, MaterialInterest.action))).all()
+    agg: dict[str, dict] = {}
+    for material, action, n in rows:
+        item = agg.setdefault(material, {"material": material, "search": 0, "buy": 0, "total": 0})
+        if action in ("search", "buy"):
+            item[action] += n
+        item["total"] += n
+    items = sorted(agg.values(), key=lambda x: x["total"], reverse=True)
+    return {"items": items, "total_events": sum(i["total"] for i in items)}
