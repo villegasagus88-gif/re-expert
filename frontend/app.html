@@ -3357,7 +3357,14 @@ function renderMaterialesMeta(){
 
 function renderMaterialesChips(){
   const row=$('#matFilterRow');if(!row)return;
-  const cats=['Todos',...materialesState.categories];
+  // Categorías del backend; si no vinieron, las derivamos de los items (así la
+  // barra de navegación aparece igual mientras haya materiales cargados).
+  let catList=Array.isArray(materialesState.categories)?materialesState.categories.slice():[];
+  if(!catList.length){
+    const seen=new Set();
+    (materialesState.items||[]).forEach(i=>{const c=(i.categoria||'').trim();if(c&&!seen.has(c)){seen.add(c);catList.push(c);}});
+  }
+  const cats=['Todos',...catList];
   row.innerHTML=cats.map(c=>`<button class="mat-chip${(c==='Todos'&&!materialesState.activeCategory)||(c===materialesState.activeCategory)?' active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
   row.querySelectorAll('.mat-chip').forEach(chip=>{
     chip.addEventListener('click',()=>{
