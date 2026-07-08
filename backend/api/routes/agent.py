@@ -142,9 +142,9 @@ async def sol_agent(
         except TimeoutError:
             yield _sse({"type": "error", "message": "Timeout SOL agent"})
             return
-        except Exception as e:
+        except Exception:
             logger.exception("agent error")
-            yield _sse({"type": "error", "message": str(e)})
+            yield _sse({"type": "error", "message": "Se produjo un error procesando tu pedido. Reintentá en unos segundos."})
             return
 
         # Persistir respuesta del agente. Al content persistido le anexamos, si

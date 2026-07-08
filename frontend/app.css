@@ -192,7 +192,7 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .mem-export-btn svg{opacity:.8}
 .mem-export-btn:disabled{opacity:.5;cursor:wait}
 
-/* ── Modal Crear Proyecto (estilo ChatGPT + paleta) ── */
+/* ── Modal Crear Proyecto (estilo chat moderno + paleta) ── */
 .modal.ws-modal-create{width:460px;max-width:92vw}
 .ws-create-label{display:block;font-size:12px;font-weight:600;color:var(--text-1);margin-bottom:8px}
 .ws-name-field{display:flex;align-items:center;gap:10px;background:var(--bg-1);border:1px solid var(--border-0);border-radius:10px;padding:12px 14px;transition:border-color .15s}

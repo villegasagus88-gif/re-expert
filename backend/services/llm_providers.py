@@ -268,7 +268,7 @@ class GeminiProvider:
             r = await cli.post(url, headers=headers, json=body)
             data = r.json()
             if r.status_code >= 400:
-                raise RuntimeError(f"Gemini error {r.status_code}: {data}")
+                raise RuntimeError(f"Proveedor de IA respondió {r.status_code}")
 
         candidates = data.get("candidates") or []
         if not candidates:

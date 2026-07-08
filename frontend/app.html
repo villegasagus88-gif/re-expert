@@ -199,7 +199,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <div class="model-badge"><span class="model-dot"></span> Claude Sonnet 4.6</div>
+      <div class="model-badge"><span class="model-dot"></span> IA de última generación</div>
       <div id="userFooter" style="display:none;padding:8px 12px;margin-top:8px;border-top:1px solid var(--border-sidebar);display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-sidebar-muted)">
         <div style="display:flex;align-items:center;gap:8px">
           <span id="userEmail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
@@ -251,7 +251,7 @@
       <!-- CHAT VIEW -->
       <div class="view active" id="viewChat">
         <div class="welcome" id="welcomeScreen">
-          <div class="welcome-badge"><span class="welcome-badge-dot"></span> Powered by Claude Sonnet 4.6</div>
+          <div class="welcome-badge"><span class="welcome-badge-dot"></span> IA de última generación</div>
           <h1 class="welcome-title">RE Expert</h1>
           <p class="welcome-subtitle">IA especializada en desarrollo inmobiliario, analisis financiero y gestion de proyectos.</p>
           <div class="welcome-cards">
@@ -2680,7 +2680,7 @@ function initPlanos(){
 // base64 SIN el prefijo `data:image/...;base64,`.
 //
 // Antes de codificar, hacemos resize si la imagen excede 1568px en su
-// lado más largo. Anthropic factura por píxeles: una imagen 3000×2000
+// lado más largo. El proveedor de IA factura por píxeles: una imagen 3000×2000
 // (~6MP) cuesta ~2x más que la misma escalada a 1568×1024 (~1.6MP)
 // y la pérdida de detalle para análisis de planos es despreciable.
 // Resultado: ~50% menos tokens de input multimodal sin tocar la API.
@@ -6055,7 +6055,7 @@ function exportConversation(fmt){
     case'md':c=`# ${t}\n\n`+state.messages.map(x=>`## ${x.role==='user'?'Usuario':'RE Expert'}\n\n${x.content}\n`).join('\n---\n\n');fn=`${t}.md`;m='text/markdown';break;
     case'txt':c=`${t}\n${'='.repeat(t.length)}\n\n`+state.messages.map(x=>`[${x.role==='user'?'USUARIO':'RE EXPERT'}]\n${x.content}\n`).join('\n'+'-'.repeat(40)+'\n\n');fn=`${t}.txt`;m='text/plain';break;
     case'html':c=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(t)}</title><style>body{font-family:Inter,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;color:#18181b;line-height:1.75;font-size:14px}h1{font-size:20px;font-weight:700;border-bottom:1px solid #e4e4e7;padding-bottom:12px;margin-bottom:20px}.m{margin:14px 0;padding:14px 16px;border-radius:10px}.u{background:#fafafa;border:1px solid #e4e4e7}.a{background:#fff;border:1px solid #e4e4e7}.r{font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;color:#71717a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e4e4e7;padding:7px 10px;text-align:left;font-size:12px}th{background:#f4f4f5}code{background:#f4f4f5;padding:1px 5px;border-radius:3px;font-size:12px}pre{background:#f4f4f5;padding:12px;border-radius:8px;overflow-x:auto}</style></head><body><h1>${esc(t)}</h1>${state.messages.map(x=>`<div class="m ${x.role==='user'?'u':'a'}"><div class="r">${x.role==='user'?'Usuario':'RE Expert'}</div><div>${x.role==='user'?esc(x.content).replace(/\n/g,'<br>'):parseMd(x.content)}</div></div>`).join('')}</body></html>`;fn=`${t}.html`;m='text/html';break;
-    case'json':c=JSON.stringify({title:t,exportedAt:new Date().toISOString(),model:'claude-sonnet-4-6',messages:state.messages},null,2);fn=`${t}.json`;m='application/json';break;
+    case'json':c=JSON.stringify({title:t,exportedAt:new Date().toISOString(),messages:state.messages},null,2);fn=`${t}.json`;m='application/json';break;
     default:return;
   }
   const b=new Blob([c],{type:m+';charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);els.exportModal.classList.remove('active');

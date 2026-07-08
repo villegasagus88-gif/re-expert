@@ -355,9 +355,9 @@ async def run_agent(
                 tools=TOOL_SCHEMAS,
                 max_tokens=4096,
             )
-        except Exception as e:
+        except Exception:
             logger.exception("LLM call failed (%s)", provider.name)
-            yield {"type": "error", "message": f"Error llamando al modelo ({provider.name}): {e}"}
+            yield {"type": "error", "message": "No pude generar la respuesta en este momento. Probá de nuevo en unos segundos."}
             return
 
         total_input += resp.usage.get("input_tokens", 0) or 0

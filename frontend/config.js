@@ -8,7 +8,7 @@
 // ¿Por qué directo y no via Netlify reverse-proxy?
 //   - Los rewrites de Netlify a hosts externos tienen un timeout duro
 //     de ~26s. El chat con streaming SSE + KB router routinely supera
-//     ese límite (Sonnet razonando + cargando contexto del KB).
+//     ese límite (el modelo razonando + cargando contexto del KB).
 //   - Resultado del proxy: 504 desde Netlify Edge, aunque Railway haya
 //     devuelto 200 OK. La conexión SSE se corta.
 //   - Solución: API_BASE apunta directo a Railway. CORS ya está bien
