@@ -2203,9 +2203,36 @@ function vcStopSpeak(){
 function vcListenIcon(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';}
 
 // ── 1) Dictado por voz (el texto queda en el input, NUNCA se envía solo) ──
-function vcNewRecognition(interimCb,finalCb,endCb){
+// Permiso de micrófono explícito ANTES de reconocer. Mantener el stream vivo
+// mientras se escucha es el workaround documentado para que Chrome acepte
+// también el permiso "solo esta vez" (la Web Speech API sola lo rechaza).
+async function vcEnsureMic(){
+  if(vcState.micStream&&vcState.micStream.active)return true;
+  try{
+    vcState.micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    return true;
+  }catch(err){
+    vcState.micStream=null;
+    if(err&&(err.name==='NotAllowedError'||err.name==='SecurityError'))
+      plnToast('Micrófono bloqueado: tocá el candado de la barra → Micrófono → "Permitir" (no "solo esta vez") y recargá la página',false);
+    else if(err&&err.name==='NotFoundError')
+      plnToast('No se encontró un micrófono en este dispositivo',false);
+    else plnToast('No se pudo acceder al micrófono',false);
+    return false;
+  }
+}
+function vcReleaseMic(){
+  if(vcState.micStream){try{vcState.micStream.getTracks().forEach(t=>t.stop());}catch(e){}vcState.micStream=null;}
+}
+function vcErrMsg(err){
+  if(err==='not-allowed'||err==='service-not-allowed')return 'Micrófono bloqueado: tocá el candado de la barra → Micrófono → "Permitir" y recargá la página';
+  if(err==='audio-capture')return 'No se encontró un micrófono';
+  if(err==='network')return 'El reconocimiento de voz necesita conexión a internet';
+  return '';
+}
+function vcNewRecognition(interimCb,finalCb,endCb,continuous){
   const rec=new VC_STT();
-  rec.lang='es-AR';rec.interimResults=true;rec.continuous=true;
+  rec.lang='es-AR';rec.interimResults=true;rec.continuous=continuous!==false;
   rec.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
@@ -2215,13 +2242,17 @@ function vcNewRecognition(interimCb,finalCb,endCb){
     if(final)finalCb(final);
     interimCb(interim);
   };
-  rec.onend=()=>endCb&&endCb();
-  rec.onerror=ev=>{endCb&&endCb(ev.error);};
+  // onerror dispara y DESPUÉS dispara onend: el callback corre una sola vez.
+  let done=false;
+  const fire=err=>{if(done)return;done=true;endCb&&endCb(err);};
+  rec.onend=()=>fire();
+  rec.onerror=ev=>fire(ev.error);
   return rec;
 }
-function vcToggleDictation(){
+async function vcToggleDictation(){
   if(!VC_STT)return;
   if(vcState.dictating){try{vcState.rec.stop();}catch(e){}return;}
+  if(!(await vcEnsureMic()))return;
   const mic=$('#micBtn');
   vcState.baseText=els.messageInput.value?els.messageInput.value.replace(/\s+$/,'')+' ':'';
   let finalAcc='';
@@ -2230,13 +2261,14 @@ function vcToggleDictation(){
     final=>{finalAcc+=final;els.messageInput.value=vcState.baseText+finalAcc;autoResize();updateSendBtn();},
     err=>{
       vcState.dictating=false;mic.classList.remove('recording');mic.title='Dictar por voz';
-      if(err==='not-allowed')plnToast('Permití el micrófono en el navegador para dictar',false);
+      if(!vcState.mode)vcReleaseMic();
+      const m=vcErrMsg(err);if(m)plnToast(m,false);
       els.messageInput.focus();
-    });
+    },true);
   try{
     vcState.rec.start();
     vcState.dictating=true;mic.classList.add('recording');mic.title='Detener dictado';
-  }catch(e){plnToast('No se pudo iniciar el micrófono',false);}
+  }catch(e){plnToast('No se pudo iniciar el micrófono',false);vcReleaseMic();}
 }
 
 // ── 2) Escuchar respuesta (botón por mensaje del asistente) ──
@@ -2272,6 +2304,7 @@ function vcModeListen(){
   vcSetPhase('listening','Escuchando… hablá cuando quieras');
   $('#vcTranscript').textContent='';
   let finalText='';
+  // continuous:false → el navegador corta solo cuando terminás de hablar y ahí se envía.
   vcState.modeRec=vcNewRecognition(
     interim=>{$('#vcTranscript').textContent=finalText+interim;},
     final=>{finalText+=final;$('#vcTranscript').textContent=finalText;},
@@ -2279,21 +2312,22 @@ function vcModeListen(){
       vcState.modeRec=null;
       if(!vcState.mode||vcState.paused)return;
       const q=finalText.trim();
-      if(err==='not-allowed'){vcSetPhase('idle','Permití el micrófono en el navegador para usar el modo voz');return;}
+      const m=vcErrMsg(err);
+      if(m){vcSetPhase('idle',m);return;}
       if(q){
         vcSetPhase('thinking','Pensando…');
         try{sendMessage(q);}catch(e){vcSetPhase('idle','No se pudo enviar. Tocá Reanudar para intentar de nuevo.');}
       }else{
-        // Silencio: volver a escuchar sin drama
-        setTimeout(vcModeListen,400);
+        // Silencio o no-speech: volver a escuchar sin drama
+        setTimeout(vcModeListen,500);
       }
-    });
-  try{vcState.modeRec.start();}catch(e){vcSetPhase('idle','No se pudo iniciar el micrófono');}
-  // El navegador corta la escucha ante silencios largos: onend rearma solo (arriba).
+    },false);
+  try{vcState.modeRec.start();}catch(e){vcSetPhase('idle','No se pudo iniciar el micrófono. Cerrá y volvé a abrir el modo voz.');}
 }
-function vcOpenMode(){
+async function vcOpenMode(){
   if(!VC_STT||!VC_TTS){plnToast('Tu navegador no soporta el modo voz (probá Chrome o Edge)',false);return;}
-  if(state.activeWorkspace===undefined){/* no-op: guard suave */}
+  if(vcState.dictating){try{vcState.rec.stop();}catch(e){}}
+  if(!(await vcEnsureMic()))return;
   switchView('chat');
   vcStopSpeak();
   vcState.mode=true;vcState.paused=false;
@@ -2306,6 +2340,7 @@ function vcCloseMode(){
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
   vcState.modeRec=null;
   vcStopSpeak();
+  vcReleaseMic();
   $('#vcOverlay').classList.remove('active');
   vcSetPhase('idle','');
 }
