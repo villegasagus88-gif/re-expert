@@ -792,11 +792,33 @@
     <div class="input-area" id="inputArea">
       <div class="input-wrapper">
         <textarea id="messageInput" placeholder="Consulta sobre tu proyecto inmobiliario..." rows="1" autofocus></textarea>
+        <button class="btn-voice" id="micBtn" title="Dictar por voz" style="display:none" aria-label="Dictar por voz">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </button>
+        <button class="btn-voice btn-voice-live" id="voiceModeBtn" title="Hablar con el experto (beta)" style="display:none" aria-label="Hablar con el experto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h2M6 8v8M10 5v14M14 8v8M18 10v4M22 12h0"/></svg>
+          <span class="vc-beta">beta</span>
+        </button>
         <button class="btn-send" id="sendBtn" disabled>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
       <div class="input-footer">RE Expert puede cometer errores. Verifica la informacion importante.</div>
+    </div>
+
+    <!-- Modo "Hablar con el experto" (beta) -->
+    <div class="vc-overlay" id="vcOverlay">
+      <button class="btn-icon vc-close" id="vcClose" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <div class="vc-center">
+        <div class="vc-orb" id="vcOrb"><div class="vc-orb-core"></div></div>
+        <div class="vc-status" id="vcStatus">Preparando…</div>
+        <div class="vc-transcript" id="vcTranscript"></div>
+      </div>
+      <div class="vc-controls">
+        <button class="btn-secondary" id="vcPause">⏸ Pausar</button>
+        <button class="btn-primary" id="vcEnd">Terminar conversación</button>
+      </div>
+      <div class="vc-hint">Hablá con naturalidad: el experto te escucha y te responde con voz, usando el mismo Chat Experto de siempre. <strong>Beta</strong> — usa el micrófono y las voces de tu navegador.</div>
     </div>
 
     <!-- Crédito detalle Modal -->
@@ -2108,10 +2130,223 @@ async function sendMessage(text,opts){
     finalizeStreaming();
   }
   state.isStreaming=false;updateSendBtn();els.messageInput.focus();
+  // Hook para las funciones de voz (Escuchar respuesta / Hablar con el experto):
+  // avisa que terminó el stream con el texto final del asistente.
+  try{const _last=state.messages[state.messages.length-1];window.dispatchEvent(new CustomEvent('re:chat-done',{detail:{text:(_last&&_last.role==='assistant')?_last.content:''}}));}catch(e){}
 }
 
 function updateSendBtn(){els.sendBtn.disabled=!els.messageInput.value.trim()||state.isStreaming}
 function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px'}
+
+// ===== VOZ — dictado, escuchar respuesta y modo "Hablar con el experto" (beta) =====
+// Todo con APIs nativas del navegador (SpeechRecognition + speechSynthesis) y el
+// MISMO motor del Chat Experto: el modo voz manda por sendMessage() y escucha el
+// evento re:chat-done que emite el stream al terminar. Cero lógica duplicada.
+const vcState={dictating:false,rec:null,baseText:'',voice:null,speakingBtn:null,utterQueue:[],
+  mode:false,phase:'idle',modeRec:null,paused:false};
+const VC_STT=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+const VC_TTS=('speechSynthesis' in window)?window.speechSynthesis:null;
+
+function vcPickVoice(){
+  if(!VC_TTS)return null;
+  const voices=VC_TTS.getVoices()||[];
+  const pref=['es-AR','es-419','es-MX','es-US','es-ES','es'];
+  for(const lang of pref){
+    // Voces "naturales" primero (Google/Microsoft/Natural), después cualquiera del idioma.
+    const natural=voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith(lang.toLowerCase())&&/google|natural|premium|paulina|diego|elena/i.test(v.name));
+    if(natural)return natural;
+    const any=voices.find(v=>v.lang&&v.lang.toLowerCase().startsWith(lang.toLowerCase()));
+    if(any)return any;
+  }
+  return voices[0]||null;
+}
+if(VC_TTS)VC_TTS.onvoiceschanged=()=>{vcState.voice=vcPickVoice();};
+
+// Markdown → texto hablable (sin símbolos, sin tablas, sin código)
+function vcStripMd(t){
+  return String(t||'')
+    .replace(/```[\s\S]*?```/g,'. Bloque de código omitido. ')
+    .replace(/\|[^\n]*\|/g,'')                     // filas de tabla
+    .replace(/!\[[^\]]*\]\([^)]*\)/g,'')            // imágenes
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1')         // links → texto
+    .replace(/[#*_`>~]/g,'')
+    .replace(/^\s*[-•]\s*/gm,'')
+    .replace(/\n{2,}/g,'. ')
+    .replace(/\s{2,}/g,' ')
+    .trim();
+}
+// Chrome corta utterances largas: hablamos por oraciones encoladas.
+function vcSpeak(text,onEnd){
+  if(!VC_TTS)return;
+  vcStopSpeak();
+  const chunks=(vcStripMd(text).match(/[^.!?\n]+[.!?]?/g)||[]).map(s=>s.trim()).filter(s=>s.length>1);
+  if(!chunks.length){if(onEnd)onEnd();return;}
+  if(!vcState.voice)vcState.voice=vcPickVoice();
+  let i=0;
+  const next=()=>{
+    if(i>=chunks.length){if(onEnd)onEnd();return;}
+    const u=new SpeechSynthesisUtterance(chunks[i++]);
+    if(vcState.voice){u.voice=vcState.voice;u.lang=vcState.voice.lang;}else u.lang='es-AR';
+    u.rate=1.04;u.pitch=1;
+    u.onend=next;u.onerror=next;
+    vcState.utterQueue.push(u);
+    VC_TTS.speak(u);
+  };
+  next();
+}
+function vcStopSpeak(){
+  if(!VC_TTS)return;
+  vcState.utterQueue=[];
+  VC_TTS.cancel();
+  if(vcState.speakingBtn){vcState.speakingBtn.classList.remove('active');vcState.speakingBtn.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}
+}
+function vcListenIcon(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';}
+
+// ── 1) Dictado por voz (el texto queda en el input, NUNCA se envía solo) ──
+function vcNewRecognition(interimCb,finalCb,endCb){
+  const rec=new VC_STT();
+  rec.lang='es-AR';rec.interimResults=true;rec.continuous=true;
+  rec.onresult=e=>{
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal)final+=r[0].transcript;else interim+=r[0].transcript;
+    }
+    if(final)finalCb(final);
+    interimCb(interim);
+  };
+  rec.onend=()=>endCb&&endCb();
+  rec.onerror=ev=>{endCb&&endCb(ev.error);};
+  return rec;
+}
+function vcToggleDictation(){
+  if(!VC_STT)return;
+  if(vcState.dictating){try{vcState.rec.stop();}catch(e){}return;}
+  const mic=$('#micBtn');
+  vcState.baseText=els.messageInput.value?els.messageInput.value.replace(/\s+$/,'')+' ':'';
+  let finalAcc='';
+  vcState.rec=vcNewRecognition(
+    interim=>{els.messageInput.value=vcState.baseText+finalAcc+interim;autoResize();updateSendBtn();},
+    final=>{finalAcc+=final;els.messageInput.value=vcState.baseText+finalAcc;autoResize();updateSendBtn();},
+    err=>{
+      vcState.dictating=false;mic.classList.remove('recording');mic.title='Dictar por voz';
+      if(err==='not-allowed')plnToast('Permití el micrófono en el navegador para dictar',false);
+      els.messageInput.focus();
+    });
+  try{
+    vcState.rec.start();
+    vcState.dictating=true;mic.classList.add('recording');mic.title='Detener dictado';
+  }catch(e){plnToast('No se pudo iniciar el micrófono',false);}
+}
+
+// ── 2) Escuchar respuesta (botón por mensaje del asistente) ──
+function vcAddListenBtns(){
+  if(!VC_TTS)return;
+  els.messagesEl.querySelectorAll('.message-assistant .message-content').forEach(mc=>{
+    if(mc.querySelector('.vc-listen'))return;
+    if(mc.closest('#streamMsg'))return; // todavía está generando
+    const txtEl=mc.querySelector('.message-text');
+    if(!txtEl||txtEl.querySelector('.typing-indicator'))return;
+    const b=document.createElement('button');
+    b.className='vc-listen';b.innerHTML=vcListenIcon()+' Escuchar';b.title='Escuchar esta respuesta';
+    b.addEventListener('click',()=>{
+      if(vcState.speakingBtn===b){vcStopSpeak();return;}
+      vcStopSpeak();
+      vcState.speakingBtn=b;b.classList.add('active');b.innerHTML='⏹ Detener';
+      vcSpeak(txtEl.textContent,()=>{if(vcState.speakingBtn===b){b.classList.remove('active');b.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}});
+    });
+    mc.appendChild(b);
+  });
+}
+
+// ── 3) Modo "Hablar con el experto" (beta) ──
+function vcSetPhase(phase,statusTxt){
+  vcState.phase=phase;
+  const orb=$('#vcOrb'),st=$('#vcStatus');
+  if(orb)orb.className='vc-orb vc-'+phase;
+  if(st)st.textContent=statusTxt||'';
+}
+function vcModeListen(){
+  if(!vcState.mode||vcState.paused)return;
+  if(state.isStreaming){setTimeout(vcModeListen,800);return;}
+  vcSetPhase('listening','Escuchando… hablá cuando quieras');
+  $('#vcTranscript').textContent='';
+  let finalText='';
+  vcState.modeRec=vcNewRecognition(
+    interim=>{$('#vcTranscript').textContent=finalText+interim;},
+    final=>{finalText+=final;$('#vcTranscript').textContent=finalText;},
+    err=>{
+      vcState.modeRec=null;
+      if(!vcState.mode||vcState.paused)return;
+      const q=finalText.trim();
+      if(err==='not-allowed'){vcSetPhase('idle','Permití el micrófono en el navegador para usar el modo voz');return;}
+      if(q){
+        vcSetPhase('thinking','Pensando…');
+        try{sendMessage(q);}catch(e){vcSetPhase('idle','No se pudo enviar. Tocá Reanudar para intentar de nuevo.');}
+      }else{
+        // Silencio: volver a escuchar sin drama
+        setTimeout(vcModeListen,400);
+      }
+    });
+  try{vcState.modeRec.start();}catch(e){vcSetPhase('idle','No se pudo iniciar el micrófono');}
+  // El navegador corta la escucha ante silencios largos: onend rearma solo (arriba).
+}
+function vcOpenMode(){
+  if(!VC_STT||!VC_TTS){plnToast('Tu navegador no soporta el modo voz (probá Chrome o Edge)',false);return;}
+  if(state.activeWorkspace===undefined){/* no-op: guard suave */}
+  switchView('chat');
+  vcStopSpeak();
+  vcState.mode=true;vcState.paused=false;
+  $('#vcOverlay').classList.add('active');
+  $('#vcPause').textContent='⏸ Pausar';
+  vcModeListen();
+}
+function vcCloseMode(){
+  vcState.mode=false;vcState.paused=false;
+  try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
+  vcState.modeRec=null;
+  vcStopSpeak();
+  $('#vcOverlay').classList.remove('active');
+  vcSetPhase('idle','');
+}
+function vcTogglePause(){
+  if(!vcState.mode)return;
+  vcState.paused=!vcState.paused;
+  $('#vcPause').textContent=vcState.paused?'▶ Reanudar':'⏸ Pausar';
+  if(vcState.paused){
+    try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
+    vcStopSpeak();
+    vcSetPhase('paused','En pausa');
+  }else{
+    vcModeListen();
+  }
+}
+window.addEventListener('re:chat-done',e=>{
+  // Refrescar botones "Escuchar" siempre
+  setTimeout(vcAddListenBtns,150);
+  // Loop del modo voz: leer la respuesta y volver a escuchar
+  if(!vcState.mode||vcState.phase!=='thinking')return;
+  const text=(e.detail&&e.detail.text)||'';
+  if(!text){vcSetPhase('idle','No hubo respuesta. Tocá Reanudar para seguir.');return;}
+  vcSetPhase('speaking','Respondiendo…');
+  $('#vcTranscript').textContent='';
+  vcSpeak(text,()=>{if(vcState.mode&&!vcState.paused)vcModeListen();});
+});
+
+function initVoice(){
+  if(VC_STT){$('#micBtn').style.display='';$('#micBtn').addEventListener('click',vcToggleDictation);}
+  if(VC_STT&&VC_TTS){$('#voiceModeBtn').style.display='';$('#voiceModeBtn').addEventListener('click',vcOpenMode);}
+  $('#vcClose')?.addEventListener('click',vcCloseMode);
+  $('#vcEnd')?.addEventListener('click',vcCloseMode);
+  $('#vcPause')?.addEventListener('click',vcTogglePause);
+  if(VC_TTS){
+    vcState.voice=vcPickVoice();
+    // Botones "Escuchar" también para el historial que se renderiza después
+    new MutationObserver(()=>{clearTimeout(vcState._obsT);vcState._obsT=setTimeout(vcAddListenBtns,250);})
+      .observe(els.messagesEl,{childList:true,subtree:true});
+    vcAddListenBtns();
+  }
+}
 
 // ===== ANÁLISIS DE PLANOS — panel inteligente por proyecto =====
 const plnState={
@@ -6917,7 +7152,7 @@ function init(){
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();initVoice();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
 
   // Swipe-derecha-vuelve-atrás (gesto tipo iOS desde el borde izquierdo).
