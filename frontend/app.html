@@ -2213,13 +2213,54 @@ async function vcEnsureMic(){
     return true;
   }catch(err){
     vcState.micStream=null;
-    if(err&&(err.name==='NotAllowedError'||err.name==='SecurityError'))
-      plnToast('Micrófono bloqueado: tocá el candado de la barra → Micrófono → "Permitir" (no "solo esta vez") y recargá la página',false);
-    else if(err&&err.name==='NotFoundError')
+    const name=(err&&err.name)||'';
+    // ¿El SITIO tiene permiso? Si sí y aun así falla, el bloqueo es del
+    // SISTEMA OPERATIVO (macOS/Windows no le dan micrófono a Chrome).
+    let siteGranted=false;
+    try{const st=await navigator.permissions.query({name:'microphone'});siteGranted=st.state==='granted';}catch(e){}
+    if(name==='NotReadableError'||name==='AbortError'){
+      plnToast('El micrófono está siendo usado por otra aplicación. Cerrala y probá de nuevo.',false);
+    }else if(name==='NotFoundError'||name==='OverconstrainedError'){
       plnToast('No se encontró un micrófono en este dispositivo',false);
-    else plnToast('No se pudo acceder al micrófono',false);
+    }else if(siteGranted){
+      vcMicHelpModal('os');
+    }else{
+      vcMicHelpModal('site');
+    }
     return false;
   }
+}
+
+// Guía clara según dónde está el bloqueo del micrófono.
+function vcMicHelpModal(kind){
+  const isMac=/Mac/i.test(navigator.platform||navigator.userAgent);
+  const steps=kind==='os'
+    ?(isMac?[
+        'Abrí <strong>Ajustes del Sistema</strong> (manzana  → Ajustes del Sistema)',
+        'Entrá a <strong>Privacidad y seguridad → Micrófono</strong>',
+        'Activá el interruptor de <strong>Google Chrome</strong>',
+        'Cerrá y volvé a abrir Chrome, y recargá esta página',
+      ]:[
+        'Abrí <strong>Configuración de Windows → Privacidad → Micrófono</strong>',
+        'Activá <strong>"Permitir que las aplicaciones accedan al micrófono"</strong> y habilitá tu navegador',
+        'Cerrá y volvé a abrir el navegador, y recargá esta página',
+      ])
+    :[
+        'Tocá el <strong>candado</strong> (o el ícono de ajustes) en la barra de direcciones',
+        'En <strong>Micrófono</strong>, elegí <strong>"Permitir"</strong> — no "solo esta vez"',
+        '<strong>Recargá la página</strong> para que tome el cambio',
+      ];
+  plnModalOpen(`
+    <h3 class="pln-m-title">🎙️ Falta un permiso de micrófono</h3>
+    <p class="pln-m-sub">${kind==='os'
+      ?'El sitio ya tiene permiso en Chrome ✓ — lo que está bloqueando el micrófono es <strong>el sistema operativo</strong>: no le dio acceso a Chrome.'
+      :'El navegador está bloqueando el micrófono para este sitio.'}</p>
+    <div class="pln-menu-list">${steps.map((st,i)=>`<div class="pln-menu-item" style="cursor:default">${i+1}. ${st}</div>`).join('')}</div>
+    <div class="pln-form-actions" style="margin-top:14px"><span></span><button class="btn-primary" id="vcMicRetry">Ya lo activé — probar de nuevo</button></div>`);
+  $('#vcMicRetry').addEventListener('click',async()=>{
+    plnModalClose();
+    if(await vcEnsureMic()){vcReleaseMic();plnToast('🎙️ ¡Micrófono funcionando! Ya podés usar la voz.');}
+  });
 }
 function vcReleaseMic(){
   if(vcState.micStream){try{vcState.micStream.getTracks().forEach(t=>t.stop());}catch(e){}vcState.micStream=null;}
