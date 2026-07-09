@@ -2143,7 +2143,15 @@ function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.
 // MISMO motor del Chat Experto: el modo voz manda por sendMessage() y escucha el
 // evento re:chat-done que emite el stream al terminar. Cero lógica duplicada.
 const vcState={dictating:false,rec:null,baseText:'',voice:null,speakingBtn:null,utterQueue:[],
-  mode:false,phase:'idle',modeRec:null,paused:false};
+  mode:false,phase:'idle',modeRec:null,paused:false,
+  apiVoice:false,mediaRec:null,audioEl:null,speakAbort:null,vadStop:null};
+const VC_REC=('MediaRecorder' in window)?window.MediaRecorder:null;
+function vcRecMime(){
+  if(!VC_REC)return '';
+  for(const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4'])
+    if(VC_REC.isTypeSupported&&VC_REC.isTypeSupported(m))return m;
+  return '';
+}
 const VC_STT=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const VC_TTS=('speechSynthesis' in window)?window.speechSynthesis:null;
 
@@ -2195,10 +2203,57 @@ function vcSpeak(text,onEnd){
   next();
 }
 function vcStopSpeak(){
-  if(!VC_TTS)return;
+  if(vcState.speakAbort){try{vcState.speakAbort.abort();}catch(e){}vcState.speakAbort=null;}
+  if(vcState.audioEl){try{vcState.audioEl.pause();}catch(e){}vcState.audioEl=null;}
+  if(!VC_TTS){if(vcState.speakingBtn){vcState.speakingBtn.classList.remove('active');vcState.speakingBtn.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}return;}
   vcState.utterQueue=[];
   VC_TTS.cancel();
   if(vcState.speakingBtn){vcState.speakingBtn.classList.remove('active');vcState.speakingBtn.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}
+}
+// TTS premium: pide el MP3 al backend por oraciones y lo reproduce en cadena.
+// Si la API falla, cae a la voz del navegador sin que el usuario haga nada.
+async function vcSpeakApi(text,onEnd,cacheEl){
+  const clean=vcStripMd(text);
+  if(!clean){if(onEnd)onEnd();return;}
+  // Reproducción cacheada (no volver a pagar por re-escuchar la misma respuesta)
+  if(cacheEl&&cacheEl._vcUrl){vcPlayUrl(cacheEl._vcUrl,onEnd);return;}
+  const chunks=[];let buf='';
+  for(const sent of (clean.match(/[^.!?\n]+[.!?]?/g)||[clean])){
+    if((buf+sent).length>3800){if(buf)chunks.push(buf);buf=sent;}else buf+=sent;
+  }
+  if(buf)chunks.push(buf);
+  const ctrl=new AbortController();vcState.speakAbort=ctrl;
+  let i=0;
+  const next=async()=>{
+    if(ctrl.signal.aborted)return;
+    if(i>=chunks.length){vcState.speakAbort=null;if(onEnd)onEnd();return;}
+    try{
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/speak',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:chunks[i]}),signal:ctrl.signal});
+      if(!r.ok)throw new Error('speak '+r.status);
+      const url=URL.createObjectURL(await r.blob());
+      if(cacheEl&&chunks.length===1)cacheEl._vcUrl=url;
+      i++;
+      vcPlayUrl(url,next);
+    }catch(e){
+      if(ctrl.signal.aborted)return;
+      vcState.speakAbort=null;
+      vcSpeak(text,onEnd); // fallback: voz del navegador
+    }
+  };
+  next();
+}
+function vcPlayUrl(url,onEnd){
+  const a=new Audio(url);vcState.audioEl=a;
+  a.onended=()=>{if(vcState.audioEl===a){vcState.audioEl=null;if(onEnd)onEnd();}};
+  a.onerror=()=>{if(vcState.audioEl===a){vcState.audioEl=null;if(onEnd)onEnd();}};
+  a.play().catch(()=>{if(onEnd)onEnd();});
+}
+// Ruteo: API premium si está habilitada; si no, voz del navegador.
+function vcSpeakSmart(text,onEnd,cacheEl){
+  if(vcState.apiVoice)vcSpeakApi(text,onEnd,cacheEl);
+  else vcSpeak(text,onEnd);
 }
 function vcListenIcon(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';}
 
@@ -2291,7 +2346,8 @@ function vcNewRecognition(interimCb,finalCb,endCb,continuous){
   return rec;
 }
 async function vcToggleDictation(){
-  if(!VC_STT)return;
+  if(vcState.apiVoice&&VC_REC){vcToggleApiDictation();return;}
+  if(!VC_STT){plnToast('Tu navegador no soporta dictado por voz (probá Chrome o Edge)',false);return;}
   if(vcState.dictating){try{vcState.rec.stop();}catch(e){}return;}
   if(!(await vcEnsureMic()))return;
   const mic=$('#micBtn');
@@ -2312,6 +2368,74 @@ async function vcToggleDictation(){
   }catch(e){plnToast('No se pudo iniciar el micrófono',false);vcReleaseMic();}
 }
 
+// Dictado premium: MediaRecorder → /api/voice/transcribe → texto al input.
+async function vcToggleApiDictation(){
+  const mic=$('#micBtn');
+  if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}return;}
+  if(!(await vcEnsureMic()))return;
+  const chunks=[];
+  const mr=new VC_REC(vcState.micStream,vcRecMime()?{mimeType:vcRecMime()}:undefined);
+  vcState.mediaRec=mr;
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+  mr.onstop=async()=>{
+    vcState.mediaRec=null;
+    mic.classList.remove('recording');mic.classList.add('busy');mic.title='Transcribiendo…';
+    if(!vcState.mode)vcReleaseMic();
+    try{
+      const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
+      if(blob.size<500)throw new Error('No se grabó audio');
+      const text=await vcTranscribe(blob);
+      if(text){
+        const base=els.messageInput.value?els.messageInput.value.replace(/\s+$/,'')+' ':'';
+        els.messageInput.value=base+text;autoResize();updateSendBtn();
+      }else plnToast('No se entendió el audio: probá de nuevo más cerca del micrófono',false);
+    }catch(e){plnToast(e.message||'La transcripción falló',false);}
+    mic.classList.remove('busy');mic.title='Dictar por voz';els.messageInput.focus();
+  };
+  mr.start();
+  mic.classList.add('recording');mic.title='Detener y transcribir';
+}
+async function vcTranscribe(blob){
+  const fd=new FormData();
+  fd.append('audio',blob,'consulta.'+((blob.type||'').includes('mp4')?'mp4':'webm'));
+  const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/transcribe',{method:'POST',body:fd});
+  if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'La transcripción falló');}
+  return ((await r.json()).text||'').trim();
+}
+// Detección de fin de frase (VAD): graba hasta 1,4s de silencio después de hablar.
+function vcVadRecord(){
+  return new Promise(resolve=>{
+    const stream=vcState.micStream;
+    if(!stream||!stream.active){resolve(null);return;}
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const src=ctx.createMediaStreamSource(stream);
+    const an=ctx.createAnalyser();an.fftSize=1024;src.connect(an);
+    const buf=new Float32Array(an.fftSize);
+    const chunks=[];
+    const mr=new VC_REC(stream,vcRecMime()?{mimeType:vcRecMime()}:undefined);
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+    let spoke=false,lastVoice=0,t0=Date.now(),stopped=false;
+    const finish=()=>{
+      if(stopped)return;stopped=true;
+      clearInterval(iv);try{mr.stop();}catch(e){}
+      setTimeout(()=>{try{ctx.close();}catch(e){}
+        resolve(spoke?new Blob(chunks,{type:mr.mimeType||'audio/webm'}):null);},250);
+    };
+    vcState.vadStop=finish;
+    const iv=setInterval(()=>{
+      an.getFloatTimeDomainData(buf);
+      let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i]*buf[i];
+      const rms=Math.sqrt(sum/buf.length);
+      const now=Date.now();
+      if(rms>0.018){if(!spoke)spoke=true;lastVoice=now;}
+      if(spoke&&now-lastVoice>1400)finish();          // terminó de hablar
+      else if(!spoke&&now-t0>9000)finish();            // silencio total: re-escuchar
+      else if(now-t0>45000)finish();                   // tope duro
+    },90);
+    mr.start(250);
+  });
+}
+
 // ── 2) Escuchar respuesta (botón por mensaje del asistente) ──
 function vcAddListenBtns(){
   if(!VC_TTS)return;
@@ -2326,7 +2450,7 @@ function vcAddListenBtns(){
       if(vcState.speakingBtn===b){vcStopSpeak();return;}
       vcStopSpeak();
       vcState.speakingBtn=b;b.classList.add('active');b.innerHTML='⏹ Detener';
-      vcSpeak(txtEl.textContent,()=>{if(vcState.speakingBtn===b){b.classList.remove('active');b.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}});
+      vcSpeakSmart(txtEl.textContent,()=>{if(vcState.speakingBtn===b){b.classList.remove('active');b.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}},b);
     });
     mc.appendChild(b);
   });
@@ -2339,8 +2463,32 @@ function vcSetPhase(phase,statusTxt){
   if(orb)orb.className='vc-orb vc-'+phase;
   if(st)st.textContent=statusTxt||'';
 }
+async function vcModeListenApi(){
+  if(!vcState.mode||vcState.paused)return;
+  if(state.isStreaming){setTimeout(vcModeListenApi,800);return;}
+  vcSetPhase('listening','Escuchando… hablá cuando quieras');
+  $('#vcTranscript').textContent='';
+  const blob=await vcVadRecord();
+  vcState.vadStop=null;
+  if(!vcState.mode||vcState.paused)return;
+  if(!blob){setTimeout(vcModeListenApi,300);return;}
+  vcSetPhase('thinking','Procesando tu voz…');
+  try{
+    const text=await vcTranscribe(blob);
+    if(!vcState.mode||vcState.paused)return;
+    if(!text){setTimeout(vcModeListenApi,300);return;}
+    $('#vcTranscript').textContent=text;
+    vcSetPhase('thinking','Pensando…');
+    sendMessage(text);
+  }catch(e){
+    if(!vcState.mode)return;
+    vcSetPhase('idle',(e.message||'La transcripción falló')+' — tocá Reanudar para seguir');
+    vcState.paused=true;$('#vcPause').textContent='▶ Reanudar';
+  }
+}
 function vcModeListen(){
   if(!vcState.mode||vcState.paused)return;
+  if(vcState.apiVoice&&VC_REC){vcModeListenApi();return;}
   if(state.isStreaming){setTimeout(vcModeListen,800);return;}
   vcSetPhase('listening','Escuchando… hablá cuando quieras');
   $('#vcTranscript').textContent='';
@@ -2366,7 +2514,8 @@ function vcModeListen(){
   try{vcState.modeRec.start();}catch(e){vcSetPhase('idle','No se pudo iniciar el micrófono. Cerrá y volvé a abrir el modo voz.');}
 }
 async function vcOpenMode(){
-  if(!VC_STT||!VC_TTS){plnToast('Tu navegador no soporta el modo voz (probá Chrome o Edge)',false);return;}
+  const supported=(vcState.apiVoice&&VC_REC)||(VC_STT&&VC_TTS);
+  if(!supported){plnToast('Tu navegador no soporta el modo voz (probá Chrome o Edge)',false);return;}
   if(vcState.dictating){try{vcState.rec.stop();}catch(e){}}
   if(!(await vcEnsureMic()))return;
   switchView('chat');
@@ -2379,6 +2528,8 @@ async function vcOpenMode(){
 function vcCloseMode(){
   vcState.mode=false;vcState.paused=false;
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
+  if(vcState.vadStop)vcState.vadStop();
+  if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}}
   vcState.modeRec=null;
   vcStopSpeak();
   vcReleaseMic();
@@ -2391,6 +2542,7 @@ function vcTogglePause(){
   $('#vcPause').textContent=vcState.paused?'▶ Reanudar':'⏸ Pausar';
   if(vcState.paused){
     try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
+    if(vcState.vadStop)vcState.vadStop();
     vcStopSpeak();
     vcSetPhase('paused','En pausa');
   }else{
@@ -2406,12 +2558,23 @@ window.addEventListener('re:chat-done',e=>{
   if(!text){vcSetPhase('idle','No hubo respuesta. Tocá Reanudar para seguir.');return;}
   vcSetPhase('speaking','Respondiendo…');
   $('#vcTranscript').textContent='';
-  vcSpeak(text,()=>{if(vcState.mode&&!vcState.paused)vcModeListen();});
+  vcSpeakSmart(text,()=>{if(vcState.mode&&!vcState.paused)vcModeListen();});
 });
 
 function initVoice(){
-  if(VC_STT){$('#micBtn').style.display='';$('#micBtn').addEventListener('click',vcToggleDictation);}
-  if(VC_STT&&VC_TTS){$('#voiceModeBtn').style.display='';$('#voiceModeBtn').addEventListener('click',vcOpenMode);}
+  // ¿Voz premium habilitada en el backend? (si falla, queda la del navegador)
+  try{
+    window.REAuthService.authFetch(apiBase()+'/api/voice/status')
+      .then(r=>r.ok?r.json():{enabled:false})
+      .then(d=>{
+        vcState.apiVoice=!!(d&&d.enabled);
+        if(vcState.apiVoice&&VC_REC){$('#micBtn').style.display='';$('#voiceModeBtn').style.display='';}
+      }).catch(()=>{});
+  }catch(e){}
+  if(VC_STT){$('#micBtn').style.display='';}
+  if(VC_STT&&VC_TTS){$('#voiceModeBtn').style.display='';}
+  $('#micBtn').addEventListener('click',vcToggleDictation);
+  $('#voiceModeBtn').addEventListener('click',vcOpenMode);
   $('#vcClose')?.addEventListener('click',vcCloseMode);
   $('#vcEnd')?.addEventListener('click',vcCloseMode);
   $('#vcPause')?.addEventListener('click',vcTogglePause);

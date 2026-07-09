@@ -148,6 +148,16 @@ class Settings(BaseSettings):
     # Free tier: 1000 búsquedas/mes.
     TAVILY_API_KEY: str = ""
 
+    # ===== OPENAI (voz del Chat Experto: STT + TTS) =====
+    # API key de https://platform.openai.com — habilita la voz premium
+    # (transcripción Whisper + voz de respuesta). Si está vacía, la voz
+    # cae automáticamente a las APIs nativas del navegador (gratis).
+    # Configurá un límite de gasto en el dashboard de OpenAI.
+    OPENAI_API_KEY: str = ""
+    OPENAI_STT_MODEL: str = "gpt-4o-mini-transcribe"   # alternativa: whisper-1
+    OPENAI_TTS_MODEL: str = "gpt-4o-mini-tts"          # alternativa: tts-1
+    OPENAI_TTS_VOICE: str = "nova"
+
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).
     # e.g. https://re-expert.app  or  https://staging.re-expert.app

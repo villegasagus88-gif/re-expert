@@ -25,6 +25,7 @@ from api.routes.public_landing import router as public_landing_router
 from api.routes.reminders import router as reminders_router
 from api.routes.stripe_routes import router as stripe_router
 from api.routes.usage import router as usage_router
+from api.routes.voice import router as voice_router
 from api.routes.workspaces import router as workspaces_router
 from config.settings import settings
 from core.auth import require_admin
@@ -271,6 +272,7 @@ app.include_router(payments_router, dependencies=_paid)
 app.include_router(project_router, dependencies=_paid)
 app.include_router(opportunity_router, dependencies=_paid)
 app.include_router(planos_router, dependencies=_paid)
+app.include_router(voice_router, dependencies=_paid)
 app.include_router(profile_router, dependencies=_paid)
 app.include_router(ingest_router, dependencies=_paid)
 app.include_router(news_router, dependencies=_paid)
