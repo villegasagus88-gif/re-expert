@@ -9,6 +9,8 @@ from uuid import uuid4
 
 import bcrypt
 from config.plans import TRIAL_DAYS
+from config.settings import settings
+from core.auth import is_admin
 from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.user import User
@@ -16,6 +18,12 @@ from services.jwt_service import create_token_pair, decode_token
 from services.mercadopago_service import mp_enabled
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+
+
+def _refresh_days(user: User) -> int | None:
+    """Ventana del refresh token: larga para admins/fundadores (no re-loguearse
+    cada semana), None (default 7d) para usuarios normales."""
+    return settings.ADMIN_REFRESH_TOKEN_EXPIRE_DAYS if is_admin(user) else None
 
 
 def _hash_password(password: str) -> str:
@@ -95,7 +103,8 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
         await db.refresh(user)
 
         # Generate tokens (incluye token_version actual del usuario)
-        access_token, refresh_token = create_token_pair(user.id, user.token_version)
+        access_token, refresh_token = create_token_pair(
+            user.id, user.token_version, refresh_expire_days=_refresh_days(user))
 
         return {
             "access_token": access_token,
@@ -136,7 +145,8 @@ async def login_user(email: str, password: str) -> dict:
         await db.refresh(user)
 
         # Generate tokens (incluye token_version actual del usuario)
-        access_token, refresh_token = create_token_pair(user.id, user.token_version)
+        access_token, refresh_token = create_token_pair(
+            user.id, user.token_version, refresh_expire_days=_refresh_days(user))
 
         return {
             "access_token": access_token,
@@ -203,7 +213,8 @@ async def refresh_session(refresh_token: str) -> dict:
             )
 
         # Generate new token pair (con el token_version actual del user)
-        new_access, new_refresh = create_token_pair(user.id, user.token_version)
+        new_access, new_refresh = create_token_pair(
+            user.id, user.token_version, refresh_expire_days=_refresh_days(user))
 
         return {
             "access_token": new_access,

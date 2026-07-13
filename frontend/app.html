@@ -1953,7 +1953,11 @@ function updatePlanBadge(){
   const upgradeLink=document.getElementById('upgradeSidebarLink');
   const counter=document.getElementById('dailyMsgsCounter');
   if(!badge)return;
-  if(userPlan==='pro'){
+  if(accessState.isAdmin){
+    badge.textContent='⭐ Admin';badge.className='plan-badge plan-badge-pro';
+    if(upgradeLink)upgradeLink.style.display='none';
+    if(counter)counter.style.display='none';
+  }else if(userPlan==='pro'){
     badge.textContent='⭐ Pro';badge.className='plan-badge plan-badge-pro';
     if(upgradeLink)upgradeLink.style.display='none';
     if(counter)counter.style.display='none';
@@ -2006,6 +2010,14 @@ async function loadAccessState(){
       accessState.daysLeft=Math.max(0,Math.ceil(ms/86400000));
     }
     userPlan=s.plan||userPlan;
+    accessState.isAdmin=!!s.is_admin;
+    if(accessState.isAdmin){
+      // Admin / fundador: acceso TOTAL, sin nags de plan. Se muestra como Pro
+      // y no se dispara el paywall, el banner de trial ni el link de upgrade.
+      accessState.hasAccess=true;
+      accessState.isTrial=false;
+      userPlan='pro';
+    }
     updatePlanBadge();
     renderTrialBanner();
     // Onboarding pago-only / corte seco: si no hay acceso (inactive o trial

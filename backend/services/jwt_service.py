@@ -32,15 +32,21 @@ def create_access_token(user_id: UUID, token_version: int = 0) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
 
 
-def create_refresh_token(user_id: UUID, token_version: int = 0) -> str:
-    """Create a long-lived refresh token (default 7 days)."""
+def create_refresh_token(
+    user_id: UUID, token_version: int = 0, expire_days: int | None = None
+) -> str:
+    """Create a long-lived refresh token (default 7 days).
+
+    `expire_days` permite una ventana más larga (p.ej. admins) sin tocar la de
+    los usuarios normales. Si es None, usa settings.REFRESH_TOKEN_EXPIRE_DAYS."""
     now = datetime.now(UTC)
+    days = expire_days if expire_days is not None else settings.REFRESH_TOKEN_EXPIRE_DAYS
     payload = {
         "sub": str(user_id),
         "type": "refresh",
         "tv": int(token_version),
         "iat": now,
-        "exp": now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        "exp": now + timedelta(days=days),
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
 
@@ -58,9 +64,14 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
 
 
-def create_token_pair(user_id: UUID, token_version: int = 0) -> tuple[str, str]:
-    """Convenience: returns (access_token, refresh_token)."""
+def create_token_pair(
+    user_id: UUID, token_version: int = 0, refresh_expire_days: int | None = None
+) -> tuple[str, str]:
+    """Convenience: returns (access_token, refresh_token).
+
+    `refresh_expire_days` alarga la ventana del refresh (admins) sin afectar el
+    access token ni a los usuarios normales."""
     return (
         create_access_token(user_id, token_version),
-        create_refresh_token(user_id, token_version),
+        create_refresh_token(user_id, token_version, expire_days=refresh_expire_days),
     )

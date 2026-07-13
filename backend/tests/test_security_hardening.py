@@ -138,3 +138,39 @@ async def test_update_profile_solo_nombre_no_bumpea(monkeypatch):
     await auth.update_profile(str(user.id), email="m@x.com", full_name="Nuevo Nombre")
     assert user.token_version == 3  # sin cambio de password → NO se invalidan sesiones
     assert user.full_name == "Nuevo Nombre"
+
+
+# ── admin/fundador: acceso total + sesión larga ──
+
+def test_fundador_siempre_admin_aunque_admin_emails_este_vacio(monkeypatch):
+    from core.auth import is_admin
+    monkeypatch.setattr("core.auth.settings.ADMIN_EMAILS", "", raising=False)
+    # Fundador → admin sí o sí (case-insensitive), independiente del env.
+    assert is_admin(SimpleNamespace(email="matiasparola100@gmail.com")) is True
+    assert is_admin(SimpleNamespace(email="MatiasParola100@Gmail.com")) is True
+    # Otro usuario con ADMIN_EMAILS vacío → NO admin.
+    assert is_admin(SimpleNamespace(email="otro@ejemplo.com")) is False
+
+
+def test_fundador_tiene_acceso_total(monkeypatch):
+    from core.plan_gate import has_access
+    monkeypatch.setattr("core.auth.settings.ADMIN_EMAILS", "", raising=False)
+    # Fundador con plan vencido/sin plan igual tiene acceso (bypassa paywall).
+    founder = SimpleNamespace(email="matiasparola100@gmail.com", plan="inactive",
+                              trial_ends_at=None)
+    assert has_access(founder) is True
+
+
+def test_admin_recibe_refresh_token_largo():
+    from uuid import uuid4
+
+    from services.jwt_service import create_refresh_token, decode_token
+    uid = uuid4()
+    tok = create_refresh_token(uid, 0, expire_days=90)
+    payload = decode_token(tok)
+    dur_days = (payload["exp"] - payload["iat"]) / 86400
+    assert 89 < dur_days <= 90  # ~90 días para admins
+    # Default (usuario normal) sigue en 7 días.
+    tok7 = create_refresh_token(uid, 0)
+    p7 = decode_token(tok7)
+    assert 6 < (p7["exp"] - p7["iat"]) / 86400 <= 7

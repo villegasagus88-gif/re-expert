@@ -108,14 +108,22 @@ async def get_current_user(
     return user
 
 
+# Fundadores: SIEMPRE administradores, independientemente de settings.ADMIN_EMAILS
+# (que se gestiona por env en Railway). Garantiza que la cuenta dueña de la
+# plataforma nunca quede paywalled ni sin acceso admin, aunque el env cambie o
+# quede vacío. Es un allowlist chico y explícito para un MVP de 2 socios.
+_FOUNDER_EMAILS: frozenset[str] = frozenset({"matiasparola100@gmail.com"})
+
+
 def is_admin(user: User) -> bool:
-    """True si el email del usuario está en settings.ADMIN_EMAILS (gestión del KB)."""
-    admins = {
+    """True si el email del usuario es fundador o está en settings.ADMIN_EMAILS."""
+    admins = set(_FOUNDER_EMAILS)
+    admins.update(
         e.strip().lower()
         for e in (settings.ADMIN_EMAILS or "").split(",")
         if e.strip()
-    }
-    return bool(admins) and (user.email or "").lower() in admins
+    )
+    return (getattr(user, "email", None) or "").lower() in admins
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:

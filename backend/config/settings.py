@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     # ===== AUTH / JWT =====
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Admins/fundadores: ventana de refresh más larga para no re-loguearse cada
+    # semana (son cuentas de staff, pocas y de confianza; el token_version igual
+    # las invalida al cambiar password). No afecta a los usuarios normales.
+    ADMIN_REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
     # ===== ADMIN =====
     # Emails con acceso de administrador (gestión del knowledge base), separados
