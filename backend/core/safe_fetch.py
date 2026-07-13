@@ -11,14 +11,14 @@ Este módulo centraliza la defensa:
     reservadas / multicast / CGNAT (v4 y v6, incluidas IPv4-mapped).
   - `safe_get` sigue redirects MANUALMENTE revalidando cada salto (un host
     público que redirige a una IP interna es un bypass clásico).
+  - Tras conectar, valida la IP REAL a la que se conectó (`server_addr`), no
+    solo la pre-resuelta → cierra el DNS-rebinding (TOCTOU): un dominio con DNS
+    variable que resuelve público al validar y interno al conectar se aborta
+    antes de leer/usar la respuesta.
 
 Uso:
     from core.safe_fetch import safe_get, UnsafeUrlError
     resp = await safe_get(url, timeout=20.0, headers={...})
-
-Nota: no cubre DNS-rebinding (TOCTOU entre resolución y conexión). Para el
-modelo de amenaza actual (URLs públicas de medios/portales) el bloqueo de
-destinos internos + revalidación de redirects cierra el vector explotable.
 """
 from __future__ import annotations
 
@@ -88,6 +88,30 @@ def assert_public_url(url: str) -> None:
             raise UnsafeUrlError(f"El host {host} resuelve a una IP interna ({addr})")
 
 
+def _assert_peer_public(resp: httpx.Response) -> None:
+    """Valida la IP REAL a la que httpx se conectó (no la pre-resuelta). Cierra el
+    DNS-rebinding: si el host resolvió a una IP pública al validar pero a una
+    interna al conectar, lo detectamos acá antes de usar la respuesta. Si el
+    transport no expone el stream (versión distinta), queda la validación previa."""
+    ns = (getattr(resp, "extensions", None) or {}).get("network_stream")
+    if ns is None:
+        return
+    try:
+        peer = ns.get_extra_info("server_addr")
+    except Exception:  # noqa: BLE001
+        peer = None
+    if not peer:
+        return
+    try:
+        ip = ipaddress.ip_address(peer[0])
+    except (ValueError, IndexError, TypeError):
+        return
+    if _ip_is_blocked(ip):
+        raise UnsafeUrlError(
+            f"La conexión terminó en una IP interna ({peer[0]}) — posible DNS-rebinding."
+        )
+
+
 async def safe_get(
     url: str,
     *,
@@ -96,13 +120,15 @@ async def safe_get(
     max_redirects: int = 5,
 ) -> httpx.Response:
     """GET con guard anti-SSRF: valida la URL inicial y CADA redirect contra
-    `assert_public_url`. Lanza UnsafeUrlError si algún salto es no permitido."""
+    `assert_public_url`, y valida la IP REAL conectada en cada salto (anti
+    DNS-rebinding). Lanza UnsafeUrlError si algún salto o conexión es no permitido."""
     assert_public_url(url)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False,
                                  headers=headers or {}) as client:
         current = url
         for _ in range(max_redirects + 1):
             resp = await client.get(current)
+            _assert_peer_public(resp)  # anti DNS-rebinding: valida la IP conectada
             if resp.is_redirect and resp.headers.get("location"):
                 current = str(httpx.URL(current).join(resp.headers["location"]))
                 assert_public_url(current)  # revalidar cada salto

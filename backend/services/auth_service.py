@@ -261,11 +261,14 @@ async def update_profile(
                     detail="Contraseña actual incorrecta",
                 )
             user.password_hash = _hash_password(new_password)
-            # NO bumpeamos token_version acá: el user conoce su current
-            # password, no es un escenario de "cuenta comprometida". Si
-            # quisiéramos "logout de otras sesiones tras change-password"
-            # habría que hacerlo + reissue del token del actor en la misma
-            # response. Lo dejamos para v1.1 si hace falta.
+            # Bump de token_version: invalida TODAS las sesiones/refresh tokens
+            # previos al cambiar la password (igual que confirm_reset). Es la
+            # defensa para el caso "sospecho que me robaron la sesión → cambio la
+            # contraseña": sin esto, el refresh token robado seguía vivo 7 días.
+            # El propio actor se re-loguea en su próximo request (su token viejo
+            # deja de matchear el token_version) — comportamiento esperable tras
+            # cambiar la contraseña.
+            user.token_version = int(user.token_version or 0) + 1
 
         if full_name is not None:
             user.full_name = full_name

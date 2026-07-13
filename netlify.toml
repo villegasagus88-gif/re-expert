@@ -83,7 +83,17 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    # microphone=(self): la feature de voz (dictado) necesita getUserMedia.
+    # El browser igual pide permiso al usuario; esto solo lo HABILITA para el
+    # propio sitio. Antes estaba en () y bloqueaba la voz en producción.
+    Permissions-Policy = "geolocation=(), microphone=(self), camera=()"
     # HSTS: 6 meses, incluye subdomains. Cuando estés 100% seguro
     # de que TODO el tráfico va por HTTPS, sumá `preload`.
     Strict-Transport-Security = "max-age=15552000; includeSubDomains"
+    # CSP: defensa-en-profundidad contra XSS. 'unsafe-inline' en script/style es
+    # necesario porque la app usa scripts y handlers inline; aun así el CSP
+    # acota de dónde se cargan scripts (solo jsdelivr para marked/dompurify),
+    # a dónde se puede conectar (API propia + Supabase), prohíbe enmarcar la
+    # página (frame-ancestors), plugins (object-src) y secuestro de <base>.
+    # Si algún día se activa Sentry, sumar su host a connect-src.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://re-expert-production.up.railway.app https://uaiiqjouxlcvleiimokz.supabase.co; media-src 'self' blob: data:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"

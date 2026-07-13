@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     VERSION: str = "0.1.0"
     DEBUG: bool = False
 
+    # Cantidad de proxies confiables que appendan a X-Forwarded-For, contados
+    # desde la derecha. En Railway el único hop confiable es el edge (1). La IP
+    # del rate-limit se toma de esa posición (no forjable por el cliente).
+    RATE_LIMIT_TRUSTED_PROXY_HOPS: int = 1
+
     # ===== AUTH / JWT =====
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

@@ -41,13 +41,25 @@ def prod_client():
 # ---------------------------------------------------------------- redirect --
 
 def test_http_request_is_redirected_to_https(prod_client):
-    """Plain http://... must be 307-redirected to https://..."""
-    r = prod_client.get("/health", follow_redirects=False)
+    """Plain http://... must be 307-redirected to https://...
+
+    Nota: NO usamos /health porque está exento del redirect a propósito (el
+    healthcheck interno de Railway llega por HTTP plano sin X-Forwarded-Proto;
+    si lo redirigiéramos, el deploy fallaría). Probamos un path NO exento: el
+    middleware redirige todo lo demás igual."""
+    r = prod_client.get("/api/billing/status", follow_redirects=False)
     assert r.status_code in (301, 307, 308)
     location = r.headers.get("location", "")
     assert location.startswith("https://"), (
         f"Expected https:// redirect, got: {location}"
     )
+
+
+def test_health_is_exempt_from_https_redirect(prod_client):
+    """/health responde 200 en HTTP plano (exento del redirect) — es lo que
+    espera el healthcheck de Railway. Regresión del exempt intencional."""
+    r = prod_client.get("/health", follow_redirects=False)
+    assert r.status_code == 200
 
 
 def test_https_request_passes_through(prod_client):
