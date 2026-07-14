@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 
 from config.settings import settings
 from models.base import get_session_factory
+from models.kv_cache import KVCache
 from models.password_reset import PasswordReset
 from models.reminder import Reminder
 from models.stripe_event import StripeEvent
@@ -172,6 +173,9 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
     - `password_resets` con expires_at < now() — tokens vencidos no sirven.
     - `stripe_events` con received_at < now() - 30d — fuera de ventana
       de re-delivery de Stripe (~3 días). 30d es más que suficiente.
+    - `kv_cache` vencidos — el cache persistente borra lazy solo al leer; las
+      keys que vencen y nadie re-pide quedarían para siempre (leak).
+    - `reminders` ya despachados/cancelados y viejos (>30d) — no se re-envían.
     """
     now = datetime.now(timezone.utc)
 
@@ -188,10 +192,26 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
     )
     se_deleted = res_se.rowcount or 0
 
+    # kv_cache vencidos (usa ix_kv_cache_expires_at → index scan)
+    res_kv = await db.execute(delete(KVCache).where(KVCache.expires_at < now))
+    kv_deleted = res_kv.rowcount or 0
+
+    # reminders terminales y viejos (los pendientes NO se tocan)
+    cutoff_rem = now - timedelta(days=30)
+    res_rem = await db.execute(
+        delete(Reminder).where(
+            Reminder.status.in_(["sent", "failed", "cancelled"]),
+            Reminder.due_at < cutoff_rem,
+        )
+    )
+    rem_deleted = res_rem.rowcount or 0
+
     await db.commit()
     return {
         "password_resets_deleted": pr_deleted,
         "stripe_events_deleted": se_deleted,
+        "kv_cache_deleted": kv_deleted,
+        "reminders_deleted": rem_deleted,
     }
 
 

@@ -26,6 +26,7 @@ El adapter Gemini traduce esto a/desde el formato de Google.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
@@ -113,6 +114,32 @@ class AnthropicProvider:
 # Endpoint REST oficial v1beta. Soporta function calling nativo.
 # Doc: https://ai.google.dev/gemini-api/docs/function-calling
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+# Cliente HTTP reusable para Gemini (keep-alive). Antes se abría un AsyncClient
+# nuevo por llamada → un handshake TCP+TLS por cada vuelta del loop tool-use
+# (hasta 8 por mensaje de SOL), en serie. El singleton amortiza el handshake
+# entre vueltas y entre requests. Se cierra en el shutdown del lifespan.
+_gemini_client: httpx.AsyncClient | None = None
+_gemini_lock = asyncio.Lock()
+
+
+async def _get_gemini_client() -> httpx.AsyncClient:
+    global _gemini_client
+    if _gemini_client is None:
+        async with _gemini_lock:
+            if _gemini_client is None:
+                _gemini_client = httpx.AsyncClient(
+                    timeout=60,
+                    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+                )
+    return _gemini_client
+
+
+async def close_gemini_client() -> None:
+    global _gemini_client
+    if _gemini_client is not None:
+        await _gemini_client.aclose()
+        _gemini_client = None
 
 
 def _anthropic_tool_to_gemini(tool: dict) -> dict:
@@ -264,11 +291,13 @@ class GeminiProvider:
         url = f"{GEMINI_API_BASE}/models/{self._model}:generateContent"
         headers = {"Content-Type": "application/json", "x-goog-api-key": self._api_key}
 
-        async with httpx.AsyncClient(timeout=60) as cli:
-            r = await cli.post(url, headers=headers, json=body)
-            data = r.json()
-            if r.status_code >= 400:
-                raise RuntimeError(f"Proveedor de IA respondió {r.status_code}")
+        cli = await _get_gemini_client()
+        r = await cli.post(url, headers=headers, json=body)
+        # Chequear status ANTES de parsear: un 5xx con body no-JSON no debe tirar
+        # JSONDecodeError crudo (perdía el diagnóstico del código real de error).
+        if r.status_code >= 400:
+            raise RuntimeError(f"Proveedor de IA respondió {r.status_code}")
+        data = r.json()
 
         candidates = data.get("candidates") or []
         if not candidates:

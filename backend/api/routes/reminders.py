@@ -17,7 +17,7 @@ from api.schemas.reminder import (
     UpdateReminderRequest,
 )
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from models.base import get_db
 from models.reminder import Reminder
 from models.user import User
@@ -52,7 +52,9 @@ async def list_reminders(
     q = select(Reminder).where(Reminder.user_id == current_user.id)
     if status_filter != "all":
         q = q.where(Reminder.status == status_filter)
-    q = q.order_by(Reminder.due_at.asc())
+    # Cap de seguridad: nunca devolver una lista sin tope (status=all podría traer
+    # todo el historial). Los terminales viejos igual se purgan en el cleanup diario.
+    q = q.order_by(Reminder.due_at.asc()).limit(200)
     rows = list((await db.execute(q)).scalars().all())
     return ReminderListResponse(items=[_to_out(r) for r in rows], total=len(rows))
 

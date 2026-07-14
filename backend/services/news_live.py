@@ -321,6 +321,9 @@ async def _fetch_all_rss(refresh: bool = False) -> list[dict]:
 # Stale-while-revalidate: refrescos de feed en curso (single-flight por categoría)
 # para no disparar N recomputes concurrentes de la misma categoría.
 _feed_refreshing: set[str] = set()
+# Refs a las tasks de refresh en background: sin esto el GC podría recolectarlas
+# a mitad del recompute y el feed no se refrescaría.
+_feed_bg_tasks: set = set()
 
 
 def _schedule_feed_refresh(category: str) -> None:
@@ -338,7 +341,9 @@ def _schedule_feed_refresh(category: str) -> None:
             _feed_refreshing.discard(category)
 
     try:
-        asyncio.get_running_loop().create_task(_run())
+        t = asyncio.get_running_loop().create_task(_run())
+        _feed_bg_tasks.add(t)
+        t.add_done_callback(_feed_bg_tasks.discard)
     except RuntimeError:
         _feed_refreshing.discard(category)  # sin loop → el próximo request recomputará
 

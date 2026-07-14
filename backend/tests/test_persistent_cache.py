@@ -101,3 +101,36 @@ async def test_make_digest_persiste_al_generar(monkeypatch):
     out = await nl.make_digest(url="http://y/nota", title="t", snippet="s")
     assert out["parcial"] is True
     assert saved == {}  # los parciales no se persisten
+
+
+@pytest.mark.asyncio
+async def test_daily_cleanup_purga_kv_cache_y_reminders():
+    """El cleanup diario ahora borra también kv_cache vencido y reminders
+    terminales viejos (corta los leaks de crecimiento infinito)."""
+    import services.scheduler_service as sched
+
+    ejecutados = []
+
+    class _Res:
+        rowcount = 3
+
+    class _DB:
+        async def execute(self, stmt):
+            ejecutados.append(str(stmt))
+            return _Res()
+
+        async def commit(self):
+            pass
+
+    out = await sched._run_daily_cleanup(_DB())
+    assert set(out) == {
+        "password_resets_deleted",
+        "stripe_events_deleted",
+        "kv_cache_deleted",
+        "reminders_deleted",
+    }
+    assert out["kv_cache_deleted"] == 3 and out["reminders_deleted"] == 3
+    # 4 DELETE ejecutados, incluyendo las tablas nuevas
+    assert len(ejecutados) == 4
+    assert any("kv_cache" in s for s in ejecutados)
+    assert any("reminders" in s for s in ejecutados)

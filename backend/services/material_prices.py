@@ -70,6 +70,9 @@ _EXTRACT_TOOL = {
 
 # Estado del disparador perezoso (proceso único de Railway)
 _refresh_lock = asyncio.Lock()
+# Refs a las tasks de fondo: sin esto el GC puede recolectar la task a mitad de
+# I/O y el refresh "no pasa" sin error (data vieja). add_done_callback las suelta.
+_bg_tasks: set = set()
 _last_attempt: datetime | None = None
 
 
@@ -198,4 +201,6 @@ def maybe_refresh_prices(current: dict[str, int], last_update: datetime | None) 
             except Exception:  # noqa: BLE001 — el refresh nunca afecta a la app
                 logger.exception("MaterialPrices: refresh en background falló")
 
-    asyncio.create_task(_run())
+    _t = asyncio.create_task(_run())
+    _bg_tasks.add(_t)
+    _t.add_done_callback(_bg_tasks.discard)

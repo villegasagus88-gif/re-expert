@@ -74,32 +74,33 @@ async def billing_status(user: User = Depends(get_current_user)):
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
+    # Ambas llamadas a Stripe (subscription + invoices) son independientes y ya
+    # se offloadan a thread; las lanzamos en PARALELO y bajamos la latencia del
+    # endpoint a la del más lento. return_exceptions mantiene el best-effort:
+    # si una falla, la otra igual completa.
+    subs, inv_list = await asyncio.gather(
+        _run_stripe(stripe.Subscription.list, customer=user.stripe_customer_id, limit=1),
+        _run_stripe(stripe.Invoice.list, customer=user.stripe_customer_id, limit=12),
+        return_exceptions=True,
+    )
+
     # Active subscription (most recent first)
-    try:
-        subs = await _run_stripe(
-            stripe.Subscription.list,
-            customer=user.stripe_customer_id,
-            limit=1,
-        )
-        if subs.data:
-            sub = subs.data[0]
-            result["subscription"] = {
-                "status": sub.status,
-                "current_period_end": _ts(sub.current_period_end),
-                "current_period_start": _ts(sub.current_period_start),
-                "cancel_at_period_end": sub.cancel_at_period_end,
-                "cancel_at": _ts(getattr(sub, "cancel_at", None)),
-            }
-    except Exception as exc:
-        logger.warning("billing_status: error fetching subscription — %s", exc)
+    if isinstance(subs, Exception):
+        logger.warning("billing_status: error fetching subscription — %s", subs)
+    elif subs.data:
+        sub = subs.data[0]
+        result["subscription"] = {
+            "status": sub.status,
+            "current_period_end": _ts(sub.current_period_end),
+            "current_period_start": _ts(sub.current_period_start),
+            "cancel_at_period_end": sub.cancel_at_period_end,
+            "cancel_at": _ts(getattr(sub, "cancel_at", None)),
+        }
 
     # Invoice history (up to 12 most recent)
-    try:
-        inv_list = await _run_stripe(
-            stripe.Invoice.list,
-            customer=user.stripe_customer_id,
-            limit=12,
-        )
+    if isinstance(inv_list, Exception):
+        logger.warning("billing_status: error fetching invoices — %s", inv_list)
+    else:
         result["invoices"] = [
             {
                 "id": inv.id,
@@ -115,8 +116,6 @@ async def billing_status(user: User = Depends(get_current_user)):
             }
             for inv in inv_list.data
         ]
-    except Exception as exc:
-        logger.warning("billing_status: error fetching invoices — %s", exc)
 
     return result
 

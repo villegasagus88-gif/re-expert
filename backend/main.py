@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path as _Path
 
 from api.routes.academia import router as academia_router
 from api.routes.agent import router as agent_router
@@ -122,6 +123,8 @@ async def lifespan(_app: FastAPI):
         if not warmup_task.done():
             warmup_task.cancel()
         await stop_scheduler()
+        from services.llm_providers import close_gemini_client
+        await close_gemini_client()
 
 
 app = FastAPI(
@@ -334,8 +337,6 @@ app.include_router(contacts_router, dependencies=_paid)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
-from pathlib import Path as _Path
-
 _reports_dir = _Path(__file__).resolve().parent / "data" / "reports"
 _reports_dir.mkdir(parents=True, exist_ok=True)
 app.mount(
