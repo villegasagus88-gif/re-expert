@@ -59,9 +59,16 @@ async def plan_route(
     try:
         async with httpx.AsyncClient(timeout=15) as cli:
             r = await cli.post(url, headers=headers, json=body)
-            data = r.json()
             if r.status_code >= 400:
-                return {"error": "google_maps_error", "detail": data}
+                # No parsear como JSON a ciegas: un 5xx de Google puede venir en
+                # HTML/texto plano → JSONDecodeError crudo que SOL narraría como
+                # un error incomprensible. Devolvemos un error prolijo.
+                try:
+                    detail = r.json()
+                except ValueError:
+                    detail = r.text[:200]
+                return {"error": "google_maps_error", "detail": detail}
+            data = r.json()
         routes = data.get("routes") or []
         if not routes:
             return {"error": "no_route_found", "detail": data}

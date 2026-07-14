@@ -63,6 +63,16 @@ router = APIRouter(prefix="/api/chat", tags=["chat"])
 MAX_HISTORY_MESSAGES = 20
 STREAM_TIMEOUT_SECONDS = 180
 
+# Nombres de excepción de fallos TRANSITORIOS de red/timeout contra el LLM
+# (SDK de Anthropic + httpx). Los matcheamos por nombre para no acoplar el
+# router a esas libs; un hipo de red es lo más común y NO debe mostrar el
+# mensaje alarmante de "contactá soporte".
+_TRANSIENT_LLM_ERRORS = frozenset({
+    "APIConnectionError", "APITimeoutError", "APIConnectionTimeoutError",
+    "ConnectError", "ConnectTimeout", "ReadTimeout", "ReadError", "WriteError",
+    "TransportError", "TimeoutException", "RemoteProtocolError", "PoolTimeout",
+})
+
 
 TITLE_MAX_LEN = 60
 
@@ -636,6 +646,11 @@ async def chat(
             if "credit balance" in emsg or "billing" in emsg or status_code in (401, 402, 403):
                 msg = "El asistente no está disponible en este momento. Reintentá en unos minutos."
             elif status_code in (429, 500, 502, 503, 529) or "overloaded" in emsg or "rate limit" in emsg:
+                msg = "El asistente está con mucha demanda ahora. Probá de nuevo en un minuto."
+            elif type(e).__name__ in _TRANSIENT_LLM_ERRORS:
+                # Error de red/timeout contra el LLM (el caso MÁS común de un hipo
+                # transitorio): sin status_code ni keywords, antes caía en el
+                # mensaje alarmante de "contactá soporte". Lo tratamos como demanda.
                 msg = "El asistente está con mucha demanda ahora. Probá de nuevo en un minuto."
             elif settings.DEBUG:
                 err_type = type(e).__name__
