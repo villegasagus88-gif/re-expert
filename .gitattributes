@@ -1,0 +1,3 @@
+# Libs vendored (self-hosted marked/dompurify): tratarlos como binario para que
+# git NO les cambie los saltos de línea → quedan byte-idénticos a lo descargado.
+frontend/vendor/*.min.js -text

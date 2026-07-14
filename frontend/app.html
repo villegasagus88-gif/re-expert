@@ -9,14 +9,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
-  <!-- defer: son de CDN (DNS+TLS a jsdelivr) y solo se usan al renderizar
-       mensajes (runtime), así no bloquean el primer paint. parseMd/parseSolMd
-       ya son fail-closed si todavía no cargaron. -->
-  <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- SELF-HOSTED (vendor/): antes venían de cdn.jsdelivr.net. Servirlos desde
+       el mismo origen elimina el DNS+TLS al CDN en el primer load Y el punto
+       único de falla (si una red bloquea jsdelivr, el markdown del chat se caía;
+       parseMd es fail-closed, así que sin DOMPurify no se renderiza HTML).
+       defer: solo se usan al renderizar mensajes, no bloquean el primer paint.
+       Versiones fijadas: marked v15.0.12, DOMPurify 3.1.6 (idénticas a prod). -->
+  <script defer src="vendor/marked.min.js"></script>
   <!-- DOMPurify para sanitizar HTML emitido por el LLM antes de innerHTML.
        Sin esto, un prompt injection podría hacer que el modelo escupa
        <script> tags que se ejecutarían en el browser del usuario. -->
-  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script defer src="vendor/purify.min.js"></script>
   <script src="config.js"></script>
   <script src="sentry.js"></script>
   <script src="authService.js"></script>
