@@ -169,7 +169,25 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_STT_MODEL: str = "gpt-4o-mini-transcribe"   # alternativa: whisper-1
     OPENAI_TTS_MODEL: str = "gpt-4o-mini-tts"          # alternativa: tts-1
-    OPENAI_TTS_VOICE: str = "nova"
+    # Voz base (timbre). Cálidas/humanas: coral, sage, nova, shimmer. Para probar
+    # otra sin tocar código, cambiá esta env var en Railway y listo.
+    OPENAI_TTS_VOICE: str = "coral"
+    # `instructions` es EL lever de gpt-4o-mini-tts: dirige acento, tono, calidez
+    # y ritmo. Sin esto la voz lee plana/robótica. Este default la hace argentina,
+    # cálida y clara. (Solo aplica a modelos gpt-4o-*; tts-1 lo ignora.)
+    OPENAI_TTS_INSTRUCTIONS: str = (
+        "Hablás en español rioplatense de Argentina, con acento porteño natural: "
+        "voseo, entonación argentina y la 'sh' suave en la ll/y. Tu tono es cálido, "
+        "cercano y humano, como el de un asesor de confianza que te explica las "
+        "cosas con claridad y sin apuro. Modulás bien, con un ritmo pausado pero "
+        "fluido, fácil de seguir, haciendo micro-pausas en comas y puntos para que "
+        "no se pierda el hilo. Transmitís seguridad y calidez, con naturalidad; "
+        "enfatizás lo importante sin exagerar. Nada de tono de locutor artificial "
+        "ni monótono: sonás como una persona real, profesional pero amable, que da "
+        "gusto escuchar."
+    )
+    # Velocidad de habla (0.25–4.0). Un pelín por debajo de 1.0 se sigue más fácil.
+    OPENAI_TTS_SPEED: float = 0.96
 
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).

@@ -57,16 +57,22 @@ async def transcribe(audio: bytes, filename: str, content_type: str) -> str:
 
 async def speak(text: str) -> bytes:
     """Texto → audio MP3. El texto ya viene limpio (sin markdown) del frontend."""
+    payload: dict = {
+        "model": settings.OPENAI_TTS_MODEL,
+        "voice": settings.OPENAI_TTS_VOICE,
+        "input": text[:MAX_TTS_CHARS],
+        "response_format": "mp3",
+        "speed": settings.OPENAI_TTS_SPEED,
+    }
+    # `instructions` (acento/tono/calidez) solo lo entienden los modelos gpt-4o-*;
+    # tts-1/tts-1-hd lo rechazarían. Es lo que hace la voz argentina y humana.
+    if settings.OPENAI_TTS_INSTRUCTIONS and "gpt-4o" in settings.OPENAI_TTS_MODEL:
+        payload["instructions"] = settings.OPENAI_TTS_INSTRUCTIONS
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.post(
             f"{_OPENAI_BASE}/audio/speech",
             headers=_headers(),
-            json={
-                "model": settings.OPENAI_TTS_MODEL,
-                "voice": settings.OPENAI_TTS_VOICE,
-                "input": text[:MAX_TTS_CHARS],
-                "response_format": "mp3",
-            },
+            json=payload,
         )
     if resp.status_code != 200:
         logger.warning("Voice TTS %s: %s", resp.status_code, resp.text[:300])
