@@ -144,6 +144,32 @@ def _cache_set(key: str, value: Any, ttl: int) -> None:
     _cache[key] = (time.time() + ttl, value)
 
 
+# ── Cache PERSISTENTE (tabla kv_cache) ──
+# El cache en RAM de arriba muere en cada redeploy de Railway → el 1er usuario
+# tras un deploy volvía a pagar la generación con IA. Estos helpers respaldan
+# los digests en la DB para que sobrevivan. Best-effort: si la DB falla, se
+# regenera (nunca rompe el digest). Cada helper abre su propia sesión.
+async def _persistent_get(key: str) -> Any | None:
+    try:
+        from models.base import get_session_factory
+        from services.persistent_cache import pcache_get
+        async with get_session_factory()() as db:
+            return await pcache_get(db, key)
+    except Exception:  # noqa: BLE001
+        logger.warning("news: pcache_get falló (%s)", key, exc_info=True)
+        return None
+
+
+async def _persistent_set(key: str, value: Any, ttl: int) -> None:
+    try:
+        from models.base import get_session_factory
+        from services.persistent_cache import pcache_set
+        async with get_session_factory()() as db:
+            await pcache_set(db, key, value, ttl)
+    except Exception:  # noqa: BLE001
+        logger.warning("news: pcache_set falló (%s)", key, exc_info=True)
+
+
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFD", (s or "").lower())
     return "".join(c for c in s if unicodedata.category(c) != "Mn")
@@ -594,6 +620,12 @@ async def make_digest(url: str, title: str = "", snippet: str = "",
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
+    # Cache persistente: si otro proceso (o este antes del deploy) ya generó el
+    # digest, lo reusamos sin pagar fetch + IA de nuevo. Repoblamos el de RAM.
+    persisted = await _persistent_get(cache_key)
+    if persisted is not None:
+        _cache_set(cache_key, persisted, _DIGEST_TTL)
+        return persisted
 
     og_image, text = await _fetch_article_text(url)
     content = text or snippet or title
@@ -635,4 +667,5 @@ async def make_digest(url: str, title: str = "", snippet: str = "",
     }
     if not parcial:
         _cache_set(cache_key, payload, _DIGEST_TTL)
+        await _persistent_set(cache_key, payload, _DIGEST_TTL)  # sobrevive redeploys
     return payload

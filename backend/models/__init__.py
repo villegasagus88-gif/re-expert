@@ -6,6 +6,7 @@ from models.budget import Budget
 from models.contact import Contact
 from models.conversation import Conversation
 from models.course_purchase import CoursePurchase
+from models.kv_cache import KVCache
 from models.material import Material
 from models.message import Message
 from models.milestone import Milestone
@@ -29,6 +30,7 @@ __all__ = [
     "Payment",
     "Milestone",
     "Material",
+    "KVCache",
     "Budget",
     "Reminder",
     "UserChannel",
