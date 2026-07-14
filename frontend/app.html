@@ -1923,18 +1923,16 @@ function markToolDone(name,ok,source){
   // Marca la fila pendiente más reciente con ese name como terminada.
   const rows=Array.from(trace.querySelectorAll(`[data-tool="${name}"]:not(.done)`));
   const row=rows[rows.length-1];if(!row)return;
-  row.classList.add('done');
+  row.classList.add('done',ok?'ok':'err');  // el estado lo pinta el CSS (pill)
   if(name==='remember'){
     const k=row.dataset.memkey||'';
     row.innerHTML=(ok?'💾 Recordado'+(k?': '+esc(k):''):'⚠️ No se pudo guardar');
-    row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
     // Si el panel de memoria del proyecto está abierto, lo refrescamos.
     if(ok&&state.activeWorkspace&&typeof refreshMemoryIfOpen==='function')refreshMemoryIfOpen();
     return;
   }
   const label=prettyToolLabel(name,source);
   row.innerHTML=(ok?'✓':'⚠️')+' '+esc(label);
-  row.style.color=ok?'var(--success,#22c55e)':'var(--danger,#ef4444)';
 }
 
 function parseMd(t){
@@ -2172,7 +2170,7 @@ function autoResize(){const el=els.messageInput;el.style.height='auto';el.style.
 // MISMO motor del Chat Experto: el modo voz manda por sendMessage() y escucha el
 // evento re:chat-done que emite el stream al terminar. Cero lógica duplicada.
 const vcState={dictating:false,rec:null,baseText:'',voice:null,speakingBtn:null,utterQueue:[],
-  mode:false,phase:'idle',modeRec:null,paused:false,
+  mode:false,phase:'idle',modeRec:null,paused:false,rate:1,
   apiVoice:false,mediaRec:null,audioEl:null,speakAbort:null,vadStop:null};
 const VC_REC=('MediaRecorder' in window)?window.MediaRecorder:null;
 function vcRecMime(){
@@ -2232,6 +2230,7 @@ function vcSpeak(text,onEnd){
   next();
 }
 function vcStopSpeak(){
+  if(typeof vcPlayer!=='undefined')vcPlayer.hide();
   if(vcState.speakAbort){try{vcState.speakAbort.abort();}catch(e){}vcState.speakAbort=null;}
   if(vcState.audioEl){try{vcState.audioEl.pause();}catch(e){}vcState.audioEl=null;}
   if(!VC_TTS){if(vcState.speakingBtn){vcState.speakingBtn.classList.remove('active');vcState.speakingBtn.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}return;}
@@ -2268,6 +2267,7 @@ async function vcSpeakApi(text,onEnd,cacheEl){
     }catch(e){
       if(ctrl.signal.aborted)return;
       vcState.speakAbort=null;
+      vcPlayer.hide(); // el fallback usa la voz del navegador (sin <audio> seekable)
       vcSpeak(text,onEnd); // fallback: voz del navegador
     }
   };
@@ -2275,10 +2275,50 @@ async function vcSpeakApi(text,onEnd,cacheEl){
 }
 function vcPlayUrl(url,onEnd){
   const a=new Audio(url);vcState.audioEl=a;
+  a.playbackRate=vcState.rate;
+  vcPlayer.bind(a);  // el player flotante controla el <audio> actual (rota por chunk)
   a.onended=()=>{if(vcState.audioEl===a){vcState.audioEl=null;if(onEnd)onEnd();}};
   a.onerror=()=>{if(vcState.audioEl===a){vcState.audioEl=null;if(onEnd)onEnd();}};
   a.play().catch(()=>{if(onEnd)onEnd();});
 }
+
+// ── Player flotante premium para la lectura de voz ──
+// Pausar/continuar, velocidad y seek ("desde dónde continuar"). Controla el
+// <audio> actual (vcState.audioEl), que va rotando por chunk de la respuesta.
+const VC_RATES=[0.75,1,1.25,1.5,2];
+const vcPlayer=(()=>{
+  let el,seek,timeEl,playBtn,speedBtn,seeking=false;
+  const ICON_PLAY='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const ICON_PAUSE='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg>';
+  const fmt=s=>{if(!isFinite(s)||s<0)s=0;const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+(ss<10?'0':'')+ss;};
+  function build(){
+    el=document.createElement('div');el.className='vc-player';el.hidden=true;
+    el.innerHTML=`<button class="vc-pl-btn vc-pl-play" title="Pausar / Continuar" aria-label="Pausar o continuar">${ICON_PAUSE}</button>`+
+      `<div class="vc-pl-mid"><div class="vc-pl-label"><span class="vc-pl-wave"><i></i><i></i><i></i></span>Escuchando la respuesta</div>`+
+      `<input type="range" class="vc-pl-seek" min="0" max="1000" value="0" step="1" aria-label="Posición de la lectura"></div>`+
+      `<span class="vc-pl-time">0:00</span>`+
+      `<button class="vc-pl-btn vc-pl-speed" title="Velocidad de lectura">1×</button>`+
+      `<button class="vc-pl-btn vc-pl-close" title="Detener" aria-label="Detener">&times;</button>`;
+    document.body.appendChild(el);
+    playBtn=el.querySelector('.vc-pl-play');seek=el.querySelector('.vc-pl-seek');
+    timeEl=el.querySelector('.vc-pl-time');speedBtn=el.querySelector('.vc-pl-speed');
+    playBtn.addEventListener('click',()=>{const a=vcState.audioEl;if(!a)return;if(a.paused)a.play().catch(()=>{});else a.pause();syncPlay();});
+    speedBtn.addEventListener('click',cycleSpeed);
+    el.querySelector('.vc-pl-close').addEventListener('click',()=>vcStopSpeak());
+    seek.addEventListener('input',()=>{seeking=true;const a=vcState.audioEl;if(a&&isFinite(a.duration))timeEl.textContent=fmt(a.duration-seek.value/1000*a.duration);});
+    seek.addEventListener('change',()=>{const a=vcState.audioEl;if(a&&isFinite(a.duration))a.currentTime=seek.value/1000*a.duration;seeking=false;});
+    updateSpeed();
+  }
+  function syncPlay(){const a=vcState.audioEl;if(playBtn)playBtn.innerHTML=(a&&!a.paused)?ICON_PAUSE:ICON_PLAY;el&&el.classList.toggle('paused',!(a&&!a.paused));}
+  function updateSpeed(){if(speedBtn)speedBtn.textContent=vcState.rate+'×';}
+  function cycleSpeed(){const i=VC_RATES.indexOf(vcState.rate);vcState.rate=VC_RATES[(i+1)%VC_RATES.length];if(vcState.audioEl)vcState.audioEl.playbackRate=vcState.rate;updateSpeed();}
+  function onTime(){const a=vcState.audioEl;if(!a||seeking||!isFinite(a.duration))return;seek.value=Math.round(a.currentTime/a.duration*1000);timeEl.textContent=fmt(a.duration-a.currentTime);}
+  return {
+    show(){if(!el)build();el.hidden=false;syncPlay();updateSpeed();},
+    hide(){if(el)el.hidden=true;},
+    bind(a){if(!el)build();a.playbackRate=vcState.rate;a.addEventListener('timeupdate',onTime);a.addEventListener('play',syncPlay);a.addEventListener('pause',syncPlay);a.addEventListener('loadedmetadata',onTime);seek.value=0;syncPlay();},
+  };
+})();
 // Ruteo: API premium si está habilitada; si no, voz del navegador.
 function vcSpeakSmart(text,onEnd,cacheEl){
   if(vcState.apiVoice)vcSpeakApi(text,onEnd,cacheEl);
@@ -2479,7 +2519,8 @@ function vcAddListenBtns(){
       if(vcState.speakingBtn===b){vcStopSpeak();return;}
       vcStopSpeak();
       vcState.speakingBtn=b;b.classList.add('active');b.innerHTML='⏹ Detener';
-      vcSpeakSmart(txtEl.textContent,()=>{if(vcState.speakingBtn===b){b.classList.remove('active');b.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}},b);
+      if(vcState.apiVoice)vcPlayer.show();  // player flotante solo para la voz premium
+      vcSpeakSmart(txtEl.textContent,()=>{vcPlayer.hide();if(vcState.speakingBtn===b){b.classList.remove('active');b.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}},b);
     });
     mc.appendChild(b);
   });
