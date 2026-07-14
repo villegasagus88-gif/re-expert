@@ -5,13 +5,19 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from models.base import Base
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class Message(Base):
     __tablename__ = "messages"
+    __table_args__ = (
+        # Índice compuesto para el patrón caliente "mensajes de una conversación
+        # ordenados por fecha" (historial del chat, get_conversation) y el
+        # MAX(created_at) por conversación de la lista de conversaciones.
+        Index("ix_messages_conv_created", "conversation_id", "created_at"),
+    )
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, server_default=func.gen_random_uuid()

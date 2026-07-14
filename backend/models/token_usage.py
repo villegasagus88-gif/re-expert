@@ -11,13 +11,18 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from models.base import Base
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TokenUsage(Base):
     __tablename__ = "token_usage"
+    __table_args__ = (
+        # Índice compuesto para las agregaciones de uso por usuario y ventana de
+        # tiempo (GET /api/usage: SUM(...) WHERE user_id=X AND created_at>=since).
+        Index("ix_token_usage_user_created", "user_id", "created_at"),
+    )
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4, server_default=func.gen_random_uuid()
