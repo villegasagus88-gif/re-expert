@@ -746,6 +746,30 @@ def _system_with_cache(system: str) -> str | list[dict]:
     """
     if len(system) < _PROMPT_CACHE_MIN_CHARS:
         return system
+    # Split en bloques con breakpoints de cache SEPARADOS, ordenados de ESTABLE a
+    # VARIABLE, para que el prefijo estable pegue en el cache cross-request:
+    #   bloque 1: BASE_SYSTEM_PROMPT (constante) → hit en TODAS las conversaciones
+    #             (el prefix grande y estable ya no lo invalidan memoria/KB).
+    #   bloque 2: memoria + KB ruteado (variable) → hit entre las iteraciones del
+    #             loop de tools del MISMO turno (system_payload se reenvía igual),
+    #             y cross-user si el KB ruteado coincide.
+    # El texto que ve el modelo es IDÉNTICO: los bloques text se concatenan sin
+    # separador, y bloque1+bloque2 == system exacto. Solo cambia el particionado
+    # para caching → cero cambio de comportamiento/calidad, menor TTFT y costo.
+    if system.startswith(BASE_SYSTEM_PROMPT) and len(system) > len(BASE_SYSTEM_PROMPT):
+        return [
+            {
+                "type": "text",
+                "text": BASE_SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            },
+            {
+                "type": "text",
+                "text": system[len(BASE_SYSTEM_PROMPT):],
+                "cache_control": {"type": "ephemeral"},
+            },
+        ]
+    # SOL u otros prompts que no arrancan con BASE: un solo bloque, como antes.
     return [
         {
             "type": "text",
