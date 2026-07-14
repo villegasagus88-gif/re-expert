@@ -1360,8 +1360,8 @@ async function loadConversationsFromCloud(append=false){
 function renderHistory(){
   if(!state.conversations.length){els.chatHistory.innerHTML='<div class="history-empty">Sin conversaciones</div>';return}
   els.chatHistory.innerHTML=state.conversations.map(c=>`<div class="history-item ${state.currentConversation?.id===c.id?'active':''}" data-id="${c.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="hi-title">${esc(c.title)}</span><button class="hi-more" data-id="${c.id}" title="Opciones" aria-label="Opciones">${CTX_DOTS_SVG}</button></div>`).join('');
-  els.chatHistory.querySelectorAll('.history-item').forEach(el=>el.addEventListener('click',e=>{if(e.target.closest('.hi-more'))return;loadConversation(el.dataset.id)}));
-  els.chatHistory.querySelectorAll('.hi-more').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openChatCtxMenu(b.dataset.id,b)}));
+  // Los clicks los maneja el listener DELEGADO en initHistoryScroll (una vez),
+  // no re-atamos por ítem acá.
 }
 
 // ===== WORKSPACES (Proyectos) =====
@@ -3941,11 +3941,16 @@ function matClearSearch(){
 }
 function initMatSearch(){
   const input=$('#matSearch');if(!input)return;
+  let _matGridT;
   input.addEventListener('input',()=>{
     const q=input.value.trim();
     $('#matSearchClear').style.display=q?'':'none';
     materialesState.query=q;
-    renderMatSuggest();renderMaterialesCards();renderMaterialesMeta();
+    renderMatSuggest();  // el autocomplete queda ágil (lista corta de 8)
+    // La grilla es pesada (filtra+ordena+reescribe toda la lista): la debounceamos
+    // ~140ms para no rebuildearla en CADA tecla. El resultado final es idéntico.
+    clearTimeout(_matGridT);
+    _matGridT=setTimeout(()=>{renderMaterialesCards();renderMaterialesMeta();},140);
   });
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){const first=$('#matSuggest .mat-suggest-item');if(first)matPickSuggestion(first.dataset.mat);}
@@ -7012,6 +7017,15 @@ function initHistoryScroll(){
     if(section.scrollHeight-section.scrollTop-section.clientHeight<80){
       loadConversationsFromCloud(true);
     }
+  });
+  // Delegación de eventos: UN listener en el contenedor, en vez de re-atar por
+  // ítem en CADA render (renderHistory se llama en cada página del scroll infinito
+  // → antes eran decenas de addEventListener por página, con micro-jank).
+  els.chatHistory?.addEventListener('click',e=>{
+    const more=e.target.closest('.hi-more');
+    if(more){e.stopPropagation();openChatCtxMenu(more.dataset.id,more);return;}
+    const item=e.target.closest('.history-item');
+    if(item)loadConversation(item.dataset.id);
   });
 }
 
