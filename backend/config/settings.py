@@ -117,6 +117,10 @@ class Settings(BaseSettings):
     # en dev local, localhost:8000 (solo accesible desde la PC del user).
     BACKEND_PUBLIC_URL: str = "http://localhost:8000"
 
+    # Concurrencia al bajar el KB del bucket (descargas en paralelo con cliente
+    # compartido). 10 = balance entre velocidad y no saturar Supabase Storage.
+    KB_LOAD_CONCURRENCY: int = 10
+
     # Habilita el poller que dispara recordatorios. Ponelo en False en tests.
     SCHEDULER_ENABLED: bool = True
     # Intervalo (segundos) entre polls. 30s = baja latencia y carga ínfima.

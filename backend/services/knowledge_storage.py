@@ -127,13 +127,52 @@ class KnowledgeStorageService:
 
             return results
 
-    async def get_file(self, path: str) -> tuple[bytes, str]:
+    async def _download_file(
+        self, path: str, client: httpx.AsyncClient
+    ) -> tuple[bytes, str]:
+        """Descarga real contra Supabase Storage con un client dado. La lógica
+        de 404/502, decode del content-type y cacheo es idéntica a get_file; se
+        extrae para poder reusar un client compartido (ver load_all del KB)."""
+        resp = await client.get(
+            f"{STORAGE_URL}/object/{BUCKET}/{path}",
+            headers=HEADERS,
+        )
+
+        if resp.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Archivo no encontrado: {path}",
+            )
+
+        if resp.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Error descargando archivo: {resp.text}",
+            )
+
+        content_type = resp.headers.get("content-type", "application/octet-stream")
+
+        # Cache the file
+        self._cache[path] = CachedFile(
+            content=resp.content,
+            content_type=content_type,
+            cached_at=time.time(),
+        )
+
+        return resp.content, content_type
+
+    async def get_file(
+        self, path: str, *, client: httpx.AsyncClient | None = None
+    ) -> tuple[bytes, str]:
         """
         Download a file from the knowledge bucket.
         Returns (content_bytes, content_type). Uses cache if available.
 
         Args:
             path: file path within the bucket (e.g. "docs/guide.pdf")
+            client: opcional. Si se pasa un AsyncClient compartido, se reusa (el
+                KB baja cientos de archivos con keep-alive, sin un handshake TLS
+                por archivo). Sin él, el comportamiento es idéntico al anterior.
         """
         if self._is_cached(path):
             cached = self._cache[path]
@@ -145,34 +184,10 @@ class KnowledgeStorageService:
                 detail=f"Archivo no encontrado: {path}",
             )
 
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.get(
-                f"{STORAGE_URL}/object/{BUCKET}/{path}",
-                headers=HEADERS,
-            )
-
-            if resp.status_code == 404:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Archivo no encontrado: {path}",
-                )
-
-            if resp.status_code != 200:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Error descargando archivo: {resp.text}",
-                )
-
-            content_type = resp.headers.get("content-type", "application/octet-stream")
-
-            # Cache the file
-            self._cache[path] = CachedFile(
-                content=resp.content,
-                content_type=content_type,
-                cached_at=time.time(),
-            )
-
-            return resp.content, content_type
+        if client is not None:
+            return await self._download_file(path, client)
+        async with httpx.AsyncClient(timeout=30) as c:
+            return await self._download_file(path, c)
 
     async def upload_file(self, path: str, file: UploadFile) -> dict:
         """
@@ -243,12 +258,16 @@ class KnowledgeStorageService:
 
             self._cache.pop(path, None)
 
-    async def get_text_content(self, path: str) -> str:
+    async def get_text_content(
+        self, path: str, *, client: httpx.AsyncClient | None = None
+    ) -> str:
         """
         Download and decode a text file (md, txt, csv).
         Useful for feeding knowledge to the AI.
+
+        `client` opcional: se pasa al get_file para reusar una conexión.
         """
-        content, content_type = await self.get_file(path)
+        content, content_type = await self.get_file(path, client=client)
         try:
             return content.decode("utf-8")
         except UnicodeDecodeError:

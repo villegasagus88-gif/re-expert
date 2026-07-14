@@ -292,12 +292,47 @@ async def _fetch_all_rss(refresh: bool = False) -> list[dict]:
     return raw
 
 
+# Stale-while-revalidate: refrescos de feed en curso (single-flight por categoría)
+# para no disparar N recomputes concurrentes de la misma categoría.
+_feed_refreshing: set[str] = set()
+
+
+def _schedule_feed_refresh(category: str) -> None:
+    """Recomputa el feed de una categoría en BACKGROUND (SWR). Single-flight."""
+    if category in _feed_refreshing:
+        return
+    _feed_refreshing.add(category)
+
+    async def _run() -> None:
+        try:
+            await _ranked_items(category, refresh=True)  # recomputa y actualiza cache
+        except Exception:  # noqa: BLE001
+            logger.warning("SWR: falló refrescar el feed %s", category, exc_info=True)
+        finally:
+            _feed_refreshing.discard(category)
+
+    try:
+        asyncio.get_running_loop().create_task(_run())
+    except RuntimeError:
+        _feed_refreshing.discard(category)  # sin loop → el próximo request recomputará
+
+
 async def _ranked_items(category: str, refresh: bool = False) -> list[dict]:
     cache_key = f"ranked::{category}"
     if not refresh:
-        cached = _cache_get(cache_key)
-        if cached is not None:
-            return cached
+        hit = _cache.get(cache_key)
+        if hit is not None:
+            expiry, value = hit
+            now_t = time.time()
+            if now_t <= expiry:
+                return value  # fresco
+            # Stale-while-revalidate: si venció hace poco (≤ otro TTL), servimos el
+            # feed viejo AL INSTANTE y lo refrescamos en background. Elimina el
+            # 'cliff' de los 10 min sin bloquear al usuario, y acotado para que
+            # nunca se sirva algo más viejo que ~2× TTL (calidad = frescura).
+            if now_t <= expiry + _FEED_TTL:
+                _schedule_feed_refresh(category)
+                return value
 
     raw = await _fetch_all_rss(refresh)
     now = datetime.now(UTC)

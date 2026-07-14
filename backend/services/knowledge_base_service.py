@@ -25,6 +25,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Literal
 
+import httpx
+from config.settings import settings
 from services.knowledge_storage import knowledge_storage
 
 logger = logging.getLogger(__name__)
@@ -252,16 +254,27 @@ class KnowledgeBaseService:
                 if f["name"].lower().endswith((".md", ".csv", ".yaml", ".yml"))
             ]
 
-            docs: list[Document] = []
-            for f in supported:
-                try:
-                    raw = await knowledge_storage.get_text_content(f["path"])
-                except Exception as e:
-                    logger.warning("KB: no pude leer %s: %s", f["path"], e)
-                    continue
-                doc = build_document(f["path"], raw)
-                if doc is not None:
-                    docs.append(doc)
+            # Descarga EN PARALELO con un cliente compartido (keep-alive) y un
+            # semáforo que acota la concurrencia. Antes era un for secuencial que
+            # abría un handshake TLS por archivo (cientos de descargas en serie,
+            # ~40s en frío). El resultado es IDÉNTICO: gather preserva el orden de
+            # `supported` y los fallos se saltan igual (None filtrado) — mismos
+            # documentos, mismo orden → misma búsqueda/contexto, cero cambio de
+            # calidad, solo mucho más rápido.
+            sem = asyncio.Semaphore(max(1, settings.KB_LOAD_CONCURRENCY))
+
+            async def _load_one(f: dict, client: httpx.AsyncClient) -> Document | None:
+                async with sem:
+                    try:
+                        raw = await knowledge_storage.get_text_content(f["path"], client=client)
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("KB: no pude leer %s: %s", f["path"], e)
+                        return None
+                return build_document(f["path"], raw)
+
+            async with httpx.AsyncClient(timeout=30) as shared:
+                results = await asyncio.gather(*[_load_one(f, shared) for f in supported])
+            docs: list[Document] = [d for d in results if d is not None]
 
             self._cache = _Cache(docs=docs, loaded_at=time.time())
             logger.info("KB: cargados %s documentos", len(docs))

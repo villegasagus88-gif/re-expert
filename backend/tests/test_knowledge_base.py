@@ -145,7 +145,7 @@ async def test_cache_ttl_honored(monkeypatch):
         calls["n"] += 1
         return [{"name": "x.md", "path": "x.md"}]
 
-    async def fake_get(path: str):
+    async def fake_get(path: str, client=None):
         return "# Hola\n\nContenido de prueba"
 
     import services.knowledge_base_service as kb_mod
@@ -169,6 +169,36 @@ async def test_cache_ttl_honored(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_load_all_paralelo_preserva_orden_y_saltea_fallos(monkeypatch):
+    """La carga PARALELA del KB da EXACTAMENTE los mismos documentos y en el mismo
+    orden que la secuencial: asyncio.gather preserva el orden de `supported` y los
+    fallos de descarga se saltan igual. Garantía de que la optimización es de pura
+    latencia — cero cambio en el contenido/orden que ve el chat."""
+    import asyncio as _a
+
+    files = [{"name": f"{n}.md", "path": f"{n}.md"} for n in ["a", "b", "c", "d", "e"]]
+
+    async def fake_list(folder: str = ""):
+        return files
+
+    async def fake_get(path, client=None):
+        if path == "c.md":
+            raise RuntimeError("descarga rota")  # debe saltarse sin romper el resto
+        await _a.sleep(0)  # fuerza intercalado real de las corutinas concurrentes
+        return f"# Doc {path}\n\ncontenido de {path}"
+
+    import services.knowledge_base_service as kb_mod
+    monkeypatch.setattr(kb_mod.knowledge_storage, "list_files", fake_list)
+    monkeypatch.setattr(kb_mod.knowledge_storage, "get_text_content", fake_get)
+
+    svc = KnowledgeBaseService(ttl_seconds=60)
+    docs = await svc.load_all(force=True)
+    # Orden preservado y 'c.md' (falla) saltado — idéntico a la versión secuencial.
+    assert [d.path for d in docs] == ["a.md", "b.md", "d.md", "e.md"]
+    assert "contenido de a.md" in docs[0].content
+
+
+@pytest.mark.asyncio
 async def test_search_ranks_by_overlap(monkeypatch):
     docs_data = [
         ("costos/caba.md", SAMPLE_MD),
@@ -179,7 +209,7 @@ async def test_search_ranks_by_overlap(monkeypatch):
     async def fake_list(folder: str = ""):
         return [{"name": p.rsplit("/", 1)[-1], "path": p} for p, _ in docs_data]
 
-    async def fake_get(path: str):
+    async def fake_get(path: str, client=None):
         return dict(docs_data)[path]
 
     import services.knowledge_base_service as kb_mod
@@ -203,7 +233,7 @@ async def test_get_context_filters_by_domain(monkeypatch):
     async def fake_list(folder: str = ""):
         return [{"name": p.rsplit("/", 1)[-1], "path": p} for p, _ in docs_data]
 
-    async def fake_get(path: str):
+    async def fake_get(path: str, client=None):
         return dict(docs_data)[path]
 
     import services.knowledge_base_service as kb_mod
@@ -221,7 +251,7 @@ async def test_get_context_truncates_at_max_chars(monkeypatch):
     big = "lorem ipsum " * 1000
     async def fake_list(folder: str = ""):
         return [{"name": "big.md", "path": "big.md"}]
-    async def fake_get(path: str):
+    async def fake_get(path: str, client=None):
         return big
 
     import services.knowledge_base_service as kb_mod
