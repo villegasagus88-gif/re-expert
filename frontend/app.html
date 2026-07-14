@@ -9,11 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- defer: son de CDN (DNS+TLS a jsdelivr) y solo se usan al renderizar
+       mensajes (runtime), así no bloquean el primer paint. parseMd/parseSolMd
+       ya son fail-closed si todavía no cargaron. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- DOMPurify para sanitizar HTML emitido por el LLM antes de innerHTML.
        Sin esto, un prompt injection podría hacer que el modelo escupa
        <script> tags que se ejecutarían en el browser del usuario. -->
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="config.js"></script>
   <script src="sentry.js"></script>
   <script src="authService.js"></script>
@@ -21,6 +24,13 @@
     /* Oculta el contenido hasta que requireAuth() resuelva, para evitar
        flash de UI protegida antes de redirigir a login. */
     html:not(.re-auth-ready) body > *:not(#app-auth-overlay) { visibility: hidden !important; }
+    /* PAUSA las animaciones de entrada mientras la UI está oculta bajo el guard.
+       `visibility:hidden` NO frena animaciones CSS: en un primer inicio lento
+       (scripts de CDN + refresh de token + backend frío) el fadeIn de .welcome se
+       consumía entero invisible y la app 'aparecía de golpe' o saltada. Congelándolo
+       en el frame 0 hasta `re-auth-ready`, la entrada se ve pulida también en frío. */
+    html:not(.re-auth-ready) body > *:not(#app-auth-overlay),
+    html:not(.re-auth-ready) body > *:not(#app-auth-overlay) * { animation-play-state: paused !important; }
     #app-auth-overlay {
       position: fixed; inset: 0; z-index: 999999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -6404,17 +6414,56 @@ async function loadMoreNews(){
   finally{ newsLiveState.loading=false; }
 }
 
+// Cache de digests en el cliente: el primero paga fetch del artículo + IA, los
+// siguientes (o el que se prefetcheó en hover) son instantáneos. url → Promise.
+const _newsDigestCache=new Map();
+function _newsFetchDigest(it){
+  if(_newsDigestCache.has(it.url))return _newsDigestCache.get(it.url);
+  const q=new URLSearchParams({url:it.url,title:it.title||'',source:it.source||'',category:it.category||'',snippet:it.snippet||'',image:it.image||''});
+  const p=window.REAuthService.authFetch(`${apiBase()}/api/news/digest?${q.toString()}`)
+    .then(r=>{if(!r.ok)throw new Error('digest '+r.status);return r.json();})
+    .catch(err=>{_newsDigestCache.delete(it.url);throw err;});  // permitir reintento
+  _newsDigestCache.set(it.url,p);
+  return p;
+}
+// Prefetch especulativo en hover/touch: cuando el usuario clickea, casi siempre
+// ya está listo. Fire-and-forget; el cache dedupe los mouseover repetidos.
+function _prefetchDigest(url){
+  const it=newsLiveState.items.find(x=>x.url===url);
+  if(!it||_newsDigestCache.has(url))return;
+  _newsFetchDigest(it).catch(()=>{});
+}
+function _newsSkeleton(it){
+  return `
+    ${it.image?`<div class="reader-hero" style="background-image:url('${esc(it.image)}')"></div>`:''}
+    <div class="reader-content">
+      <div class="reader-meta"><span class="news-cat-badge ${esc(it.category)}">${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span><span class="news-card-source">${esc(it.source)}</span></div>
+      <h2 class="reader-title">${esc(it.title)}</h2>
+      ${it.snippet?`<p class="reader-lead">${esc(it.snippet)}</p>`:''}
+      <div class="reader-block">
+        <div class="reader-h">Resumiendo con IA…</div>
+        <div class="skeleton" style="height:13px;width:92%;border-radius:4px;margin-bottom:9px"></div>
+        <div class="skeleton" style="height:13px;width:86%;border-radius:4px;margin-bottom:9px"></div>
+        <div class="skeleton" style="height:13px;width:71%;border-radius:4px"></div>
+      </div>
+    </div>`;
+}
+let _newsReaderUrl=null;
 async function _newsOpenReader(url){
   const it=newsLiveState.items.find(x=>x.url===url);if(!it)return;
   const modal=$('#newsReaderModal'),body=$('#newsReaderBody');
   modal.classList.add('active');
-  body.innerHTML=`<div class="scan-loading"><div class="pay-loading-spinner"></div><span>Armando la nota…</span></div>`;
+  _newsReaderUrl=url;
+  body.innerHTML=_newsSkeleton(it);  // skeleton inmediato con lo que ya tenemos
+  body.scrollTop=0;
   try{
-    const q=new URLSearchParams({url:it.url,title:it.title||'',source:it.source||'',category:it.category||'',snippet:it.snippet||'',image:it.image||''});
-    const r=await window.REAuthService.authFetch(`${apiBase()}/api/news/digest?${q.toString()}`);
-    if(!r.ok)throw new Error();
-    renderDigest(await r.json(),it);
-  }catch(e){ body.innerHTML=`<div class="reader-content"><div class="pay-empty">No se pudo abrir la nota. <a href="${esc(it.url)}" target="_blank" rel="noopener">Leer en la fuente ↗</a></div></div>`; }
+    const d=await _newsFetchDigest(it);  // instantáneo si se prefetcheó en hover
+    if(_newsReaderUrl!==url)return;       // el usuario abrió otra nota mientras tanto
+    renderDigest(d,it);
+  }catch(e){
+    if(_newsReaderUrl!==url)return;
+    body.innerHTML=`<div class="reader-content"><div class="pay-empty">No se pudo abrir la nota. <a href="${esc(it.url)}" target="_blank" rel="noopener">Leer en la fuente ↗</a></div></div>`;
+  }
 }
 
 function renderDigest(d,it){
@@ -6439,10 +6488,14 @@ function initNoticiasTabs(){
   _newsRenderChips();
   $('#newsChips')?.addEventListener('click',e=>{const b=e.target.closest('[data-news-cat]');if(!b||b.dataset.newsCat===newsLiveState.category)return;newsLiveState.category=b.dataset.newsCat;newsLiveState.items=[];_newsRenderChips();loadNewsLive(false);});
   $('#newsRefresh')?.addEventListener('click',()=>refreshNews());
-  $('#newsLiveFeed')?.addEventListener('click',e=>{
+  const _feed=$('#newsLiveFeed');
+  _feed?.addEventListener('click',e=>{
     if(e.target.closest('#newsLoadMore')){loadMoreNews();return;}
     const c=e.target.closest('[data-news-url]');if(c)_newsOpenReader(c.dataset.newsUrl);
   });
+  // Prefetch del resumen al pasar el mouse / tocar la card → apertura instantánea.
+  _feed?.addEventListener('mouseover',e=>{const c=e.target.closest('[data-news-url]');if(c)_prefetchDigest(c.dataset.newsUrl);});
+  _feed?.addEventListener('touchstart',e=>{const c=e.target.closest('[data-news-url]');if(c)_prefetchDigest(c.dataset.newsUrl);},{passive:true});
   const modal=$('#newsReaderModal');
   $('#newsReaderClose')?.addEventListener('click',()=>modal.classList.remove('active'));
   modal?.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('active');});

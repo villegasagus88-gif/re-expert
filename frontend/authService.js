@@ -94,7 +94,19 @@
     _refreshTimer = setTimeout(doRefresh, msUntil);
   }
 
-  async function doRefresh() {
+  // Single-flight: en el arranque frío, bootstrap() + los 4 authFetch del
+  // Promise.all inicial pueden disparar hasta 5 refresh concurrentes con el
+  // mismo refresh_token contra un backend frío. Coalescemos todos en UNA sola
+  // request. (Además blinda para el día que haya rotación single-use de refresh:
+  // hoy los 4 extra devolverían 401 y desloguearían al usuario.)
+  let _refreshInFlight = null;
+  function doRefresh() {
+    if (_refreshInFlight) return _refreshInFlight;
+    _refreshInFlight = _doRefreshImpl().finally(() => { _refreshInFlight = null; });
+    return _refreshInFlight;
+  }
+
+  async function _doRefreshImpl() {
     const refreshToken = localStorage.getItem(STORAGE_REFRESH);
     if (!refreshToken) {
       redirectToLogin();

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -67,14 +68,59 @@ if settings.SENTRY_DSN:
     )
 
 
+async def _warmup() -> None:
+    """Precalienta lo caro para que el PRIMER request del usuario no lo pague.
+
+    Todo lo pesado (pool de DB, cliente LLM, KB, feed de noticias) se inicializa
+    lazy en el primer uso y queda cacheado en RAM del proceso → el primer usuario
+    tras cada deploy sufría el cold start. Acá lo pagamos en el arranque, en
+    background. Best-effort: cada paso en su try/except; nada tumba el startup.
+    """
+    _log = logging.getLogger("re_expert")
+    # 1) Pool de DB: abrir la 1ª conexión (handshake TCP/TLS al pooler de Supabase).
+    try:
+        from models.base import get_session_factory
+        from sqlalchemy import text
+        async with get_session_factory()() as db:
+            await db.execute(text("SELECT 1"))
+        _log.info("warmup: pool de DB caliente")
+    except Exception:  # noqa: BLE001
+        _log.warning("warmup: falló el ping a la DB (sigo)", exc_info=True)
+    # 2) Cliente Anthropic instanciado (evita la creación lazy en el 1er stream).
+    try:
+        from services.anthropic_service import get_client
+        get_client()
+    except Exception:  # noqa: BLE001
+        _log.warning("warmup: falló instanciar el cliente LLM (sigo)", exc_info=True)
+    # 3) KB: cargar el bucket una vez (el 1er chat no espera las descargas).
+    try:
+        from services.knowledge_base_service import knowledge_base
+        await knowledge_base.load_all()
+        _log.info("warmup: KB cargado")
+    except Exception:  # noqa: BLE001
+        _log.warning("warmup: falló cargar el KB (sigo)", exc_info=True)
+    # 4) Feed de noticias: llenar el cache (el 1er GET /api/news/live no paga los RSS).
+    try:
+        from services.news_live import fetch_feed
+        await fetch_feed("todas")
+        _log.info("warmup: feed de noticias caliente")
+    except Exception:  # noqa: BLE001
+        _log.warning("warmup: falló precargar noticias (sigo)", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # Startup: arrancar el scheduler de recordatorios
     start_scheduler()
+    # Warmup FIRE-AND-FORGET: no bloquea el arranque ni el /health (healthcheck
+    # de Railway), así el deploy paga el cold start y no el primer usuario.
+    warmup_task = asyncio.create_task(_warmup())
     try:
         yield
     finally:
         # Shutdown
+        if not warmup_task.done():
+            warmup_task.cancel()
         await stop_scheduler()
 
 
