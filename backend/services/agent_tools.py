@@ -23,6 +23,7 @@ Catálogo de herramientas:
   - generate_docx_report      Genera DOCX y devuelve URL descargable.
   - send_message_now          Envía un mensaje al canal del usuario en este momento.
   - get_user_channels         Lista canales conectados.
+  - connect_telegram          Genera el deep link de vinculación de Telegram.
   - plan_route                Stub: arma una ruta optimizada entre paradas (requiere Maps API).
 """
 from __future__ import annotations
@@ -280,6 +281,17 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "get_user_channels",
         "description": "Devuelve los canales de notificación que el usuario tiene conectados y verificados.",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "connect_telegram",
+        "description": (
+            "Genera el link de vinculación de Telegram para el PROPIO usuario "
+            "(expira en 1 hora). Usalo cuando el usuario quiera que le escribas "
+            "por Telegram y todavía no esté conectado. El link se le muestra solo "
+            "como un botón 'Abrir Telegram'; NO lo escribas vos en tu texto. Al "
+            "tocarlo se abre el bot, pulsa INICIAR y queda vinculado automáticamente."
+        ),
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
     {
@@ -910,6 +922,46 @@ async def _tool_get_user_channels(db: AsyncSession, user: User, **_: Any) -> dic
     }
 
 
+async def _tool_connect_telegram(db: AsyncSession, user: User, **_: Any) -> dict:
+    from services import telegram_service
+
+    res = await telegram_service.create_pairing(db, user.id)
+    if res.get("error"):
+        # No filtrar hints internos (.env / nombres de variables) al modelo.
+        # El campo error lo ve también el usuario en el chip del front → humano.
+        return {
+            "error": "Telegram no está habilitado todavía en el servidor",
+            "code": "telegram_no_habilitado",
+            "detail": (
+                "El canal de Telegram todavía no está habilitado en el servidor "
+                "(falta configurar el bot). Decile al usuario que el equipo lo "
+                "está activando y que mientras tanto le avisás por la app."
+            ),
+        }
+    if res.get("already_connected"):
+        return {
+            "ok": True,
+            "already_connected": True,
+            "detail": "Telegram ya está conectado y verificado para este usuario.",
+        }
+    return {
+        "ok": True,
+        # deep_link va SOLO al front (el chip lo muestra como botón "Abrir
+        # Telegram" en pestaña nueva). _client_only hace que agent_service NO lo
+        # pase al modelo: el pairing_token es una credencial bearer y no debe
+        # entrar al contexto del LLM (ni persistirse en el historial).
+        "deep_link": res["deep_link"],
+        "_client_only": ["deep_link"],
+        "instrucciones_para_vos": (
+            "El link de Telegram YA se le muestra automáticamente al usuario como "
+            "un botón 'Abrir Telegram' (se abre en una pestaña nueva). NO escribas "
+            "vos ningún link ni lo inventes: solo decile en palabras que toque ese "
+            "botón de acá abajo y pulse INICIAR en Telegram — queda vinculado solo, "
+            "sin códigos ni pasos extra. El link vence en 1 hora."
+        ),
+    }
+
+
 async def _tool_plan_route(db: AsyncSession, user: User, **inputs: Any) -> dict:
     from services.maps_service import plan_route
 
@@ -1314,6 +1366,7 @@ TOOL_IMPLS = {
     "generate_docx_report": _tool_generate_docx_report,
     "send_message_now": _tool_send_message_now,
     "get_user_channels": _tool_get_user_channels,
+    "connect_telegram": _tool_connect_telegram,
     "plan_route": _tool_plan_route,
     # Identidad / preferencias
     "get_my_profile": _tool_get_my_profile,

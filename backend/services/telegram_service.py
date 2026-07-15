@@ -172,10 +172,9 @@ async def create_pairing(db: AsyncSession, user_id) -> dict[str, Any]:
             "address": existing.address,
         }
 
-    token = secrets.token_urlsafe(24)
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    now = datetime.now(timezone.utc)
 
-    # Crear (o actualizar) un placeholder pending
+    # Buscar el placeholder pending (no verificado) de este user.
     placeholder = (
         await db.execute(
             select(UserChannel).where(
@@ -185,21 +184,38 @@ async def create_pairing(db: AsyncSession, user_id) -> dict[str, Any]:
             )
         )
     ).scalar_one_or_none()
-    if placeholder:
-        placeholder.pairing_token = token
-        placeholder.pairing_token_expires_at = expires_at
-        placeholder.address = f"pending:{token[:8]}"
+
+    # Si ya hay un token pending VIVO, reusarlo en vez de rotarlo. Así los dos
+    # puntos de generación (el botón "📲 Telegram" del front y la tool
+    # connect_telegram de SOL) devuelven el MISMO link mientras siga válido: sin
+    # esto, generar de nuevo invalidaba el link anterior y el usuario que tocaba
+    # el viejo veía "token inválido o expirado".
+    if (
+        placeholder
+        and placeholder.pairing_token
+        and placeholder.pairing_token_expires_at
+        and placeholder.pairing_token_expires_at > now
+    ):
+        token = placeholder.pairing_token
+        expires_at = placeholder.pairing_token_expires_at
     else:
-        placeholder = UserChannel(
-            user_id=user_id,
-            channel="telegram",
-            address=f"pending:{token[:8]}",
-            pairing_token=token,
-            pairing_token_expires_at=expires_at,
-            verified=False,
-        )
-        db.add(placeholder)
-    await db.commit()
+        token = secrets.token_urlsafe(24)
+        expires_at = now + timedelta(hours=1)
+        if placeholder:
+            placeholder.pairing_token = token
+            placeholder.pairing_token_expires_at = expires_at
+            placeholder.address = f"pending:{token[:8]}"
+        else:
+            placeholder = UserChannel(
+                user_id=user_id,
+                channel="telegram",
+                address=f"pending:{token[:8]}",
+                pairing_token=token,
+                pairing_token_expires_at=expires_at,
+                verified=False,
+            )
+            db.add(placeholder)
+        await db.commit()
 
     deep_link = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={token}"
     return {
