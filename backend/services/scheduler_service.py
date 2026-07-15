@@ -4,13 +4,12 @@ Reminder scheduler.
 Background task que arranca con la app (lifespan) y poll cada N segundos
 los `reminders` con status='pending' y due_at <= now().
 
-Para evitar dobles envíos en caso de múltiples workers (Railway por defecto
-1, pero por las dudas), usamos UPDATE … WHERE status='pending' RETURNING
-con un `claim` atómico que cambia status='claiming:<worker_id>' antes de
-disparar. Si en el medio crash, otro tick lo recupera tras `STALE_CLAIM_AFTER_SECONDS`.
-
-Para MVP, usamos una versión más simple sin claim distribuido: un solo
-worker, un loop. Si en el futuro hay multi-worker, agregar PG advisory locks.
+⚠️ ASUME 1 WORKER (Railway). _process_due_reminders hace SELECT status='pending'
+y actualiza en loop, SIN claim atómico. Con 2+ workers se DUPLICARÍAN los envíos.
+Antes de escalar a multi-worker hay que implementar el claim atómico
+(UPDATE … WHERE status='pending' RETURNING / SELECT … FOR UPDATE SKIP LOCKED con
+estado 'claiming:<worker_id>' + recovery de claims colgados), o un PG advisory lock.
+Todavía NO está implementado.
 """
 from __future__ import annotations
 
@@ -276,8 +275,11 @@ def start_scheduler() -> None:
     # Evitar arranque doble en hot-reload
     if _task and not _task.done():
         return
-    # Single-worker safety: si hay múltiples workers, solo el de pid menor corre
-    # (el resto skippea). Heurística simple para Railway con 1 worker.
+    # ⚠️ Multi-worker: HOY asume 1 worker (Railway). NO hay guard de "pid menor"
+    # ni claim atómico en _process_due_reminders → con 2+ workers se DUPLICARÍAN
+    # recordatorios y el daily digest. Antes de escalar a multi-worker: implementar
+    # el claim atómico (SELECT … FOR UPDATE SKIP LOCKED + estado 'claiming' con
+    # recovery de filas colgadas). Para apagar el scheduler en un worker: DISABLE_SCHEDULER=1.
     if os.environ.get("DISABLE_SCHEDULER") == "1":
         logger.info("Scheduler skipped por DISABLE_SCHEDULER=1")
         return

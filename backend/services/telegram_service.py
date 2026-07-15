@@ -100,18 +100,23 @@ def is_configured() -> bool:
 async def send_message(chat_id: str, text: str) -> dict[str, Any]:
     if not is_configured():
         return {"error": "telegram_not_configured"}
+    base = {"chat_id": chat_id, "text": text, "disable_web_page_preview": False}
     try:
         async with httpx.AsyncClient(timeout=10) as cli:
-            r = await cli.post(
-                _api_url("sendMessage"),
-                json={
-                    "chat_id": chat_id,
-                    "text": text,
-                    "parse_mode": "Markdown",
-                    "disable_web_page_preview": False,
-                },
-            )
+            r = await cli.post(_api_url("sendMessage"), json={**base, "parse_mode": "Markdown"})
             data = r.json()
+            # SOL emite CommonMark (**negrita**, [texto](url)); el parser legacy
+            # 'Markdown' de Telegram no es 100% compatible y devuelve 400
+            # "can't parse entities" con ciertos caracteres → el mensaje se
+            # perdía en silencio. Si falla el parseo, reenviar como texto plano:
+            # se pierde el formato pero NUNCA se pierde el mensaje.
+            if not data.get("ok"):
+                logger.warning(
+                    "Telegram Markdown falló (%s); reintento sin formato",
+                    str(data.get("description") or data)[:150],
+                )
+                r = await cli.post(_api_url("sendMessage"), json=base)
+                data = r.json()
             if not data.get("ok"):
                 return {"error": "telegram_send_failed", "detail": data}
             return {"ok": True, "message_id": data["result"]["message_id"]}
