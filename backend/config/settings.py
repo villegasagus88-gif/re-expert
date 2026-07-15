@@ -5,13 +5,24 @@ Uses pydantic-settings (which wraps python-dotenv) to load values from
 `backend/.env` locally, or directly from env vars in production (Railway).
 Variables without defaults are REQUIRED - the app refuses to start if missing.
 """
+import logging
 from pathlib import Path
 
 from core.cors import build_cors_origins
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+
+# Umbrales de robustez del JWT_SECRET (firma HS256 de TODOS los tokens de sesión).
+_JWT_SECRET_MIN_LEN = 32
+_JWT_SECRET_MIN_UNIQUE = 8
+# Placeholders / valores triviales que NUNCA deben usarse como secreto real.
+_WEAK_JWT_SECRETS = frozenset({
+    "your-jwt-secret-here", "changeme", "change-me", "secret", "supersecret",
+    "jwt-secret", "jwtsecret", "test-secret", "test-dummy-secret", "dev",
+    "development", "please-change-me", "insecure", "password", "admin",
+})
 
 
 class Settings(BaseSettings):
@@ -214,6 +225,32 @@ class Settings(BaseSettings):
     # Performance traces sampling [0.0–1.0]. 0.0 disables performance, only errors.
     # Free tier of Sentry has 10k transactions/month; keep low and ramp up.
     SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
+    @model_validator(mode="after")
+    def _enforce_jwt_secret_strength(self) -> "Settings":
+        """El JWT_SECRET firma TODOS los tokens de sesión (HS256). Un secreto
+        débil se puede fuerza-brutar/forjar offline → un atacante emite tokens
+        válidos para cualquier user_id y saltea todo el auth. En producción
+        (DEBUG=False) exigimos un secreto fuerte y FALLAMOS el arranque si no lo
+        es (fail-fast en el deploy, no en runtime con usuarios reales). En dev
+        solo advertimos, para no trabar el flujo local ni la suite de tests."""
+        secret = self.JWT_SECRET or ""
+        fallas: list[str] = []
+        if len(secret) < _JWT_SECRET_MIN_LEN:
+            fallas.append(f"es muy corto ({len(secret)} chars; mínimo {_JWT_SECRET_MIN_LEN})")
+        if secret.lower() in _WEAK_JWT_SECRETS:
+            fallas.append("es un valor placeholder conocido")
+        if secret and len(set(secret)) < _JWT_SECRET_MIN_UNIQUE:
+            fallas.append(f"tiene muy poca variedad ({len(set(secret))} caracteres distintos)")
+        if fallas:
+            detalle = (
+                "JWT_SECRET inseguro: " + "; ".join(fallas) + ". Generá uno fuerte con: "
+                'python -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
+            if not self.DEBUG:
+                raise ValueError(detalle)
+            logging.getLogger("re_expert.settings").warning("[dev] %s", detalle)
+        return self
 
 
 try:
