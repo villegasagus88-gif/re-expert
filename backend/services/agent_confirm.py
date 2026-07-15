@@ -223,7 +223,9 @@ def validate(action: str, inputs: dict) -> tuple[dict, str]:
 # ── Token HMAC: firma el (action, payload) para garantizar integridad ──
 
 def _secret() -> bytes:
-    return settings.JWT_SECRET.encode("utf-8")
+    # Secret dedicado si está seteado; si no, cae a JWT_SECRET (compat). Desacopla
+    # la firma de confirmaciones de la de sesión (rotar una no invalida la otra).
+    return (settings.CONFIRM_SIGNING_SECRET or settings.JWT_SECRET).encode("utf-8")
 
 
 # TTL: un token viejo (que quedó en el historial de un turno anterior) no puede

@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     AGENT_MAX_ITERATIONS: int = 8      # tope de vueltas del loop tool-use de SOL
     AGENT_MAX_TOKENS: int = 4096       # max_tokens por respuesta del agente
     DIGEST_HOUR_UTC: int = 11          # hora UTC del daily digest (~08:00 AR)
+    # Secret dedicado para firmar los tokens de confirmación de acciones de SOL.
+    # Vacío → cae a JWT_SECRET (compat). Setealo distinto para desacoplar dominios
+    # de firma: rotar el JWT no invalida confirmaciones pendientes y viceversa.
+    CONFIRM_SIGNING_SECRET: str = ""
 
     # Cantidad de proxies confiables que appendan a X-Forwarded-For, contados
     # desde la derecha. En Railway el único hop confiable es el edge (1). La IP
