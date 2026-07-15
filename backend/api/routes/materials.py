@@ -15,6 +15,7 @@ from core.auth import get_current_user, require_admin
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from models.base import get_db
 from models.material_interest import MaterialInterest
+from models.material_list import UserMaterialList
 from models.material_price import MaterialPriceOverride
 from models.user import User
 from pydantic import BaseModel, Field
@@ -184,3 +185,48 @@ async def materials_demand(
         item["total"] += n
     items = sorted(agg.values(), key=lambda x: x["total"], reverse=True)
     return {"items": items, "total_events": sum(i["total"] for i in items)}
+
+
+# ─── Lista de compra de materiales (persistida por usuario) ──────────────
+_MATLIST_MAX_ITEMS = 500
+_MATLIST_MAX_QTY = 100000
+
+
+class MaterialListBody(BaseModel):
+    items: dict[str, int] = Field(default_factory=dict)
+
+
+@router.get("/list", summary="Lista de compra de materiales del usuario")
+async def get_material_list(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    row = await db.get(UserMaterialList, user.id)
+    return {"items": (row.items if row else {}) or {}}
+
+
+@router.put("/list", summary="Guardar la lista de compra de materiales del usuario")
+async def put_material_list(
+    body: MaterialListBody,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    # Sanear: nombres acotados, cantidades enteras positivas, tope de items.
+    clean: dict[str, int] = {}
+    for name, qty in (body.items or {}).items():
+        try:
+            q = int(qty)
+        except (TypeError, ValueError):
+            continue
+        if q <= 0:
+            continue
+        clean[str(name)[:200]] = min(q, _MATLIST_MAX_QTY)
+        if len(clean) >= _MATLIST_MAX_ITEMS:
+            break
+    row = await db.get(UserMaterialList, user.id)
+    if row:
+        row.items = clean
+    else:
+        db.add(UserMaterialList(user_id=user.id, items=clean))
+    await db.commit()
+    return {"ok": True, "count": len(clean)}

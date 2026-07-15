@@ -4028,7 +4028,36 @@ function renderMatNotice(){
 
 // ── Lista de compra (persistida en el navegador) ──
 function matLista(){try{return JSON.parse(localStorage.getItem('re_mat_lista')||'{}');}catch(e){return {};}}
-function matListaSave(l){localStorage.setItem('re_mat_lista',JSON.stringify(l));matListaFabRender();}
+function matListaSave(l){localStorage.setItem('re_mat_lista',JSON.stringify(l));matListaFabRender();matListaPush();}
+// Sync con el backend (antes la lista vivía solo en localStorage y se perdía al
+// cambiar de dispositivo). localStorage sigue siendo la cache local sincrónica.
+let _matSyncTimer=null;
+function matListaPush(){
+  clearTimeout(_matSyncTimer);
+  _matSyncTimer=setTimeout(async()=>{
+    try{
+      if(!window.REAuthService||!window.REAuthService.authFetch)return;
+      await window.REAuthService.authFetch(apiBase()+'/api/materials/list',{
+        method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({items:matLista()})
+      });
+    }catch(e){/* best-effort: la cache local no se pierde */}
+  },800);
+}
+async function matListaPull(){
+  try{
+    if(!window.REAuthService||!window.REAuthService.authFetch)return;
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/materials/list');
+    if(!r.ok)return;
+    const remote=(await r.json()).items||{};
+    if(Object.keys(remote).length){
+      localStorage.setItem('re_mat_lista',JSON.stringify(remote));  // backend = fuente de verdad
+      matListaFabRender();
+    } else if(Object.keys(matLista()).length){
+      matListaPush();  // backend vacío + hay lista local → migrarla
+    }
+  }catch(e){}
+}
 function matListaCount(){return Object.values(matLista()).reduce((a,n)=>a+n,0);}
 function matListaTotal(){
   const l=matLista();let t=0;
@@ -7146,6 +7175,7 @@ async function onUserLoggedIn(user){
     loadProfile(),
     loadConversationsFromCloud(),
   ]);
+  matListaPull();  // traer la lista de compra de materiales del backend
   // Mostrar onboarding si es primer uso
   if(user&&!user.onboarding_completed&&!localStorage.getItem('re_onboarding_done')){
     const displayName=user.full_name?user.full_name.split(' ')[0]:(user.email?.split('@')[0]||'');

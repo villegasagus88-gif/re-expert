@@ -8,6 +8,7 @@ from models.conversation import Conversation
 from models.course_purchase import CoursePurchase
 from models.kv_cache import KVCache
 from models.material import Material
+from models.material_list import UserMaterialList
 from models.message import Message
 from models.milestone import Milestone
 from models.mp_event import MpEvent
@@ -40,4 +41,5 @@ __all__ = [
     "MpEvent",
     "PasswordReset",
     "CoursePurchase",
+    "UserMaterialList",
 ]
