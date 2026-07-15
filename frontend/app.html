@@ -421,7 +421,7 @@
             <div class="mat-toolbar">
               <div class="mat-search" id="matSearchWrap">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input id="matSearch" type="text" placeholder="Buscá un material… (ej: cemento, hierro, ladrillo)" autocomplete="off" spellcheck="false">
+                <input id="matSearch" aria-label="Buscar material" type="text" placeholder="Buscá un material… (ej: cemento, hierro, ladrillo)" autocomplete="off" spellcheck="false">
                 <button id="matSearchClear" title="Limpiar búsqueda" style="display:none">×</button>
                 <div class="mat-suggest" id="matSuggest" style="display:none"></div>
               </div>
@@ -580,7 +580,7 @@
           </div>
           <div class="sol-input-area">
             <div class="sol-input-wrapper">
-              <textarea id="solInput" placeholder="Decile a SOL qué dato querés cargar..." rows="1"></textarea>
+              <textarea id="solInput" aria-label="Mensaje para SOL" placeholder="Decile a SOL qué dato querés cargar..." rows="1"></textarea>
               <button class="sol-send" id="solSendBtn" disabled>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
@@ -813,7 +813,7 @@
     <!-- Input (only visible in chat view) -->
     <div class="input-area" id="inputArea">
       <div class="input-wrapper">
-        <textarea id="messageInput" placeholder="Consulta sobre tu proyecto inmobiliario..." rows="1" autofocus></textarea>
+        <textarea id="messageInput" aria-label="Consulta al chat experto" placeholder="Consulta sobre tu proyecto inmobiliario..." rows="1" autofocus></textarea>
         <button class="btn-voice" id="micBtn" title="Dictar por voz" style="display:none" aria-label="Dictar por voz">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
         </button>
@@ -969,7 +969,7 @@
           </div>
 
           <div class="ws-desc-field">
-            <textarea id="wsDescInput" maxlength="500" placeholder="Descripción (opcional): tipo de obra, ubicación, etapa..." rows="2"></textarea>
+            <textarea id="wsDescInput" aria-label="Descripción del espacio de trabajo" maxlength="500" placeholder="Descripción (opcional): tipo de obra, ubicación, etapa..." rows="2"></textarea>
           </div>
 
           <div class="ws-info-box">
@@ -999,8 +999,8 @@
             <div class="mem-empty">El bot todavía no aprendió nada sobre vos. Charlá un rato.</div>
           </div>
           <div class="mem-add-row">
-            <input id="profileKeyInput" type="text" placeholder="clave (ej: rol)" maxlength="80">
-            <input id="profileValueInput" type="text" placeholder="valor (ej: desarrollador inmobiliario)" maxlength="1000">
+            <input id="profileKeyInput" aria-label="Clave del dato de perfil" type="text" placeholder="clave (ej: rol)" maxlength="80">
+            <input id="profileValueInput" aria-label="Valor del dato de perfil" type="text" placeholder="valor (ej: desarrollador inmobiliario)" maxlength="1000">
             <button id="profileAddBtn">+ Agregar</button>
           </div>
         </div>
@@ -1031,8 +1031,8 @@
             <div class="mem-empty">Sin memoria todavía. El bot va guardando info útil mientras charlan.</div>
           </div>
           <div class="mem-add-row">
-            <input id="memoryKeyInput" type="text" placeholder="clave (ej: lote_usd)" maxlength="80">
-            <input id="memoryValueInput" type="text" placeholder="valor (ej: 850000)" maxlength="1000">
+            <input id="memoryKeyInput" aria-label="Clave del dato de memoria" type="text" placeholder="clave (ej: lote_usd)" maxlength="80">
+            <input id="memoryValueInput" aria-label="Valor del dato de memoria" type="text" placeholder="valor (ej: 850000)" maxlength="1000">
             <button id="memoryAddBtn">+ Agregar</button>
           </div>
         </div>
@@ -4575,11 +4575,11 @@ function proyectoEmptyHTML(){
     <form id="projInitForm" class="pay-form" style="text-align:left;max-width:480px;margin:0 auto">
       <div class="pay-form-row">
         <label class="pay-form-label">Nombre del proyecto *</label>
-        <input class="pay-form-input" id="projInitNombre" type="text" required maxlength="255" placeholder="Edificio Belgrano R">
+        <input class="pay-form-input" id="projInitNombre" aria-label="Nombre del proyecto" type="text" required maxlength="255" placeholder="Edificio Belgrano R">
       </div>
       <div class="pay-form-row">
         <label class="pay-form-label">Presupuesto base (USD)</label>
-        <input class="pay-form-input" id="projInitPresupuesto" type="number" min="0" step="0.01" placeholder="0">
+        <input class="pay-form-input" id="projInitPresupuesto" aria-label="Presupuesto del proyecto" type="number" min="0" step="0.01" placeholder="0">
       </div>
       <div class="pay-form-row" style="display:flex;gap:8px">
         <div style="flex:1">
@@ -4593,7 +4593,7 @@ function proyectoEmptyHTML(){
       </div>
       <div class="pay-form-row">
         <label class="pay-form-label">Duración estimada (meses)</label>
-        <input class="pay-form-input" id="projInitMeses" type="number" min="0" max="120" placeholder="18">
+        <input class="pay-form-input" id="projInitMeses" aria-label="Plazo del proyecto en meses" type="number" min="0" max="120" placeholder="18">
       </div>
       <div id="projInitError" style="display:none;color:#ef4444;font-size:13px;margin-bottom:10px"></div>
       <button type="submit" class="btn-primary" id="projInitSubmit" style="width:100%;justify-content:center">
@@ -7192,8 +7192,8 @@ function renderScannerNueva(){
     <div class="section-block">
       <div class="section-block-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1"/><path d="M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>Pegá una publicación y la IA completa los datos <span class="kpi-tag">opcional</span></div>
       <div class="scan-extract">
-        <input class="pay-form-input" id="scanFuenteUrl" type="url" placeholder="https://… (link de Zonaprop, Argenprop, MercadoLibre…)">
-        <textarea class="pay-form-input" id="scanFuenteTexto" rows="2" placeholder="…o pegá acá el texto de la publicación"></textarea>
+        <input class="pay-form-input" id="scanFuenteUrl" aria-label="URL de la publicación" type="url" placeholder="https://… (link de Zonaprop, Argenprop, MercadoLibre…)">
+        <textarea class="pay-form-input" id="scanFuenteTexto" aria-label="Texto de la publicación" rows="2" placeholder="…o pegá acá el texto de la publicación"></textarea>
         <button class="btn-secondary" id="scanExtractBtn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>Completar con IA</button>
         <span class="scan-extract-msg" id="scanExtractMsg"></span>
       </div>
@@ -7201,30 +7201,30 @@ function renderScannerNueva(){
 
     <form id="scanForm" class="scan-form">
       <div class="scan-form-grid">
-        <div class="pay-form-row"><label class="pay-form-label">Título de la oportunidad</label><input class="pay-form-input" id="scanTitulo" type="text" maxlength="255" placeholder="Lote Av. Mitre 1200" required></div>
+        <div class="pay-form-row"><label class="pay-form-label">Título de la oportunidad</label><input class="pay-form-input" id="scanTitulo" aria-label="Título de la oportunidad" type="text" maxlength="255" placeholder="Lote Av. Mitre 1200" required></div>
         <div class="pay-form-row"><label class="pay-form-label">Tipo de activo</label><select class="pay-form-input" id="scanTipo">${opt('terreno','Terreno')}${opt('lote','Lote para desarrollo')}${opt('departamento','Departamento')}${opt('ph','PH')}${opt('casa','Casa')}${opt('local','Local comercial')}${opt('oficina','Oficina')}${opt('galpon','Galpón')}${opt('edificio','Edificio existente')}${opt('pozo','Proyecto en pozo')}${opt('otro','Otro')}</select></div>
         <div class="pay-form-row"><label class="pay-form-label">Objetivo</label><select class="pay-form-input" id="scanObjetivo">${opt('desarrollar','Desarrollar')}${opt('invertir','Invertir (plusvalía)')}${opt('renta','Renta')}${opt('vivir','Comprar para vivir')}${opt('vender','Vender')}${opt('tasar','Tasar')}</select></div>
         <div class="pay-form-row"><label class="pay-form-label">Moneda</label><select class="pay-form-input" id="scanMoneda">${opt('USD','USD')}${opt('ARS','ARS')}</select></div>
-        <div class="pay-form-row"><label class="pay-form-label">Zona / barrio</label><input class="pay-form-input" id="scanZona" type="text" maxlength="160" placeholder="Caseros, Tres de Febrero"></div>
-        <div class="pay-form-row"><label class="pay-form-label">Ciudad / provincia</label><input class="pay-form-input" id="scanCiudad" type="text" maxlength="120" placeholder="Buenos Aires"></div>
-        <div class="pay-form-row"><label class="pay-form-label">Sup. terreno (m²)</label><input class="pay-form-input" id="scanSupTerreno" type="number" min="0" step="0.01" placeholder="500"></div>
-        <div class="pay-form-row"><label class="pay-form-label">m² vendibles</label><input class="pay-form-input" id="scanM2Vend" type="number" min="0" step="0.01" placeholder="1000"></div>
-        <div class="pay-form-row"><label class="pay-form-label">Precio pedido</label><input class="pay-form-input" id="scanPrecioPedido" type="number" min="0" step="0.01" placeholder="600000"></div>
-        <div class="pay-form-row"><label class="pay-form-label">Costo de obra (por m²)</label><input class="pay-form-input" id="scanCostoObra" type="number" min="0" step="0.01" placeholder="1200"></div>
-        <div class="pay-form-row"><label class="pay-form-label">Precio de venta (por m²)</label><input class="pay-form-input" id="scanPrecioVenta" type="number" min="0" step="0.01" placeholder="2400"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Zona / barrio</label><input class="pay-form-input" id="scanZona" aria-label="Zona o barrio" type="text" maxlength="160" placeholder="Caseros, Tres de Febrero"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Ciudad / provincia</label><input class="pay-form-input" id="scanCiudad" aria-label="Ciudad" type="text" maxlength="120" placeholder="Buenos Aires"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Sup. terreno (m²)</label><input class="pay-form-input" id="scanSupTerreno" aria-label="Superficie del terreno en m2" type="number" min="0" step="0.01" placeholder="500"></div>
+        <div class="pay-form-row"><label class="pay-form-label">m² vendibles</label><input class="pay-form-input" id="scanM2Vend" aria-label="Metros cuadrados vendibles" type="number" min="0" step="0.01" placeholder="1000"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Precio pedido</label><input class="pay-form-input" id="scanPrecioPedido" aria-label="Precio pedido" type="number" min="0" step="0.01" placeholder="600000"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Costo de obra (por m²)</label><input class="pay-form-input" id="scanCostoObra" aria-label="Costo de obra por m2" type="number" min="0" step="0.01" placeholder="1200"></div>
+        <div class="pay-form-row"><label class="pay-form-label">Precio de venta (por m²)</label><input class="pay-form-input" id="scanPrecioVenta" aria-label="Precio de venta por m2" type="number" min="0" step="0.01" placeholder="2400"></div>
       </div>
 
       <details class="scan-advanced">
         <summary>Supuestos avanzados (si no los cargás, usamos valores de mercado y los mostramos)</summary>
         <div class="scan-form-grid">
-          <div class="pay-form-row"><label class="pay-form-label">Comisión inmob. (%)</label><input class="pay-form-input" id="scanComision" type="number" min="0" step="0.1" placeholder="4"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Impuestos compra (%)</label><input class="pay-form-input" id="scanImpuestos" type="number" min="0" step="0.1" placeholder="4"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Honorarios (% s/ obra)</label><input class="pay-form-input" id="scanHonorarios" type="number" min="0" step="0.1" placeholder="4"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Contingencia (%)</label><input class="pay-form-input" id="scanContingencia" type="number" min="0" step="0.1" placeholder="7"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Costo financiero (%)</label><input class="pay-form-input" id="scanFinanciero" type="number" min="0" step="0.1" placeholder="0"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Preventa esperada (%)</label><input class="pay-form-input" id="scanPreventa" type="number" min="0" max="100" step="1" placeholder="20"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Plazo de obra (meses)</label><input class="pay-form-input" id="scanPlazoObra" type="number" min="0" max="120" step="1" placeholder="14"></div>
-          <div class="pay-form-row"><label class="pay-form-label">Plazo de venta (meses)</label><input class="pay-form-input" id="scanPlazoVenta" type="number" min="0" max="120" step="1" placeholder="10"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Comisión inmob. (%)</label><input class="pay-form-input" id="scanComision" aria-label="Comisión en porcentaje" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Impuestos compra (%)</label><input class="pay-form-input" id="scanImpuestos" aria-label="Impuestos en porcentaje" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Honorarios (% s/ obra)</label><input class="pay-form-input" id="scanHonorarios" aria-label="Honorarios en porcentaje" type="number" min="0" step="0.1" placeholder="4"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Contingencia (%)</label><input class="pay-form-input" id="scanContingencia" aria-label="Contingencia en porcentaje" type="number" min="0" step="0.1" placeholder="7"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Costo financiero (%)</label><input class="pay-form-input" id="scanFinanciero" aria-label="Costo financiero en porcentaje" type="number" min="0" step="0.1" placeholder="0"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Preventa esperada (%)</label><input class="pay-form-input" id="scanPreventa" aria-label="Preventa en porcentaje" type="number" min="0" max="100" step="1" placeholder="20"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Plazo de obra (meses)</label><input class="pay-form-input" id="scanPlazoObra" aria-label="Plazo de obra en meses" type="number" min="0" max="120" step="1" placeholder="14"></div>
+          <div class="pay-form-row"><label class="pay-form-label">Plazo de venta (meses)</label><input class="pay-form-input" id="scanPlazoVenta" aria-label="Plazo de venta en meses" type="number" min="0" max="120" step="1" placeholder="10"></div>
         </div>
       </details>
 
