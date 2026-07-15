@@ -61,6 +61,18 @@ def _schedule_daily_refresh() -> None:
 
 
 @router.get(
+    "/dolar",
+    summary="Cotización del dólar (blue + oficial) para la calculadora hipotecaria",
+    responses={401: {"description": "Token inválido o ausente"}},
+)
+async def get_dolar(_user: User = Depends(get_current_user)) -> dict:
+    """Blue + oficial (venta) para prefill de la conversión USD→ARS. Cacheado."""
+    from services.dolar_service import get_dolar_rates
+
+    return await get_dolar_rates()
+
+
+@router.get(
     "",
     response_model=CreditosResponse,
     summary="Catálogo de créditos (asesor hipotecario)",

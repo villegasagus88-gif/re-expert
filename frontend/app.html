@@ -625,7 +625,16 @@
               <label class="cred-field"><span>¿Tenés deudas/créditos activos?</span><select id="credDeudas">
                 <option value="no">No</option><option value="poca">Alguna chica</option><option value="si">Sí, varias</option>
               </select></label>
-              <label class="cred-field cred-field-usd"><span>Cotización USD (para convertir a $)</span><input type="number" id="credDolar" inputmode="numeric" placeholder="Ej: 1460" value="1460"></label>
+              <label class="cred-field cred-field-usd"><span>Cotización USD (para convertir a $)</span>
+                <span style="display:flex;gap:8px;align-items:stretch">
+                  <select id="credDolarTipo" title="Elegí con qué dólar convertir" style="flex:0 0 auto">
+                    <option value="blue" selected>Blue</option>
+                    <option value="oficial">Oficial</option>
+                  </select>
+                  <input type="number" id="credDolar" inputmode="numeric" placeholder="Cargando cotización…" style="flex:1 1 auto;min-width:0">
+                </span>
+                <small id="credDolarHint" style="color:var(--text-3);font-size:11px;margin-top:4px"></small>
+              </label>
             </div>
             <div class="cred-form-actions">
               <button class="btn-primary cred-analizar" id="credAnalizarBtn">
@@ -5594,9 +5603,42 @@ async function loadCreditos(force=false){
     creditosState.loaded=true;
     const dd=$('#credDisclaimer');if(dd)dd.textContent=(creditosState.disclaimer||'')+(creditosState.updatedAt?` · Última actualización: ${creditosState.updatedAt}.`:'');
     renderCreditos();
+    credLoadDolar();
+    if(!creditosState._dolarWired){
+      const sel=$('#credDolarTipo');
+      if(sel){sel.addEventListener('change',()=>credApplyDolar(true));creditosState._dolarWired=true;}
+    }
   }catch(e){
     if(grid)grid.innerHTML='<div class="empty-state">No se pudieron cargar los créditos. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('creditos:',e);
   }finally{creditosState.loading=false}
+}
+
+// Cotización del dólar (blue/oficial) desde el backend, para prefill del campo
+// USD→ARS. El usuario elige el tipo y siempre puede editar el valor a mano.
+let credDolarRates=null;
+async function credLoadDolar(){
+  const inp=$('#credDolar'),hint=$('#credDolarHint');
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/creditos/dolar');
+    if(!r.ok)throw new Error('http '+r.status);
+    const data=await r.json();
+    credDolarRates=data.rates||{};
+    credApplyDolar(false);  // prefill solo si el campo está vacío
+    if(hint&&data.stale)hint.textContent='Cotización de referencia (puede estar desactualizada).';
+  }catch(e){
+    if(inp&&!inp.value)inp.placeholder='Ingresá la cotización de hoy';
+    if(hint)hint.textContent='No se pudo traer la cotización — ingresala a mano.';
+    console.error('dolar:',e);
+  }
+}
+function credApplyDolar(force){
+  const tipo=$('#credDolarTipo')?.value||'blue';
+  const inp=$('#credDolar'),hint=$('#credDolarHint');
+  const rate=credDolarRates&&credDolarRates[tipo];
+  const venta=rate&&(rate.venta||rate.compra);
+  if(!venta||!inp)return;
+  if(force||!inp.value)inp.value=Math.round(venta);
+  if(hint)hint.textContent=`Dólar ${rate.nombre||tipo}: $${Math.round(venta).toLocaleString('es-AR')} (editable)`;
 }
 
 function credNum(id){const el=$('#'+id);const v=parseFloat((el?.value||'').replace(/[^0-9.]/g,''));return isNaN(v)?0:v}
