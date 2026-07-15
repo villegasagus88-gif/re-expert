@@ -9,12 +9,17 @@
 1. **`git fetch` + pull de `main`.** Backend ya está en prod (Railway auto-deploy
    desde main, `/health` = 200). **El FRONTEND de main NO está publicado**: el
    deploy a Netlify lo hacés vos (ver sección 6 — hay cambios nuevos para subir).
-2. **Revisá la branch `fix/agus-retrieval-artifacts`** (3 fixes de TU dominio,
-   con tests verdes, NO mergeada a main): SSRF de retrieval en redirects,
-   `to_thread` en entregables, y classify_query del context_router (2
-   misclasificaciones por keywords de intención — test_context_router pasa
-   27/27 en la branch, en main siguen los 2 failed). Si estás de acuerdo,
-   mergeala a main.
+2. **3 fixes de TU dominio ya MERGEADOS a main** (decisión de Mati para dejar
+   main listo para prod — revisalos post-merge, todo con tests verdes):
+   - **SSRF de retrieval**: `follow_redirects=False` + revalida cada hop contra
+     la whitelist (`retrieval_service.py`, helper `_get_whitelisted`).
+   - **`to_thread` en entregables**: los renders PDF/XLSX de `financial_artifact`
+     ya no bloquean el event loop (SSE).
+   - **`classify_query`**: 2 misclasificaciones por keywords de intención
+     ("cuanto sale/cuesta/vale" → costos; se sacó "como funciona" de
+     fundamentos). test_context_router 27/27.
+   Si algo no te cierra, revertí ese commit puntual y lo charlamos. La branch
+   `fix/agus-retrieval-artifacts` queda como referencia del diff.
 3. **Branch `perf/prompt-cache-split-agus`** (sigue pendiente de tu review/merge).
 4. **Decisiones que dependen de vos**: WhatsApp/Telegram (sección 5) y config en
    dashboards (sección 4). Después de decidir, publicá el frontend a Netlify.
