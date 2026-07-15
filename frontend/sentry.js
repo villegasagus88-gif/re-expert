@@ -11,6 +11,9 @@
   // CDN bundle — pinned version. Browser SDK is ~25 KB gzipped.
   var s = document.createElement('script');
   s.src = 'https://browser.sentry-cdn.com/7.119.0/bundle.tracing.min.js';
+  // SRI: bloquea el bundle si un CDN comprometido lo altera (corre en el
+  // contexto de la página, con acceso a la sesión).
+  s.integrity = 'sha384-rZu69pPOmCbAWY6noj9hSNHZJHE4KW80YWowiNKTJWLsUT8dhyTjlqKGruotLZGH';
   s.crossOrigin = 'anonymous';
   s.onload = function () {
     if (!window.Sentry) return;
