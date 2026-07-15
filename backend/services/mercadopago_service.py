@@ -34,6 +34,7 @@ from config.settings import settings
 from fastapi import HTTPException
 from models.user import User
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -539,6 +540,24 @@ async def _apply_status_to_user(
     return str(uid)
 
 
+async def _record_mp_event(
+    db: AsyncSession, request_id: str, data_id: str | None, notif_type: str | None
+) -> bool:
+    """Registra la entrega (x-request-id). Devuelve True si es nueva (procesar),
+    False si ya se había recibido esa misma entrega (saltar). También sirve de
+    audit trail de webhooks de billing."""
+    from models.mp_event import MpEvent
+
+    db.add(MpEvent(request_id=request_id, data_id=data_id, notif_type=notif_type))
+    try:
+        await db.flush()
+        return True
+    except IntegrityError:
+        await db.rollback()
+        logger.info("MP webhook: entrega duplicada %s saltada", request_id)
+        return False
+
+
 async def handle_webhook(
     db: AsyncSession,
     *,
@@ -574,6 +593,13 @@ async def handle_webhook(
             status_code=503,
             detail="Webhook no configurado (falta MP_WEBHOOK_SECRET)",
         )
+
+    # 1.b Idempotencia de ENTREGA: si ya procesamos esta misma entrega
+    #     (x-request-id único por delivery), saltamos. Los reintentos de MP con
+    #     otro request_id NO se saltan: re-consultan el estado vivo y se aplican
+    #     idempotentemente, así que nunca se descarta una transición legítima.
+    if x_request_id and not await _record_mp_event(db, x_request_id, data_id, notif_type):
+        return {"status": "duplicate", "request_id": x_request_id}
 
     # 2. Dispatch por tipo, con MATCH EXACTO. MP manda más topics de los que
     #    manejamos: "subscription_authorized_payment" (cada cobro recurrente)

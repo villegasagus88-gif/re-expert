@@ -222,6 +222,51 @@ def test_cancel_cancela_todos_los_preapprovals_vivos(monkeypatch):
     asyncio.run(go())
 
 
+def test_webhook_deduplica_entrega_repetida(monkeypatch):
+    """La MISMA entrega (x-request-id) se procesa una vez; la repetida se salta.
+    Un request_id distinto (reintento de MP) NO se saltaría."""
+    _enable_mp(monkeypatch)
+    import services.mercadopago_service as mp
+    from sqlalchemy.exc import IntegrityError
+
+    # DEBUG=True → saltea verificación de firma (no hay secret en el test).
+    monkeypatch.setattr(mp.settings, "DEBUG", True, raising=False)
+    monkeypatch.setattr(mp.settings, "MP_WEBHOOK_SECRET", "", raising=False)
+
+    class _DedupDB:
+        def __init__(self):
+            self.seen: set = set()
+            self._pending = None
+
+        def add(self, obj):
+            self._pending = obj
+
+        async def flush(self):
+            rid = getattr(self._pending, "request_id", None)
+            if rid in self.seen:
+                raise IntegrityError("dup", {}, Exception("dup"))
+            self.seen.add(rid)
+
+        async def rollback(self):
+            pass
+
+        async def commit(self):
+            pass
+
+    db = _DedupDB()
+
+    async def go():
+        # notif_type desconocido → path "ignored" (sin red) pero SÍ registra la entrega.
+        r1 = await mp.handle_webhook(db, data_id="X", notif_type="unknown",
+                                     x_signature=None, x_request_id="req-123")
+        r2 = await mp.handle_webhook(db, data_id="X", notif_type="unknown",
+                                     x_signature=None, x_request_id="req-123")
+        assert r1["status"] == "ignored"          # primera: se procesa
+        assert r2["status"] == "duplicate"         # segunda misma entrega: se salta
+
+    asyncio.run(go())
+
+
 # ── handle_webhook (guards antes de la red) ──────────────────────────────────
 def test_webhook_503_when_disabled(monkeypatch):
     _disable_mp(monkeypatch)
@@ -276,11 +321,23 @@ def test_webhook_ignores_non_subscription_types(monkeypatch):
     v1 = _sign("sekret", did, rid, ts)
     sig = f"ts={ts},v1={v1}"
 
+    # db mínimo: handle_webhook ahora registra la entrega (audit + dedup) antes
+    # del dispatch, así que necesita add/flush aunque el tipo se ignore.
+    class _NoopDB:
+        def add(self, obj):
+            pass
+
+        async def flush(self):
+            pass
+
+        async def rollback(self):
+            pass
+
     async def go():
         # firma válida + tipo no manejado (ni preapproval ni payment) → ignorado
         # SIN llamar a la red. (payment y preapproval SÍ se procesan.)
         out = await handle_webhook(
-            None, data_id=did, notif_type="merchant_order",
+            _NoopDB(), data_id=did, notif_type="merchant_order",
             x_signature=sig, x_request_id=rid,
         )
         assert out["status"] == "ignored"

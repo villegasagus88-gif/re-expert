@@ -10,6 +10,7 @@ from models.kv_cache import KVCache
 from models.material import Material
 from models.message import Message
 from models.milestone import Milestone
+from models.mp_event import MpEvent
 from models.password_reset import PasswordReset
 from models.payment import Payment
 from models.reminder import Reminder
@@ -36,6 +37,7 @@ __all__ = [
     "UserChannel",
     "Contact",
     "StripeEvent",
+    "MpEvent",
     "PasswordReset",
     "CoursePurchase",
 ]
