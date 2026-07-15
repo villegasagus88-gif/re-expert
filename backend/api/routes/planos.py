@@ -26,7 +26,18 @@ from api.schemas.planos import (
     TaskUpdate,
 )
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
+from core.rate_limit import limiter
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from models.base import get_db
 from models.plan_analysis import PlanAlert, PlanAnalysis, PlanFile, PlanProject, PlanTask
 from models.user import User
@@ -376,7 +387,8 @@ async def plan_versions(plan_id: UUID, db: AsyncSession = Depends(get_db),
 # ─────────────────────────── IA: clasificar / analizar / comparar ───────────────────────────
 
 @router.post("/plans/{plan_id}/classify", summary="Clasificación automática del plano (IA)")
-async def classify(plan_id: UUID, db: AsyncSession = Depends(get_db),
+@limiter.limit("15/minute")
+async def classify(request: Request, plan_id: UUID, db: AsyncSession = Depends(get_db),
                    user: User = Depends(get_current_user)):
     plan = await _owned_plan(db, plan_id, user.id, with_data=True)
     try:
@@ -402,7 +414,9 @@ async def classify(plan_id: UUID, db: AsyncSession = Depends(get_db),
 
 
 @router.post("/plans/{plan_id}/analyze", summary="Análisis IA completo del plano")
-async def analyze(plan_id: UUID, body: AnalyzeRequest, db: AsyncSession = Depends(get_db),
+@limiter.limit("15/minute")
+async def analyze(request: Request, plan_id: UUID, body: AnalyzeRequest,
+                  db: AsyncSession = Depends(get_db),
                   user: User = Depends(get_current_user)):
     plan = await _owned_plan(db, plan_id, user.id, with_data=True)
     project = await _owned_project(db, plan.project_id, user.id)
@@ -489,7 +503,8 @@ def _match_plan_ref(ref: str, plans: list[PlanFile]) -> UUID | None:
 
 @router.post("/projects/{project_id}/analyze",
              summary="Análisis integral del proyecto (todos los planos juntos, IA)")
-async def analyze_whole_project(project_id: UUID, body: ProjectAnalyzeRequest,
+@limiter.limit("10/minute")
+async def analyze_whole_project(request: Request, project_id: UUID, body: ProjectAnalyzeRequest,
                                 db: AsyncSession = Depends(get_db),
                                 user: User = Depends(get_current_user)):
     project = await _owned_project(db, project_id, user.id)
@@ -574,7 +589,8 @@ async def analyze_whole_project(project_id: UUID, body: ProjectAnalyzeRequest,
 
 
 @router.post("/compare", summary="Comparar dos planos o versiones (IA)")
-async def compare(body: CompareRequest, db: AsyncSession = Depends(get_db),
+@limiter.limit("10/minute")
+async def compare(request: Request, body: CompareRequest, db: AsyncSession = Depends(get_db),
                   user: User = Depends(get_current_user)):
     plan_a = await _owned_plan(db, _parse_uuid(body.plan_a, "plan_a"), user.id, with_data=True)
     plan_b = await _owned_plan(db, _parse_uuid(body.plan_b, "plan_b"), user.id, with_data=True)

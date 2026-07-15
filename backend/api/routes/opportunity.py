@@ -19,7 +19,8 @@ from api.schemas.opportunity import (
     UpdateOpportunityRequest,
 )
 from core.auth import get_current_user
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from core.rate_limit import limiter
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from models.base import get_db
 from models.opportunity import Opportunity
 from models.user import User
@@ -165,7 +166,9 @@ async def delete_opportunity(
 
 
 @router.post("/{opportunity_id}/analyze", response_model=OpportunityOut, summary="Analizar oportunidad (motor + IA)")
+@limiter.limit("15/minute")
 async def analyze(
+    request: Request,
     opportunity_id: UUID,
     use_llm: bool = Query(True),
     db: AsyncSession = Depends(get_db),
@@ -186,7 +189,9 @@ async def analyze(
 
 
 @router.post("/extract", response_model=ExtractResponse, summary="Extraer datos desde URL/texto (IA)")
+@limiter.limit("10/minute")
 async def extract(
+    request: Request,
     body: ExtractRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
