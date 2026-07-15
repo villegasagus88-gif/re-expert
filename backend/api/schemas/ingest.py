@@ -27,6 +27,10 @@ class PaymentIngest(BaseModel):
     concept: str | None = Field(None, max_length=500)
     paid_at: date | None = None
     notes: str | None = Field(None, max_length=2000)
+    # Proyecto al que pertenece el pago (dashboard multi-proyecto). Opcional para
+    # compatibilidad: si viene, la ruta valida que sea del usuario. Sin esto, los
+    # pagos cargados por SOL/frontend quedaban huérfanos del panel por proyecto.
+    project_id: UUID | None = None
 
 
 # ---------------------------------------------------------------- milestone --

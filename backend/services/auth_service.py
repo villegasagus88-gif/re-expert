@@ -237,7 +237,6 @@ async def complete_onboarding(user_id: str) -> None:
 
 async def update_profile(
     user_id: str,
-    email: str,
     full_name: str | None = None,
     current_password: str | None = None,
     new_password: str | None = None,
@@ -246,6 +245,9 @@ async def update_profile(
     Update user profile (name and/or password).
 
     If changing password, validates current password first.
+
+    Nota: el email NO se cambia por acá (era un parámetro muerto). Cambiar el
+    email requeriría re-verificación y no está soportado hoy.
     """
     async with get_session_factory()() as db:
         from uuid import UUID

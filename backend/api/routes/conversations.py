@@ -158,19 +158,24 @@ async def list_conversations(
     result = await db.execute(query)
     rows = result.all()
 
-    # For each conversation, get the last message preview
+    # Preview del último mensaje de TODAS las conversaciones de la página en UNA
+    # sola query (antes: N+1 — una query por conversación, hasta 100 por request).
+    # DISTINCT ON toma la fila más reciente por conversation_id (Postgres).
+    conv_ids = [conv.id for conv, _mc, _la in rows]
+    previews: dict = {}
+    if conv_ids:
+        last_msgs = (
+            select(Message.conversation_id, Message.content)
+            .where(Message.conversation_id.in_(conv_ids))
+            .order_by(Message.conversation_id, Message.created_at.desc())
+            .distinct(Message.conversation_id)
+        )
+        for cid, content in (await db.execute(last_msgs)).all():
+            previews[cid] = content
+
     items = []
     for conv, msg_count, _last_at in rows:
-        # Get last message preview (single query per conversation)
-        last_msg_query = (
-            select(Message.content)
-            .where(Message.conversation_id == conv.id)
-            .order_by(Message.created_at.desc())
-            .limit(1)
-        )
-        last_msg_result = await db.execute(last_msg_query)
-        last_msg_content = last_msg_result.scalar_one_or_none()
-
+        last_msg_content = previews.get(conv.id)
         preview = None
         if last_msg_content:
             preview = last_msg_content[:100] + ("..." if len(last_msg_content) > 100 else "")

@@ -112,7 +112,6 @@ async def update_me(
 ):
     await update_profile(
         user_id=str(current_user.id),
-        email=current_user.email,
         full_name=body.full_name,
         current_password=body.current_password,
         new_password=body.new_password,

@@ -24,7 +24,7 @@ from models.base import get_db
 from models.opportunity import Opportunity
 from models.user import User
 from services.opportunity_scanner import analyze_opportunity, extract_inputs
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/opportunities", tags=["opportunities"])
@@ -66,16 +66,6 @@ async def _get_owned(db: AsyncSession, opportunity_id: UUID, user_id: UUID) -> O
     return opp
 
 
-def _build_summary(rows: list[Opportunity]) -> OpportunitiesSummary:
-    scores = [r.score for r in rows if r.score is not None]
-    return OpportunitiesSummary(
-        count_total=len(rows),
-        count_shortlist=sum(1 for r in rows if r.estado_pipeline == "shortlist"),
-        count_descartada=sum(1 for r in rows if r.estado_pipeline == "descartada"),
-        avg_score=round(sum(scores) / len(scores), 1) if scores else None,
-    )
-
-
 @router.get("", response_model=OpportunitiesListResponse, summary="Listar oportunidades (Deal Room)")
 async def list_opportunities(
     estado_pipeline: str | None = Query(None, pattern="^(nueva|en_analisis|shortlist|descartada|cerrada)$"),
@@ -93,13 +83,26 @@ async def list_opportunities(
         q = q.where(Opportunity.score >= min_score)
     rows = list((await db.execute(q)).scalars().all())
 
-    # Summary siempre sobre TODAS las oportunidades del usuario (no el filtro)
-    all_rows = list((await db.execute(
-        select(Opportunity).where(Opportunity.user_id == user.id)
-    )).scalars().all())
+    # Summary siempre sobre TODAS las oportunidades del usuario (no el filtro),
+    # calculado en SQL (antes: se recargaba la tabla entera y se agregaba en
+    # Python — doble full-scan por request en un Deal Room activo).
+    agg = (await db.execute(
+        select(
+            func.count().label("count_total"),
+            func.count().filter(Opportunity.estado_pipeline == "shortlist").label("count_shortlist"),
+            func.count().filter(Opportunity.estado_pipeline == "descartada").label("count_descartada"),
+            func.avg(Opportunity.score).label("avg_score"),
+        ).where(Opportunity.user_id == user.id)
+    )).one()
+    summary = OpportunitiesSummary(
+        count_total=agg.count_total or 0,
+        count_shortlist=agg.count_shortlist or 0,
+        count_descartada=agg.count_descartada or 0,
+        avg_score=round(float(agg.avg_score), 1) if agg.avg_score is not None else None,
+    )
     return OpportunitiesListResponse(
         items=[OpportunityOut.model_validate(r) for r in rows],
-        summary=_build_summary(all_rows),
+        summary=summary,
         total=len(rows),
     )
 

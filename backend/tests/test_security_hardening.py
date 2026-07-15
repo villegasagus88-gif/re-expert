@@ -122,7 +122,7 @@ async def test_update_profile_bumpea_token_version_al_cambiar_password(monkeypat
     import services.auth_service as auth
     user = SimpleNamespace(id=uuid4(), password_hash="old", token_version=3, full_name="X")
     _patch_session(monkeypatch, auth, user)
-    await auth.update_profile(str(user.id), email="m@x.com",
+    await auth.update_profile(str(user.id),
                               current_password="old", new_password="NuevaPass123!")
     assert user.token_version == 4  # +1 → invalida access/refresh tokens previos
     assert user.password_hash == "newhash"
@@ -135,7 +135,7 @@ async def test_update_profile_solo_nombre_no_bumpea(monkeypatch):
     import services.auth_service as auth
     user = SimpleNamespace(id=uuid4(), password_hash="old", token_version=3, full_name="X")
     _patch_session(monkeypatch, auth, user)
-    await auth.update_profile(str(user.id), email="m@x.com", full_name="Nuevo Nombre")
+    await auth.update_profile(str(user.id), full_name="Nuevo Nombre")
     assert user.token_version == 3  # sin cambio de password → NO se invalidan sesiones
     assert user.full_name == "Nuevo Nombre"
 

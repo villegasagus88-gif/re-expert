@@ -37,7 +37,9 @@ from models.material import Material
 from models.message import Message  # noqa: F401  (asegura registro del modelo)
 from models.milestone import Milestone
 from models.payment import Payment
+from models.project import Project
 from models.user import User
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,6 +53,7 @@ def _build_record(payload: IngestRequest, user_id: UUID):
     if isinstance(payload, PaymentIngest):
         return Payment(
             user_id=user_id,
+            project_id=payload.project_id,
             concepto=payload.concept or "Pago vía SOL",
             proveedor=payload.provider,
             monto=payload.amount,
@@ -117,6 +120,21 @@ async def ingest(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> IngestResponse:
+    # Si el pago viene con project_id, validar que el proyecto sea del usuario
+    # (evita asociar un pago a un proyecto ajeno).
+    if isinstance(payload, PaymentIngest) and payload.project_id is not None:
+        owns = (await db.execute(
+            select(Project.id).where(
+                Project.id == payload.project_id,
+                Project.user_id == current_user.id,
+            )
+        )).scalar_one_or_none()
+        if owns is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Proyecto no encontrado",
+            )
+
     record, message = _build_record(payload, current_user.id)
 
     try:

@@ -6249,6 +6249,12 @@ async function solIngestData(detail){
 
   const fields = solNormalizeFields(detail.fields||{}, def.type);
   const payload = {type:def.type, ...fields};
+  // Asociar el pago al proyecto activo (dashboard multi-proyecto); sin esto los
+  // pagos ingeridos quedaban huérfanos del panel por proyecto. El backend valida
+  // que el proyecto sea del usuario. Solo aplica a pagos.
+  if(def.type==='payment' && state.activeProject){
+    payload.project_id = state.activeProject;
+  }
 
   try{
     if(!window.REAuthService||!window.REAuthService.authFetch){
