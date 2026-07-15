@@ -80,8 +80,11 @@ ALL_DOMAINS: tuple[Domain, ...] = tuple(DOMAIN_TO_FOLDER.keys())
 # que cualquiera de los términos típicos del usuario mande al dominio correcto.
 _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
     "fundamentos": (
+        # OJO: no poner frases de INTENCIÓN genéricas ("como funciona") acá:
+        # cualquier tema se pregunta "cómo funciona X" y le roba el match al
+        # dominio específico de X. Solo términos del TEMA fundamentos.
         "developer", "desarrollador", "rol", "teoria", "ciclo", "factibilidad",
-        "triple impacto", "que hace un developer", "como funciona",
+        "triple impacto", "que hace un developer",
     ),
     "mercado": (
         "mercado", "panorama", "segmento", "segmentos", "producto", "productos",
@@ -368,6 +371,9 @@ _RAW_KEYWORDS: dict[Domain, tuple[str, ...]] = {
         "icc", "cac", "ipc", "uva", "contingencia", "imprevistos",
         "buffer", "earned value", "evm", "cpi", "spi", "desvio",
         "control presupuestario", "redeterminacion", "m2", "metro cuadrado",
+        # Frases de intención de precio: "¿cuánto sale el m2...?" pregunta por
+        # COSTOS aunque nombre otro dominio (construcción, etc.).
+        "cuanto sale", "cuanto cuesta", "cuanto vale",
     ),
     "tecnologia": (
         "proptech", "tecnologia", "ia", "inteligencia artificial",
