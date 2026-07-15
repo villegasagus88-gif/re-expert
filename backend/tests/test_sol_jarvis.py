@@ -570,3 +570,44 @@ async def test_create_pairing_reusa_token_pending_vivo(monkeypatch):
     assert out["deep_link"] == "https://t.me/REExpertBot?start=TOKEN_VIVO"
     assert ph.pairing_token == "TOKEN_VIVO"   # NO rotó el token
     assert db.commits == 0                     # ni tocó la DB (reuso puro)
+
+
+@pytest.mark.anyio
+async def test_send_message_respeta_429(monkeypatch):
+    """Ante un 429, send_message espera retry_after y reintenta (no pierde el msg)."""
+    import services.telegram_service as tg
+    monkeypatch.setattr(tg.settings, "TELEGRAM_BOT_TOKEN", "x", raising=False)
+    calls = {"n": 0}
+    slept = {"s": 0}
+
+    class _Resp:
+        def __init__(self, data):
+            self._d = data
+
+        def json(self):
+            return self._d
+
+    class _Cli:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return _Resp({"ok": False, "error_code": 429, "parameters": {"retry_after": 3}})
+            return _Resp({"ok": True, "result": {"message_id": 42}})
+
+    monkeypatch.setattr(tg.httpx, "AsyncClient", lambda *a, **k: _Cli())
+
+    async def _fake_sleep(s):
+        slept["s"] += s
+
+    monkeypatch.setattr(tg.asyncio, "sleep", _fake_sleep)
+
+    out = await tg.send_message("123", "hola")
+    assert out.get("ok") is True and out["message_id"] == 42
+    assert calls["n"] == 2       # reintentó tras el 429
+    assert slept["s"] == 3       # respetó retry_after

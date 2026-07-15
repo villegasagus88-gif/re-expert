@@ -16,6 +16,7 @@ Si TELEGRAM_BOT_TOKEN no está configurado, todas las funciones devuelven
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -25,6 +26,7 @@ import httpx
 from config.settings import settings
 from fastapi import HTTPException
 from models.user_channel import UserChannel
+from services.persistent_cache import pcache_get, pcache_set
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +38,11 @@ from collections import deque  # noqa: E402
 _SEEN_UPDATES: set[int] = set()
 _SEEN_ORDER: deque[int] = deque()
 _SEEN_MAX = 2000
+
+# High-water-mark del último update_id procesado, persistido en kv_cache para
+# sobrevivir redeploys (best-effort). TTL largo: solo importa entre reinicios.
+_TG_HWM_KEY = "tg_last_update_id"
+_TG_HWM_TTL = 30 * 24 * 3600  # 30 días
 
 # Referencias fuertes a los tasks de fondo del agente (sin esto el GC los mata).
 _BG_TASKS: set = set()
@@ -103,20 +110,29 @@ async def send_message(chat_id: str, text: str) -> dict[str, Any]:
     base = {"chat_id": chat_id, "text": text, "disable_web_page_preview": False}
     try:
         async with httpx.AsyncClient(timeout=10) as cli:
-            r = await cli.post(_api_url("sendMessage"), json={**base, "parse_mode": "Markdown"})
-            data = r.json()
+            async def _post(payload):
+                r = await cli.post(_api_url("sendMessage"), json=payload)
+                return r.json()
+
+            data = await _post({**base, "parse_mode": "Markdown"})
+            # 429: Telegram limita (30 msg/s global, 1/s por chat). Respetar
+            # retry_after y reintentar; sin esto, en el daily digest en loop los
+            # envíos empezaban a fallar en silencio con base de usuarios grande.
+            if not data.get("ok") and data.get("error_code") == 429:
+                wait = min(int((data.get("parameters") or {}).get("retry_after", 1)), 30)
+                logger.warning("Telegram 429; espero %ss y reintento", wait)
+                await asyncio.sleep(wait)
+                data = await _post({**base, "parse_mode": "Markdown"})
             # SOL emite CommonMark (**negrita**, [texto](url)); el parser legacy
             # 'Markdown' de Telegram no es 100% compatible y devuelve 400
-            # "can't parse entities" con ciertos caracteres → el mensaje se
-            # perdía en silencio. Si falla el parseo, reenviar como texto plano:
-            # se pierde el formato pero NUNCA se pierde el mensaje.
-            if not data.get("ok"):
+            # "can't parse entities". Si falla el parseo, reenviar como texto
+            # plano: se pierde el formato pero NUNCA se pierde el mensaje.
+            if not data.get("ok") and data.get("error_code") != 429:
                 logger.warning(
                     "Telegram Markdown falló (%s); reintento sin formato",
                     str(data.get("description") or data)[:150],
                 )
-                r = await cli.post(_api_url("sendMessage"), json=base)
-                data = r.json()
+                data = await _post(base)
             if not data.get("ok"):
                 return {"error": "telegram_send_failed", "detail": data}
             return {"ok": True, "message_id": data["result"]["message_id"]}
@@ -244,16 +260,29 @@ async def handle_webhook_update(db: AsyncSession, payload: dict) -> dict:
       - mensaje de un chat NO paireado → instrucciones para conectar la cuenta.
     """
     # Dedupe: Telegram re-entrega el mismo update si el webhook devolvió error o
-    # tardó. Sin esto, un update reprocesado = doble ejecución del agente. Cache
-    # en memoria acotado (Railway = 1 worker; multi-worker requeriría Redis).
+    # tardó. Sin esto, un update reprocesado = doble ejecución del agente.
+    #  1) Cache en memoria acotado (rápido, dentro del proceso).
+    #  2) High-water-mark PERSISTIDO (kv_cache): sobrevive redeploys — sin esto,
+    #     al reiniciar se vaciaba _SEEN_UPDATES y Telegram re-entregaba updates
+    #     ya procesados → doble ejecución. Telegram entrega update_id en orden.
     update_id = payload.get("update_id")
     if update_id is not None:
         if update_id in _SEEN_UPDATES:
             return {"ok": True, "skipped": "duplicate_update"}
+        try:
+            hw = await pcache_get(db, _TG_HWM_KEY)
+            if hw is not None and int(update_id) <= int(hw):
+                return {"ok": True, "skipped": "already_processed_persisted"}
+        except Exception:  # noqa: BLE001 — dedupe persistido es best-effort
+            pass
         _SEEN_UPDATES.add(update_id)
         _SEEN_ORDER.append(update_id)
         if len(_SEEN_ORDER) > _SEEN_MAX:
             _SEEN_UPDATES.discard(_SEEN_ORDER.popleft())
+        try:
+            await pcache_set(db, _TG_HWM_KEY, int(update_id), ttl_seconds=_TG_HWM_TTL)
+        except Exception:  # noqa: BLE001
+            pass
 
     msg = payload.get("message") or payload.get("edited_message")
     if not msg:

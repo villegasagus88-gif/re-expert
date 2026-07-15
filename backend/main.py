@@ -56,7 +56,9 @@ if settings.SENTRY_DSN:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         environment=settings.SENTRY_ENVIRONMENT,
-        release=settings.VERSION,
+        # SHA del commit desplegado (Railway) para regression tracking por deploy;
+        # cae a VERSION si no está seteado (dev/local).
+        release=settings.RAILWAY_GIT_COMMIT_SHA or settings.VERSION,
         traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
         # Don't include request bodies — they can contain user prompts / PII.
         send_default_pii=False,
@@ -141,7 +143,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Si True, el 500 incluye tipo+mensaje del error en el body (solo para depurar).
 # En producción queda False: el detalle se loguea, no se filtra al cliente.
-_DEBUG_500 = False
+_DEBUG_500 = settings.DEBUG_500
 
 # Handler global: cualquier excepción no manejada → 500 JSON.
 # OJO: este handler corre en el ServerErrorMiddleware (el más EXTERNO de Starlette),
@@ -351,7 +353,11 @@ async def health():
     """Liveness probe — el proceso está vivo y respondiendo HTTP.
     No verifica dependencias. Railway usa este endpoint.
     """
-    return {"status": "ok", "version": settings.VERSION}
+    return {
+        "status": "ok",
+        "version": settings.VERSION,
+        "commit": (settings.RAILWAY_GIT_COMMIT_SHA or "")[:7],
+    }
 
 
 @app.get("/health/ready")

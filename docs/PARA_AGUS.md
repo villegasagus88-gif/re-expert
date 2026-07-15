@@ -4,6 +4,18 @@
 > nosotros no tocamos para no pisarte. Cuando puedas, dale bola. Si algo no está
 > claro, hablalo con Mati.
 
+## 0. 🚀 Cómo ponerte al día (hacé esto primero)
+
+1. **`git fetch` + pull de `main`.** Backend ya está en prod (Railway auto-deploy
+   desde main, `/health` = 200). **El FRONTEND de main NO está publicado**: el
+   deploy a Netlify lo hacés vos (ver sección 6 — hay cambios nuevos para subir).
+2. **Revisá la branch `fix/agus-retrieval-artifacts`** (2 fixes de TU dominio,
+   con tests verdes, NO mergeada a main): SSRF de retrieval en redirects +
+   `to_thread` en entregables. Si estás de acuerdo, mergeala a main.
+3. **Branch `perf/prompt-cache-split-agus`** (sigue pendiente de tu review/merge).
+4. **Decisiones que dependen de vos**: WhatsApp/Telegram (sección 5) y config en
+   dashboards (sección 4). Después de decidir, publicá el frontend a Netlify.
+
 ## 1. 🐛 Bug de render del chat (se ve feo en la respuesta)
 
 En respuestas que usan tools (p.ej. tasación con búsqueda web), el texto sale
@@ -43,10 +55,12 @@ arregla solo; si no, ver el stripping de markdown antes del TTS.
 - **`perf/prompt-cache-split-agus`** (branch en origin, para review): split del
   system prompt del chat en bloques de cache → baja fuerte el TTFT del 1er
   mensaje de cada conversación. Revisá y mergeá.
-- **SSRF de retrieval**: fix pendiente de subir a origin (ver con Mati/Claude).
-- **`document_service` / `financial_artifact`**: envolver el render de PDF/DOCX/
-  XLSX en `await asyncio.to_thread(...)` → hoy corre síncrono y **congela todos
-  los streams SSE** mientras genera un entregable.
+- ✅ **SSRF de retrieval** — HECHO en branch `fix/agus-retrieval-artifacts`
+  (`follow_redirects=False` + revalida cada hop contra la whitelist). Revisá y mergeá.
+- ✅ **`financial_artifact`** — HECHO en la misma branch: los renders PDF/XLSX van
+  por `asyncio.to_thread` (ya no congelan los SSE). **Pendiente que dejamos para
+  vos**: `document_service._render_pdf/_render_docx` y `_save_local/write_bytes`
+  tienen el mismo patrón síncrono — evaluá `to_thread` también ahí.
 - **Streaming del chat**: coalescer el render con `requestAnimationFrame` (hoy
   reparsea el markdown en cada token = O(n²), tironea en respuestas largas).
 
@@ -75,3 +89,28 @@ arregla solo; si no, ver el stripping de markdown antes del TTS.
 - **WhatsApp saliente = tiene costo por mensaje** (Cloud API oficial). No es
   gratis y escala con la base de usuarios → **hay que decidir el modelo con Mati
   antes de codear** (pricearlo en Pro o poner tope). El detalle está en el doc.
+
+## 6. 🌐 Frontend en `main` pendiente de PUBLICAR en Netlify
+
+> El backend ya está live (Railway auto-deploy). El **frontend NO** — estos
+> cambios están en `main` pero recién los ven los usuarios cuando **vos publiques
+> a Netlify** (Netlify Drop / tu flujo). Publicá `frontend/` cuando estés listo:
+
+- **`app.html`** — varias cosas nuevas: tool `connect_telegram` de SOL (chip +
+  botón "Abrir Telegram"), `parseSolMd` bloquea `<img>` (anti-exfil), `project_id`
+  en el ingest de pagos, **selector de dólar Blue/Oficial en la calculadora
+  hipotecaria** (antes cotización fija 1460), y SRI (`integrity`) en el `<script>`
+  de pdf.js.
+- **`sentry.js`** — SRI (`integrity`) en el bundle de Sentry.
+- Todo verificado local (JS OK, probado en browser). Al publicar, chequeá que la
+  sección Créditos traiga la cotización (necesita el endpoint nuevo
+  `GET /api/creditos/dolar`, que ya está en el backend live).
+
+## 7. ⚙️ Config nueva a setear en Railway (backend, dashboards)
+
+Hay validators de arranque nuevos: en producción (`DEBUG=false`) el backend
+**NO arranca** si falta algo crítico (fail-fast en el deploy). Confirmá que en
+Railway estén seteadas: `JWT_SECRET` (fuerte, ≥32 chars), `FRONTEND_URL`, y al
+menos una de `ANTHROPIC_API_KEY` / `GEMINI_API_KEY`. (Si el deploy actual está en
+200, ya están bien.) Opcionales que suman: `TELEGRAM_BOT_TOKEN` (SOL por Telegram,
+gratis), `SENTRY_DSN` (monitoreo de errores JS — hoy vacío).

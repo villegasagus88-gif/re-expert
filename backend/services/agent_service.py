@@ -28,6 +28,7 @@ import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
+from config.settings import settings
 from models.user import User
 from services.agent_tools import TOOL_IMPLS, TOOL_SCHEMAS, run_tool
 from services.llm_providers import get_provider
@@ -36,7 +37,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 logger = logging.getLogger(__name__)
 
 
-MAX_AGENT_ITERATIONS = 8  # tope duro para evitar bucles
+MAX_AGENT_ITERATIONS = settings.AGENT_MAX_ITERATIONS  # tope duro para evitar bucles
 
 
 SOL_AGENT_SYSTEM_PROMPT_TEMPLATE = """<identidad>
@@ -392,7 +393,7 @@ async def run_agent(
                 system=system,
                 messages=messages,
                 tools=TOOL_SCHEMAS,
-                max_tokens=4096,
+                max_tokens=settings.AGENT_MAX_TOKENS,
             )
         except Exception:
             logger.exception("LLM call failed (%s)", provider.name)

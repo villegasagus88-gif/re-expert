@@ -24,7 +24,7 @@ Catálogo de herramientas:
   - send_message_now          Envía un mensaje al canal del usuario en este momento.
   - get_user_channels         Lista canales conectados.
   - connect_telegram          Genera el deep link de vinculación de Telegram.
-  - plan_route                Stub: arma una ruta optimizada entre paradas (requiere Maps API).
+  - plan_route                Ruta optimizada entre paradas (Google Routes API si hay key; fallback ordenado si no).
 """
 from __future__ import annotations
 
@@ -351,14 +351,15 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "Guarda las preferencias de automatización del usuario (qué cosas "
             "quiere que SOL le avise, por qué canal, frecuencia). Es un objeto "
             "libre con keys como daily_summary, alert_overruns, alert_milestones, "
-            "preferred_channel ('telegram'|'whatsapp'|'in_app'). Mergea con lo previo."
+            "preferred_channel ('telegram'|'in_app' — whatsapp/email NO están "
+            "disponibles todavía). Mergea con lo previo."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "prefs": {
                     "type": "object",
-                    "description": "Diccionario libre con preferencias. Ej: {\"daily_summary\":true,\"preferred_channel\":\"whatsapp\"}",
+                    "description": "Diccionario libre con preferencias. Ej: {\"daily_summary\":true,\"preferred_channel\":\"telegram\"}",
                 }
             },
             "required": ["prefs"],
