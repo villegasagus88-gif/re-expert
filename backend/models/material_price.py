@@ -24,7 +24,7 @@ class MaterialPriceOverride(Base):
     variacion_mensual_pct: Mapped[float] = mapped_column(Float, nullable=False, server_default="0")
     fuente: Mapped[str] = mapped_column(String(255), nullable=False, server_default="")
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
     def __repr__(self) -> str:
