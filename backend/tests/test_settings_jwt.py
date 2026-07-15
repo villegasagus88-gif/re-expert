@@ -65,6 +65,32 @@ def test_dev_secreto_fuerte_no_advierte(caplog):
     assert not any("JWT_SECRET inseguro" in r.message for r in caplog.records)
 
 
+# ── Requisitos de producción: FRONTEND_URL + al menos un proveedor LLM ──
+
+def test_prod_sin_frontend_url_falla():
+    with pytest.raises(ValidationError, match="FRONTEND_URL"):
+        _make(JWT_SECRET=STRONG, DEBUG=False, FRONTEND_URL="", ANTHROPIC_API_KEY="k")
+
+
+def test_prod_sin_proveedor_llm_falla():
+    with pytest.raises(ValidationError, match="ANTHROPIC_API_KEY o GEMINI"):
+        _make(JWT_SECRET=STRONG, DEBUG=False, FRONTEND_URL="https://x.com",
+              ANTHROPIC_API_KEY="", GEMINI_API_KEY="")
+
+
+def test_prod_con_gemini_solo_ok():
+    # Gemini alcanza como único proveedor (el chat cae a Gemini sin Anthropic).
+    s = _make(JWT_SECRET=STRONG, DEBUG=False, FRONTEND_URL="https://x.com",
+              ANTHROPIC_API_KEY="", GEMINI_API_KEY="g")
+    assert s.GEMINI_API_KEY == "g"
+
+
+def test_dev_sin_requisitos_no_rompe():
+    s = _make(JWT_SECRET=STRONG, DEBUG=True, FRONTEND_URL="",
+              ANTHROPIC_API_KEY="", GEMINI_API_KEY="")
+    assert s.DEBUG is True
+
+
 # ── El singleton real (env de conftest) construye OK en DEBUG=False ──
 
 def test_singleton_de_conftest_es_fuerte():

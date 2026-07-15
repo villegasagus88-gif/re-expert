@@ -14,3 +14,6 @@ os.environ.setdefault(
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-not-for-prod-9f3a71c2e8b45d60a")
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
 os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "test-dummy-service-role")
+# La suite corre con DEBUG=False (modo prod): satisfacer los validators de
+# arranque (FRONTEND_URL requerido; ANTHROPIC_API_KEY ya cubre el proveedor LLM).
+os.environ.setdefault("FRONTEND_URL", "https://test.example.com")

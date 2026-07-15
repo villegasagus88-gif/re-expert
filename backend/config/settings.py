@@ -252,6 +252,32 @@ class Settings(BaseSettings):
             logging.getLogger("re_expert.settings").warning("[dev] %s", detalle)
         return self
 
+    @model_validator(mode="after")
+    def _enforce_production_requirements(self) -> "Settings":
+        """En producción (DEBUG=False) fallamos el arranque —fail-fast en el
+        deploy, no en runtime con usuarios— si falta config sin la cual la app
+        'arranca verde' pero no funciona:
+        - FRONTEND_URL: sin ella cors_allowed_origins=[] y el front no puede
+          llamar la API (login roto), pero el healthcheck queda OK.
+        - Al menos un proveedor LLM (Anthropic o Gemini): sin ninguno, cada chat
+          500ea en runtime aunque el deploy pase."""
+        if self.DEBUG:
+            return self
+        faltantes: list[str] = []
+        if not (self.FRONTEND_URL or "").strip():
+            faltantes.append("FRONTEND_URL (sin ella CORS bloquea todo el frontend)")
+        if not (self.ANTHROPIC_API_KEY or "").strip() and not (self.GEMINI_API_KEY or "").strip():
+            faltantes.append(
+                "ANTHROPIC_API_KEY o GEMINI_API_KEY (el chat no funciona sin un proveedor LLM)"
+            )
+        if faltantes:
+            raise ValueError(
+                "Config de producción incompleta (DEBUG=False): falta "
+                + "; ".join(faltantes)
+                + ". Seteá estas env vars en el deploy."
+            )
+        return self
+
 
 try:
     settings = Settings()

@@ -68,8 +68,12 @@ async def create_pro_checkout_session(user: User) -> dict[str, str]:
             status_code=503, detail="Precio Pro no configurado. Contactá soporte."
         )
 
-    success_url = settings.STRIPE_SUCCESS_URL or "http://localhost:8080/success.html"
-    cancel_url = settings.STRIPE_CANCEL_URL or "http://localhost:8080/pricing.html"
+    # Derivar de FRONTEND_URL (requerido en prod) en vez de un localhost fijo:
+    # sin esto, activar Stripe olvidando las URLs redirigía el checkout a
+    # localhost en producción (flujo de pago roto en silencio).
+    _front = (settings.FRONTEND_URL or "http://localhost:8080").rstrip("/")
+    success_url = settings.STRIPE_SUCCESS_URL or f"{_front}/success.html"
+    cancel_url = settings.STRIPE_CANCEL_URL or f"{_front}/pricing.html"
 
     try:
         session = await run_stripe(
@@ -113,7 +117,8 @@ async def create_billing_portal_session(user: User) -> dict[str, str]:
             status_code=400, detail="No hay cuenta de facturación asociada."
         )
 
-    return_url = settings.STRIPE_SUCCESS_URL or "http://localhost:8080/index.html"
+    _front = (settings.FRONTEND_URL or "http://localhost:8080").rstrip("/")
+    return_url = settings.STRIPE_SUCCESS_URL or f"{_front}/index.html"
 
     try:
         session = await run_stripe(

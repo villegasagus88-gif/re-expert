@@ -163,6 +163,65 @@ def test_cancel_400_when_not_pro(monkeypatch):
     asyncio.run(go())
 
 
+def test_cancel_cancela_todos_los_preapprovals_vivos(monkeypatch):
+    """Con >1 preapproval vivo, la baja los cancela TODOS (no solo el primero);
+    un preapproval ya cancelled se ignora. Regresión del bug 'sigue cobrando'."""
+    _enable_mp(monkeypatch)
+    import services.mercadopago_service as mp
+
+    puts: list[str] = []
+
+    class _Resp:
+        def __init__(self, status, data):
+            self.status_code = status
+            self._d = data
+            self.text = ""
+
+        def json(self):
+            return self._d
+
+    class _FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def get(self, url, **k):
+            return _Resp(200, {"results": [
+                {"id": "AAA", "status": "authorized"},
+                {"id": "BBB", "status": "paused"},
+                {"id": "CCC", "status": "cancelled"},  # no vivo → se ignora
+            ]})
+
+        async def put(self, url, **k):
+            puts.append(url.rsplit("/", 1)[-1])
+            return _Resp(200, {})
+
+    monkeypatch.setattr(mp.httpx, "AsyncClient", _FakeClient)
+
+    class _DB:
+        async def execute(self, *a, **k):
+            u = _user("pro")
+            class _R:
+                def scalar_one_or_none(self_):
+                    return u
+            return _R()
+
+        async def commit(self):
+            pass
+
+    async def go():
+        out = await mp.cancel_subscription(_DB(), _user("pro"))
+        assert out["ok"] is True
+        assert set(puts) == {"AAA", "BBB"}  # los 2 vivos, no el cancelled
+
+    asyncio.run(go())
+
+
 # ── handle_webhook (guards antes de la red) ──────────────────────────────────
 def test_webhook_503_when_disabled(monkeypatch):
     _disable_mp(monkeypatch)

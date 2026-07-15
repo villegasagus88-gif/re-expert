@@ -469,28 +469,33 @@ async def cancel_subscription(db: AsyncSession, user: User) -> dict:
             status_code=404,
             detail="No encontramos una suscripción activa en Mercado Pago para tu cuenta.",
         )
-    pre_id = str(vivos[0].get("id"))
-
-    try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            resp = await client.put(
-                f"{MP_API}/preapproval/{pre_id}",
-                json={"status": "cancelled"},
-                headers=_auth_headers(),
+    # Cancelar TODOS los preapprovals vivos, no solo el primero: si por un edge
+    # de anti-doble-débito o creación concurrente el usuario terminó con >1
+    # preapproval authorized/paused, cancelar uno solo lo dejaría siendo cobrado
+    # por los demás tras "darse de baja".
+    pre_ids = [str(r.get("id")) for r in vivos if r.get("id")]
+    for pre_id in pre_ids:
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                resp = await client.put(
+                    f"{MP_API}/preapproval/{pre_id}",
+                    json={"status": "cancelled"},
+                    headers=_auth_headers(),
+                )
+        except httpx.HTTPError as exc:
+            logger.warning("MP cancel: error de red cancelando %s — %s", pre_id, exc)
+            raise HTTPException(
+                status_code=502, detail="No se pudo contactar a Mercado Pago."
+            ) from exc
+        if resp.status_code >= 300:
+            logger.warning(
+                "MP cancel: PUT %s falló %s — %s", pre_id, resp.status_code, resp.text[:300]
             )
-    except httpx.HTTPError as exc:
-        logger.warning("MP cancel: error de red cancelando %s — %s", pre_id, exc)
-        raise HTTPException(
-            status_code=502, detail="No se pudo contactar a Mercado Pago."
-        ) from exc
-    if resp.status_code >= 300:
-        logger.warning(
-            "MP cancel: PUT %s falló %s — %s", pre_id, resp.status_code, resp.text[:300]
-        )
-        raise HTTPException(
-            status_code=502, detail="Mercado Pago no pudo cancelar la suscripción."
-        )
+            raise HTTPException(
+                status_code=502, detail="Mercado Pago no pudo cancelar la suscripción."
+            )
 
+    pre_id = pre_ids[0]  # para el log/respuesta (ya se cancelaron todos)
     # Corte local inmediato; el webhook (cancelled → inactive) lo confirma.
     db_user = (
         await db.execute(select(User).where(User.id == user.id))

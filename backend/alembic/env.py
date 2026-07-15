@@ -5,14 +5,21 @@ Runs migrations using the async engine from backend/models/base.py and pulls
 the database URL from backend/config/settings.py (which reads backend/.env).
 """
 import asyncio
+import importlib
+import pkgutil
 from logging.config import fileConfig
 
+# Import ALL model modules para que TODAS las tablas se registren en
+# Base.metadata. Sin esto, `alembic revision --autogenerate` ve un metadata
+# incompleto y emite DROP TABLE espurio para las tablas no importadas. pkgutil
+# recorre el paquete → los modelos nuevos se incluyen solos (no vuelve a pasar).
+import models as _models_pkg  # noqa: E402
 from alembic import context
-
-# Import all models so their tables register on Base.metadata
-from models import Conversation, Message, User  # noqa: F401, E402
-from models.base import Base, get_engine  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncEngine
+
+for _m in pkgutil.iter_modules(_models_pkg.__path__):
+    importlib.import_module(f"models.{_m.name}")
+from models.base import Base, get_engine  # noqa: E402
 
 engine = get_engine()
 
