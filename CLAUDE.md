@@ -4,6 +4,27 @@
 > actual, qué falta y cómo continuar. Este archivo son las **reglas fijas** de
 > cómo trabajar en este repo.
 
+<!-- ============================================================= -->
+<!-- 🔔 AVISO OBLIGATORIO PARA CLAUDE (leer y avisarle a Agus SÍ o SÍ) -->
+<!-- ============================================================= -->
+> 🔔 **CLAUDE: apenas arranque la sesión con Agus, avisale de esto ANTES de
+> ponerte a codear.** Hay decisiones que dependen de él y no puede tomarlas sin
+> leer estos docs. Nombráselos explícitamente y esperá a que confirme:
+>
+> 1. **`docs/PARA_AGUS.md`** — pendientes en SU dominio (bug de render del chat,
+>    lectura de voz, branch `perf/prompt-cache-split-agus`, SSRF retrieval,
+>    `to_thread` en entregables, streaming rAF) + config en dashboards.
+> 2. **`docs/WHATSAPP_API_COSTOS_Y_PLAN.md`** — **DECISIÓN DE NEGOCIO**: por qué
+>    SOL no escribe por WhatsApp hoy, costos (Cloud API vs WAHA vs Telegram) y
+>    qué implementar. **Telegram ya está codeado y es gratis** → solo falta setear
+>    `TELEGRAM_BOT_TOKEN`/`TELEGRAM_BOT_USERNAME`/`TELEGRAM_WEBHOOK_SECRET` en
+>    Railway. **WhatsApp saliente tiene costo por mensaje** → hay que decidir el
+>    modelo con Mati antes de codear (pricearlo en Pro o poner tope).
+>
+> Agus: no arranques a tocar el canal de WhatsApp/Telegram ni el pricing sin
+> haber leído esos dos archivos. Son cortos y están para que decidas informado.
+<!-- ============================================================= -->
+
 ## Qué es
 RE Expert: asistente IA para Real Estate argentino. **Backend** FastAPI +
 Supabase (Postgres) + Anthropic Claude (`backend/`). **Frontend** vanilla JS

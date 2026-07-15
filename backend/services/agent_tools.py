@@ -183,7 +183,10 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 },
                 "channel": {
                     "type": "string",
-                    "enum": ["in_app", "email", "telegram", "whatsapp", "push"],
+                    # Solo los canales REALMENTE implementados. whatsapp/email/push
+                    # son stubs (dispatch devuelve *_not_implemented_yet) → no los
+                    # ofrecemos para que SOL no los elija y después falle.
+                    "enum": ["in_app", "telegram"],
                     "default": "in_app",
                 },
             },
@@ -264,7 +267,10 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "message": {"type": "string", "minLength": 1, "maxLength": 4000},
                 "channel": {
                     "type": "string",
-                    "enum": ["telegram", "whatsapp", "email", "push", "in_app"],
+                    # Solo canales implementados. WhatsApp/email/push son stubs;
+                    # ofrecerlos hacía que SOL los eligiera y fallara (e inventara
+                    # un "no disponible en tu plan"). Ver notification_dispatcher.
+                    "enum": ["in_app", "telegram"],
                     "default": "in_app",
                 },
             },

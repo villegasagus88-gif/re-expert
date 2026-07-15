@@ -55,3 +55,23 @@ arregla solo; si no, ver el stripping de markdown antes del TTS.
 - **`OPENAI_API_KEY`** en Railway → sin ella la voz nueva (argentina/cálida) cae
   al TTS del navegador y no se escucha el cambio.
 - Confirmar **Railway → App Sleeping = OFF**.
+
+## 5. 📲 WhatsApp / Telegram de SOL — DECISIÓN DE NEGOCIO (leer antes de decidir)
+
+> 👉 **Leé `docs/WHATSAPP_API_COSTOS_Y_PLAN.md` completo.** Ahí está el detalle de
+> costos (Cloud API vs WAHA vs Telegram), riesgos y qué implementar. Resumen:
+
+- **Por qué SOL no escribe por WhatsApp hoy**: el canal `whatsapp` en
+  `notification_dispatcher.py` es un **stub** (`whatsapp_not_implemented_yet`).
+  No es un bug del plan del usuario: literalmente no está codeado el envío.
+- **Lo que ya arreglamos nosotros** (nuestro lado, ya en `main`): SOL ya no
+  ofrece ni promete WhatsApp/email/push (los sacamos del enum de sus tools) y su
+  prompt ahora dice la verdad ("por ahora no puedo escribirte por WhatsApp,
+  ofrecé Telegram/app") en vez de inventar que es "por tu plan".
+- **Lo más rápido y GRATIS = Telegram**: ya está 100% implementado en código.
+  Solo falta setear en Railway `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME` y
+  `TELEGRAM_WEBHOOK_SECRET` (crear el bot con @BotFather). Con eso "SOL te
+  escribe" funciona ya, sin costo.
+- **WhatsApp saliente = tiene costo por mensaje** (Cloud API oficial). No es
+  gratis y escala con la base de usuarios → **hay que decidir el modelo con Mati
+  antes de codear** (pricearlo en Pro o poner tope). El detalle está en el doc.
