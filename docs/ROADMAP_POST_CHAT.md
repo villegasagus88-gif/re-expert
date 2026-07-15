@@ -21,7 +21,7 @@
 | 5 | 📊 Panel de Proyecto | ✅ dashboard | ✅ `/api/project` | **CASI completo** | flow de "crear proyecto inicial" |
 | 6 | 📰 Noticias | ✅ 3 tabs | ✅ `/api/news` lee bucket | **HALF** | tabs "Destacadas" y "Opinión" siguen hardcoded; bucket vacío |
 | 7 | ☀️ SOL Asistente | ✅ + Pro gate | ✅ agent + ingest + channels | **CASI completo** | Telegram bot wiring; emails opcional |
-| 8 | 🎓 Academia | ✅ hardcoded | ❌ **NO existe** | **FALTANTE** | endpoint + render dinámico |
+| 8 | 🎓 Academia | ✅ | ✅ implementado | **HECHO** | api/routes/academia.py + test_course_payments.py |
 
 | Feature accesoria | Estado | Gap |
 |-------------------|--------|-----|

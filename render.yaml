@@ -76,8 +76,11 @@ services:
       - key: SCHEDULER_POLL_INTERVAL_SECONDS
         value: "30"
       # URL pública del backend — usada para links absolutos a PDFs que
-      # SOL manda por WhatsApp/Telegram. Se autocompleta a la URL que
-      # Render asigna al service. Si querés dominio custom, override acá.
+      # SOL manda por WhatsApp/Telegram.
+      # ⚠️ `property: host` devuelve SOLO el hostname (sin https://) → los links
+      #    absolutos saldrían rotos. Render NO permite prefijar el scheme acá.
+      #    Si se usa Render, OVERRIDE esta var a mano con la URL completa
+      #    ("https://<host>"). (Railway es la plataforma activa y setea la suya.)
       - key: BACKEND_PUBLIC_URL
         fromService:
           type: web
