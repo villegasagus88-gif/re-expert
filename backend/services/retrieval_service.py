@@ -75,7 +75,11 @@ async def get_client() -> httpx.AsyncClient:
             if _client is None:
                 _client = httpx.AsyncClient(
                     timeout=DEFAULT_TIMEOUT,
-                    follow_redirects=True,
+                    # follow_redirects=False a propósito: los seguimos a mano
+                    # revalidando cada hop contra la whitelist (ver _get_whitelisted).
+                    # Con follow automático, un endpoint permitido con open-redirect
+                    # podía rebotar a un host interno y evadir _host_allowed.
+                    follow_redirects=False,
                     headers={
                         "User-Agent": "RE-Expert/1.0 (+https://re-expert.app)",
                         "Accept-Language": "es-AR,es;q=0.9",
@@ -143,6 +147,26 @@ class RetrievalError(Exception):
     """Error en una llamada a fuente externa (no whitelist, timeout, 5xx, etc.)."""
 
 
+async def _get_whitelisted(client, url: str, params: dict | None, max_redirects: int = 4):
+    """GET siguiendo redirects SOLO a hosts whitelisteados. Cada hop se revalida
+    con _host_allowed → un endpoint permitido con open-redirect no puede rebotar
+    a un host interno/no permitido y evadir la whitelist."""
+    current = url
+    for _ in range(max_redirects + 1):
+        resp = await client.get(current, params=params)
+        if resp.is_redirect and resp.headers.get("location"):
+            target = str(httpx.URL(current).join(resp.headers["location"]))
+            if not _host_allowed(target):
+                raise RetrievalError(
+                    f"Redirect a host no permitido: {urlparse(target).hostname}"
+                )
+            current = target
+            params = None  # los params van solo en la request inicial
+            continue
+        return resp
+    raise RetrievalError(f"Demasiados redirects desde {url}")
+
+
 async def fetch_json(
     url: str,
     *,
@@ -161,7 +185,7 @@ async def fetch_json(
 
     client = await get_client()
     try:
-        resp = await client.get(url, params=params)
+        resp = await _get_whitelisted(client, url, params)
     except httpx.RequestError as e:
         raise RetrievalError(f"No se pudo conectar a {url}: {e}") from e
 
@@ -197,7 +221,7 @@ async def fetch_text(
 
     client = await get_client()
     try:
-        resp = await client.get(url, params=params)
+        resp = await _get_whitelisted(client, url, params)
     except httpx.RequestError as e:
         raise RetrievalError(f"No se pudo conectar a {url}: {e}") from e
 

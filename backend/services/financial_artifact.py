@@ -21,6 +21,7 @@ import del módulo ni el arranque del backend.
 """
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import re
@@ -311,7 +312,11 @@ async def generar_documento(
 
     if want_pdf:
         try:
-            blob = render_analisis_pdf(titulo, secciones, resumen, proyecto)
+            # to_thread: reportlab es CPU-bound sync; correrlo en el event loop
+            # congela TODOS los streams SSE concurrentes mientras genera el PDF.
+            blob = await asyncio.to_thread(
+                render_analisis_pdf, titulo, secciones, resumen, proyecto
+            )
             fn = f"analisis-{slug}-{stamp}-{uid}.pdf"
             url = await _store(fn, blob, "application/pdf")
             if url:
@@ -324,7 +329,10 @@ async def generar_documento(
 
     if want_xls:
         try:
-            blob = render_analisis_xlsx(titulo, secciones, resumen, proyecto)
+            # to_thread: openpyxl es CPU-bound sync (ver nota del PDF de arriba).
+            blob = await asyncio.to_thread(
+                render_analisis_xlsx, titulo, secciones, resumen, proyecto
+            )
             fn = f"analisis-{slug}-{stamp}-{uid}.xlsx"
             url = await _store(
                 fn, blob,
