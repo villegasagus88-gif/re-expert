@@ -68,6 +68,17 @@ class Settings(BaseSettings):
     APP_NAME: str = "RE Expert API"
     VERSION: str = "0.1.0"
     DEBUG: bool = False
+    # Railway inyecta el SHA del commit desplegado. Lo usamos como release de
+    # Sentry (regression tracking por deploy) y en /health (saber qué build corre).
+    RAILWAY_GIT_COMMIT_SHA: str = ""
+    # Si True, el body de un 500 incluye tipo+mensaje del error (para debug en
+    # prod puntual). Default False: no filtrar internals al cliente.
+    DEBUG_500: bool = False
+
+    # ===== TUNING SOL / operación (env-configurable sin redeploy) =====
+    AGENT_MAX_ITERATIONS: int = 8      # tope de vueltas del loop tool-use de SOL
+    AGENT_MAX_TOKENS: int = 4096       # max_tokens por respuesta del agente
+    DIGEST_HOUR_UTC: int = 11          # hora UTC del daily digest (~08:00 AR)
 
     # Cantidad de proxies confiables que appendan a X-Forwarded-For, contados
     # desde la derecha. En Railway el único hop confiable es el edge (1). La IP

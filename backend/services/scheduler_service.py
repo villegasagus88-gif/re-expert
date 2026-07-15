@@ -110,7 +110,7 @@ _CLEANUP_PERIOD = timedelta(hours=24)
 # Los usuarios activan automation_prefs (daily_summary, alert_overruns, …) vía
 # SOL; este job las EJECUTA: resumen matutino por Telegram con el estado de
 # sus proyectos, pagos por vencer y recordatorios del día.
-_DIGEST_HOUR_UTC = 11  # ~08:00 en Argentina (UTC-3)
+_DIGEST_HOUR_UTC = settings.DIGEST_HOUR_UTC  # ~08:00 en Argentina (UTC-3)
 _last_digest_date: str | None = None  # YYYY-MM-DD (AR) del último envío
 
 
