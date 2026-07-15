@@ -767,6 +767,16 @@ select.pay-form-input{cursor:pointer}
 .sol-tool-link:hover{text-decoration:underline}
 .sol-tool-err{color:#ef4444;font-weight:500}
 
+/* ── SOL chips: mismo lineamiento premium que el trace del chat — entrada
+   suave, "respiración" mientras corre y sombra sutil. ── */
+.sol-tool-chip{box-shadow:var(--shadow-sm);animation:toolChipIn .25s ease both;transition:all .2s}
+.sol-tool-chip.running{animation:toolChipIn .25s ease both,solChipBreathe 1.7s ease-in-out infinite}
+@keyframes solChipBreathe{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}50%{box-shadow:0 0 0 3px rgba(245,158,11,.13)}}
+.sol-tool-chip.done{box-shadow:none}
+/* La burbuja de SOL: un pelín más de aire y separación entre chips y mensaje. */
+.sol-msg-sol{border-radius:var(--radius-lg)}
+.sol-tool-chip-wrap{padding:5px 0 3px}
+
 /* ── Trace de tools del chat (el "pensando"): pills premium, consistentes con
    los chips de SOL. Antes era texto gris apilado, se veía pobre. ── */
 .tool-trace{display:flex!important;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:11.5px}
