@@ -838,7 +838,9 @@
       </div>
       <div class="vc-controls">
         <button class="btn-secondary" id="vcPause">⏸ Pausar</button>
-        <button class="btn-primary" id="vcEnd">Terminar conversación</button>
+        <button class="btn-secondary" id="vcStopResp" title="Cortar la respuesta actual">⏹ Cortar</button>
+        <button class="btn-secondary" id="vcRepeat" title="Repetir lo último">↻ Repetir</button>
+        <button class="btn-primary" id="vcEnd">Terminar</button>
       </div>
       <div class="vc-hint">Hablá con naturalidad: el experto te escucha y te responde con voz, usando el mismo Chat Experto de siempre. <strong>Beta</strong> — usa el micrófono y las voces de tu navegador.</div>
     </div>
@@ -2535,6 +2537,141 @@ function vcAddListenBtns(){
   });
 }
 
+// ═══ REALTIME: conversación en vivo por WebRTC (speech-to-speech) ═══
+// El navegador habla DIRECTO con OpenAI usando una clave efímera que acuña
+// nuestro backend. El agente de voz es una capa aditiva: el Chat Experto y
+// las secciones no se tocan; sus APIs solo se CONSULTAN (lectura) como tools.
+const vcRT={pc:null,dc:null,audioEl:null,active:false,userLine:'',aiLine:'',lastAssistant:''};
+
+// Memoria liviana del usuario (local): perfil, zonas, preferencias.
+function vcMemory(){try{return JSON.parse(localStorage.getItem('re_voice_memory')||'{}');}catch(e){return {};}}
+function vcMemorySave(k,v){const m=vcMemory();m[String(k).slice(0,40)]=String(v).slice(0,200);localStorage.setItem('re_voice_memory',JSON.stringify(m));}
+function vcMemoryContext(){return Object.entries(vcMemory()).map(([k,v])=>k+': '+v).join('\n').slice(0,1400);}
+
+// Tools del asesor de voz: se ejecutan ACÁ contra las APIs existentes (lectura).
+const VC_RT_TOOLS={
+  async consultar_precios_materiales(args){
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/materials');
+    if(!r.ok)throw new Error('catálogo de precios no disponible');
+    const d=await r.json();const q=(args&&args.consulta)||'';
+    let items=d.items||[];
+    if(q)items=items.filter(i=>matMatches(i,q));
+    return {actualizado:d.updated_at,resultados:items.slice(0,6).map(i=>({material:i.material,precio_ars:i.precio_ars,unidad:i.unidad,variacion_mensual_pct:i.variacion_mensual_pct}))};
+  },
+  async comparar_creditos_hipotecarios(){
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/creditos');
+    if(!r.ok)throw new Error('catálogo de créditos no disponible');
+    const d=await r.json();
+    return {creditos:(d.items||[]).slice(0,8).map(c=>({banco:c.bank_name,credito:c.credit_name,tna_pct:c.interest_rate_tna,plazo_max_anios:c.max_term_years,financiacion_max_pct:c.max_financing_percent}))};
+  },
+  async resumir_proyectos_planos(){
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/planos/projects');
+    if(!r.ok)throw new Error('proyectos no disponibles');
+    const d=await r.json();
+    return {proyectos:(d.projects||[]).map(p=>({nombre:p.name,planos:p.plans_count,obs_criticas:p.critical_alerts,obs_altas:p.high_alerts,tareas_pendientes:p.pending_tasks}))};
+  },
+  async recordar_dato_usuario(args){vcMemorySave(args.clave,args.valor);return {resultado:'guardado'};},
+};
+
+async function vcRTConnect(){
+  vcSetPhase('thinking','Conectando con el asesor…');
+  const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/realtime-session',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_context:vcMemoryContext()})});
+  if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'Sesión de voz no disponible');}
+  const sess=await r.json();
+  if(!(await vcEnsureMic()))throw new Error('Sin micrófono');
+  const pc=new RTCPeerConnection();vcRT.pc=pc;
+  const audio=new Audio();audio.autoplay=true;vcRT.audioEl=audio;
+  pc.ontrack=e=>{audio.srcObject=e.streams[0];};
+  vcState.micStream.getAudioTracks().forEach(t=>pc.addTrack(t,vcState.micStream));
+  const dc=pc.createDataChannel('oai-events');vcRT.dc=dc;
+  dc.onmessage=vcRTEvent;
+  dc.onclose=()=>{if(vcRT.active)vcRTError('Se cortó la conexión de voz');};
+  const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+  const hdr={Authorization:'Bearer '+sess.client_secret,'Content-Type':'application/sdp'};
+  let sdp=await fetch('https://api.openai.com/v1/realtime/calls?model='+encodeURIComponent(sess.model),{method:'POST',headers:hdr,body:offer.sdp});
+  if(!sdp.ok)sdp=await fetch('https://api.openai.com/v1/realtime?model='+encodeURIComponent(sess.model),{method:'POST',headers:{...hdr,'OpenAI-Beta':'realtime=v1'},body:offer.sdp});
+  if(!sdp.ok)throw new Error('No se pudo abrir el canal de voz ('+sdp.status+')');
+  await pc.setRemoteDescription({type:'answer',sdp:await sdp.text()});
+  await new Promise((res,rej)=>{
+    if(dc.readyState==='open')return res();
+    dc.onopen=res;setTimeout(()=>rej(new Error('El canal de voz no abrió a tiempo')),8000);
+  });
+  vcRT.active=true;
+  vcSetPhase('listening','Escuchando… hablá cuando quieras');
+}
+function vcRTSend(obj){try{if(vcRT.dc&&vcRT.dc.readyState==='open')vcRT.dc.send(JSON.stringify(obj));}catch(e){}}
+
+async function vcRTEvent(e){
+  let ev;try{ev=JSON.parse(e.data);}catch(err){return;}
+  const t=ev.type||'';
+  if(t==='input_audio_buffer.speech_started'){          // barge-in: el usuario habla
+    vcRT.aiLine='';vcSetPhase('listening','Escuchando…');vcRTTranscript();return;
+  }
+  if(t==='input_audio_buffer.speech_stopped'){vcSetPhase('thinking','Procesando…');return;}
+  if(t==='conversation.item.input_audio_transcription.completed'){
+    const txt=(ev.transcript||'').trim();
+    if(txt){vcRT.userLine=txt;vcRTTranscript();vcRTMirror('user',txt);}
+    return;
+  }
+  if(t==='response.output_audio_transcript.delta'||t==='response.audio_transcript.delta'){
+    if(vcState.phase!=='speaking')vcSetPhase('speaking','Respondiendo…');
+    vcRT.aiLine+=(ev.delta||'');vcRTTranscript();return;
+  }
+  if(t==='response.output_audio_transcript.done'||t==='response.audio_transcript.done'){
+    const txt=(ev.transcript||vcRT.aiLine||'').trim();
+    if(txt){vcRT.lastAssistant=txt;vcRTMirror('assistant',txt);}
+    vcRT.aiLine='';return;
+  }
+  if(t==='response.done'){if(vcRT.active&&!vcState.paused)vcSetPhase('listening','Escuchando…');return;}
+  if(t==='response.function_call_arguments.done'){       // tool call
+    let args={};try{args=JSON.parse(ev.arguments||'{}');}catch(err){}
+    vcSetPhase('thinking','Consultando datos de la plataforma…');
+    let out;
+    try{
+      const fn=VC_RT_TOOLS[ev.name];
+      if(!fn)throw new Error('herramienta no disponible todavía');
+      out=await Promise.race([fn(args),new Promise((_,rej)=>setTimeout(()=>rej(new Error('la consulta tardó demasiado')),12000))]);
+    }catch(err){out={error:String((err&&err.message)||err)};}
+    vcRTSend({type:'conversation.item.create',item:{type:'function_call_output',call_id:ev.call_id,output:JSON.stringify(out).slice(0,8000)}});
+    vcRTSend({type:'response.create'});
+    return;
+  }
+  if(t==='error'){
+    const msg=(ev.error&&ev.error.message)||'';
+    if(/session|expire|token/i.test(msg))vcRTError('La sesión de voz expiró');
+  }
+}
+function vcRTTranscript(){
+  const el=$('#vcTranscript');if(!el)return;
+  el.innerHTML=(vcRT.userLine?'<div class="vc-t-user">'+esc(vcRT.userLine)+'</div>':'')
+              +(vcRT.aiLine?'<div class="vc-t-ai">'+esc(vcRT.aiLine)+'</div>':'');
+}
+// Espeja la conversación de voz en el chat abierto (visual + export).
+// El MOTOR del chat no se toca: es solo presentación de lo hablado.
+function vcRTMirror(role,text){
+  try{
+    state.messages.push({role,content:text});
+    const ws=$('#welcomeScreen');if(ws)ws.style.display='none';
+    if(els.messagesEl){els.messagesEl.style.display='';els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));scrollBottom();}
+    if(role==='assistant')setTimeout(vcAddListenBtns,150);
+  }catch(e){}
+}
+function vcRTError(msg){
+  vcRTClose(false);
+  vcState.paused=true;const b=$('#vcPause');if(b)b.textContent='▶ Reanudar';
+  vcSetPhase('idle',msg+' — tocá Reanudar para reconectar');
+}
+function vcRTClose(release){
+  vcRT.active=false;
+  try{vcRT.dc&&vcRT.dc.close();}catch(e){}
+  try{vcRT.pc&&vcRT.pc.close();}catch(e){}
+  if(vcRT.audioEl){try{vcRT.audioEl.srcObject=null;}catch(e){}vcRT.audioEl=null;}
+  vcRT.pc=null;vcRT.dc=null;vcRT.userLine='';vcRT.aiLine='';
+  if(release!==false)vcReleaseMic();
+}
+
 // ── 3) Modo "Hablar con el experto" (beta) ──
 function vcSetPhase(phase,statusTxt){
   vcState.phase=phase;
@@ -2599,13 +2736,24 @@ async function vcOpenMode(){
   if(!(await vcEnsureMic()))return;
   switchView('chat');
   vcStopSpeak();
-  vcState.mode=true;vcState.paused=false;
+  vcState.mode=true;vcState.paused=false;vcState.rtMode=false;
   $('#vcOverlay').classList.add('active');
   $('#vcPause').textContent='⏸ Pausar';
-  vcModeListen();
+  if(vcState.apiVoice&&window.RTCPeerConnection){
+    vcState.rtMode=true;
+    try{await vcRTConnect();}
+    catch(e){
+      vcState.rtMode=false;vcRTClose(false);
+      plnToast('Modo en vivo no disponible ('+(e.message||'error')+') — sigo con el modo estándar',false);
+      vcModeListen();
+    }
+  }else{
+    vcModeListen();
+  }
 }
 function vcCloseMode(){
   vcState.mode=false;vcState.paused=false;
+  vcRTClose(false);vcState.rtMode=false;
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
   if(vcState.vadStop)vcState.vadStop();
   if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}}
@@ -2620,21 +2768,39 @@ function vcTogglePause(){
   vcState.paused=!vcState.paused;
   $('#vcPause').textContent=vcState.paused?'▶ Reanudar':'⏸ Pausar';
   if(vcState.paused){
-    try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
-    if(vcState.vadStop)vcState.vadStop();
-    vcStopSpeak();
+    if(vcState.rtMode){
+      if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=false;});
+      vcRTSend({type:'response.cancel'});
+      if(vcRT.audioEl)try{vcRT.audioEl.srcObject.getTracks?.();vcRT.audioEl.muted=true;}catch(e){}
+    }else{
+      try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
+      if(vcState.vadStop)vcState.vadStop();
+      vcStopSpeak();
+    }
     vcSetPhase('paused','En pausa');
   }else{
-    vcModeListen();
+    if(vcState.rtMode){
+      if(vcRT.active){
+        if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=true;});
+        if(vcRT.audioEl)vcRT.audioEl.muted=false;
+        vcSetPhase('listening','Escuchando…');
+      }else{
+        vcRTConnect().catch(e=>{vcState.rtMode=false;vcModeListen();});
+      }
+    }else{
+      vcModeListen();
+    }
   }
 }
 window.addEventListener('re:chat-done',e=>{
   // Refrescar botones "Escuchar" siempre
   setTimeout(vcAddListenBtns,150);
-  // Loop del modo voz: leer la respuesta y volver a escuchar
+  // Loop del modo voz clásico: en Realtime el turno lo maneja OpenAI, no este hook
+  if(vcState.rtMode)return;
   if(!vcState.mode||vcState.phase!=='thinking')return;
   const text=(e.detail&&e.detail.text)||'';
   if(!text){vcSetPhase('idle','No hubo respuesta. Tocá Reanudar para seguir.');return;}
+  vcRT.lastAssistant=text;
   vcSetPhase('speaking','Respondiendo…');
   $('#vcTranscript').textContent='';
   vcSpeakSmart(text,()=>{if(vcState.mode&&!vcState.paused)vcModeListen();});
@@ -2657,6 +2823,14 @@ function initVoice(){
   $('#vcClose')?.addEventListener('click',vcCloseMode);
   $('#vcEnd')?.addEventListener('click',vcCloseMode);
   $('#vcPause')?.addEventListener('click',vcTogglePause);
+  $('#vcStopResp')?.addEventListener('click',()=>{
+    if(vcState.rtMode){vcRTSend({type:'response.cancel'});vcSetPhase('listening','Escuchando…');}
+    else vcStopSpeak();
+  });
+  $('#vcRepeat')?.addEventListener('click',()=>{
+    if(vcState.rtMode)vcRTSend({type:'response.create',response:{instructions:'Repetí tu última respuesta en una versión más corta y clara.'}});
+    else if(vcRT.lastAssistant)vcSpeakSmart(vcRT.lastAssistant,null);
+  });
   if(VC_TTS){
     vcState.voice=vcPickVoice();
     // Botones "Escuchar" también para el historial que se renderiza después

@@ -29,9 +29,30 @@ class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
 
 
+class RealtimeSessionRequest(BaseModel):
+    # Memoria compacta del usuario (la maneja el frontend, viaja como contexto)
+    user_context: str = Field(default="", max_length=1500)
+
+
 @router.get("/status", summary="¿Está habilitada la voz premium?")
 async def voice_status(_user: User = Depends(get_current_user)):
-    return {"enabled": voice_service.is_enabled()}
+    enabled = voice_service.is_enabled()
+    return {"enabled": enabled, "realtime": enabled}
+
+
+@router.post("/realtime-session", summary="Clave efímera para la conversación en vivo (WebRTC)")
+async def realtime_session(body: RealtimeSessionRequest,
+                           _user: User = Depends(get_current_user)):
+    if not voice_service.is_enabled():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail="Voz premium no configurada")
+    try:
+        return await voice_service.create_realtime_session(body.user_context)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Voice: realtime-session falló")
+        raise HTTPException(status_code=502, detail="No se pudo iniciar la sesión de voz") from exc
 
 
 @router.post("/transcribe", summary="Audio → texto (voz del usuario)")

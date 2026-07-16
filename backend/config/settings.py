@@ -214,6 +214,12 @@ class Settings(BaseSettings):
     )
     # Velocidad de habla (0.25–4.0). Un pelín por debajo de 1.0 se sigue más fácil.
     OPENAI_TTS_SPEED: float = 0.96
+    # ── Realtime (conversación speech-to-speech en vivo, WebRTC) ──
+    # Modelo y voz del modo "Hablar con el experto". Cambiables sin tocar código.
+    OPENAI_REALTIME_MODEL: str = "gpt-realtime"        # alternativa: gpt-realtime-mini
+    OPENAI_REALTIME_VOICE: str = "marin"               # alternativas: cedar, alloy, coral
+    OPENAI_REALTIME_VAD: str = "semantic_vad"          # alternativa: server_vad
+    OPENAI_REALTIME_EAGERNESS: str = "low"             # low = deja pensar al usuario
 
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).

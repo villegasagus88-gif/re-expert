@@ -32,6 +32,28 @@ de siempre. OpenAI solo convierte audio ↔ texto.
 | `OPENAI_TTS_MODEL` | `gpt-4o-mini-tts` | Voz. Alternativa: `tts-1` |
 | `OPENAI_TTS_VOICE` | `nova` | Otras: `alloy`, `coral`, `sage`, `onyx`, `shimmer` |
 
+## Conversación en vivo (Realtime — ya activa con la misma key)
+
+El modo "Hablar con el experto" usa **OpenAI Realtime por WebRTC**
+(speech-to-speech real): el navegador abre un canal de audio directo con
+una **clave efímera de 10 minutos** que acuña nuestro backend — la key real
+nunca sale de Railway. No requiere configuración extra: con `OPENAI_API_KEY`
+cargada ya funciona.
+
+Variables opcionales del modo en vivo:
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `OPENAI_REALTIME_MODEL` | `gpt-realtime` | `gpt-realtime-mini` = ~4x más barato |
+| `OPENAI_REALTIME_VOICE` | `marin` | Otras: `cedar`, `alloy`, `coral` |
+| `OPENAI_REALTIME_VAD` | `semantic_vad` | `server_vad` si preferís corte por silencio fijo |
+| `OPENAI_REALTIME_EAGERNESS` | `low` | `low` deja pensar al usuario sin cortarlo |
+
+Costo del modo en vivo: ~US$ 0,05–0,10 por minuto de conversación con
+`gpt-realtime` (el premium); con `gpt-realtime-mini` baja a ~US$ 0,01–0,03.
+Si falla o no está disponible, cae solo al modo estándar (STT+TTS) y de
+último al navegador — el usuario nunca queda sin voz.
+
 ## Costos de referencia
 
 - Transcribir: ~US$ 0,003 por minuto hablado.
