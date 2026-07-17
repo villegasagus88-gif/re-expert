@@ -110,6 +110,13 @@ arregla solo; si no, ver el stripping de markdown antes del TTS.
   hipotecaria** (antes cotización fija 1460), y SRI (`integrity`) en el `<script>`
   de pdf.js.
 - **`sentry.js`** — SRI (`integrity`) en el bundle de Sentry.
+- **Rail de acceso rápido + auto-scroll inteligente** (app.html + app.css): al
+  colapsar el sidebar queda una columna de iconos para navegar (desktop); y el
+  chat/SOL ahora dejan de auto-bajar cuando el usuario scrollea arriba durante el
+  streaming (patrón ChatGPT), re-enganchando al volver al fondo. Heads-up: tu
+  `vcRTMirror` (voz en vivo) ahora usa `scrollBottom(true)` — fix de integración
+  para que el espejo de la sesión de voz siga bajando siempre (tu flujo no pasa
+  por sendMessage y no resetea el flag nuevo).
 - Todo verificado local (JS OK, probado en browser). Al publicar, chequeá que la
   sección Créditos traiga la cotización (necesita el endpoint nuevo
   `GET /api/creditos/dolar`, que ya está en el backend live).
