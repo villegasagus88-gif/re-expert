@@ -219,7 +219,7 @@ class Settings(BaseSettings):
     OPENAI_REALTIME_MODEL: str = "gpt-realtime"        # alternativa: gpt-realtime-mini
     OPENAI_REALTIME_VOICE: str = "marin"               # alternativas: cedar, alloy, coral
     OPENAI_REALTIME_VAD: str = "semantic_vad"          # alternativa: server_vad
-    OPENAI_REALTIME_EAGERNESS: str = "low"             # low = deja pensar al usuario
+    OPENAI_REALTIME_EAGERNESS: str = "auto"            # auto = fluido; low = deja pensar más
 
     # ===== CORS =====
     # Primary frontend URL — required in production (DEBUG=False).

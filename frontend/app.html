@@ -2590,10 +2590,24 @@ async function vcRTConnect(){
   dc.onclose=()=>{if(vcRT.active)vcRTError('Se cortó la conexión de voz');};
   const offer=await pc.createOffer();await pc.setLocalDescription(offer);
   const hdr={Authorization:'Bearer '+sess.client_secret,'Content-Type':'application/sdp'};
-  let sdp=await fetch('https://api.openai.com/v1/realtime/calls?model='+encodeURIComponent(sess.model),{method:'POST',headers:hdr,body:offer.sdp});
-  if(!sdp.ok)sdp=await fetch('https://api.openai.com/v1/realtime?model='+encodeURIComponent(sess.model),{method:'POST',headers:{...hdr,'OpenAI-Beta':'realtime=v1'},body:offer.sdp});
-  if(!sdp.ok)throw new Error('No se pudo abrir el canal de voz ('+sdp.status+')');
-  await pc.setRemoteDescription({type:'answer',sdp:await sdp.text()});
+  // Handshake robusto: probamos el endpoint que corresponde a cómo se acuñó
+  // la clave (GA o beta) y caemos al otro; cada intento con su try/catch para
+  // que un bloqueo de red/CORS no corte la cascada.
+  const intentos=sess.api==='beta'
+    ?[['https://api.openai.com/v1/realtime?model='+encodeURIComponent(sess.model),{...hdr,'OpenAI-Beta':'realtime=v1'}],
+      ['https://api.openai.com/v1/realtime/calls?model='+encodeURIComponent(sess.model),hdr]]
+    :[['https://api.openai.com/v1/realtime/calls?model='+encodeURIComponent(sess.model),hdr],
+      ['https://api.openai.com/v1/realtime?model='+encodeURIComponent(sess.model),{...hdr,'OpenAI-Beta':'realtime=v1'}]];
+  let answer=null,diag=[];
+  for(const[url,headers]of intentos){
+    try{
+      const r=await fetch(url,{method:'POST',headers,body:offer.sdp});
+      if(r.ok){answer=await r.text();break;}
+      diag.push(r.status);
+    }catch(err){diag.push('red/CSP');}
+  }
+  if(!answer)throw new Error('canal de voz rechazado ('+diag.join(', ')+')');
+  await pc.setRemoteDescription({type:'answer',sdp:answer});
   await new Promise((res,rej)=>{
     if(dc.readyState==='open')return res();
     dc.onopen=res;setTimeout(()=>rej(new Error('El canal de voz no abrió a tiempo')),8000);
@@ -2742,10 +2756,14 @@ async function vcOpenMode(){
   if(vcState.apiVoice&&window.RTCPeerConnection){
     vcState.rtMode=true;
     try{await vcRTConnect();}
-    catch(e){
-      vcState.rtMode=false;vcRTClose(false);
-      plnToast('Modo en vivo no disponible ('+(e.message||'error')+') — sigo con el modo estándar',false);
-      vcModeListen();
+    catch(e1){
+      vcRTClose(false);
+      try{await new Promise(r=>setTimeout(r,800));await vcRTConnect();}  // un reintento silencioso
+      catch(e2){
+        vcState.rtMode=false;vcRTClose(false);
+        plnToast('Modo en vivo no disponible ('+(e2.message||'error')+') — sigo con el modo estándar',false);
+        vcModeListen();
+      }
     }
   }else{
     vcModeListen();
