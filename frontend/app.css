@@ -1248,7 +1248,7 @@ select.pay-form-input{cursor:pointer}
 .vc-speaking{--orb-a:#ffc493;--orb-b:#c85812;--orb-c:#d24bc8}           /* hablando: terracota intenso + reflejo magenta */
 .vc-thinking{--orb-a:#eab288;--orb-b:#96470f;--orb-c:#8b5cf6}           /* pensando: cobre profundo + reflejo violeta */
 .vc-searching{--orb-a:#ffedb3;--orb-b:#e29c17;--orb-c:#ffd166}          /* buscando: dorado brillante */
-.vc-micmuted{--orb-a:#d4c4b4;--orb-b:#7d6c5c;--orb-c:#9a8878}           /* mic silenciado: apagado cálido */
+/* Mic silenciado: se indica SOLO en el botón (rojo); la esfera no cambia. */
 .vc-orb-halo{position:absolute;inset:-20px;border-radius:50%;
   background:conic-gradient(from 0deg,
     color-mix(in srgb,var(--orb-b) 50%,transparent),
@@ -1281,7 +1281,6 @@ select.pay-form-input{cursor:pointer}
 .vc-speaking .vc-orb-halo{opacity:1;animation-duration:5s}
 .vc-paused .vc-orb-core,.vc-idle .vc-orb-core{opacity:.45;animation:none}
 .vc-paused .vc-orb-halo,.vc-idle .vc-orb-halo{opacity:.2;animation-play-state:paused}
-.vc-micmuted .vc-orb-halo{opacity:.3}
 @keyframes vcBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 @keyframes vcThink{0%,100%{transform:scale(.95)}50%{transform:scale(1.03)}}
 @keyframes vcTalk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.92) scaleX(1.04)}}

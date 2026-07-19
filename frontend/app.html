@@ -2941,7 +2941,7 @@ function vcRTClose(release){
 function vcSetPhase(phase,statusTxt){
   vcState.phase=phase;
   const orb=$('#vcOrb'),st=$('#vcStatus');
-  if(orb)orb.className='vc-orb vc-'+phase+(vcState.micMuted?' vc-micmuted':'');
+  if(orb)orb.className='vc-orb vc-'+phase;  // el mute NO toca la esfera: se indica solo en el botón
   if(st)st.textContent=statusTxt||'';
 }
 async function vcModeListenApi(){
@@ -3004,7 +3004,6 @@ async function vcOpenMode(){
   vcState.mode=true;vcState.paused=false;vcState.rtMode=false;vcState.micMuted=false;
   vcState.mini=false;$('#vcOverlay').classList.remove('vc-min');
   const _mb=$('#vcMicToggle');if(_mb)_mb.classList.remove('muted');
-  const _ob=$('#vcOrb');if(_ob)_ob.classList.remove('vc-micmuted');
   $('#vcOverlay').classList.add('active');
   $('#vcPause').textContent='⏸ Pausar';
   if(vcState.apiVoice&&window.RTCPeerConnection){
@@ -3088,7 +3087,6 @@ function vcMicToggle(){
   if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=!vcState.micMuted&&!vcState.paused;});
   const b=$('#vcMicToggle');
   if(b){b.classList.toggle('muted',vcState.micMuted);b.title=vcState.micMuted?'Activar mi micrófono':'Silenciar mi micrófono';}
-  const orb=$('#vcOrb');if(orb)orb.classList.toggle('vc-micmuted',vcState.micMuted);
   if(vcState.micMuted)vcSetPhase(vcState.phase,'Micrófono silenciado — no te escucho, tocá el mic para volver');
   else vcSetPhase('listening','Escuchando… hablá cuando quieras');
 }
