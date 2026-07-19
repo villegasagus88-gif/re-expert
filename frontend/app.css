@@ -863,6 +863,8 @@ select.pay-form-input{cursor:pointer}
   animation:vcRecIn .22s var(--ease-out)}
 .vc-rec[hidden]{display:none}
 @keyframes vcRecIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.vc-rec-cancel{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;margin-left:-4px;transition:all .15s}
+.vc-rec-cancel:hover{background:rgba(239,68,68,.12);color:#ef4444}
 .vc-rec-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;flex:none;animation:vcRecPulse 1.3s ease-in-out infinite}
 @keyframes vcRecPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.78)}}
 #vcRecWave{flex:1;height:26px;min-width:0}
@@ -1232,25 +1234,56 @@ select.pay-form-input{cursor:pointer}
 .vc-overlay.active{display:flex}
 .vc-close{position:absolute;top:18px;right:18px;background:var(--bg-2)}
 .vc-center{display:flex;flex-direction:column;align-items:center;gap:20px}
-/* Orbe con halo aurora */
-.vc-orb{position:relative;width:170px;height:170px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .5s var(--ease-out)}
-.vc-orb-halo{position:absolute;inset:-18px;border-radius:50%;background:conic-gradient(from 0deg,rgba(190,81,3,.30),rgba(240,150,60,.12),rgba(143,61,2,.28),rgba(255,190,120,.14),rgba(190,81,3,.30));filter:blur(22px);opacity:.75;animation:vcHalo 9s linear infinite}
-.vc-orb-core{position:relative;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#e8934a,#BE5103 52%,#7a3402);box-shadow:0 18px 60px -12px rgba(190,81,3,.65),inset 0 2px 14px rgba(255,255,255,.28);transition:all .45s var(--ease-out)}
+/* Esfera 3D con degradé interactivo por estado. Los colores viven en
+   variables (--orb-a luz, --orb-b cuerpo, --orb-c reflejo) que cambian con
+   la fase y se transforman suavemente (@property; sin soporte, cambian secos). */
+@property --orb-a{syntax:'<color>';inherits:true;initial-value:#8fd8ff}
+@property --orb-b{syntax:'<color>';inherits:true;initial-value:#2f6bff}
+@property --orb-c{syntax:'<color>';inherits:true;initial-value:#7c5cff}
+.vc-orb{position:relative;width:170px;height:170px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  --orb-a:#8fd8ff;--orb-b:#2f6bff;--orb-c:#7c5cff;
+  transition:transform .5s var(--ease-out),--orb-a .7s ease,--orb-b .7s ease,--orb-c .7s ease}
+.vc-listening{--orb-a:#8fd8ff;--orb-b:#2f6bff;--orb-c:#7c5cff}          /* escuchando: azul-cian sereno */
+.vc-speaking{--orb-a:#ffd3a6;--orb-b:#ee6f2d;--orb-c:#d24bc8}           /* hablando: cálido de marca */
+.vc-thinking{--orb-a:#cbb8ff;--orb-b:#6d4aff;--orb-c:#38bdf8}           /* pensando: violeta profundo */
+.vc-searching{--orb-a:#9ff0da;--orb-b:#0e9f8a;--orb-c:#38bdf8}          /* buscando: verde agua tech */
+.vc-micmuted{--orb-a:#aab4c4;--orb-b:#51607a;--orb-c:#7a8aa0}           /* mic silenciado: apagado */
+.vc-orb-halo{position:absolute;inset:-20px;border-radius:50%;
+  background:conic-gradient(from 0deg,
+    color-mix(in srgb,var(--orb-b) 50%,transparent),
+    color-mix(in srgb,var(--orb-c) 34%,transparent),
+    color-mix(in srgb,var(--orb-a) 42%,transparent),
+    color-mix(in srgb,var(--orb-b) 26%,transparent),
+    color-mix(in srgb,var(--orb-b) 50%,transparent));
+  filter:blur(24px);opacity:.8;animation:vcHalo 9s linear infinite}
+.vc-orb-core{position:relative;width:110px;height:110px;border-radius:50%;
+  background:
+    radial-gradient(circle at 33% 24%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.32) 13%,rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 72% 84%,color-mix(in srgb,var(--orb-c) 80%,transparent) 0%,transparent 52%),
+    radial-gradient(circle at 36% 32%,var(--orb-a) 0%,var(--orb-b) 56%,color-mix(in srgb,var(--orb-b) 38%,#060a18) 100%);
+  box-shadow:
+    inset -16px -22px 42px rgba(5,8,24,.5),
+    inset 8px 12px 26px rgba(255,255,255,.24),
+    inset 0 0 46px color-mix(in srgb,var(--orb-c) 30%,transparent),
+    0 26px 70px -16px color-mix(in srgb,var(--orb-b) 62%,transparent);
+  transition:transform .45s var(--ease-out),opacity .45s ease}
+.vc-orb-core::after{content:"";position:absolute;left:18%;right:18%;bottom:7%;height:16%;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 100%,rgba(255,255,255,.30),transparent 70%);filter:blur(2px)}
 @keyframes vcHalo{to{transform:rotate(360deg)}}
-.vc-listening .vc-orb-core{animation:vcBreath 2s ease-in-out infinite}
+.vc-listening .vc-orb-core{animation:vcBreath 2.4s ease-in-out infinite}
 .vc-listening .vc-orb-halo{opacity:.9}
-.vc-thinking .vc-orb-core{animation:vcThink 1.15s ease-in-out infinite;filter:saturate(.85)}
+.vc-thinking .vc-orb-core{animation:vcThink 1.15s ease-in-out infinite}
 .vc-thinking .vc-orb-halo{animation-duration:3.5s}
 .vc-searching .vc-orb-core{animation:vcThink 1.15s ease-in-out infinite}
-.vc-searching .vc-orb-halo{animation-duration:1.8s;opacity:1;filter:blur(26px) hue-rotate(18deg)}
-.vc-speaking .vc-orb-core{animation:vcTalk .5s ease-in-out infinite}
-.vc-speaking .vc-orb-halo{opacity:1}
+.vc-searching .vc-orb-halo{animation-duration:1.8s;opacity:1}
+.vc-speaking .vc-orb-core{animation:vcTalk .55s ease-in-out infinite}
+.vc-speaking .vc-orb-halo{opacity:1;animation-duration:5s}
 .vc-paused .vc-orb-core,.vc-idle .vc-orb-core{opacity:.45;animation:none}
 .vc-paused .vc-orb-halo,.vc-idle .vc-orb-halo{opacity:.2;animation-play-state:paused}
-.vc-micmuted .vc-orb-halo{opacity:.25}
-@keyframes vcBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
-@keyframes vcThink{0%,100%{transform:scale(.94)}50%{transform:scale(1.03)}}
-@keyframes vcTalk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.9) scaleX(1.05)}}
+.vc-micmuted .vc-orb-halo{opacity:.3}
+@keyframes vcBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes vcThink{0%,100%{transform:scale(.95)}50%{transform:scale(1.03)}}
+@keyframes vcTalk{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.92) scaleX(1.04)}}
 .vc-status{font-size:16.5px;font-weight:700;letter-spacing:-.2px;color:var(--text-0);text-align:center;max-width:520px}
 .vc-transcript{min-height:44px;max-height:150px;overflow-y:auto;max-width:560px;text-align:center;font-size:13.5px;color:var(--text-2);line-height:1.55;padding:0 10px}
 .vc-t-user{color:var(--text-3);font-style:italic;margin-bottom:6px}
@@ -1270,7 +1303,19 @@ select.pay-form-input{cursor:pointer}
 .vc-pill-end{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff}
 .vc-pill-end:hover{color:#fff;opacity:.9}
 .vc-hint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);max-width:520px;text-align:center;font-size:10.5px;color:var(--text-3);line-height:1.5;padding:0 16px}
-@media(max-width:640px){.vc-orb{width:120px;height:120px}.vc-orb-core{width:74px;height:74px}}
+/* Modo mini: scrolleás y el overlay se aparta para leer el chat en vivo;
+   la esfera queda chica abajo (sigue mostrando el estado por color) y se
+   vuelve tocándola o llegando al fondo del chat y bajando un poco más. */
+.vc-overlay{transition:background .35s ease,backdrop-filter .35s ease}
+.vc-close,.vc-bottom,.vc-hint,.vc-status,.vc-transcript{transition:opacity .28s ease}
+.vc-center{transition:transform .45s var(--ease-out)}
+.vc-overlay.vc-min{background:transparent;backdrop-filter:none;pointer-events:none}
+.vc-overlay.vc-min .vc-close,.vc-overlay.vc-min .vc-bottom,.vc-overlay.vc-min .vc-hint,
+.vc-overlay.vc-min .vc-status,.vc-overlay.vc-min .vc-transcript{opacity:0;pointer-events:none}
+.vc-overlay.vc-min .vc-center{transform:translateY(calc(50vh - 112px)) scale(.38)}
+.vc-overlay.vc-min .vc-orb{pointer-events:auto;cursor:pointer}
+.vc-overlay.vc-min .vc-orb-halo{opacity:.55}
+@media(max-width:640px){.vc-orb{width:120px;height:120px}.vc-orb-core{width:74px;height:74px}.vc-overlay.vc-min .vc-center{transform:translateY(calc(50vh - 96px)) scale(.5)}}
 
 /* ====== ONBOARDING ====== */
 .ob-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}

@@ -854,6 +854,9 @@
     <div class="input-area" id="inputArea">
       <!-- Visual de dictado: barras de volumen en vivo mientras grabás -->
       <div class="vc-rec" id="vcRecBar" hidden>
+        <button class="vc-rec-cancel" id="vcRecCancel" title="Cancelar y borrar" aria-label="Cancelar el dictado y borrar lo grabado">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
         <span class="vc-rec-dot"></span>
         <canvas id="vcRecWave" aria-hidden="true"></canvas>
         <span class="vc-rec-time" id="vcRecTime">0:00</span>
@@ -894,7 +897,7 @@
           <button class="vc-pill vc-pill-end" id="vcEnd">Terminar</button>
         </div>
       </div>
-      <div class="vc-hint">Hablá con naturalidad: el experto te escucha y te responde con voz, usando el mismo Chat Experto de siempre. <strong>Beta</strong> — usa el micrófono y las voces de tu navegador.</div>
+      <div class="vc-hint">Hablá con naturalidad: podés interrumpir cuando quieras. Deslizá o scrolleá hacia arriba para leer el chat mientras te responde — tocá la esfera para volver. <strong>Beta</strong></div>
     </div>
 
     <!-- Crédito detalle Modal -->
@@ -2595,12 +2598,21 @@ function vcRecVizStop(){
   if(_vcRecViz){try{_vcRecViz.stop();}catch(e){}_vcRecViz=null;}
   const bar=$('#vcRecBar');if(bar)bar.hidden=true;
 }
+// Cancelar dictado (tacho, estilo WhatsApp): descarta lo grabado y no
+// transcribe nada; si era dictado del navegador, restaura el texto previo.
+function vcDictCancel(){
+  vcState.recCancelled=true;
+  if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}}
+  else if(vcState.dictating&&vcState.rec){try{vcState.rec.stop();}catch(e){}}
+  else vcRecVizStop();
+}
 async function vcToggleDictation(){
   if(vcState.apiVoice&&VC_REC){vcToggleApiDictation();return;}
   if(!VC_STT){plnToast('Tu navegador no soporta dictado por voz (probá Chrome o Edge)',false);return;}
   if(vcState.dictating){try{vcState.rec.stop();}catch(e){}return;}
   if(!(await vcEnsureMic()))return;
   const mic=$('#micBtn');
+  vcState.recCancelled=false;
   vcState.baseText=els.messageInput.value?els.messageInput.value.replace(/\s+$/,'')+' ':'';
   let finalAcc='';
   vcState.rec=vcNewRecognition(
@@ -2610,6 +2622,14 @@ async function vcToggleDictation(){
       vcState.dictating=false;mic.classList.remove('recording');mic.title='Dictar por voz';
       vcRecVizStop();
       if(!vcState.mode)vcReleaseMic();
+      if(vcState.recCancelled){
+        vcState.recCancelled=false;
+        els.messageInput.value=vcState.baseText.replace(/\s+$/,'');
+        autoResize();updateSendBtn();
+        plnToast('Dictado descartado');
+        els.messageInput.focus();
+        return;
+      }
       const m=vcErrMsg(err);if(m)plnToast(m,false);
       els.messageInput.focus();
     },true);
@@ -2625,6 +2645,7 @@ async function vcToggleApiDictation(){
   const mic=$('#micBtn');
   if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}return;}
   if(!(await vcEnsureMic()))return;
+  vcState.recCancelled=false;
   const chunks=[];
   const mr=new VC_REC(vcState.micStream,vcRecMime()?{mimeType:vcRecMime()}:undefined);
   vcState.mediaRec=mr;
@@ -2632,6 +2653,14 @@ async function vcToggleApiDictation(){
   mr.onstop=async()=>{
     vcState.mediaRec=null;
     vcRecVizStop();
+    if(vcState.recCancelled){
+      vcState.recCancelled=false;
+      mic.classList.remove('recording');mic.title='Dictar por voz';
+      if(!vcState.mode)vcReleaseMic();
+      plnToast('Dictado descartado');
+      els.messageInput.focus();
+      return;
+    }
     mic.classList.remove('recording');mic.classList.add('busy');mic.title='Transcribiendo…';
     if(!vcState.mode)vcReleaseMic();
     try{
@@ -2883,7 +2912,9 @@ function vcRTMirror(role,text){
     // durante la sesión el overlay impide re-enganchar scrolleando — sin force,
     // las líneas espejadas caerían fuera de pantalla (comportamiento pre-diff:
     // scroll incondicional).
-    if(els.messagesEl){els.messagesEl.style.display='';els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));scrollBottom(true);}
+    // En modo mini, si el usuario subió a leer no lo arrastramos al fondo;
+    // si está al fondo (o en overlay completo), sigue en vivo como siempre.
+    if(els.messagesEl){els.messagesEl.style.display='';els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));scrollBottom(!vcState.mini||vcAtChatBottom());}
     if(role==='assistant')setTimeout(vcAddListenBtns,150);
   }catch(e){}
 }
@@ -2971,6 +3002,7 @@ async function vcOpenMode(){
   switchView('chat');
   vcStopSpeak();
   vcState.mode=true;vcState.paused=false;vcState.rtMode=false;vcState.micMuted=false;
+  vcState.mini=false;$('#vcOverlay').classList.remove('vc-min');
   const _mb=$('#vcMicToggle');if(_mb)_mb.classList.remove('muted');
   const _ob=$('#vcOrb');if(_ob)_ob.classList.remove('vc-micmuted');
   $('#vcOverlay').classList.add('active');
@@ -2995,6 +3027,7 @@ function vcCloseMode(){
   // Flags PRIMERO: cualquier evento/tool en vuelo que resuelva después de
   // este punto se descarta — Terminar corta de inmediato, sin colas.
   vcState.mode=false;vcState.paused=false;vcState.micMuted=false;vcState.rtMode=false;
+  vcState.mini=false;$('#vcOverlay').classList.remove('vc-min');
   vcToolSoundStop();
   vcRTClose(false);
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
@@ -3005,6 +3038,49 @@ function vcCloseMode(){
   vcReleaseMic();
   $('#vcOverlay').classList.remove('active');
   vcSetPhase('idle','');
+}
+// ── Modo mini: scrolleás en la conversación en vivo y el overlay se aparta
+// para leer el chat mientras la IA sigue respondiendo; la esfera queda chica
+// abajo. Volvés tocándola o llegando al fondo del chat y bajando un poco más.
+function vcMiniSet(on){
+  if(!vcState.mode)return;
+  on=!!on;
+  if(vcState.mini===on)return;
+  vcState.mini=on;
+  const ov=$('#vcOverlay');if(ov)ov.classList.toggle('vc-min',on);
+  if(!on)scrollBottom(true);
+}
+function vcAtChatBottom(){
+  const m=els.messagesEl;if(!m)return true;
+  return m.scrollHeight-m.scrollTop-m.clientHeight<48;
+}
+function vcInitMini(){
+  const ov=$('#vcOverlay');if(!ov)return;
+  // Achicar: cualquier scroll/swipe sobre el overlay = "quiero ver el chat"
+  ov.addEventListener('wheel',e=>{
+    if(!vcState.mode||vcState.mini)return;
+    e.preventDefault();
+    if(Math.abs(e.deltaY)>6)vcMiniSet(true);
+  },{passive:false});
+  let ty=null;
+  ov.addEventListener('touchstart',e=>{ty=e.touches[0].clientY;},{passive:true});
+  ov.addEventListener('touchmove',e=>{
+    if(!vcState.mode||vcState.mini||ty==null)return;
+    if(Math.abs(e.touches[0].clientY-ty)>42){vcMiniSet(true);ty=null;}
+  },{passive:true});
+  ov.addEventListener('touchend',()=>{ty=null;},{passive:true});
+  // Volver: tocá la esfera, o fondo del chat + seguir bajando
+  $('#vcOrb')?.addEventListener('click',()=>{if(vcState.mini)vcMiniSet(false);});
+  window.addEventListener('wheel',e=>{
+    if(!vcState.mode||!vcState.mini)return;
+    if(e.deltaY>0&&vcAtChatBottom())vcMiniSet(false);
+  },{passive:true});
+  let wy=null;
+  window.addEventListener('touchstart',e=>{wy=e.touches[0].clientY;},{passive:true});
+  window.addEventListener('touchmove',e=>{
+    if(!vcState.mode||!vcState.mini||wy==null)return;
+    if(wy-e.touches[0].clientY>48&&vcAtChatBottom()){vcMiniSet(false);wy=null;}
+  },{passive:true});
 }
 function vcMicToggle(){
   if(!vcState.mode)return;
@@ -3077,6 +3153,8 @@ function initVoice(){
   $('#vcEnd')?.addEventListener('click',vcCloseMode);
   $('#vcPause')?.addEventListener('click',vcTogglePause);
   $('#vcMicToggle')?.addEventListener('click',vcMicToggle);
+  $('#vcRecCancel')?.addEventListener('click',vcDictCancel);
+  vcInitMini();
   $('#vcStopResp')?.addEventListener('click',()=>{
     if(vcState.rtMode){vcRTSend({type:'response.cancel'});vcRTSend({type:'output_audio_buffer.clear'});vcSetPhase('listening','Escuchando…');}
     else vcStopSpeak();
