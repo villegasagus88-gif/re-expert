@@ -1237,17 +1237,18 @@ select.pay-form-input{cursor:pointer}
 /* Esfera 3D con degradé interactivo por estado. Los colores viven en
    variables (--orb-a luz, --orb-b cuerpo, --orb-c reflejo) que cambian con
    la fase y se transforman suavemente (@property; sin soporte, cambian secos). */
-@property --orb-a{syntax:'<color>';inherits:true;initial-value:#8fd8ff}
-@property --orb-b{syntax:'<color>';inherits:true;initial-value:#2f6bff}
-@property --orb-c{syntax:'<color>';inherits:true;initial-value:#7c5cff}
+@property --orb-a{syntax:'<color>';inherits:true;initial-value:#ffdfb0}
+@property --orb-b{syntax:'<color>';inherits:true;initial-value:#e78b2e}
+@property --orb-c{syntax:'<color>';inherits:true;initial-value:#ff7847}
 .vc-orb{position:relative;width:170px;height:170px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  --orb-a:#8fd8ff;--orb-b:#2f6bff;--orb-c:#7c5cff;
+  --orb-a:#ffdfb0;--orb-b:#e78b2e;--orb-c:#ff7847;
   transition:transform .5s var(--ease-out),--orb-a .7s ease,--orb-b .7s ease,--orb-c .7s ease}
-.vc-listening{--orb-a:#8fd8ff;--orb-b:#2f6bff;--orb-c:#7c5cff}          /* escuchando: azul-cian sereno */
-.vc-speaking{--orb-a:#ffd3a6;--orb-b:#ee6f2d;--orb-c:#d24bc8}           /* hablando: cálido de marca */
-.vc-thinking{--orb-a:#cbb8ff;--orb-b:#6d4aff;--orb-c:#38bdf8}           /* pensando: violeta profundo */
-.vc-searching{--orb-a:#9ff0da;--orb-b:#0e9f8a;--orb-c:#38bdf8}          /* buscando: verde agua tech */
-.vc-micmuted{--orb-a:#aab4c4;--orb-b:#51607a;--orb-c:#7a8aa0}           /* mic silenciado: apagado */
+/* Paleta de marca (terracota): cada estado vive en la misma familia cálida */
+.vc-listening{--orb-a:#ffdfb0;--orb-b:#e78b2e;--orb-c:#ff9a5c}          /* escuchando: ámbar luminoso sereno */
+.vc-speaking{--orb-a:#ffc493;--orb-b:#c85812;--orb-c:#d24bc8}           /* hablando: terracota intenso + reflejo magenta */
+.vc-thinking{--orb-a:#eab288;--orb-b:#96470f;--orb-c:#8b5cf6}           /* pensando: cobre profundo + reflejo violeta */
+.vc-searching{--orb-a:#ffedb3;--orb-b:#e29c17;--orb-c:#ffd166}          /* buscando: dorado brillante */
+.vc-micmuted{--orb-a:#d4c4b4;--orb-b:#7d6c5c;--orb-c:#9a8878}           /* mic silenciado: apagado cálido */
 .vc-orb-halo{position:absolute;inset:-20px;border-radius:50%;
   background:conic-gradient(from 0deg,
     color-mix(in srgb,var(--orb-b) 50%,transparent),
