@@ -2777,8 +2777,11 @@ const VC_RT_TOOLS={
   async dejar_link_en_chat(args){
     const url=String((args&&args.url)||'').trim();
     if(!/^https?:\/\//i.test(url))throw new Error('URL inválida: pasá la URL completa tal como vino en la búsqueda');
-    vcChatLinks(null,[{titulo:(args&&args.titulo)||'',url}]);
-    return {resultado:'link dejado en el chat, avisale al usuario que lo tiene ahí'};
+    // Se junta con las demás fuentes y aparece como chip al pie de la
+    // respuesta (nada de mensajitos sueltos que ensucian el chat).
+    const seen=new Set((vcRT.pendingLinks||[]).map(l=>l.url));
+    if(!seen.has(url))vcRT.pendingLinks=((vcRT.pendingLinks||[]).concat([{titulo:(args&&args.titulo)||'',url}])).slice(0,6);
+    return {resultado:'listo, el link aparece al pie de tu respuesta en el chat'};
   },
   async buscar_en_internet(args){
     const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/web-search',{
@@ -2802,7 +2805,7 @@ const VC_RT_TOOLS={
 
 // Fuentes estilo ChatGPT: chips (favicon + nombre del sitio) que se adjuntan
 // a la respuesta que las usó. Visual + export, sin tocar la DB del chat.
-const VC_SRC_NAMES={zonaprop:'Zonaprop',argenprop:'Argenprop',mercadolibre:'MercadoLibre',properati:'Properati',lanacion:'La Nación',clarin:'Clarín',infobae:'Infobae',mdzol:'MDZ',cronista:'El Cronista',ambito:'Ámbito',bna:'Banco Nación',bancociudad:'Banco Ciudad',bancoprovincia:'Banco Provincia',hipotecario:'Banco Hipotecario',bcra:'BCRA',indec:'INDEC',reporteinmobiliario:'Reporte Inmobiliario',remax:'RE/MAX',iprofesional:'iProfesional',perfil:'Perfil',losandes:'Los Andes',diariouno:'Diario Uno',pagina12:'Página 12',memo:'MEMO',sitioandino:'Sitio Andino'};
+const VC_SRC_NAMES={zonaprop:'Zonaprop',argenprop:'Argenprop',mercadolibre:'MercadoLibre',properati:'Properati',lanacion:'La Nación',clarin:'Clarín',infobae:'Infobae',mdzol:'MDZ',cronista:'El Cronista',ambito:'Ámbito',bna:'Banco Nación',bancociudad:'Banco Ciudad',bancoprovincia:'Banco Provincia',hipotecario:'Banco Hipotecario',bcra:'BCRA',indec:'INDEC',reporteinmobiliario:'Reporte Inmobiliario',remax:'RE/MAX',iprofesional:'iProfesional',perfil:'Perfil',losandes:'Los Andes',diariouno:'Diario Uno',pagina12:'Página 12',memo:'MEMO',sitioandino:'Sitio Andino',paginasamarillas:'Páginas Amarillas',inmoclick:'Inmoclick',google:'Google'};
 function vcSrcName(url){
   try{
     const host=new URL(url).hostname.replace(/^www\./,'');
@@ -3088,16 +3091,13 @@ function vcLinkifyFromSources(rootEl,sources){
     const titles=sources.filter(s=>s&&s.url&&s.titulo).map(s=>({t:s.titulo.toLowerCase(),url:s.url}));
     if(!titles.length)return;
     const done=new Set();
-    const CONN=new Set(['de','del','la','el','los','las','y']);
-    // candidatos: rachas de palabras con mayúscula (con conectores adentro)
-    const re=/[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*(?:\s+(?:(?:de|del|la|el|los|las|y)\s+)?[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*)*/g;
     for(let node of vcTextNodes(rootEl)){
       let guard=0;
       while(node&&guard++<24){
         const txt=node.nodeValue;
-        re.lastIndex=0;
+        VC_ENT_RE.lastIndex=0;
         let m,hit=null;
-        while((m=re.exec(txt))&&!hit){
+        while((m=VC_ENT_RE.exec(txt))&&!hit){
           // la racha puede cruzar un punto de oración ("Cocucci. También"):
           // se evalúa cada segmento entre ". " por separado
           let cursor=0;
@@ -3105,7 +3105,10 @@ function vcLinkifyFromSources(rootEl,sources){
             const segAt=m[0].indexOf(seg,cursor);cursor=segAt+seg.length;
             const name=seg.replace(/[.\s]+$/,'').trim();
             const low=name.toLowerCase();
-            if(name.length>=4&&!CONN.has(low)&&!done.has(low)){
+            // solo nombres de ≥2 palabras reales y que no sean lugares:
+            // "Mendoza" o "Palermo" aparecen en títulos de fuentes pero NO son
+            // la entidad de la fuente (una provincia no es una inmobiliaria).
+            if(!done.has(low)&&vcEntWords(name)>=2&&!VC_GEO_BLOCK.has(low)){
               const src=titles.find(s=>s.t.includes(low));
               if(src){hit={start:m.index+segAt,end:m.index+segAt+name.length,url:src.url,low};break;}
             }
@@ -3113,6 +3116,49 @@ function vcLinkifyFromSources(rootEl,sources){
         }
         if(!hit)break;
         done.add(hit.low);
+        node=vcWrapLink(node,txt,hit.start,hit.end,hit.url);
+      }
+    }
+  }catch(e){}
+}
+// Racha de palabras con mayúscula (conectores adentro, sin "y": una
+// enumeración "Wynne y Ubajay" son DOS entidades, no una).
+const VC_ENT_RE=/[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*(?:\s+(?:(?:de|del|la|el|los|las)\s+)?[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*)*/g;
+const VC_ENT_CONN=new Set(['de','del','la','el','los','las']);
+function vcEntWords(name){return name.split(/\s+/).filter(w=>w&&!VC_ENT_CONN.has(w.toLowerCase())).length;}
+// Lugares (multi-palabra) que suelen aparecer en títulos de fuentes: JAMÁS
+// se linkean como si fueran empresas. Los de una palabra (Mendoza, Palermo)
+// ya quedan afuera por la regla de ≥2 palabras.
+const VC_GEO_BLOCK=new Set(['buenos aires','gran buenos aires','ciudad de buenos aires','capital federal','mar del plata','la plata','godoy cruz','san rafael','luján de cuyo','lujan de cuyo','gran mendoza','san isidro','vicente lópez','vicente lopez','puerto madero','santa fe','río negro','rio negro','san juan','san luis','la rioja','entre ríos','entre rios','villa carlos paz','nueva córdoba','nueva cordoba','san martín de los andes','san martin de los andes','villa la angostura','real estate','real state','zona norte','zona sur','zona oeste','américa latina','america latina']);
+// Empresas NOMBRADAS sin fuente propia (la búsqueda trajo directorios, no la
+// página de cada una): el nombre queda tocable igual, llevando a su búsqueda
+// directa en Google — un click y el usuario está viendo la empresa.
+const VC_COMPANY_KEY=/\b(inmobiliaria|inmobiliarias|propiedades|desarrollos|desarrolladora|constructora|construcciones|bienes\s+ra[ií]ces|arquitectos|estudio|grupo|group|industrial|s\.?a\.?|s\.?r\.?l\.?)\b/i;
+function vcLinkifyCompanies(rootEl){
+  try{
+    if(!rootEl)return;
+    const done=new Set();let count=0;
+    for(let node of vcTextNodes(rootEl)){
+      let guard=0;
+      while(node&&guard++<24&&count<6){
+        const txt=node.nodeValue;
+        VC_ENT_RE.lastIndex=0;
+        let m,hit=null;
+        while((m=VC_ENT_RE.exec(txt))&&!hit){
+          let cursor=0;
+          for(const seg of m[0].split(/\.\s+/)){
+            const segAt=m[0].indexOf(seg,cursor);cursor=segAt+seg.length;
+            const name=seg.replace(/[.\s]+$/,'').trim();
+            const low=name.toLowerCase();
+            if(!done.has(low)&&vcEntWords(name)>=2&&!VC_GEO_BLOCK.has(low)&&VC_COMPANY_KEY.test(name)){
+              hit={start:m.index+segAt,end:m.index+segAt+name.length,low,
+                   url:'https://www.google.com/search?q='+encodeURIComponent('"'+name+'"')};
+              break;
+            }
+          }
+        }
+        if(!hit)break;
+        done.add(hit.low);count++;
         node=vcWrapLink(node,txt,hit.start,hit.end,hit.url);
       }
     }
@@ -3180,6 +3226,7 @@ function vcRTMirror(role,text){
         // Sitios y entidades nombradas quedan tocables al instante:
         vcLinkifySites(textEl);                                  // diccionario de sitios conocidos
         vcLinkifyFromSources(textEl,vcRT.pendingLinks);          // entidades halladas en la búsqueda
+        vcLinkifyCompanies(textEl);                              // empresas nombradas sin fuente propia
         // Fuentes de las búsquedas de este turno: chips al pie del mensaje
         if(vcRT.pendingLinks&&vcRT.pendingLinks.length){
           const mc=nm&&nm.querySelector('.message-content');
