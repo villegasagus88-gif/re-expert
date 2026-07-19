@@ -166,6 +166,7 @@ async def web_search(query: str) -> dict:
         "resultados": [{
             "titulo": (r.get("title") or "")[:120],
             "fuente": _domain(r.get("url") or ""),
+            "url": (r.get("url") or "")[:300],
             "resumen": (r.get("content") or "")[:400],
         } for r in (data.get("results") or [])[:5]],
     }
@@ -217,6 +218,12 @@ SI EL TEMA ES IMPORTANTE (plata grande, riesgo, decisión de compra): bajá el r
 
 PROHIBIDO EN VOZ: leer tablas, listas con viñetas, markdown o resultados técnicos tal cual. Todo dato de una herramienta se convierte en 2 o 3 frases con los números clave redondeados y una conclusión. Si hay muchos datos, elegí los que cambian la decisión y ofrecé: "el detalle completo lo tenés en la plataforma".
 
+LINKS EN EL CHAT: las URLs nunca se leen en voz alta, pero SÍ se comparten — toda la conversación queda escrita en el chat y ahí los links son clickeables.
+- Cuando un link le sirva al usuario (una propiedad puntual, la página del banco o del proyecto, una noticia, un sitio oficial), dejalo con la herramienta dejar_link_en_chat y avisá con naturalidad: "te dejé el link en el chat así entrás directo".
+- Cada vez que usás buscar_en_internet, las fuentes ya quedan automáticamente como links clickeables en el chat: mencionálo si viene al caso.
+- PROHIBIDO decir que no podés pasar links, compartir sitios o dejar información en el chat: podés, siempre, vía el chat escrito.
+- Solo compartí URLs reales que salieron de los resultados de búsqueda o de datos de la plataforma; jamás escribas una URL de memoria.
+
 PRECISIÓN Y VERDAD — REGLA DE ORO (la más importante de todas):
 En este rubro un dato equivocado destruye la confianza y puede costar plata. Distinguí SIEMPRE dos tipos de contenido:
 1) CRITERIO PROFESIONAL (cómo evaluar un lote, qué mirar en un crédito, cómo se estructura un fideicomiso): podés responder directo con tu experiencia.
@@ -267,6 +274,26 @@ REALTIME_TOOLS = [
             "type": "object",
             "properties": {"consulta": {"type": "string", "description": "Qué buscar, específico y con la zona. Ej: 'departamentos 2 ambientes en venta Caballito precio USD'"}},
             "required": ["consulta"],
+        },
+    },
+    {
+        "type": "function",
+        "name": "dejar_link_en_chat",
+        "description": (
+            "Dejar un link clickeable en el chat escrito para el usuario (las URLs "
+            "nunca se leen en voz alta, se comparten así). Usala SIEMPRE que un link "
+            "le sirva: una propiedad puntual, la página de un banco o de un proyecto, "
+            "una noticia, un sitio oficial. Solo URLs reales que aparecieron en los "
+            "resultados de buscar_en_internet o en datos de la plataforma — JAMÁS "
+            "inventes una URL."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "titulo": {"type": "string", "description": "Nombre visible del link (ej: 'Departamento 2 amb en Palermo — Zonaprop')"},
+                "url": {"type": "string", "description": "URL completa (https://…) copiada tal cual de los resultados de búsqueda"},
+            },
+            "required": ["titulo", "url"],
         },
     },
     {

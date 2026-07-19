@@ -2774,14 +2774,54 @@ const VC_RT_TOOLS={
     return {proyectos:(d.projects||[]).map(p=>({nombre:p.name,planos:p.plans_count,obs_criticas:p.critical_alerts,obs_altas:p.high_alerts,tareas_pendientes:p.pending_tasks}))};
   },
   async recordar_dato_usuario(args){vcMemorySave(args.clave,args.valor);return {resultado:'guardado'};},
+  async dejar_link_en_chat(args){
+    const url=String((args&&args.url)||'').trim();
+    if(!/^https?:\/\//i.test(url))throw new Error('URL inválida: pasá la URL completa tal como vino en la búsqueda');
+    vcChatLinks(null,[{titulo:(args&&args.titulo)||'',url}]);
+    return {resultado:'link dejado en el chat, avisale al usuario que lo tiene ahí'};
+  },
   async buscar_en_internet(args){
     const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/web-search',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({consulta:(args&&args.consulta)||''})});
     if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'la búsqueda falló');}
-    return await r.json();
+    const d=await r.json();
+    // Como ChatGPT: las fuentes quedan clickeables en el chat, siempre.
+    try{
+      const links=((d&&d.resultados)||[]).filter(x=>x&&x.url).slice(0,3)
+        .map(x=>({titulo:x.titulo||x.fuente,url:x.url}));
+      if(links.length)vcChatLinks('Fuentes de la búsqueda',links);
+    }catch(e){}
+    return d;
   },
 };
+
+// Tarjeta de links clickeables en el chat (visual + export, sin tocar la DB) —
+// misma estructura de mensaje del asistente para que fluya con la conversación.
+function vcChatLinks(titulo,links){
+  try{
+    const items=(links||[]).filter(l=>l&&/^https?:\/\//i.test(l.url||''));
+    if(!items.length)return;
+    state.messages.push({role:'assistant',content:(titulo?'**'+titulo+'**\n':'')+items.map(l=>'- ['+(l.titulo||l.url)+']('+l.url+')').join('\n')});
+    const ws=$('#welcomeScreen');if(ws)ws.style.display='none';
+    if(!els.messagesEl)return;
+    els.messagesEl.style.display='';
+    const rows=items.map(l=>{
+      let dom='';try{dom=new URL(l.url).hostname.replace(/^www\./,'');}catch(e){}
+      return '<a class="vc-link" href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'
+        +'<img class="vc-link-fav" src="https://www.google.com/s2/favicons?sz=64&domain='+encodeURIComponent(dom)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">'
+        +'<span class="vc-link-main"><span class="vc-link-title">'+esc(l.titulo||dom||l.url)+'</span>'
+        +'<span class="vc-link-dom">'+esc(dom)+'</span></span>'
+        +'<svg class="vc-link-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg></a>';
+    }).join('');
+    els.messagesEl.insertAdjacentHTML('beforeend',
+      '<div class="message message-assistant"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content">'
+      +'<div class="message-sender">RE Expert</div>'
+      +'<div class="vc-linkcard">'+(titulo?'<div class="vc-linkcard-t">'+esc(titulo)+'</div>':'')+rows+'</div>'
+      +'</div></div></div>');
+    scrollBottom(!vcState.mini||vcAtChatBottom());
+  }catch(e){}
+}
 
 // Sonido sutil de "buscando" (WebAudio sintetizado, sin archivos): blips
 // suaves alternados mientras corre una herramienta — como ChatGPT.
@@ -2878,8 +2918,9 @@ async function vcRTEvent(e){
   if(t==='response.function_call_arguments.done'){       // tool call
     let args={};try{args=JSON.parse(ev.arguments||'{}');}catch(err){}
     const buscando=ev.name==='buscar_en_internet';
-    vcSetPhase('searching',buscando?'Buscando en internet…':'Consultando datos de la plataforma…');
-    vcToolSoundStart();
+    // Acciones instantáneas (dejar un link, recordar un dato): sin fase ni blips
+    const instant=ev.name==='dejar_link_en_chat'||ev.name==='recordar_dato_usuario';
+    if(!instant){vcSetPhase('searching',buscando?'Buscando en internet…':'Consultando datos de la plataforma…');vcToolSoundStart();}
     let out;
     try{
       const fn=VC_RT_TOOLS[ev.name];
