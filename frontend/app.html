@@ -2786,38 +2786,54 @@ const VC_RT_TOOLS={
       body:JSON.stringify({consulta:(args&&args.consulta)||''})});
     if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'la búsqueda falló');}
     const d=await r.json();
-    // Como ChatGPT: las fuentes quedan clickeables en el chat, siempre.
+    // Como ChatGPT: las fuentes quedan pendientes y se adjuntan como chips
+    // al final del mensaje de respuesta que las usó (vcRTMirror).
     try{
-      const links=((d&&d.resultados)||[]).filter(x=>x&&x.url).slice(0,3)
+      const links=((d&&d.resultados)||[]).filter(x=>x&&x.url).slice(0,4)
         .map(x=>({titulo:x.titulo||x.fuente,url:x.url}));
-      if(links.length)vcChatLinks('Fuentes de la búsqueda',links);
+      if(links.length){
+        const seen=new Set((vcRT.pendingLinks||[]).map(l=>l.url));
+        vcRT.pendingLinks=((vcRT.pendingLinks||[]).concat(links.filter(l=>!seen.has(l.url)))).slice(0,5);
+      }
     }catch(e){}
     return d;
   },
 };
 
-// Tarjeta de links clickeables en el chat (visual + export, sin tocar la DB) —
-// misma estructura de mensaje del asistente para que fluya con la conversación.
+// Fuentes estilo ChatGPT: chips (favicon + nombre del sitio) que se adjuntan
+// a la respuesta que las usó. Visual + export, sin tocar la DB del chat.
+const VC_SRC_NAMES={zonaprop:'Zonaprop',argenprop:'Argenprop',mercadolibre:'MercadoLibre',properati:'Properati',lanacion:'La Nación',clarin:'Clarín',infobae:'Infobae',mdzol:'MDZ',cronista:'El Cronista',ambito:'Ámbito',bna:'Banco Nación',bancociudad:'Banco Ciudad',bancoprovincia:'Banco Provincia',hipotecario:'Banco Hipotecario',bcra:'BCRA',indec:'INDEC',reporteinmobiliario:'Reporte Inmobiliario',remax:'RE/MAX',iprofesional:'iProfesional',perfil:'Perfil',losandes:'Los Andes',diariouno:'Diario Uno',pagina12:'Página 12',memo:'MEMO',sitioandino:'Sitio Andino'};
+function vcSrcName(url){
+  try{
+    const host=new URL(url).hostname.replace(/^www\./,'');
+    const parts=host.split('.');
+    for(const p of parts){if(VC_SRC_NAMES[p])return VC_SRC_NAMES[p];}
+    // sin nombre conocido: el label principal (saltea subdominios y TLD doble .com.ar)
+    const base=parts[parts.length-(/\.(com|gob|org|net|edu)\.ar$/.test(host)?3:2)]||parts[0];
+    return base.charAt(0).toUpperCase()+base.slice(1);
+  }catch(e){return url;}
+}
+function vcSourceChipsHTML(links){
+  const items=(links||[]).filter(l=>l&&/^https?:\/\//i.test(l.url||''));
+  if(!items.length)return '';
+  return '<div class="vc-srcs">'+items.map(l=>{
+    let dom='';try{dom=new URL(l.url).hostname.replace(/^www\./,'');}catch(e){}
+    return '<a class="vc-chip" href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer" title="'+esc(l.titulo||dom)+'">'
+      +'<img class="vc-chip-fav" src="https://www.google.com/s2/favicons?sz=64&domain='+encodeURIComponent(dom)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">'
+      +'<span>'+esc(vcSrcName(l.url))+'</span></a>';
+  }).join('')+'</div>';
+}
 function vcChatLinks(titulo,links){
   try{
-    const items=(links||[]).filter(l=>l&&/^https?:\/\//i.test(l.url||''));
-    if(!items.length)return;
-    state.messages.push({role:'assistant',content:(titulo?'**'+titulo+'**\n':'')+items.map(l=>'- ['+(l.titulo||l.url)+']('+l.url+')').join('\n')});
+    const html=vcSourceChipsHTML(links);
+    if(!html)return;
+    state.messages.push({role:'assistant',content:(titulo?'**'+titulo+'**\n':'')+links.map(l=>'- ['+(l.titulo||l.url)+']('+l.url+')').join('\n')});
     const ws=$('#welcomeScreen');if(ws)ws.style.display='none';
     if(!els.messagesEl)return;
     els.messagesEl.style.display='';
-    const rows=items.map(l=>{
-      let dom='';try{dom=new URL(l.url).hostname.replace(/^www\./,'');}catch(e){}
-      return '<a class="vc-link" href="'+esc(l.url)+'" target="_blank" rel="noopener noreferrer">'
-        +'<img class="vc-link-fav" src="https://www.google.com/s2/favicons?sz=64&domain='+encodeURIComponent(dom)+'" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">'
-        +'<span class="vc-link-main"><span class="vc-link-title">'+esc(l.titulo||dom||l.url)+'</span>'
-        +'<span class="vc-link-dom">'+esc(dom)+'</span></span>'
-        +'<svg class="vc-link-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg></a>';
-    }).join('');
     els.messagesEl.insertAdjacentHTML('beforeend',
       '<div class="message message-assistant"><div class="message-inner"><div class="message-avatar">RE</div><div class="message-content">'
-      +'<div class="message-sender">RE Expert</div>'
-      +'<div class="vc-linkcard">'+(titulo?'<div class="vc-linkcard-t">'+esc(titulo)+'</div>':'')+rows+'</div>'
+      +(titulo?'<div class="vc-linkcard-t">'+esc(titulo)+'</div>':'')+html
       +'</div></div></div>');
     scrollBottom(!vcState.mini||vcAtChatBottom());
   }catch(e){}
@@ -3011,8 +3027,18 @@ function vcRTMirror(role,text){
     if(els.messagesEl){
       els.messagesEl.style.display='';
       els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));
-      // Sitios nombrados (Zonaprop, bancos, etc.) quedan tocables al instante
-      if(role==='assistant'){const nm=els.messagesEl.lastElementChild;vcLinkifySites(nm&&nm.querySelector('.message-text'));}
+      if(role==='assistant'){
+        const nm=els.messagesEl.lastElementChild;
+        // Sitios nombrados (Zonaprop, bancos, etc.) quedan tocables al instante
+        vcLinkifySites(nm&&nm.querySelector('.message-text'));
+        // Fuentes de las búsquedas de este turno: chips al pie del mensaje
+        if(vcRT.pendingLinks&&vcRT.pendingLinks.length){
+          const mc=nm&&nm.querySelector('.message-content');
+          if(mc)mc.insertAdjacentHTML('beforeend',vcSourceChipsHTML(vcRT.pendingLinks));
+          state.messages.push({role:'assistant',content:'Fuentes: '+vcRT.pendingLinks.map(l=>'['+(l.titulo||l.url)+']('+l.url+')').join(' · ')});
+          vcRT.pendingLinks=null;
+        }
+      }
       scrollBottom(!vcState.mini||vcAtChatBottom());
     }
     if(role==='assistant')setTimeout(vcAddListenBtns,150);
@@ -3025,6 +3051,8 @@ function vcRTError(msg){
 }
 function vcRTClose(release){
   vcRT.active=false;
+  // Fuentes que quedaron sin adjuntar (se cerró antes de la respuesta): al chat igual
+  if(vcRT.pendingLinks&&vcRT.pendingLinks.length){try{vcChatLinks('Fuentes',vcRT.pendingLinks);}catch(e){}vcRT.pendingLinks=null;}
   // Corte INMEDIATO: cancelar la respuesta en curso y vaciar el audio ya
   // buffereado — cerrar el peer solo frena lo que viene, no lo que ya llegó.
   vcRTSend({type:'response.cancel'});
