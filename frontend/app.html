@@ -2943,6 +2943,59 @@ function vcRTTranscript(){
   el.innerHTML=(vcRT.userLine?'<div class="vc-t-user">'+esc(vcRT.userLine)+'</div>':'')
               +(vcRT.aiLine?'<div class="vc-t-ai">'+esc(vcRT.aiLine)+'</div>':'');
 }
+// Sitios del rubro: si el asesor los NOMBRA, el nombre queda tocable en el
+// chat — misma tipografía y color, solo un subrayado sutil (nada de URLs
+// azules largas). Orden: nombres más largos primero para ganar el match.
+const VC_SITE_LINKS=[
+  ['MercadoLibre Inmuebles','https://inmuebles.mercadolibre.com.ar'],
+  ['Mercado Libre Inmuebles','https://inmuebles.mercadolibre.com.ar'],
+  ['Reporte Inmobiliario','https://www.reporteinmobiliario.com'],
+  ['Banco Hipotecario','https://www.hipotecario.com.ar'],
+  ['Banco Provincia','https://www.bancoprovincia.com.ar'],
+  ['Banco Nación','https://www.bna.com.ar'],
+  ['Banco Ciudad','https://www.bancociudad.com.ar'],
+  ['MercadoLibre','https://inmuebles.mercadolibre.com.ar'],
+  ['Mercado Libre','https://inmuebles.mercadolibre.com.ar'],
+  ['Zona Prop','https://www.zonaprop.com.ar'],
+  ['Zonaprop','https://www.zonaprop.com.ar'],
+  ['Argenprop','https://www.argenprop.com'],
+  ['Properati','https://www.properati.com.ar'],
+  ['BCRA','https://www.bcra.gob.ar'],
+  ['INDEC','https://www.indec.gob.ar'],
+  ['ARCA','https://www.arca.gob.ar'],
+  ['AFIP','https://www.afip.gob.ar'],
+];
+const VC_SITE_RE=new RegExp('\\b('+VC_SITE_LINKS.map(([n])=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\\b','gi');
+const VC_SITE_MAP=Object.fromEntries(VC_SITE_LINKS.map(([n,u])=>[n.toLowerCase(),u]));
+function vcLinkifySites(rootEl){
+  try{
+    if(!rootEl)return;
+    const walker=document.createTreeWalker(rootEl,NodeFilter.SHOW_TEXT,null);
+    const nodes=[];let n;
+    while((n=walker.nextNode()))nodes.push(n);
+    for(const node of nodes){
+      if(node.parentElement&&node.parentElement.closest('a,code,pre'))continue;
+      const txt=node.nodeValue;
+      VC_SITE_RE.lastIndex=0;
+      if(!VC_SITE_RE.test(txt))continue;
+      VC_SITE_RE.lastIndex=0;
+      const frag=document.createDocumentFragment();
+      let last=0,m;
+      while((m=VC_SITE_RE.exec(txt))){
+        const url=VC_SITE_MAP[m[1].toLowerCase()];
+        if(!url)continue;
+        if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+        const a=document.createElement('a');
+        a.className='vc-sitelink';a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+        a.textContent=m[1];  // conserva la mayúscula tal como se escribió
+        frag.appendChild(a);
+        last=m.index+m[1].length;
+      }
+      if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));
+      node.parentNode.replaceChild(frag,node);
+    }
+  }catch(e){}
+}
 // Espeja la conversación de voz en el chat abierto (visual + export).
 // El MOTOR del chat no se toca: es solo presentación de lo hablado.
 function vcRTMirror(role,text){
@@ -2955,7 +3008,13 @@ function vcRTMirror(role,text){
     // scroll incondicional).
     // En modo mini, si el usuario subió a leer no lo arrastramos al fondo;
     // si está al fondo (o en overlay completo), sigue en vivo como siempre.
-    if(els.messagesEl){els.messagesEl.style.display='';els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));scrollBottom(!vcState.mini||vcAtChatBottom());}
+    if(els.messagesEl){
+      els.messagesEl.style.display='';
+      els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));
+      // Sitios nombrados (Zonaprop, bancos, etc.) quedan tocables al instante
+      if(role==='assistant'){const nm=els.messagesEl.lastElementChild;vcLinkifySites(nm&&nm.querySelector('.message-text'));}
+      scrollBottom(!vcState.mini||vcAtChatBottom());
+    }
     if(role==='assistant')setTimeout(vcAddListenBtns,150);
   }catch(e){}
 }

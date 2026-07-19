@@ -873,6 +873,11 @@ select.pay-form-input{cursor:pointer}
 @media (max-width:560px){.vc-rec-hint{display:none}}
 @media (prefers-reduced-motion:reduce){.vc-rec,.vc-rec-dot{animation:none}}
 
+/* Sitio nombrado en la conversación = link discreto: misma tipografía y
+   color del texto, solo una leve línea abajo; al hover toma el color marca. */
+.message-text .vc-sitelink{color:inherit;font:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--accent-brand) 50%,transparent);transition:color .15s,text-decoration-color .15s}
+.message-text .vc-sitelink:hover{color:var(--accent-brand);text-decoration-color:var(--accent-brand)}
+
 /* Tarjeta de links en el chat (fuentes de búsqueda / links del asesor de voz) */
 .vc-linkcard{display:flex;flex-direction:column;gap:6px;margin-top:4px;max-width:440px}
 .vc-linkcard-t{font-size:11.5px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;color:var(--text-3);margin-bottom:2px}
