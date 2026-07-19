@@ -376,7 +376,10 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 /* Skyline de edificios sólo detrás del chat: viewChat transparente deja ver el
    canvas (z-index:0 en #main); las vistas de datos son opacas y lo tapan. */
 #viewChat{background:transparent}
-.skyline-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+/* fixed (no absolute): el canvas se mide contra la PANTALLA, no contra .main →
+   abrir/cerrar el sidebar no cambia su tamaño → cero re-seed de edificios (el
+   estirón feo). El sidebar (z-index:100) y el rail (99) quedan por delante. */
+.skyline-bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 /* Toggle global de animaciones (botón #animToggle en la topbar). Con OFF se
    oculta el skyline y se anulan animaciones/transiciones decorativas. */
 [data-animations="off"] .skyline-bg{display:none!important}
