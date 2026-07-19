@@ -80,6 +80,60 @@ async def speak(text: str) -> bytes:
     return resp.content
 
 
+SPOKEN_SCRIPT_PROMPT = (
+    "Convertís respuestas escritas de un chat experto en Real Estate argentino en un "
+    "GUION HABLADO para leer en voz alta: cómo se lo contaría una asesora de confianza "
+    "al usuario, con naturalidad.\n"
+    "Reglas:\n"
+    "- Español rioplatense, cálido y profesional, en primera persona.\n"
+    "- Empezá por la conclusión o el dato principal; después el porqué y los detalles que importan.\n"
+    "- Conservá TODOS los datos sustantivos (cifras, nombres, condiciones, advertencias). "
+    "Eliminá relleno, muletillas de documento y repeticiones.\n"
+    "- Nada de markdown, títulos, viñetas, numeraciones, tablas, emojis ni URLs. "
+    "Si hay una tabla, contá lo que muestra en una o dos frases comparativas con criterio "
+    "(el mejor, el peor, la diferencia que importa) — jamás la leas fila por fila.\n"
+    "- Números humanizados para el oído: 'ciento veinticinco mil dólares' o '125 mil dólares', "
+    "'cerca del diecinueve por ciento', 'FOT' se dice 'efe o té', 'm2' se dice 'metros cuadrados'.\n"
+    "- Frases cortas, puntuación pensada para respirar.\n"
+    "- Si la respuesta es muy larga, contá lo esencial completo agrupando con criterio, "
+    "sin listas interminables.\n"
+    "- Devolvé SOLO el guion, sin comentarios ni encabezados."
+)
+
+
+async def spoken_script(text: str) -> str:
+    """Respuesta escrita del chat → guion natural para leer en voz alta.
+
+    Usa el modelo rápido de Anthropic (misma cuenta del chat). Si el modelo
+    rápido no está disponible, reintenta una vez con el modelo principal.
+    """
+    import asyncio
+
+    from services.anthropic_service import get_client  # lazy: evita ciclos de import
+
+    client = get_client()
+    last_err: Exception | None = None
+    for model in (settings.ANTHROPIC_MODEL_FAST, settings.ANTHROPIC_MODEL):
+        try:
+            msg = await asyncio.wait_for(
+                client.messages.create(
+                    model=model,
+                    max_tokens=900,
+                    system=SPOKEN_SCRIPT_PROMPT,
+                    messages=[{"role": "user", "content": text[:12000]}],
+                ),
+                timeout=12.0,
+            )
+            out = "".join(
+                b.text for b in msg.content if getattr(b, "type", "") == "text"
+            ).strip()
+            if out:
+                return out
+        except Exception as exc:  # noqa: BLE001 — probamos el siguiente modelo
+            last_err = exc
+    raise RuntimeError("No se pudo preparar la lectura") from last_err
+
+
 async def web_search(query: str) -> dict:
     """Búsqueda web en vivo para el asesor de voz (Tavily).
 

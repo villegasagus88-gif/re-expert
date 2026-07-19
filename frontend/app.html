@@ -852,6 +852,13 @@
 
     <!-- Input (only visible in chat view) -->
     <div class="input-area" id="inputArea">
+      <!-- Visual de dictado: barras de volumen en vivo mientras grabás -->
+      <div class="vc-rec" id="vcRecBar" hidden>
+        <span class="vc-rec-dot"></span>
+        <canvas id="vcRecWave" aria-hidden="true"></canvas>
+        <span class="vc-rec-time" id="vcRecTime">0:00</span>
+        <span class="vc-rec-hint">Tocá el mic para terminar</span>
+      </div>
       <div class="input-wrapper">
         <textarea id="messageInput" aria-label="Consulta al chat experto" placeholder="Consulta sobre tu proyecto inmobiliario..." rows="1" autofocus></textarea>
         <button class="btn-voice" id="micBtn" title="Dictar por voz" style="display:none" aria-label="Dictar por voz">
@@ -2318,30 +2325,74 @@ function vcStopSpeak(){
   VC_TTS.cancel();
   if(vcState.speakingBtn){vcState.speakingBtn.classList.remove('active');vcState.speakingBtn.innerHTML=vcListenIcon()+' Escuchar';vcState.speakingBtn=null;}
 }
-// TTS premium: pide el MP3 al backend por oraciones y lo reproduce en cadena.
-// Si la API falla, cae a la voz del navegador sin que el usuario haga nada.
-async function vcSpeakApi(text,onEnd,cacheEl){
-  const clean=vcStripMd(text);
-  if(!clean){if(onEnd)onEnd();return;}
-  // Reproducción cacheada (no volver a pagar por re-escuchar la misma respuesta)
-  if(cacheEl&&cacheEl._vcUrl){vcPlayUrl(cacheEl._vcUrl,onEnd);return;}
+// TTS premium en 2 pasos: 1) la respuesta escrita se convierte en un GUION
+// hablado natural (como lo contaría una asesora, sin estructura de documento);
+// 2) se sintetiza por fragmentos CORTOS en pipeline — el primero es chico para
+// arrancar enseguida y el siguiente se pide mientras suena el actual.
+// Si algo falla, cae a la voz del navegador sin que el usuario haga nada.
+async function vcSpokenScript(text,cacheEl,signal){
+  if(cacheEl&&cacheEl._vcScript)return cacheEl._vcScript;
+  try{
+    const to=new AbortController();
+    const t=setTimeout(()=>to.abort(),9000);
+    if(signal)signal.addEventListener('abort',()=>to.abort());
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/speak-script',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:String(text||'').slice(0,12000)}),signal:to.signal});
+    clearTimeout(t);
+    if(!r.ok)throw new Error('script '+r.status);
+    const sc=((await r.json()).script||'').trim();
+    if(sc){if(cacheEl)cacheEl._vcScript=sc;return sc;}
+  }catch(e){}
+  return vcStripMd(text); // sin guion no se pierde nada: se lee el texto limpio
+}
+function vcTtsChunks(script){
+  const sents=(script.match(/[^.!?\n]+[.!?]+["»)]?|[^.!?\n]+$/g)||[script]).map(x=>x.trim()).filter(Boolean);
   const chunks=[];let buf='';
-  for(const sent of (clean.match(/[^.!?\n]+[.!?]?/g)||[clean])){
-    if((buf+sent).length>3800){if(buf)chunks.push(buf);buf=sent;}else buf+=sent;
+  for(const sn of sents){
+    const limit=chunks.length===0?230:650;  // 1º corto = arranque rápido
+    if(buf&&(buf+' '+sn).length>limit){chunks.push(buf);buf=sn;}
+    else buf=buf?buf+' '+sn:sn;
   }
   if(buf)chunks.push(buf);
+  return chunks;
+}
+function vcPlayChain(urls,onEnd){
+  let i=0;
+  const next=()=>{if(i>=urls.length){if(onEnd)onEnd();return;}vcPlayUrl(urls[i++],next);};
+  next();
+}
+async function vcSpeakApi(text,onEnd,cacheEl){
+  // Reproducción cacheada (no volver a pagar por re-escuchar la misma respuesta)
+  if(cacheEl&&cacheEl._vcUrls&&cacheEl._vcUrls.length){vcPlayChain(cacheEl._vcUrls,onEnd);return;}
   const ctrl=new AbortController();vcState.speakAbort=ctrl;
+  vcPlayer.label('Preparando la lectura…');
+  const script=await vcSpokenScript(text,cacheEl,ctrl.signal);
+  if(ctrl.signal.aborted)return;
+  if(!script){vcState.speakAbort=null;if(onEnd)onEnd();return;}
+  const chunks=vcTtsChunks(script);
+  const urls=new Array(chunks.length),fetching=new Array(chunks.length);
+  const fetchChunk=i=>{
+    if(i>=chunks.length)return Promise.resolve(null);
+    if(!fetching[i])fetching[i]=window.REAuthService.authFetch(apiBase()+'/api/voice/speak',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:chunks[i]}),signal:ctrl.signal})
+      .then(r=>{if(!r.ok)throw new Error('speak '+r.status);return r.blob();})
+      .then(b=>{urls[i]=URL.createObjectURL(b);return urls[i];});
+    return fetching[i];
+  };
   let i=0;
   const next=async()=>{
     if(ctrl.signal.aborted)return;
-    if(i>=chunks.length){vcState.speakAbort=null;if(onEnd)onEnd();return;}
+    if(i>=chunks.length){
+      vcState.speakAbort=null;
+      if(cacheEl&&urls.every(Boolean))cacheEl._vcUrls=urls.slice();
+      if(onEnd)onEnd();return;
+    }
     try{
-      const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/speak',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text:chunks[i]}),signal:ctrl.signal});
-      if(!r.ok)throw new Error('speak '+r.status);
-      const url=URL.createObjectURL(await r.blob());
-      if(cacheEl&&chunks.length===1)cacheEl._vcUrl=url;
+      const url=await fetchChunk(i);
+      if(ctrl.signal.aborted)return;
+      fetchChunk(i+1);  // prefetch: el próximo se genera mientras suena este
       i++;
       vcPlayUrl(url,next);
     }catch(e){
@@ -2393,10 +2444,12 @@ const vcPlayer=(()=>{
   function updateSpeed(){if(speedBtn)speedBtn.textContent=vcState.rate+'×';}
   function cycleSpeed(){const i=VC_RATES.indexOf(vcState.rate);vcState.rate=VC_RATES[(i+1)%VC_RATES.length];if(vcState.audioEl)vcState.audioEl.playbackRate=vcState.rate;updateSpeed();}
   function onTime(){const a=vcState.audioEl;if(!a||seeking||!isFinite(a.duration))return;seek.value=Math.round(a.currentTime/a.duration*1000);timeEl.textContent=fmt(a.duration-a.currentTime);}
+  function setLabel(t){if(!el)build();const l=el.querySelector('.vc-pl-label');if(l)l.lastChild.textContent=t;}
   return {
     show(){if(!el)build();el.hidden=false;syncPlay();updateSpeed();},
     hide(){if(el)el.hidden=true;},
-    bind(a){if(!el)build();a.playbackRate=vcState.rate;a.addEventListener('timeupdate',onTime);a.addEventListener('play',syncPlay);a.addEventListener('pause',syncPlay);a.addEventListener('loadedmetadata',onTime);seek.value=0;syncPlay();},
+    label:setLabel,
+    bind(a){if(!el)build();setLabel('Escuchando la respuesta');a.playbackRate=vcState.rate;a.addEventListener('timeupdate',onTime);a.addEventListener('play',syncPlay);a.addEventListener('pause',syncPlay);a.addEventListener('loadedmetadata',onTime);seek.value=0;syncPlay();},
   };
 })();
 // Ruteo: API premium si está habilitada; si no, voz del navegador.
@@ -2494,6 +2547,54 @@ function vcNewRecognition(interimCb,finalCb,endCb,continuous){
   rec.onerror=ev=>fire(ev.error);
   return rec;
 }
+// Visual de grabación estilo nota de voz: barras de volumen en vivo + timer.
+// Lee el vcState.micStream ya abierto (no pide otro permiso ni otro stream).
+let _vcRecViz=null;
+function vcRecVizStart(){
+  const bar=$('#vcRecBar');
+  if(!bar||!vcState.micStream||!vcState.micStream.active)return;
+  vcRecVizStop();
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const an=ctx.createAnalyser();an.fftSize=1024;
+    ctx.createMediaStreamSource(vcState.micStream).connect(an);
+    const buf=new Float32Array(an.fftSize);
+    const canvas=$('#vcRecWave'),c2=canvas.getContext('2d');
+    bar.hidden=false;
+    const dpr=window.devicePixelRatio||1;
+    canvas.width=Math.max(1,canvas.clientWidth*dpr);canvas.height=Math.max(1,canvas.clientHeight*dpr);
+    const color=(getComputedStyle(document.documentElement).getPropertyValue('--accent-brand')||'#2563eb').trim();
+    const bars=[],bw=3*dpr,gap=3*dpr,t0=Date.now();
+    const timeEl=$('#vcRecTime');
+    let raf=0,frame=0;
+    const draw=()=>{
+      an.getFloatTimeDomainData(buf);
+      let sum=0;for(let k=0;k<buf.length;k++)sum+=buf[k]*buf[k];
+      const rms=Math.sqrt(sum/buf.length);
+      if(frame++%3===0)bars.push(Math.min(1,rms*8));   // ~20 barras/seg
+      const W=canvas.width,H=canvas.height,maxBars=Math.floor(W/(bw+gap));
+      if(bars.length>maxBars)bars.splice(0,bars.length-maxBars);
+      c2.clearRect(0,0,W,H);
+      c2.fillStyle=color;
+      for(let k=0;k<bars.length;k++){
+        const h=Math.max(2.5*dpr,bars[k]*(H-4*dpr));
+        const x=W-(bars.length-k)*(bw+gap),y=(H-h)/2;
+        c2.globalAlpha=0.3+0.7*(k/Math.max(1,bars.length-1));
+        if(c2.roundRect){c2.beginPath();c2.roundRect(x,y,bw,h,bw/2);c2.fill();}
+        else c2.fillRect(x,y,bw,h);
+      }
+      c2.globalAlpha=1;
+      if(timeEl){const s=Math.floor((Date.now()-t0)/1000);timeEl.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+      raf=requestAnimationFrame(draw);
+    };
+    raf=requestAnimationFrame(draw);
+    _vcRecViz={ctx,stop(){cancelAnimationFrame(raf);try{ctx.close();}catch(e){}bar.hidden=true;}};
+  }catch(e){}
+}
+function vcRecVizStop(){
+  if(_vcRecViz){try{_vcRecViz.stop();}catch(e){}_vcRecViz=null;}
+  const bar=$('#vcRecBar');if(bar)bar.hidden=true;
+}
 async function vcToggleDictation(){
   if(vcState.apiVoice&&VC_REC){vcToggleApiDictation();return;}
   if(!VC_STT){plnToast('Tu navegador no soporta dictado por voz (probá Chrome o Edge)',false);return;}
@@ -2507,6 +2608,7 @@ async function vcToggleDictation(){
     final=>{finalAcc+=final;els.messageInput.value=vcState.baseText+finalAcc;autoResize();updateSendBtn();},
     err=>{
       vcState.dictating=false;mic.classList.remove('recording');mic.title='Dictar por voz';
+      vcRecVizStop();
       if(!vcState.mode)vcReleaseMic();
       const m=vcErrMsg(err);if(m)plnToast(m,false);
       els.messageInput.focus();
@@ -2514,6 +2616,7 @@ async function vcToggleDictation(){
   try{
     vcState.rec.start();
     vcState.dictating=true;mic.classList.add('recording');mic.title='Detener dictado';
+    vcRecVizStart();
   }catch(e){plnToast('No se pudo iniciar el micrófono',false);vcReleaseMic();}
 }
 
@@ -2528,6 +2631,7 @@ async function vcToggleApiDictation(){
   mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
   mr.onstop=async()=>{
     vcState.mediaRec=null;
+    vcRecVizStop();
     mic.classList.remove('recording');mic.classList.add('busy');mic.title='Transcribiendo…';
     if(!vcState.mode)vcReleaseMic();
     try{
@@ -2543,6 +2647,7 @@ async function vcToggleApiDictation(){
   };
   mr.start();
   mic.classList.add('recording');mic.title='Detener y transcribir';
+  vcRecVizStart();
 }
 async function vcTranscribe(blob){
   const fd=new FormData();
@@ -2719,6 +2824,7 @@ async function vcRTConnect(){
 function vcRTSend(obj){try{if(vcRT.dc&&vcRT.dc.readyState==='open')vcRT.dc.send(JSON.stringify(obj));}catch(e){}}
 
 async function vcRTEvent(e){
+  if(!vcRT.active&&!vcState.rtMode)return;  // sesión terminada: no procesar nada más
   let ev;try{ev=JSON.parse(e.data);}catch(err){return;}
   const t=ev.type||'';
   if(t==='input_audio_buffer.speech_started'){          // barge-in: el usuario habla
@@ -2752,6 +2858,7 @@ async function vcRTEvent(e){
       out=await Promise.race([fn(args),new Promise((_,rej)=>setTimeout(()=>rej(new Error('la consulta tardó demasiado')),buscando?20000:12000))]);
     }catch(err){out={error:String((err&&err.message)||err)};}
     vcToolSoundStop();
+    if(!vcRT.active)return;  // el usuario terminó mientras corría la herramienta
     vcRTSend({type:'conversation.item.create',item:{type:'function_call_output',call_id:ev.call_id,output:JSON.stringify(out).slice(0,8000)}});
     vcRTSend({type:'response.create'});
     return;
@@ -2787,9 +2894,14 @@ function vcRTError(msg){
 }
 function vcRTClose(release){
   vcRT.active=false;
+  // Corte INMEDIATO: cancelar la respuesta en curso y vaciar el audio ya
+  // buffereado — cerrar el peer solo frena lo que viene, no lo que ya llegó.
+  vcRTSend({type:'response.cancel'});
+  vcRTSend({type:'output_audio_buffer.clear'});
+  if(vcRT.audioEl){const a=vcRT.audioEl;vcRT.audioEl=null;try{a.muted=true;a.pause();}catch(e){}try{a.srcObject=null;}catch(e){}}
+  try{vcRT.pc&&vcRT.pc.getReceivers().forEach(r=>{try{r.track&&r.track.stop();}catch(e){}});}catch(e){}
   try{vcRT.dc&&vcRT.dc.close();}catch(e){}
   try{vcRT.pc&&vcRT.pc.close();}catch(e){}
-  if(vcRT.audioEl){try{vcRT.audioEl.srcObject=null;}catch(e){}vcRT.audioEl=null;}
   vcRT.pc=null;vcRT.dc=null;vcRT.userLine='';vcRT.aiLine='';
   if(release!==false)vcReleaseMic();
 }
@@ -2880,9 +2992,11 @@ async function vcOpenMode(){
   }
 }
 function vcCloseMode(){
-  vcState.mode=false;vcState.paused=false;vcState.micMuted=false;
+  // Flags PRIMERO: cualquier evento/tool en vuelo que resuelva después de
+  // este punto se descarta — Terminar corta de inmediato, sin colas.
+  vcState.mode=false;vcState.paused=false;vcState.micMuted=false;vcState.rtMode=false;
   vcToolSoundStop();
-  vcRTClose(false);vcState.rtMode=false;
+  vcRTClose(false);
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
   if(vcState.vadStop)vcState.vadStop();
   if(vcState.mediaRec){try{vcState.mediaRec.stop();}catch(e){}}
@@ -2964,7 +3078,7 @@ function initVoice(){
   $('#vcPause')?.addEventListener('click',vcTogglePause);
   $('#vcMicToggle')?.addEventListener('click',vcMicToggle);
   $('#vcStopResp')?.addEventListener('click',()=>{
-    if(vcState.rtMode){vcRTSend({type:'response.cancel'});vcSetPhase('listening','Escuchando…');}
+    if(vcState.rtMode){vcRTSend({type:'response.cancel'});vcRTSend({type:'output_audio_buffer.clear'});vcSetPhase('listening','Escuchando…');}
     else vcStopSpeak();
   });
   $('#vcRepeat')?.addEventListener('click',()=>{

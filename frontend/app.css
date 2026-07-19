@@ -851,6 +851,26 @@ select.pay-form-input{cursor:pointer}
 .vc-pl-close:hover{background:var(--accent-subtle);color:var(--text-0)}
 @media (max-width:480px){.vc-player{min-width:0;left:16px;right:16px;transform:none;bottom:16px;animation-name:vcPlInM}}
 
+/* Barra de dictado (estilo nota de voz): pill flotante sobre el input con
+   barras de volumen en vivo, punto rojo de grabación y timer. */
+.vc-rec{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 2px);
+  display:flex;align-items:center;gap:11px;width:min(480px,calc(100% - 40px));
+  padding:9px 16px;border-radius:999px;
+  background:color-mix(in srgb,var(--bg-1) 90%,transparent);
+  border:1px solid var(--border-1);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:0 12px 32px rgba(0,0,0,.16);z-index:60;
+  animation:vcRecIn .22s var(--ease-out)}
+.vc-rec[hidden]{display:none}
+@keyframes vcRecIn{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.vc-rec-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;flex:none;animation:vcRecPulse 1.3s ease-in-out infinite}
+@keyframes vcRecPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.78)}}
+#vcRecWave{flex:1;height:26px;min-width:0}
+.vc-rec-time{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--text-1);flex:none}
+.vc-rec-hint{font-size:11px;color:var(--text-2);flex:none;white-space:nowrap}
+@media (max-width:560px){.vc-rec-hint{display:none}}
+@media (prefers-reduced-motion:reduce){.vc-rec,.vc-rec-dot{animation:none}}
+
 /* Modal de Recordatorios / Telegram (reusa el patrón de upgrade modal) */
 .sol-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .sol-modal-overlay.active{display:flex}

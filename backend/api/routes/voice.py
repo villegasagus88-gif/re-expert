@@ -29,6 +29,10 @@ class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
 
 
+class SpeakScriptRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=12000)
+
+
 class WebSearchRequest(BaseModel):
     consulta: str = Field(min_length=2, max_length=300)
 
@@ -57,6 +61,17 @@ async def realtime_session(body: RealtimeSessionRequest,
     except Exception as exc:  # noqa: BLE001
         logger.exception("Voice: realtime-session falló")
         raise HTTPException(status_code=502, detail="No se pudo iniciar la sesión de voz") from exc
+
+
+@router.post("/speak-script", summary="Respuesta escrita → guion natural para leer en voz alta")
+async def speak_script(body: SpeakScriptRequest, _user: User = Depends(get_current_user)):
+    try:
+        return {"script": await voice_service.spoken_script(body.text)}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Voice: speak-script falló")
+        raise HTTPException(status_code=502, detail="No se pudo preparar la lectura") from exc
 
 
 @router.post("/web-search", summary="Búsqueda web en vivo para el asesor de voz")
