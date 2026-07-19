@@ -881,11 +881,20 @@ select.pay-form-input{cursor:pointer}
 /* Fuentes estilo ChatGPT: chips con favicon + nombre del sitio, adjuntas al
    pie de la respuesta que las usó. Discretas, clickeables, tono de la app. */
 .vc-linkcard-t{font-size:11.5px;font-weight:600;letter-spacing:.2px;text-transform:uppercase;color:var(--text-3);margin-bottom:2px}
-.vc-srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
-.vc-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 6px;border-radius:999px;background:var(--bg-2);border:1px solid var(--border-1);text-decoration:none;font-size:11px;font-weight:600;color:var(--text-1);max-width:190px;transition:all .15s var(--ease-out)}
-.vc-chip:hover{border-color:var(--accent-brand);color:var(--accent-brand);transform:translateY(-1px)}
-.vc-chip-fav{width:14px;height:14px;border-radius:50%;flex:none}
-.vc-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-srcs{position:relative;margin-top:9px}
+.vc-srcs-bar{display:inline-flex;align-items:center;gap:7px;padding:5px 13px 5px 8px;border-radius:999px;background:var(--bg-2);border:1px solid var(--border-1);font-size:11.5px;font-weight:600;color:var(--text-1);cursor:pointer;font-family:var(--font);transition:all .15s var(--ease-out)}
+.vc-srcs-bar:hover{border-color:var(--accent-brand);color:var(--accent-brand)}
+.vc-srcs-favs{display:inline-flex;align-items:center}
+.vc-srcs-favs img{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--bg-1);margin-left:-5px;background:var(--bg-1)}
+.vc-srcs-favs img:first-child{margin-left:0}
+.vc-srcs-pop{position:absolute;bottom:calc(100% + 8px);left:0;z-index:130;min-width:270px;max-width:min(360px,80vw);padding:6px;border-radius:14px;background:var(--bg-1);border:1px solid var(--border-1);box-shadow:0 16px 44px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:2px;animation:vcPopIn .18s var(--ease-out)}
+@keyframes vcPopIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.vc-src-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;text-decoration:none;min-width:0}
+.vc-src-row:hover{background:var(--bg-2)}
+.vc-src-row img{width:16px;height:16px;border-radius:4px;flex:none}
+.vc-src-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+.vc-src-t{font-size:12px;font-weight:600;color:var(--text-0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-src-d{font-size:10.5px;color:var(--text-3)}
 
 /* Modal de Recordatorios / Telegram (reusa el patrón de upgrade modal) */
 .sol-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
