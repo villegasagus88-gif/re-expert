@@ -2827,7 +2827,9 @@ function vcChatLinks(titulo,links){
   try{
     const html=vcSourceChipsHTML(links);
     if(!html)return;
-    state.messages.push({role:'assistant',content:(titulo?'**'+titulo+'**\n':'')+links.map(l=>'- ['+(l.titulo||l.url)+']('+l.url+')').join('\n')});
+    const linksMd=(titulo?'**'+titulo+'**\n':'')+links.map(l=>'- ['+(l.titulo||l.url)+']('+l.url+')').join('\n');
+    state.messages.push({role:'assistant',content:linksMd});
+    vcHistorySave('assistant',linksMd);
     const ws=$('#welcomeScreen');if(ws)ws.style.display='none';
     if(!els.messagesEl)return;
     els.messagesEl.style.display='';
@@ -2959,64 +2961,208 @@ function vcRTTranscript(){
   el.innerHTML=(vcRT.userLine?'<div class="vc-t-user">'+esc(vcRT.userLine)+'</div>':'')
               +(vcRT.aiLine?'<div class="vc-t-ai">'+esc(vcRT.aiLine)+'</div>':'');
 }
-// Sitios del rubro: si el asesor los NOMBRA, el nombre queda tocable en el
-// chat — misma tipografía y color, solo un subrayado sutil (nada de URLs
-// azules largas). Orden: nombres más largos primero para ganar el match.
+// Entidades con sitio conocido: si se las NOMBRA en un mensaje, el nombre
+// queda tocable estilo Google Docs (Ctrl+K): misma tipografía y color, solo
+// una línea fina y sutil abajo. Solo la PRIMERA mención de cada entidad por
+// mensaje (linkear cada repetición ensucia el texto). Nombres largos primero.
 const VC_SITE_LINKS=[
+  // Portales y proptech
   ['MercadoLibre Inmuebles','https://inmuebles.mercadolibre.com.ar'],
   ['Mercado Libre Inmuebles','https://inmuebles.mercadolibre.com.ar'],
   ['Reporte Inmobiliario','https://www.reporteinmobiliario.com'],
-  ['Banco Hipotecario','https://www.hipotecario.com.ar'],
-  ['Banco Provincia','https://www.bancoprovincia.com.ar'],
-  ['Banco Nación','https://www.bna.com.ar'],
-  ['Banco Ciudad','https://www.bancociudad.com.ar'],
   ['MercadoLibre','https://inmuebles.mercadolibre.com.ar'],
   ['Mercado Libre','https://inmuebles.mercadolibre.com.ar'],
   ['Zona Prop','https://www.zonaprop.com.ar'],
   ['Zonaprop','https://www.zonaprop.com.ar'],
   ['Argenprop','https://www.argenprop.com'],
   ['Properati','https://www.properati.com.ar'],
+  ['Mudafy','https://mudafy.com.ar'],
+  ['Mercado Pago','https://www.mercadopago.com.ar'],
+  // Inmobiliarias y desarrolladoras grandes
+  ['Toribio Achával','https://www.toribioachaval.com'],
+  ['Coldwell Banker','https://www.coldwellbanker.com.ar'],
+  ['Century 21','https://century21.com.ar'],
+  ['L.J. Ramos','https://www.ljramos.com.ar'],
+  ['LJ Ramos','https://www.ljramos.com.ar'],
+  ['Adrián Mercado','https://www.adrianmercado.com.ar'],
+  ['Interwin','https://interwin.com.ar'],
+  ['RE/MAX','https://www.remax.com.ar'],
+  ['Remax','https://www.remax.com.ar'],
+  ['Consultatio','https://consultatio.com.ar'],
+  ['IRSA','https://www.irsa.com.ar'],
+  ['Eidico','https://www.eidico.com.ar'],
+  ['Vizora','https://www.vizora.com.ar'],
+  ['TGLT','https://tglt.com'],
+  ['Grupo Portland','https://www.grupoportland.com'],
+  // Bancos y billeteras
+  ['Banco Hipotecario','https://www.hipotecario.com.ar'],
+  ['Banco Provincia','https://www.bancoprovincia.com.ar'],
+  ['Banco Nación','https://www.bna.com.ar'],
+  ['Banco Ciudad','https://www.bancociudad.com.ar'],
+  ['Banco Galicia','https://www.galicia.ar'],
+  ['Banco Macro','https://www.macro.com.ar'],
+  ['Banco Supervielle','https://www.supervielle.com.ar'],
+  ['Banco Credicoop','https://www.bancocredicoop.coop'],
+  ['Santander','https://www.santander.com.ar'],
+  ['BBVA','https://www.bbva.com.ar'],
+  ['ICBC','https://www.icbc.com.ar'],
+  ['Brubank','https://www.brubank.com'],
+  ['Ualá','https://www.uala.com.ar'],
+  // Medios
+  ['La Nación','https://www.lanacion.com.ar'],
+  ['El Cronista','https://www.cronista.com'],
+  ['iProfesional','https://www.iprofesional.com'],
+  ['Página 12','https://www.pagina12.com.ar'],
+  ['Los Andes','https://www.losandes.com.ar'],
+  ['Diario Uno','https://www.diariouno.com.ar'],
+  ['La Voz','https://www.lavoz.com.ar'],
+  ['Infobae','https://www.infobae.com'],
+  ['Clarín','https://www.clarin.com'],
+  ['Ámbito','https://www.ambito.com'],
+  ['MDZ','https://www.mdzol.com'],
+  // Organismos, colegios e instituciones
+  ['Boletín Oficial','https://www.boletinoficial.gob.ar'],
+  ['Colegio de Escribanos','https://www.colegio-escribanos.org.ar'],
+  ['Cámara Argentina de la Construcción','https://www.camarco.org.ar'],
+  ['CUCICBA','https://cucicba.com.ar'],
+  ['CPAU','https://www.cpau.org'],
   ['BCRA','https://www.bcra.gob.ar'],
   ['INDEC','https://www.indec.gob.ar'],
   ['ARCA','https://www.arca.gob.ar'],
   ['AFIP','https://www.afip.gob.ar'],
+  ['ANSES','https://www.anses.gob.ar'],
+  ['IGJ','https://www.argentina.gob.ar/justicia/igj'],
+  ['UVA','https://www.bcra.gob.ar/PublicacionesEstadisticas/Principales_variables.asp'],
+  // Apps y plataformas
+  ['Google Maps','https://www.google.com/maps'],
+  ['Airbnb','https://www.airbnb.com.ar'],
+  ['Booking','https://www.booking.com'],
 ];
 const VC_SITE_RE=new RegExp('\\b('+VC_SITE_LINKS.map(([n])=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')\\b','gi');
 const VC_SITE_MAP=Object.fromEntries(VC_SITE_LINKS.map(([n,u])=>[n.toLowerCase(),u]));
+function vcWrapLink(node,txt,start,end,url){
+  const frag=document.createDocumentFragment();
+  if(start>0)frag.appendChild(document.createTextNode(txt.slice(0,start)));
+  const a=document.createElement('a');
+  a.className='vc-sitelink';a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+  a.textContent=txt.slice(start,end);  // conserva la mayúscula tal como se escribió
+  frag.appendChild(a);
+  let tail=null;
+  if(end<txt.length){tail=document.createTextNode(txt.slice(end));frag.appendChild(tail);}
+  node.parentNode.replaceChild(frag,node);
+  return tail;  // para seguir buscando entidades en el resto del texto
+}
+function vcTextNodes(rootEl){
+  const walker=document.createTreeWalker(rootEl,NodeFilter.SHOW_TEXT,null);
+  const nodes=[];let n;
+  while((n=walker.nextNode()))nodes.push(n);
+  return nodes.filter(nd=>!(nd.parentElement&&nd.parentElement.closest('a,code,pre')));
+}
 function vcLinkifySites(rootEl){
   try{
     if(!rootEl)return;
-    const walker=document.createTreeWalker(rootEl,NodeFilter.SHOW_TEXT,null);
-    const nodes=[];let n;
-    while((n=walker.nextNode()))nodes.push(n);
-    for(const node of nodes){
-      if(node.parentElement&&node.parentElement.closest('a,code,pre'))continue;
-      const txt=node.nodeValue;
-      VC_SITE_RE.lastIndex=0;
-      if(!VC_SITE_RE.test(txt))continue;
-      VC_SITE_RE.lastIndex=0;
-      const frag=document.createDocumentFragment();
-      let last=0,m;
-      while((m=VC_SITE_RE.exec(txt))){
-        const url=VC_SITE_MAP[m[1].toLowerCase()];
-        if(!url)continue;
-        if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
-        const a=document.createElement('a');
-        a.className='vc-sitelink';a.href=url;a.target='_blank';a.rel='noopener noreferrer';
-        a.textContent=m[1];  // conserva la mayúscula tal como se escribió
-        frag.appendChild(a);
-        last=m.index+m[1].length;
+    const done=new Set();  // 1 link por entidad por mensaje
+    for(let node of vcTextNodes(rootEl)){
+      let guard=0;
+      while(node&&guard++<24){
+        const txt=node.nodeValue;
+        VC_SITE_RE.lastIndex=0;
+        let m,found=null;
+        while((m=VC_SITE_RE.exec(txt))){
+          const url=VC_SITE_MAP[m[1].toLowerCase()];
+          if(url&&!done.has(url)){found={i:m.index,len:m[1].length,url};break;}
+        }
+        if(!found)break;
+        done.add(found.url);
+        node=vcWrapLink(node,txt,found.i,found.i+found.len,found.url);
       }
-      if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));
-      node.parentNode.replaceChild(frag,node);
     }
   }catch(e){}
+}
+// Entidades que vinieron de una BÚSQUEDA de este turno: si el texto menciona
+// un nombre propio que aparece en el título de una fuente, ese nombre linkea
+// directo a esa fuente (empresas, estudios, ubicaciones, lo que sea).
+function vcLinkifyFromSources(rootEl,sources){
+  try{
+    if(!rootEl||!sources||!sources.length)return;
+    const titles=sources.filter(s=>s&&s.url&&s.titulo).map(s=>({t:s.titulo.toLowerCase(),url:s.url}));
+    if(!titles.length)return;
+    const done=new Set();
+    const CONN=new Set(['de','del','la','el','los','las','y']);
+    // candidatos: rachas de palabras con mayúscula (con conectores adentro)
+    const re=/[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*(?:\s+(?:(?:de|del|la|el|los|las|y)\s+)?[A-ZÁÉÍÓÚÑ][\wáéíóúñÁÉÍÓÚÑ\/&\.\-]*)*/g;
+    for(let node of vcTextNodes(rootEl)){
+      let guard=0;
+      while(node&&guard++<24){
+        const txt=node.nodeValue;
+        re.lastIndex=0;
+        let m,hit=null;
+        while((m=re.exec(txt))&&!hit){
+          // la racha puede cruzar un punto de oración ("Cocucci. También"):
+          // se evalúa cada segmento entre ". " por separado
+          let cursor=0;
+          for(const seg of m[0].split(/\.\s+/)){
+            const segAt=m[0].indexOf(seg,cursor);cursor=segAt+seg.length;
+            const name=seg.replace(/[.\s]+$/,'').trim();
+            const low=name.toLowerCase();
+            if(name.length>=4&&!CONN.has(low)&&!done.has(low)){
+              const src=titles.find(s=>s.t.includes(low));
+              if(src){hit={start:m.index+segAt,end:m.index+segAt+name.length,url:src.url,low};break;}
+            }
+          }
+        }
+        if(!hit)break;
+        done.add(hit.low);
+        node=vcWrapLink(node,txt,hit.start,hit.end,hit.url);
+      }
+    }
+  }catch(e){}
+}
+// ── Historial: la conversación de voz se guarda como cualquier chat ──
+// Si había una conversación abierta, los turnos se agregan ahí; si no, se
+// crea una nueva (título = primera frase). Cola secuencial best-effort: si
+// el guardado falla, la sesión de voz sigue sin molestar al usuario.
+let vcConvSync={id:null,queue:[],busy:false,failed:false};
+function vcHistorySave(role,content){
+  if(!content)return;
+  vcConvSync.queue.push({role,content:String(content).slice(0,20000)});
+  vcHistoryFlush();
+}
+async function vcHistoryFlush(){
+  if(vcConvSync.busy||vcConvSync.failed||!vcConvSync.queue.length)return;
+  vcConvSync.busy=true;
+  const item=vcConvSync.queue[0];
+  try{
+    if(!vcConvSync.id){
+      const title=('🎙 '+item.content.replace(/\s+/g,' ').trim()).slice(0,80);
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({title})});
+      if(!r.ok)throw new Error('create '+r.status);
+      const c=await r.json();
+      vcConvSync.id=c.id;
+      state.currentConversation=c;
+      if(els.topbarTitle)els.topbarTitle.textContent=c.title;
+      try{loadConversationsFromCloud();}catch(e){}
+    }
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/conversations/'+vcConvSync.id+'/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(item)});
+    if(!r.ok)throw new Error('append '+r.status);
+    vcConvSync.queue.shift();
+  }catch(e){
+    vcConvSync.failed=true;  // sin reintentos ruidosos: la voz sigue normal
+  }finally{
+    vcConvSync.busy=false;
+    if(!vcConvSync.failed)vcHistoryFlush();
+  }
 }
 // Espeja la conversación de voz en el chat abierto (visual + export).
 // El MOTOR del chat no se toca: es solo presentación de lo hablado.
 function vcRTMirror(role,text){
   try{
     state.messages.push({role,content:text});
+    vcHistorySave(role,text);  // al historial, como cualquier chat
     const ws=$('#welcomeScreen');if(ws)ws.style.display='none';
     // force: el flujo realtime no pasa por sendMessage (no resetea chatStick) y
     // durante la sesión el overlay impide re-enganchar scrolleando — sin force,
@@ -3029,13 +3175,18 @@ function vcRTMirror(role,text){
       els.messagesEl.insertAdjacentHTML('beforeend',msgHTML(role,text));
       if(role==='assistant'){
         const nm=els.messagesEl.lastElementChild;
-        // Sitios nombrados (Zonaprop, bancos, etc.) quedan tocables al instante
-        vcLinkifySites(nm&&nm.querySelector('.message-text'));
+        const textEl=nm&&nm.querySelector('.message-text');
+        if(textEl)textEl.dataset.vclink='1';  // ya procesado: el observer del chat no lo re-toca
+        // Sitios y entidades nombradas quedan tocables al instante:
+        vcLinkifySites(textEl);                                  // diccionario de sitios conocidos
+        vcLinkifyFromSources(textEl,vcRT.pendingLinks);          // entidades halladas en la búsqueda
         // Fuentes de las búsquedas de este turno: chips al pie del mensaje
         if(vcRT.pendingLinks&&vcRT.pendingLinks.length){
           const mc=nm&&nm.querySelector('.message-content');
           if(mc)mc.insertAdjacentHTML('beforeend',vcSourceChipsHTML(vcRT.pendingLinks));
-          state.messages.push({role:'assistant',content:'Fuentes: '+vcRT.pendingLinks.map(l=>'['+(l.titulo||l.url)+']('+l.url+')').join(' · ')});
+          const srcMd='Fuentes: '+vcRT.pendingLinks.map(l=>'['+(l.titulo||l.url)+']('+l.url+')').join(' · ');
+          state.messages.push({role:'assistant',content:srcMd});
+          vcHistorySave('assistant',srcMd);
           vcRT.pendingLinks=null;
         }
       }
@@ -3131,6 +3282,8 @@ async function vcOpenMode(){
   vcStopSpeak();
   vcState.mode=true;vcState.paused=false;vcState.rtMode=false;vcState.micMuted=false;
   vcState.mini=false;$('#vcOverlay').classList.remove('vc-min');
+  // Historial: sesión nueva de voz → continúa el chat abierto o crea uno nuevo
+  vcConvSync={id:(state.currentConversation&&state.currentConversation.id)||null,queue:[],busy:false,failed:false};
   const _mb=$('#vcMicToggle');if(_mb)_mb.classList.remove('muted');
   $('#vcOverlay').classList.add('active');
   $('#vcPause').textContent='⏸ Pausar';
@@ -3289,13 +3442,23 @@ function initVoice(){
     if(vcState.rtMode)vcRTSend({type:'response.create',response:{instructions:'Repetí tu última respuesta en una versión más corta y clara.'}});
     else if(vcRT.lastAssistant)vcSpeakSmart(vcRT.lastAssistant,null);
   });
-  if(VC_TTS){
-    vcState.voice=vcPickVoice();
-    // Botones "Escuchar" también para el historial que se renderiza después
-    new MutationObserver(()=>{clearTimeout(vcState._obsT);vcState._obsT=setTimeout(vcAddListenBtns,250);})
-      .observe(els.messagesEl,{childList:true,subtree:true});
-    vcAddListenBtns();
-  }
+  // Observer del chat: botones "Escuchar" + links de entidades nombradas
+  // (estilo Google Docs) en TODO mensaje del asistente ya terminado —
+  // también el historial y las respuestas del chat normal.
+  new MutationObserver(()=>{clearTimeout(vcState._obsT);vcState._obsT=setTimeout(()=>{vcLinkifyAll();if(VC_TTS)vcAddListenBtns();},250);})
+    .observe(els.messagesEl,{childList:true,subtree:true});
+  vcLinkifyAll();
+  if(VC_TTS){vcState.voice=vcPickVoice();vcAddListenBtns();}
+}
+function vcLinkifyAll(){
+  try{
+    els.messagesEl.querySelectorAll('.message-assistant .message-text:not([data-vclink])').forEach(t=>{
+      if(t.closest('#streamMsg'))return;              // todavía está generando
+      if(t.querySelector('.typing-indicator'))return;
+      t.dataset.vclink='1';
+      vcLinkifySites(t);
+    });
+  }catch(e){}
 }
 
 // ===== ANÁLISIS DE PLANOS — panel inteligente por proyecto =====

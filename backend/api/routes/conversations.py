@@ -22,6 +22,7 @@ from models.conversation import Conversation
 from models.message import Message
 from models.user import User
 from models.workspace import Workspace
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -200,6 +201,46 @@ async def list_conversations(
         page_size=page_size,
         total_pages=total_pages,
     )
+
+
+class AppendMessageRequest(BaseModel):
+    """Mensaje suelto — lo usa la conversación de voz en vivo para que el
+    historial quede igual que cualquier chat (el flujo /api/chat no cambia)."""
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=20000)
+
+
+@router.post(
+    "/{conversation_id}/messages",
+    status_code=201,
+    summary="Agregar un mensaje a la conversación (historial de voz)",
+)
+async def append_message(
+    conversation_id: str,
+    body: AppendMessageRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        conv_uuid = UUID(conversation_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Conversacion no encontrada")
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == conv_uuid,
+            Conversation.user_id == current_user.id,
+        )
+    )
+    conv = result.scalar_one_or_none()
+    if conv is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Conversacion no encontrada")
+    msg = Message(conversation_id=conv.id, role=body.role, content=body.content)
+    db.add(msg)
+    conv.updated_at = func.now()  # que suba en la lista, como cualquier chat
+    await db.commit()
+    return {"id": str(msg.id)}
 
 
 @router.get(
