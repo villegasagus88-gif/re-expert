@@ -872,15 +872,20 @@
     <div class="vc-overlay" id="vcOverlay">
       <button class="btn-icon vc-close" id="vcClose" title="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       <div class="vc-center">
-        <div class="vc-orb" id="vcOrb"><div class="vc-orb-core"></div></div>
+        <div class="vc-orb" id="vcOrb"><div class="vc-orb-halo"></div><div class="vc-orb-core"></div></div>
         <div class="vc-status" id="vcStatus">Preparando…</div>
         <div class="vc-transcript" id="vcTranscript"></div>
       </div>
-      <div class="vc-controls">
-        <button class="btn-secondary" id="vcPause">⏸ Pausar</button>
-        <button class="btn-secondary" id="vcStopResp" title="Cortar la respuesta actual">⏹ Cortar</button>
-        <button class="btn-secondary" id="vcRepeat" title="Repetir lo último">↻ Repetir</button>
-        <button class="btn-primary" id="vcEnd">Terminar</button>
+      <div class="vc-bottom">
+        <button class="vc-mic" id="vcMicToggle" title="Silenciar mi micrófono">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </button>
+        <div class="vc-controls">
+          <button class="vc-pill" id="vcPause">⏸ Pausar</button>
+          <button class="vc-pill" id="vcStopResp" title="Cortar la respuesta actual">⏹ Cortar</button>
+          <button class="vc-pill" id="vcRepeat" title="Repetir lo último">↻ Repetir</button>
+          <button class="vc-pill vc-pill-end" id="vcEnd">Terminar</button>
+        </div>
       </div>
       <div class="vc-hint">Hablá con naturalidad: el experto te escucha y te responde con voz, usando el mismo Chat Experto de siempre. <strong>Beta</strong> — usa el micrófono y las voces de tu navegador.</div>
     </div>
@@ -2635,7 +2640,39 @@ const VC_RT_TOOLS={
     return {proyectos:(d.projects||[]).map(p=>({nombre:p.name,planos:p.plans_count,obs_criticas:p.critical_alerts,obs_altas:p.high_alerts,tareas_pendientes:p.pending_tasks}))};
   },
   async recordar_dato_usuario(args){vcMemorySave(args.clave,args.valor);return {resultado:'guardado'};},
+  async buscar_en_internet(args){
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/voice/web-search',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({consulta:(args&&args.consulta)||''})});
+    if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'la búsqueda falló');}
+    return await r.json();
+  },
 };
+
+// Sonido sutil de "buscando" (WebAudio sintetizado, sin archivos): blips
+// suaves alternados mientras corre una herramienta — como ChatGPT.
+let _vcAC=null,_vcSoundTimer=null;
+function vcToolSoundStart(){
+  try{
+    if(!_vcAC)_vcAC=new (window.AudioContext||window.webkitAudioContext)();
+    if(_vcAC.state==='suspended')_vcAC.resume();
+    let hi=false;
+    const blip=()=>{
+      const o=_vcAC.createOscillator(),g=_vcAC.createGain();
+      o.type='sine';o.frequency.value=hi?1174:880;hi=!hi;
+      g.gain.setValueAtTime(0.0001,_vcAC.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.05,_vcAC.currentTime+0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001,_vcAC.currentTime+0.45);
+      o.connect(g);g.connect(_vcAC.destination);
+      o.start();o.stop(_vcAC.currentTime+0.5);
+    };
+    blip();
+    _vcSoundTimer=setInterval(blip,900);
+  }catch(e){}
+}
+function vcToolSoundStop(){
+  if(_vcSoundTimer){clearInterval(_vcSoundTimer);_vcSoundTimer=null;}
+}
 
 async function vcRTConnect(){
   vcSetPhase('thinking','Conectando con el asesor…');
@@ -2705,13 +2742,16 @@ async function vcRTEvent(e){
   if(t==='response.done'){if(vcRT.active&&!vcState.paused)vcSetPhase('listening','Escuchando…');return;}
   if(t==='response.function_call_arguments.done'){       // tool call
     let args={};try{args=JSON.parse(ev.arguments||'{}');}catch(err){}
-    vcSetPhase('thinking','Consultando datos de la plataforma…');
+    const buscando=ev.name==='buscar_en_internet';
+    vcSetPhase('searching',buscando?'Buscando en internet…':'Consultando datos de la plataforma…');
+    vcToolSoundStart();
     let out;
     try{
       const fn=VC_RT_TOOLS[ev.name];
       if(!fn)throw new Error('herramienta no disponible todavía');
-      out=await Promise.race([fn(args),new Promise((_,rej)=>setTimeout(()=>rej(new Error('la consulta tardó demasiado')),12000))]);
+      out=await Promise.race([fn(args),new Promise((_,rej)=>setTimeout(()=>rej(new Error('la consulta tardó demasiado')),buscando?20000:12000))]);
     }catch(err){out={error:String((err&&err.message)||err)};}
+    vcToolSoundStop();
     vcRTSend({type:'conversation.item.create',item:{type:'function_call_output',call_id:ev.call_id,output:JSON.stringify(out).slice(0,8000)}});
     vcRTSend({type:'response.create'});
     return;
@@ -2758,7 +2798,7 @@ function vcRTClose(release){
 function vcSetPhase(phase,statusTxt){
   vcState.phase=phase;
   const orb=$('#vcOrb'),st=$('#vcStatus');
-  if(orb)orb.className='vc-orb vc-'+phase;
+  if(orb)orb.className='vc-orb vc-'+phase+(vcState.micMuted?' vc-micmuted':'');
   if(st)st.textContent=statusTxt||'';
 }
 async function vcModeListenApi(){
@@ -2818,7 +2858,9 @@ async function vcOpenMode(){
   if(!(await vcEnsureMic()))return;
   switchView('chat');
   vcStopSpeak();
-  vcState.mode=true;vcState.paused=false;vcState.rtMode=false;
+  vcState.mode=true;vcState.paused=false;vcState.rtMode=false;vcState.micMuted=false;
+  const _mb=$('#vcMicToggle');if(_mb)_mb.classList.remove('muted');
+  const _ob=$('#vcOrb');if(_ob)_ob.classList.remove('vc-micmuted');
   $('#vcOverlay').classList.add('active');
   $('#vcPause').textContent='⏸ Pausar';
   if(vcState.apiVoice&&window.RTCPeerConnection){
@@ -2838,7 +2880,8 @@ async function vcOpenMode(){
   }
 }
 function vcCloseMode(){
-  vcState.mode=false;vcState.paused=false;
+  vcState.mode=false;vcState.paused=false;vcState.micMuted=false;
+  vcToolSoundStop();
   vcRTClose(false);vcState.rtMode=false;
   try{vcState.modeRec&&vcState.modeRec.stop();}catch(e){}
   if(vcState.vadStop)vcState.vadStop();
@@ -2848,6 +2891,16 @@ function vcCloseMode(){
   vcReleaseMic();
   $('#vcOverlay').classList.remove('active');
   vcSetPhase('idle','');
+}
+function vcMicToggle(){
+  if(!vcState.mode)return;
+  vcState.micMuted=!vcState.micMuted;
+  if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=!vcState.micMuted&&!vcState.paused;});
+  const b=$('#vcMicToggle');
+  if(b){b.classList.toggle('muted',vcState.micMuted);b.title=vcState.micMuted?'Activar mi micrófono':'Silenciar mi micrófono';}
+  const orb=$('#vcOrb');if(orb)orb.classList.toggle('vc-micmuted',vcState.micMuted);
+  if(vcState.micMuted)vcSetPhase(vcState.phase,'Micrófono silenciado — no te escucho, tocá el mic para volver');
+  else vcSetPhase('listening','Escuchando… hablá cuando quieras');
 }
 function vcTogglePause(){
   if(!vcState.mode)return;
@@ -2867,7 +2920,7 @@ function vcTogglePause(){
   }else{
     if(vcState.rtMode){
       if(vcRT.active){
-        if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=true;});
+        if(vcState.micStream)vcState.micStream.getAudioTracks().forEach(t=>{t.enabled=!vcState.micMuted;});
         if(vcRT.audioEl)vcRT.audioEl.muted=false;
         vcSetPhase('listening','Escuchando…');
       }else{
@@ -2909,6 +2962,7 @@ function initVoice(){
   $('#vcClose')?.addEventListener('click',vcCloseMode);
   $('#vcEnd')?.addEventListener('click',vcCloseMode);
   $('#vcPause')?.addEventListener('click',vcTogglePause);
+  $('#vcMicToggle')?.addEventListener('click',vcMicToggle);
   $('#vcStopResp')?.addEventListener('click',()=>{
     if(vcState.rtMode){vcRTSend({type:'response.cancel'});vcSetPhase('listening','Escuchando…');}
     else vcStopSpeak();

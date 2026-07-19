@@ -49,6 +49,10 @@ Variables opcionales del modo en vivo:
 | `OPENAI_REALTIME_VAD` | `semantic_vad` | `server_vad` si preferís corte por silencio fijo |
 | `OPENAI_REALTIME_EAGERNESS` | `low` | `low` deja pensar al usuario sin cortarlo |
 
+El asesor en vivo además **busca en internet** (propiedades publicadas,
+valores de zona, dólar, noticias) usando la misma TAVILY_API_KEY del chat —
+si está cargada, ya funciona; suena un blip sutil mientras busca.
+
 Costo del modo en vivo: ~US$ 0,05–0,10 por minuto de conversación con
 `gpt-realtime` (el premium); con `gpt-realtime-mini` baja a ~US$ 0,01–0,03.
 Si falla o no está disponible, cae solo al modo estándar (STT+TTS) y de

@@ -80,6 +80,43 @@ async def speak(text: str) -> bytes:
     return resp.content
 
 
+async def web_search(query: str) -> dict:
+    """Búsqueda web en vivo para el asesor de voz (Tavily).
+
+    Devuelve un resumen + resultados compactos listos para que el modelo los
+    cuente por voz (nunca se leen URLs en voz alta; la fuente es el dominio).
+    """
+    if not settings.TAVILY_API_KEY:
+        raise RuntimeError("La búsqueda web no está configurada")
+    async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=8.0)) as client:
+        resp = await client.post("https://api.tavily.com/search", json={
+            "api_key": settings.TAVILY_API_KEY,
+            "query": query,
+            "search_depth": "basic",
+            "max_results": 5,
+            "include_answer": True,
+        })
+    if resp.status_code != 200:
+        logger.warning("Voice web_search %s: %s", resp.status_code, resp.text[:200])
+        raise RuntimeError("La búsqueda falló, probá de nuevo")
+    data = resp.json()
+
+    def _domain(u: str) -> str:
+        try:
+            return u.split("//", 1)[-1].split("/", 1)[0].replace("www.", "")
+        except Exception:  # noqa: BLE001
+            return ""
+
+    return {
+        "respuesta_directa": (data.get("answer") or "")[:600],
+        "resultados": [{
+            "titulo": (r.get("title") or "")[:120],
+            "fuente": _domain(r.get("url") or ""),
+            "resumen": (r.get("content") or "")[:400],
+        } for r in (data.get("results") or [])[:5]],
+    }
+
+
 # ═══════════════ REALTIME: conversación speech-to-speech en vivo ═══════════════
 # El navegador se conecta por WebRTC DIRECTO a OpenAI con una clave EFÍMERA
 # que acuña este backend (la key real nunca sale de Railway). El agente de voz
@@ -126,6 +163,8 @@ SI EL TEMA ES IMPORTANTE (plata grande, riesgo, decisión de compra): bajá el r
 
 PROHIBIDO EN VOZ: leer tablas, listas con viñetas, markdown o resultados técnicos tal cual. Todo dato de una herramienta se convierte en 2 o 3 frases con los números clave redondeados y una conclusión. Si hay muchos datos, elegí los que cambian la decisión y ofrecé: "el detalle completo lo tenés en la plataforma".
 
+BÚSQUEDA EN INTERNET: tenés la herramienta buscar_en_internet para datos vivos (propiedades publicadas, valores de zona, dólar, noticias, normativa). NUNCA digas que no podés buscar en internet. Antes de buscar avisá con una frase corta y natural ("A ver, lo busco…", "Dame un segundo que miro los portales…"). Al volver: contá los 2 o 3 hallazgos más útiles con sus números redondeados y nombrá la fuente por su nombre ("según Zonaprop…") — JAMÁS leas una URL en voz alta. Si los resultados son flojos, decilo y proponé afinar la búsqueda.
+
 HERRAMIENTAS: tenés herramientas de la plataforma (precios de materiales, créditos hipotecarios, proyectos de planos, memoria del usuario). Usalas cuando aporten datos reales; por voz resumí el resultado con criterio, no lo leas entero. Los análisis profundos viven en las secciones de la plataforma: podés sugerir "eso lo tenés completo en la sección Planos/Materiales/Créditos".
 
 La prioridad es que el usuario sienta que habló con un asesor experto, no con un bot. El análisis es asistencia profesional preliminar: en decisiones grandes recordá validar con los profesionales matriculados del proyecto."""
@@ -154,6 +193,16 @@ REALTIME_TOOLS = [
         "name": "resumir_proyectos_planos",
         "description": "Resumen de los proyectos de Análisis de Planos del usuario: nombres, cantidad de planos, observaciones críticas/altas pendientes y tareas.",
         "parameters": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "type": "function",
+        "name": "buscar_en_internet",
+        "description": "Buscar información ACTUAL en internet: propiedades en venta o alquiler en una zona (Zonaprop, Argenprop, MercadoLibre), valores de mercado, cotización del dólar, noticias del sector, normativa. Usala SIEMPRE que el usuario pida datos vivos que no estén en la plataforma. Nunca digas que no tenés acceso a internet.",
+        "parameters": {
+            "type": "object",
+            "properties": {"consulta": {"type": "string", "description": "Qué buscar, específico y con la zona. Ej: 'departamentos 2 ambientes en venta Caballito precio USD'"}},
+            "required": ["consulta"],
+        },
     },
     {
         "type": "function",
