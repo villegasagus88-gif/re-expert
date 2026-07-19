@@ -29,6 +29,10 @@ class SpeakRequest(BaseModel):
     text: str = Field(min_length=1, max_length=8000)
 
 
+class WebSearchRequest(BaseModel):
+    consulta: str = Field(min_length=2, max_length=300)
+
+
 class RealtimeSessionRequest(BaseModel):
     # Memoria compacta del usuario (la maneja el frontend, viaja como contexto)
     user_context: str = Field(default="", max_length=1500)
@@ -53,6 +57,17 @@ async def realtime_session(body: RealtimeSessionRequest,
     except Exception as exc:  # noqa: BLE001
         logger.exception("Voice: realtime-session falló")
         raise HTTPException(status_code=502, detail="No se pudo iniciar la sesión de voz") from exc
+
+
+@router.post("/web-search", summary="Búsqueda web en vivo para el asesor de voz")
+async def voice_web_search(body: WebSearchRequest, _user: User = Depends(get_current_user)):
+    try:
+        return await voice_service.web_search(body.consulta)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Voice: web_search falló")
+        raise HTTPException(status_code=502, detail="La búsqueda falló") from exc
 
 
 @router.post("/transcribe", summary="Audio → texto (voz del usuario)")
