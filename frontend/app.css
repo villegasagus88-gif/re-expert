@@ -1110,7 +1110,13 @@ select.pay-form-input{cursor:pointer}
 .pln-pc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border-1)}
 .pln-pc-date{font-size:10.5px;color:var(--text-3)}
 .pln-chip{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2.5px 9px;border-radius:100px;background:var(--bg-2);color:var(--text-2);border:1px solid var(--border-1);white-space:nowrap}
-.pln-disclaimer{margin-top:22px;padding:10px 14px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:var(--radius-md);font-size:10.5px;color:var(--text-2);line-height:1.5}
+/* Fondo SÓLIDO (card + blur): es info legal y tiene que leerse siempre, incluso
+   sobre la animación de la planta. El tinte ámbar pasa al borde. */
+.pln-disclaimer{margin-top:22px;padding:10px 14px;background:color-mix(in srgb,var(--bg-card) 94%,transparent);backdrop-filter:blur(8px);border:1px solid rgba(245,158,11,.35);border-radius:var(--radius-md);font-size:10.5px;color:var(--text-1);line-height:1.5;position:relative;z-index:1}
+/* En el dashboard de Planos, el disclaimer va ABAJO DE TODO del área visible
+   (no flotando en el medio, donde chocaba con la animación). */
+#plnDashboard{display:flex;flex-direction:column;min-height:calc(100dvh - 150px)}
+#plnDashboard>.pln-disclaimer{margin-top:auto}
 .pln-topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .pln-topbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .pln-proj-header{margin-bottom:14px}
