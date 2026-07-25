@@ -19,6 +19,7 @@ from models.stripe_event import StripeEvent
 from models.token_usage import TokenUsage
 from models.user import User
 from models.user_channel import UserChannel
+from models.user_location import UserLocation, UserLocationSettings
 
 __all__ = [
     "Base",
@@ -42,4 +43,6 @@ __all__ = [
     "PasswordReset",
     "CoursePurchase",
     "UserMaterialList",
+    "UserLocation",
+    "UserLocationSettings",
 ]
