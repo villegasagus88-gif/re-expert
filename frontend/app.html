@@ -152,7 +152,7 @@
       </button>
       <button class="sidebar-nav-item" data-view="materiales">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        Cotización Materiales
+        Materiales &amp; Corralones
       </button>
       <button class="sidebar-nav-item" data-view="proyecto">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -242,7 +242,7 @@
     <button class="rail-item" data-view="planos" data-tip="Análisis de Planos" aria-label="Análisis de Planos">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     </button>
-    <button class="rail-item" data-view="materiales" data-tip="Cotización Materiales" aria-label="Cotización Materiales">
+    <button class="rail-item" data-view="materiales" data-tip="Materiales &amp; Corralones" aria-label="Materiales y Corralones">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
     </button>
     <button class="rail-item" data-view="proyecto" data-tip="Panel de Proyecto" aria-label="Panel de Proyecto">
@@ -448,33 +448,38 @@
       <div class="view" id="viewMateriales">
         <div class="section-view">
           <div class="section-header">
-            <h2>Cotización de Materiales</h2>
-            <p>Precios de referencia, seguimiento de aumentos y proyecciones basadas en análisis económico.</p>
+            <h2>Materiales &amp; Corralones</h2>
+            <p>Los corralones cerca de tu obra: dónde comprar cada rubro — los áridos por un lado, el hierro por otro — para construir de inicio a fin sin fletes de más.</p>
           </div>
           <div class="section-tabs">
-            <button class="section-tab active" data-mat-tab="precios">Precios actuales</button>
+            <button class="section-tab active" data-mat-tab="corralones">Corralones</button>
             <button class="section-tab" data-mat-tab="calculadora">Calculadora</button>
-            <button class="section-tab" data-mat-tab="seguimiento">Seguimiento</button>
-            <button class="section-tab" data-mat-tab="pronosticos">Pronósticos</button>
           </div>
-          <div id="matTabPrecios" class="mat-tab-content">
-            <div class="mat-toolbar">
-              <div class="mat-search" id="matSearchWrap">
+          <div id="matTabCorralones" class="mat-tab-content">
+            <div class="cor-topbar">
+              <button class="cor-zona" id="corZonaBtn" title="Cambiar de zona">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span id="corZonaLabel">Detectando tu zona…</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="mat-search" id="corSearchWrap">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input id="matSearch" aria-label="Buscar material" type="text" placeholder="Buscá un material… (ej: cemento, hierro, ladrillo)" autocomplete="off" spellcheck="false">
-                <button id="matSearchClear" title="Limpiar búsqueda" style="display:none">×</button>
-                <div class="mat-suggest" id="matSuggest" style="display:none"></div>
-              </div>
-              <div class="mat-toolbar-meta">
-                <span class="mat-updated" id="matUpdated"></span>
-                <button class="btn-icon" id="refreshPricesBtn" title="Recargar precios"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
+                <input id="corSearch" aria-label="Buscar dónde comprar un material" type="text" placeholder="¿Qué material necesitás? (ej: hierro del 8, cemento…)" autocomplete="off" spellcheck="false">
+                <button id="corSearchClear" title="Limpiar búsqueda" style="display:none">×</button>
               </div>
             </div>
-            <div id="matNotice"></div>
-            <div class="mat-filter-row" id="matFilterRow"></div>
-            <div class="mat-loading" id="matLoading" style="display:none"><div class="mat-loading-spinner"></div></div>
-            <div class="mat-list" id="materialesCards"></div>
-            <div class="pln-disclaimer" style="margin-top:14px">Precios de referencia del mercado argentino. Tocá un material para abrir la página donde se vende y comprarlo directo, o usá el <strong>+</strong> para sumarlo a tu lista de compra.</div>
+            <div class="cor-zona-form" id="corZonaForm" hidden>
+              <input id="corZonaInput" aria-label="Ciudad o zona" type="text" maxlength="120" placeholder="Ciudad o zona (ej: Godoy Cruz, Mendoza)">
+              <button class="btn-primary" id="corZonaSave">Usar esta zona</button>
+              <button class="cor-geo-btn" id="corZonaGeo" title="Detectar mi ubicación">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Mi ubicación
+              </button>
+            </div>
+            <div class="cor-favs" id="corFavs"></div>
+            <div class="cor-cats" id="corCats"></div>
+            <div class="cor-results" id="corResults"></div>
+            <div class="pln-disclaimer" style="margin-top:14px">Comercios encontrados en la web para tu zona, ordenados por reputación e información disponible. Verificá stock y precios por teléfono antes de ir: los datos pueden cambiar.</div>
           </div>
           <div id="matTabCalculadora" class="mat-tab-content" style="display:none">
             <p class="pln-m-sub" style="margin-bottom:12px">Cómputo de materiales por rubro, con las dosificaciones usuales de obra. Cargás las cantidades reales (m² de muro, m³ de hormigón…), elegís el desperdicio y te devuelve <strong>cantidades + costo con los precios de la sección</strong>.</p>
@@ -484,21 +489,6 @@
             <div class="pln-disclaimer" style="margin-top:14px">Cómputo de referencia según dosificaciones usuales (mortero 1:½:4, hormigón H21 en obra, rendimientos de fábrica). Cada obra tiene sus particularidades: validá las cantidades finales con tu profesional antes de comprar.</div>
           </div>
           <button id="matListaFab" class="mat-lista-fab" style="display:none" title="Ver lista de compra"></button>
-          <div id="matTabSeguimiento" class="mat-tab-content" style="display:none">
-            <!-- Se puebla con los datos reales del catálogo (renderMatSeguimiento) -->
-            <div id="matSeguimientoWrap"></div>
-          </div>
-          <div id="matTabPronosticos" class="mat-tab-content" style="display:none">
-            <!-- Proyección lineal calculada de la variación mensual real (renderMatPronosticos) -->
-            <div class="cards-grid" id="matPronosticosGrid"></div>
-            <div class="acad-d-disclaimer" id="matPronosticosNote" style="margin-top:10px;display:none">Proyección lineal simple: asume que la última variación mensual se repite. Es una referencia, no un pronóstico profesional — para eso está el análisis con IA.</div>
-            <div style="margin-top:16px">
-              <button class="btn-primary" id="deepAnalysisBtn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                Análisis profundo con IA
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1316,12 +1306,12 @@ function switchView(v){
   $$('.rail-item').forEach(el=>{if(el.dataset.view)el.classList.toggle('active',el.dataset.view===v)});
   els.inputArea.style.display=v==='chat'?'':'none';
   els.exportBtn.style.display=v==='chat'&&state.messages.length?'':'none';
-  const titles={chat:'Chat Experto',planos:'Análisis de Planos',materiales:'Cotización de Materiales',pagos:'Gestión de Pagos',proyecto:'Panel de Proyecto',scanner:'Opportunity Scanner',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
+  const titles={chat:'Chat Experto',planos:'Análisis de Planos',materiales:'Materiales & Corralones',pagos:'Gestión de Pagos',proyecto:'Panel de Proyecto',scanner:'Opportunity Scanner',noticias:'Noticias & Análisis',sol:'SOL — Asistente',academia:'Academia',creditos:'Créditos'};
   if(v==='workspace')els.topbarTitle.textContent=state.activeWorkspace?.name||'Proyecto';
   else els.topbarTitle.textContent=titles[v]||'';
   if(typeof updateWsActiveBar==='function')updateWsActiveBar();
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
-  if(v==='materiales')loadMateriales();
+  if(v==='materiales'){loadMateriales();corOpen();}
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
   if(v==='scanner')loadScanner();
@@ -4707,174 +4697,192 @@ async function plnShowBiblioteca(){
 const materialesState={items:[],categories:[],updatedAt:'',loaded:false,loading:false,activeCategory:null,popularity:{},query:''};
 
 function formatARS(n){return '$'+Number(n).toLocaleString('es-AR',{maximumFractionDigits:0})}
-function matTrendClass(v){return v>2?'trend-up':v<0.5?'trend-down':'trend-stable'}
-
-// ── Lupa inteligente: normalización, ranking y compra directa ──
-function matNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ø/g,'').replace(/[×]/g,'x');}
-// Semilla de popularidad para cuando todavía no hay búsquedas registradas.
-const MAT_SEED=[['cemento',100],['hierro',95],['ladrillo',90],['arena',85],['cal ',80],['hormigon',78],['placa',74],['pintura',70],['ceramic',66],['porcelanato',64],['membrana',60],['cano',58],['caño',58],['cable',54],['perfil',50],['yeso',48]];
-function matSeedScore(name){
-  const n=matNorm(name);
-  for(const[kw,score]of MAT_SEED){if(n.includes(matNorm(kw)))return score;}
-  return 0;
-}
-function matPopularity(name){return materialesState.popularity[name]||0;}
+// ── Normalización y matching (los usa la voz, la lista y la calculadora) ──
+function matNorm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'').replace(/[×]/g,'x');}
 // Coincidencia por prefijo de palabra: cada término escrito tiene que arrancar
 // alguna palabra del material (o su categoría).
 function matMatches(item,q){
   const words=matNorm(item.material+' '+item.categoria).split(/[^a-z0-9]+/).filter(Boolean);
   return matNorm(q).split(/\s+/).filter(Boolean).every(tok=>words.some(w=>w.startsWith(tok)));
 }
-function matRank(a,b){
-  return (matPopularity(b.material)-matPopularity(a.material))
-    ||(matSeedScore(b.material)-matSeedScore(a.material))
-    ||a.material.localeCompare(b.material);
-}
-// Página de compra: listado de MercadoLibre AR con el material exacto.
-function matBuyUrl(item){
-  const slug=matNorm(item.material).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-  return 'https://listado.mercadolibre.com.ar/'+slug;
-}
-function matRecordInterest(material,action){
-  try{
-    window.REAuthService.authFetch(apiBase()+'/api/materials/interest',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({material,action}),
-    }).catch(()=>{});
-  }catch(e){/* el tracking nunca rompe la UI */}
-}
-function matBuy(item){
-  matRecordInterest(item.material,'buy');
-  window.open(matBuyUrl(item),'_blank','noopener');
-}
 
-function matRowHTML(item){
-  const v=Number(item.variacion_mensual_pct)||0;
-  const tc=matTrendClass(v);
-  return `<div class="mat-row" data-mat="${esc(item.material)}" title="Abrir dónde comprar ${esc(item.material)}">
-    <div class="mat-row-main">
-      <div class="mat-row-name">${esc(item.material)}</div>
-      <div class="mat-row-sub">${esc(item.categoria)} · ${esc(item.proveedor_ref)}${item.live?` · <span class="mat-live" title="Precio actualizado automáticamente${item.fuente?' · fuente: '+esc(item.fuente):''}">actualizado ${esc(formatDate(item.fecha_actualizacion))}</span>`:''}</div>
+// ═══════════ CORRALONES CERCA DE TU OBRA ═══════════
+// La zona sale de la ubicación del usuario (geolocalización → backend →
+// "Ciudad, Provincia") o la escribe él; se recuerdan zonas favoritas para
+// proyectos en otras provincias. Los comercios los arma el backend (búsqueda
+// web + curaduría IA, cacheado por zona) — nada de marketplaces.
+const corState={zona:null,favs:[],cats:[],active:null,loading:false,query:''};
+const COR_LS='re_cor_zona',COR_LS_FAVS='re_cor_favs';
+const COR_SVG={
+  pin:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  tel:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  ext:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17L17 7M7 7h10v10"/></svg>',
+};
+function corFavs(){try{return JSON.parse(localStorage.getItem(COR_LS_FAVS)||'[]');}catch(e){return [];}}
+function corFavsSave(f){f=f.slice(0,8);localStorage.setItem(COR_LS_FAVS,JSON.stringify(f));corState.favs=f;corRenderFavs();}
+function corSetZona(z,remember=true){
+  z=String(z||'').trim().slice(0,120);if(!z)return;
+  corState.zona=z;localStorage.setItem(COR_LS,z);
+  const l=$('#corZonaLabel');if(l)l.textContent=z;
+  const f=$('#corZonaForm');if(f)f.hidden=true;
+  if(remember){const favs=corFavs();if(!favs.some(x=>x.toLowerCase()===z.toLowerCase())){favs.unshift(z);corFavsSave(favs);}}
+  corRenderFavs();
+  corState.active=null;corState.query='';
+  const inp=$('#corSearch');if(inp)inp.value='';
+  const cl=$('#corSearchClear');if(cl)cl.style.display='none';
+  corLoadCat((corState.cats[0]||{}).id||'corralon');
+}
+function corRenderFavs(){
+  const el=$('#corFavs');if(!el)return;
+  const favs=corFavs();corState.favs=favs;
+  if(!favs.length){el.innerHTML='';return;}
+  el.innerHTML='<span class="cor-favs-t">Tus zonas</span>'+favs.map(z=>
+    `<button class="mat-chip cor-fav${corState.zona&&z.toLowerCase()===corState.zona.toLowerCase()?' active':''}" data-z="${esc(z)}">${esc(z)}<span class="cor-fav-x" data-x="${esc(z)}" title="Quitar de tus zonas">×</span></button>`).join('');
+  el.querySelectorAll('.cor-fav').forEach(b=>b.addEventListener('click',e=>{
+    if(e.target.closest('.cor-fav-x'))return;
+    corSetZona(b.dataset.z,false);
+  }));
+  el.querySelectorAll('.cor-fav-x').forEach(x=>x.addEventListener('click',e=>{
+    e.stopPropagation();
+    corFavsSave(corFavs().filter(z=>z!==x.dataset.x));
+  }));
+}
+function corAskZona(){
+  const l=$('#corZonaLabel');if(l)l.textContent='Elegí tu zona';
+  const f=$('#corZonaForm');if(f){f.hidden=false;const i=$('#corZonaInput');if(i)i.focus();}
+}
+function corGeolocate(){
+  if(!navigator.geolocation){corAskZona();return;}
+  const l=$('#corZonaLabel');if(l)l.textContent='Detectando tu zona…';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/corralones/geo',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({lat:pos.coords.latitude,lon:pos.coords.longitude})});
+      if(!r.ok)throw new Error('geo '+r.status);
+      const d=await r.json();
+      if(d&&d.zona)corSetZona(d.zona);else corAskZona();
+    }catch(e){corAskZona();}
+  },()=>corAskZona(),{timeout:8000,maximumAge:600000});
+}
+async function corLoadCats(){
+  if(corState.cats.length)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/corralones/categorias');
+    if(r.ok)corState.cats=((await r.json()).categorias)||[];
+  }catch(e){}
+  corRenderCats();
+}
+function corRenderCats(){
+  const el=$('#corCats');if(!el)return;
+  el.innerHTML=corState.cats.map(c=>
+    `<button class="cor-cat${corState.active===c.id?' active':''}" data-cat="${esc(c.id)}">
+      <span class="cor-cat-ic">${c.icon}</span>
+      <span class="cor-cat-tx"><span class="cor-cat-l">${esc(c.label)}</span><span class="cor-cat-d">${esc(c.desc)}</span></span>
+    </button>`).join('');
+  el.querySelectorAll('.cor-cat').forEach(b=>b.addEventListener('click',()=>corLoadCat(b.dataset.cat)));
+}
+function corSkeleton(){
+  const sk='<div class="cor-card" style="pointer-events:none"><div class="skeleton" style="height:13px;width:45%;border-radius:3px;margin-bottom:9px"></div><div class="skeleton" style="height:10px;width:72%;border-radius:3px;margin-bottom:6px"></div><div class="skeleton" style="height:10px;width:58%;border-radius:3px"></div></div>';
+  return '<div class="cor-grid">'+sk+sk+sk+sk+'</div>';
+}
+async function corFetch(params){
+  if(!corState.zona){corAskZona();return null;}
+  const box=$('#corResults');if(box)box.innerHTML=corSkeleton();
+  corState.loading=true;
+  try{
+    const qs=new URLSearchParams(Object.assign({zona:corState.zona},params)).toString();
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/corralones/buscar?'+qs);
+    if(!r.ok){let d='';try{d=(await r.json()).detail||'';}catch(e){}throw new Error(d||'No se pudo buscar');}
+    return await r.json();
+  }catch(e){
+    if(box)box.innerHTML='<div class="empty-state" style="padding:30px 20px"><div class="empty-title">No se pudo buscar</div><div class="empty-desc">'+esc(e.message||'Probá de nuevo en unos segundos.')+'</div></div>';
+    return null;
+  }finally{corState.loading=false;}
+}
+async function corLoadCat(catId){
+  corState.active=catId;corState.query='';
+  corRenderCats();
+  const data=await corFetch({categoria:catId});
+  if(data)corRenderResults(data);
+}
+async function corSearchGo(q){
+  q=String(q||'').trim();if(q.length<2)return;
+  corState.query=q;corState.active=null;
+  corRenderCats();
+  const data=await corFetch({material:q});
+  if(data)corRenderResults(data);
+}
+function corMapsUrl(c){
+  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent((c.nombre||'')+' '+(c.direccion||corState.zona||''));
+}
+function corCardHTML(c){
+  const info=c.info||{};
+  const badges=[];
+  if(c.rating)badges.push('<span class="cor-badge cor-badge-star">★ '+esc(String(c.rating).replace('.',','))+'</span>');
+  if(info.precios_online)badges.push('<span class="cor-badge">Precios online</span>');
+  const tel=c.telefono?String(c.telefono):'';
+  return `<div class="cor-card">
+    <div class="cor-card-top">
+      <div class="cor-card-name">${c.sitio_web?`<a href="${esc(c.sitio_web)}" target="_blank" rel="noopener noreferrer">${esc(c.nombre)} ${COR_SVG.ext}</a>`:esc(c.nombre)}</div>
+      <div class="cor-badges">${badges.join('')}</div>
     </div>
-    <div class="mat-row-right">
-      <div class="mat-row-price">${formatARS(item.precio_ars)}<span class="mat-row-unit">/ ${esc(item.unidad)}</span></div>
-      <span class="mat-row-trend ${tc}">${v>=0?'+':''}${v.toFixed(1)}%</span>
-      <span class="mat-buy">Comprar <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
-      <button class="mat-add" data-add="${esc(item.material)}" title="Agregar a la lista de compra">+</button>
+    ${c.resumen?`<div class="cor-card-sum">${esc(c.resumen)}</div>`:''}
+    <div class="cor-card-meta">
+      ${c.direccion?`<span class="cor-meta-item">${COR_SVG.pin}${esc(c.direccion)}</span>`:''}
+      ${tel?`<a class="cor-meta-item cor-tel" href="tel:${esc(tel.replace(/[^+\d]/g,''))}">${COR_SVG.tel}${esc(tel)}</a>`:''}
+      <a class="cor-meta-item cor-maps" href="${corMapsUrl(c)}" target="_blank" rel="noopener noreferrer">${COR_SVG.pin}Ver en Maps</a>
     </div>
   </div>`;
 }
-
-function renderMaterialesMeta(){
-  const upd=$('#matUpdated');
-  if(upd)upd.textContent=(matVisibleItems().length+' materiales')+(materialesState.updatedAt?' · Actualizado '+materialesState.updatedAt:'');
-}
-
-function renderMaterialesChips(){
-  const row=$('#matFilterRow');if(!row)return;
-  // Categorías del backend; si no vinieron, las derivamos de los items (así la
-  // barra de navegación aparece igual mientras haya materiales cargados).
-  let catList=Array.isArray(materialesState.categories)?materialesState.categories.slice():[];
-  if(!catList.length){
-    const seen=new Set();
-    (materialesState.items||[]).forEach(i=>{const c=(i.categoria||'').trim();if(c&&!seen.has(c)){seen.add(c);catList.push(c);}});
+function corRenderResults(data){
+  const el=$('#corResults');if(!el)return;
+  const comercios=data.comercios||[],precios=data.precios||[];
+  const title=data.material
+    ?`Dónde comprar <strong>${esc(data.material)}</strong> · ${esc(data.zona)}`
+    :esc(((corState.cats.find(c=>c.id===data.categoria)||{}).label||'Corralones'))+' · '+esc(data.zona);
+  let html='<div class="cor-results-t">'+title+'</div>';
+  if(!comercios.length){
+    html+='<div class="empty-state" style="padding:30px 20px"><div class="empty-title">Sin comercios publicados para esta búsqueda</div><div class="empty-desc">Probá con la ciudad sola (sin barrio) o con otro rubro — no todos los comercios de zona tienen presencia online.</div></div>';
+  }else{
+    html+='<div class="cor-grid">'+comercios.map(corCardHTML).join('')+'</div>';
   }
-  const cats=['Todos',...catList];
-  row.innerHTML=cats.map(c=>`<button class="mat-chip${(c==='Todos'&&!materialesState.activeCategory)||(c===materialesState.activeCategory)?' active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
-  row.querySelectorAll('.mat-chip').forEach(chip=>{
-    chip.addEventListener('click',()=>{
-      const cat=chip.dataset.cat==='Todos'?null:chip.dataset.cat;
-      materialesState.activeCategory=cat;
-      renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
-    });
+  if(precios.length){
+    html+='<div class="cor-prices"><div class="cor-prices-t">Precios publicados — comparación</div><table class="cor-prices-tbl"><thead><tr><th>Comercio</th><th>Material</th><th>Precio</th></tr></thead><tbody>'
+      +precios.map(p=>`<tr><td>${esc(p.comercio)}</td><td>${esc(p.material)}${p.detalle?' <span class="cor-pd">'+esc(p.detalle)+'</span>':''}</td><td class="cor-price">${esc(p.precio)}</td></tr>`).join('')
+      +'</tbody></table></div>';
+  }
+  el.innerHTML=html;
+}
+let _corSearchT=null;
+function corInit(){
+  $('#corZonaBtn')?.addEventListener('click',()=>{const f=$('#corZonaForm');if(f){f.hidden=!f.hidden;if(!f.hidden){const i=$('#corZonaInput');if(i)i.focus();}}});
+  $('#corZonaSave')?.addEventListener('click',()=>corSetZona(($('#corZonaInput')||{}).value));
+  $('#corZonaInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')corSetZona(e.target.value);});
+  $('#corZonaGeo')?.addEventListener('click',corGeolocate);
+  const inp=$('#corSearch');
+  inp?.addEventListener('input',()=>{
+    const q=inp.value.trim();
+    const cl=$('#corSearchClear');if(cl)cl.style.display=q?'':'none';
+    clearTimeout(_corSearchT);
+    if(q.length>=3)_corSearchT=setTimeout(()=>corSearchGo(q),750);
+  });
+  inp?.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(_corSearchT);corSearchGo(inp.value);}});
+  $('#corSearchClear')?.addEventListener('click',()=>{
+    if(inp)inp.value='';
+    const cl=$('#corSearchClear');if(cl)cl.style.display='none';
+    if(corState.zona)corLoadCat((corState.cats[0]||{}).id||'corralon');
   });
 }
-
-function matVisibleItems(){
-  let items=materialesState.activeCategory?materialesState.items.filter(i=>i.categoria===materialesState.activeCategory):materialesState.items.slice();
-  if(materialesState.query)items=items.filter(i=>matMatches(i,materialesState.query)).sort(matRank);
-  return items;
-}
-function renderMaterialesCards(){
-  const grid=$('#materialesCards');if(!grid)return;
-  const items=matVisibleItems();
-  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:36px 20px"><div class="empty-title">Sin resultados</div><div class="empty-desc">'+(materialesState.query?'Ningún material arranca con "'+esc(materialesState.query)+'". Probá con otra palabra.':'No hay materiales para esta categoría.')+'</div></div>';return}
-  grid.innerHTML=items.map(matRowHTML).join('');
-  grid.querySelectorAll('.mat-row').forEach(row=>row.addEventListener('click',()=>{
-    const item=materialesState.items.find(i=>i.material===row.dataset.mat);
-    if(item)matBuy(item);
-  }));
-  grid.querySelectorAll('.mat-add').forEach(b=>b.addEventListener('click',e=>{
-    e.stopPropagation();matListaAdd(b.dataset.add,1);
-  }));
+async function corOpen(){
+  await corLoadCats();
+  corRenderFavs();
+  if(corState.zona)return;  // ya resuelto en esta sesión
+  const saved=localStorage.getItem(COR_LS);
+  if(saved){corSetZona(saved,false);return;}
+  corGeolocate();  // primera vez: la ubicación del usuario define la zona
 }
 
-// ── Autocompletado de la lupa (más buscados primero) ──
-function renderMatSuggest(){
-  const box=$('#matSuggest'),input=$('#matSearch');if(!box||!input)return;
-  const q=input.value.trim();
-  if(!q){box.style.display='none';box.innerHTML='';return;}
-  const matches=materialesState.items.filter(i=>matMatches(i,q)).sort(matRank).slice(0,8);
-  if(!matches.length){box.innerHTML='<div class="mat-suggest-empty">Sin coincidencias</div>';box.style.display='';return;}
-  box.innerHTML=matches.map(i=>`<button class="mat-suggest-item" data-mat="${esc(i.material)}">
-    <span class="mat-si-name">${esc(i.material)}</span>
-    <span class="mat-si-meta">${esc(i.categoria)}</span>
-    <span class="mat-si-price">${formatARS(i.precio_ars)}</span>
-  </button>`).join('');
-  box.style.display='';
-  box.querySelectorAll('.mat-suggest-item').forEach(b=>b.addEventListener('click',()=>matPickSuggestion(b.dataset.mat)));
-}
-function matPickSuggestion(name){
-  const input=$('#matSearch');
-  materialesState.query=name;materialesState.activeCategory=null;
-  if(input)input.value=name;
-  $('#matSuggest').style.display='none';
-  $('#matSearchClear').style.display='';
-  matRecordInterest(name,'search');
-  renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
-}
-function matClearSearch(){
-  materialesState.query='';
-  const input=$('#matSearch');if(input)input.value='';
-  $('#matSearchClear').style.display='none';
-  $('#matSuggest').style.display='none';
-  renderMaterialesCards();renderMaterialesMeta();
-}
-function initMatSearch(){
-  const input=$('#matSearch');if(!input)return;
-  let _matGridT;
-  input.addEventListener('input',()=>{
-    const q=input.value.trim();
-    $('#matSearchClear').style.display=q?'':'none';
-    materialesState.query=q;
-    renderMatSuggest();  // el autocomplete queda ágil (lista corta de 8)
-    // La grilla es pesada (filtra+ordena+reescribe toda la lista): la debounceamos
-    // ~140ms para no rebuildearla en CADA tecla. El resultado final es idéntico.
-    clearTimeout(_matGridT);
-    _matGridT=setTimeout(()=>{renderMaterialesCards();renderMaterialesMeta();},140);
-  });
-  input.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){const first=$('#matSuggest .mat-suggest-item');if(first)matPickSuggestion(first.dataset.mat);}
-    if(e.key==='Escape')$('#matSuggest').style.display='none';
-  });
-  input.addEventListener('focus',()=>{if(input.value.trim())renderMatSuggest();});
-  document.addEventListener('click',e=>{if(!e.target.closest('#matSearchWrap'))$('#matSuggest').style.display='none';});
-  $('#matSearchClear')?.addEventListener('click',matClearSearch);
-}
-
-// ── Aviso mínimo de aumentos (sin alarmismo) ──
-function renderMatNotice(){
-  const box=$('#matNotice');if(!box)return;
-  if(sessionStorage.getItem('re_mat_notice_hide')){box.innerHTML='';return;}
-  const subieron=(materialesState.items||[]).filter(i=>Number(i.variacion_mensual_pct)>5)
-    .sort((a,b)=>b.variacion_mensual_pct-a.variacion_mensual_pct);
-  if(!subieron.length){box.innerHTML='';return;}
-  const tops=subieron.slice(0,3).map(i=>`${esc(i.material)} (+${Number(i.variacion_mensual_pct).toFixed(1)}%)`).join(', ');
-  box.innerHTML=`<div class="mat-notice"><span>${subieron.length} material${subieron.length!==1?'es':''} subi${subieron.length!==1?'eron':'ó'} más de 5% este mes: ${tops}${subieron.length>3?'…':''}</span><button id="matNoticeHide" title="Ocultar">×</button></div>`;
-  $('#matNoticeHide').addEventListener('click',()=>{sessionStorage.setItem('re_mat_notice_hide','1');box.innerHTML='';});
-}
-
-// ── Lista de compra (persistida en el navegador) ──
 function matLista(){try{return JSON.parse(localStorage.getItem('re_mat_lista')||'{}');}catch(e){return {};}}
 function matListaSave(l){localStorage.setItem('re_mat_lista',JSON.stringify(l));matListaFabRender();matListaPush();}
 // Sync con el backend (antes la lista vivía solo en localStorage y se perdía al
@@ -5148,67 +5156,26 @@ function matCalcCompute(){
   });
 }
 
-// Seguimiento: los materiales que MÁS se movieron en el mes, con datos reales
-// del catálogo (nada de números inventados en un producto pago).
-function renderMatSeguimiento(){
-  const wrap=$('#matSeguimientoWrap');if(!wrap)return;
-  const items=(materialesState.items||[]).slice()
-    .sort((a,b)=>Math.abs(Number(b.variacion_mensual_pct)||0)-Math.abs(Number(a.variacion_mensual_pct)||0))
-    .slice(0,10);
-  if(!items.length){wrap.innerHTML='<div class="empty-state" style="padding:32px 20px"><div class="empty-title">Sin datos de seguimiento</div><div class="empty-desc">Cuando el catálogo de precios cargue, acá vas a ver los materiales con mayor variación mensual.</div></div>';return}
-  const rows=items.map(it=>{
-    const v=Number(it.variacion_mensual_pct)||0;
-    const cls=v>2?'trend-up':v<-0.5?'trend-down':'trend-stable';
-    return `<tr><td>${esc(it.material)}</td><td>${esc(it.categoria)}</td><td>$${Number(it.precio_ars).toLocaleString('es-AR')} <span style="color:var(--text-3);font-size:11px">/ ${esc(it.unidad)}</span></td><td><span class="stat-card-trend ${cls}">${v>0?'+':''}${v.toFixed(1)}% mensual</span></td><td style="color:var(--text-3);font-size:11.5px">${formatDate(it.fecha_actualizacion)}</td></tr>`;
-  }).join('');
-  wrap.innerHTML=`<table class="data-table"><thead><tr><th>Material</th><th>Categoría</th><th>Precio actual</th><th>Variación</th><th>Actualizado</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
-
-// Pronósticos: proyección lineal del precio del próximo mes usando la
-// variación mensual REAL de cada material, con disclaimer explícito.
-function renderMatPronosticos(){
-  const grid=$('#matPronosticosGrid'),note=$('#matPronosticosNote');if(!grid)return;
-  const items=(materialesState.items||[]).slice()
-    .sort((a,b)=>Math.abs(Number(b.variacion_mensual_pct)||0)-Math.abs(Number(a.variacion_mensual_pct)||0))
-    .slice(0,4);
-  if(!items.length){grid.innerHTML='<div class="empty-state" style="padding:32px 20px;grid-column:1/-1"><div class="empty-title">Sin datos para proyectar</div></div>';if(note)note.style.display='none';return}
-  grid.innerHTML=items.map(it=>{
-    const v=Number(it.variacion_mensual_pct)||0;
-    const proy=Math.round(Number(it.precio_ars)*(1+v/100));
-    const cls=v>2?'trend-up':v<-0.5?'trend-down':'trend-stable';
-    return `<div class="stat-card"><div class="stat-card-label">${esc(it.material)}</div><div class="stat-card-value">$${proy.toLocaleString('es-AR')}</div><div class="stat-card-sub">Próximo mes si se repite la variación actual ($${Number(it.precio_ars).toLocaleString('es-AR')} hoy)</div><div class="stat-card-trend ${cls}">${v>0?'+':''}${v.toFixed(1)}% proyectado</div></div>`;
-  }).join('');
-  if(note)note.style.display='';
-}
-
+// Catálogo de precios: ya sin UI propia — alimenta la Calculadora y la
+// valorización de la Lista de compra (y el asesor de voz usa la API directo).
 async function loadMateriales(force=false){
   if(materialesState.loading)return;
-  if(materialesState.loaded&&!force){renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();return}
+  if(materialesState.loaded&&!force)return;
   materialesState.loading=true;
-  const l=$('#matLoading'),g=$('#materialesCards');
-  if(l)l.style.display='none';
-  const _skRow='<div class="mat-row" style="pointer-events:none"><div class="mat-row-main"><div class="skeleton" style="height:12px;width:55%;border-radius:3px;margin-bottom:6px"></div><div class="skeleton" style="height:9px;width:35%;border-radius:3px"></div></div><div class="skeleton" style="height:16px;width:80px;border-radius:4px"></div></div>';
-  if(g)g.innerHTML=_skRow+_skRow+_skRow+_skRow+_skRow+_skRow;
   try{
     const r=await window.REAuthService.authFetch(apiBase()+'/api/materials');
     if(r.status===401){window.REAuthService.logout();return}
-    if(!r.ok)throw new Error('Error cargando precios ('+r.status+')');
+    if(!r.ok)throw new Error('materials '+r.status);
     const data=await r.json();
     materialesState.items=data.items;
     materialesState.categories=data.categories;
     materialesState.updatedAt=data.updated_at;
     materialesState.popularity=data.popularity||{};
     materialesState.loaded=true;
-    renderMaterialesChips();renderMaterialesCards();renderMaterialesMeta();
-    renderMatSeguimiento();renderMatPronosticos();
-    renderMatNotice();matListaFabRender();
+    matListaFabRender();
     if($('#matCalcForm')&&$('#matCalcForm').innerHTML)matCalcCompute();
-  }catch(e){
-    if(g)g.innerHTML='<div style="padding:20px;color:var(--text-2);font-size:13px">No se pudieron cargar los precios. Revisá tu conexión y probá de nuevo en unos segundos.</div>';console.error('materiales:',e);
-  }finally{
-    materialesState.loading=false;
-    if(l)l.style.display='none';
-  }
+  }catch(e){console.error('materiales:',e);}
+  finally{materialesState.loading=false;}
 }
 
 // Materiales tabs
@@ -5221,8 +5188,8 @@ function initMaterialesTabs(){
       $(`#matTab${tab.dataset.matTab.charAt(0).toUpperCase()+tab.dataset.matTab.slice(1)}`).style.display='';
     });
   });
-  initMatSearch();
   matCalcInit();
+  corInit();
   $('#matListaFab')?.addEventListener('click',matListaOpen);
 }
 
@@ -7828,11 +7795,6 @@ function initProyectoTabs(){
 
 // AI actions for sections
 function initSectionActions(){
-  $('#refreshPricesBtn')?.addEventListener('click',()=>loadMateriales(true));
-  $('#deepAnalysisBtn')?.addEventListener('click',()=>{
-    switchView('chat');
-    setTimeout(()=>sendMessage('Haceme un analisis economico profundo del mercado de materiales de construccion. Incluye pronosticos para los proximos 3 meses basado en inflacion, tipo de cambio, demanda del sector y costos energeticos. Presenta en tabla con tendencias.'),100);
-  });
   $('#aiCourseRec')?.addEventListener('click',()=>{
     switchView('chat');
     setTimeout(()=>sendMessage('Soy desarrollador inmobiliario en Argentina, nivel intermedio. Ya tengo experiencia en desarrollo de proyectos residenciales chicos (dúplex, PH). Quiero escalar a edificios multifamily y fideicomisos. Recomendame cursos, formaciones o certificaciones en orden de prioridad, incluyendo instituciones argentinas y opciones online. Indicame nivel, duracion, costo estimado y por que me sirve cada uno.'),100);

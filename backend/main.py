@@ -12,6 +12,7 @@ from api.routes.channels import webhook_router as channels_webhook_router
 from api.routes.chat import router as chat_router
 from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
+from api.routes.corralones import router as corralones_router
 from api.routes.creditos import router as creditos_router
 from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.ingest import router as ingest_router
@@ -315,6 +316,7 @@ app.include_router(chat_router, dependencies=_paid)
 # de escritura/borrado del KB por cualquier usuario autenticado.
 app.include_router(knowledge_router, dependencies=[Depends(require_admin)])
 app.include_router(materials_router, dependencies=_paid)
+app.include_router(corralones_router, dependencies=_paid)
 app.include_router(academia_router, dependencies=_paid)
 app.include_router(creditos_router, dependencies=_paid)
 # Admin de créditos (Fase 2): cada handler exige require_admin; sin gate _paid.
