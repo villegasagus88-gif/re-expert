@@ -86,7 +86,7 @@
     # microphone=(self): la feature de voz (dictado) necesita getUserMedia.
     # El browser igual pide permiso al usuario; esto solo lo HABILITA para el
     # propio sitio. Antes estaba en () y bloqueaba la voz en producción.
-    Permissions-Policy = "geolocation=(), microphone=(self), camera=()"
+    Permissions-Policy = "geolocation=(self), microphone=(self), camera=()"
     # HSTS: 6 meses, incluye subdomains. Cuando estés 100% seguro
     # de que TODO el tráfico va por HTTPS, sumá `preload`.
     Strict-Transport-Security = "max-age=15552000; includeSubDomains"

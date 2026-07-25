@@ -12,10 +12,12 @@ from api.routes.channels import webhook_router as channels_webhook_router
 from api.routes.chat import router as chat_router
 from api.routes.contacts import router as contacts_router
 from api.routes.conversations import router as conversations_router
+from api.routes.corralones import router as corralones_router
 from api.routes.creditos import router as creditos_router
 from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
+from api.routes.location import router as location_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
 from api.routes.opportunity import router as opportunity_router
@@ -315,6 +317,7 @@ app.include_router(chat_router, dependencies=_paid)
 # de escritura/borrado del KB por cualquier usuario autenticado.
 app.include_router(knowledge_router, dependencies=[Depends(require_admin)])
 app.include_router(materials_router, dependencies=_paid)
+app.include_router(corralones_router, dependencies=_paid)
 app.include_router(academia_router, dependencies=_paid)
 app.include_router(creditos_router, dependencies=_paid)
 # Admin de créditos (Fase 2): cada handler exige require_admin; sin gate _paid.
@@ -336,6 +339,8 @@ app.include_router(channels_router, dependencies=_paid)
 # autentica por secret header. Detrás de require_access devolvía 401 → canal roto.
 app.include_router(channels_webhook_router)
 app.include_router(contacts_router, dependencies=_paid)
+# Geolocalización (capacidad de plataforma; consent-first, ver api/routes/location.py)
+app.include_router(location_router, dependencies=_paid)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
