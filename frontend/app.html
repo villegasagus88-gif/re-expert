@@ -214,18 +214,14 @@
 
     <div class="sidebar-footer">
       <div class="model-badge"><span class="model-dot"></span> IA de última generación</div>
-      <div id="userFooter" style="display:none;padding:8px 12px;margin-top:8px;border-top:1px solid var(--border-sidebar);display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-sidebar-muted)">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span id="userEmail" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-          <button id="logoutBtn" title="Cerrar sesión" style="background:transparent;border:none;color:var(--text-sidebar-muted);cursor:pointer;padding:4px;border-radius:4px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-          </button>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <a href="account.html" id="planBadge" class="plan-badge plan-badge-free" title="Mi cuenta">Cuenta</a>
-          <span id="dailyMsgsCounter" style="display:none;font-size:10px;color:var(--text-sidebar-muted)"></span>
-          <a href="pricing.html" id="upgradeSidebarLink" style="margin-left:auto;font-size:10px;color:#BE5103;text-decoration:none;font-weight:600;display:none">↑ Pro</a>
-        </div>
+      <!-- Cuenta (estilo ChatGPT): el nombre abre el menú; el menú tiene Perfil,
+           Configuración ▸, Ayuda ▸ y Cerrar sesión. -->
+      <div id="userFooter" style="display:none">
+        <button class="acct-trigger" id="acctTrigger" aria-haspopup="true" aria-expanded="false">
+          <span class="acct-avatar" id="acctAvatar">?</span>
+          <span class="acct-name" id="userEmail"></span>
+          <svg class="acct-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -1031,6 +1027,50 @@
             <button class="btn-secondary" id="wsCancelBtn">Cancelar</button>
             <button class="btn-primary" id="wsSaveBtn">Crear proyecto</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menú de cuenta (estilo ChatGPT). Se abre desde el nombre en el footer
+         del sidebar. Los submenús Configuración/Ayuda abren el panel de abajo. -->
+    <div class="acct-menu" id="acctMenu" role="menu" aria-hidden="true">
+      <button class="acct-item acct-item-me" id="acctMe" role="menuitem">
+        <span class="acct-avatar acct-avatar-lg" id="acctMeAvatar">?</span>
+        <span class="acct-me-txt"><span class="acct-me-name" id="acctMeName">—</span></span>
+      </button>
+      <div class="acct-sep" role="separator"></div>
+      <button class="acct-item" id="acctProfile" role="menuitem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>
+        Perfil
+      </button>
+      <button class="acct-item" id="acctSettings" role="menuitem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 3.6 1.65 1.65 0 0010 2.09V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 8v0c.14.36.43.65.79.79H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Configuración
+        <svg class="acct-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="acct-item" id="acctHelp" role="menuitem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+        Ayuda
+        <svg class="acct-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <div class="acct-sep" role="separator"></div>
+      <button class="acct-item" id="acctLogout" role="menuitem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+
+    <!-- Panel de Configuración / Ayuda: navegación lateral + contenido.
+         Las secciones internas se desarrollan más adelante. -->
+    <div class="modal-overlay" id="acctPanel">
+      <div class="modal modal-wide acct-panel">
+        <div class="modal-header">
+          <h3 id="acctPanelTitle">Configuración</h3>
+          <button class="btn-icon" id="acctPanelClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="acct-panel-body">
+          <nav class="acct-nav" id="acctPanelNav"></nav>
+          <section class="acct-pane" id="acctPanelPane"></section>
         </div>
       </div>
     </div>
@@ -2037,6 +2077,97 @@ function initSmartScroll(){
   if(c)c.addEventListener('scroll',()=>{if(state.currentView!=='chat')return;chatStick=(c.scrollHeight-c.scrollTop-c.clientHeight)<=48},{passive:true});
   const s=$('#solPageContainer');
   if(s)s.addEventListener('scroll',()=>{solStick=(s.scrollHeight-s.scrollTop-s.clientHeight)<=48},{passive:true});
+}
+
+// ═══ Menú de cuenta (estilo ChatGPT) ═══════════════════════════════════════
+// Autocontenido: reusa el modal de perfil y el logout existentes. Las secciones
+// internas de Configuración/Ayuda quedan como placeholders (se desarrollan luego).
+const ACCT_SECTIONS={
+  settings:{titulo:'Configuración',items:[
+    {id:'almacenamiento',label:'Almacenamiento',desc:'Espacio usado por tus proyectos, planos y documentos.'},
+    {id:'voz',label:'Voz',desc:'Voz del asistente, velocidad de lectura y dictado.'},
+    {id:'facturacion',label:'Facturación',desc:'Método de pago, comprobantes e historial.'},
+    {id:'datos',label:'Controles de datos',desc:'Qué datos se guardan, exportarlos o eliminarlos.'},
+    {id:'cuenta',label:'Cuenta',desc:'Email, contraseña y cierre de cuenta.'},
+  ]},
+  help:{titulo:'Ayuda',items:[
+    {id:'privacidad',label:'Política y privacidad',desc:'Cómo tratamos y protegemos tu información.'},
+    {id:'error',label:'Informar un error',desc:'Contanos qué falló y lo revisamos.'},
+    {id:'terminos',label:'Términos de servicio',desc:'Condiciones de uso de la plataforma.'},
+    {id:'asistencia',label:'Asistencia al usuario',desc:'Chat con IA para dudas de uso y configuración.'},
+  ]},
+};
+let _acctPanelKey='settings';
+
+function acctFillIdentity(user){
+  const email=(user&&user.email)||'';
+  const nombre=(user&&user.full_name)||email.split('@')[0]||'Mi cuenta';
+  const ini=(nombre.trim()[0]||'?').toUpperCase();
+  const set=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  set('acctAvatar',ini); set('acctMeAvatar',ini); set('acctMeName',nombre);
+}
+
+function acctOpen(){
+  const m=document.getElementById('acctMenu'),t=document.getElementById('acctTrigger');
+  if(!m)return; m.classList.add('active'); m.setAttribute('aria-hidden','false');
+  if(t)t.setAttribute('aria-expanded','true');
+}
+function acctClose(){
+  const m=document.getElementById('acctMenu'),t=document.getElementById('acctTrigger');
+  if(!m)return; m.classList.remove('active'); m.setAttribute('aria-hidden','true');
+  if(t)t.setAttribute('aria-expanded','false');
+}
+function acctToggle(){
+  const m=document.getElementById('acctMenu');
+  if(m&&m.classList.contains('active'))acctClose();else acctOpen();
+}
+
+function acctOpenPanel(key){
+  const cfg=ACCT_SECTIONS[key]; if(!cfg)return;
+  _acctPanelKey=key;
+  acctClose();
+  const t=document.getElementById('acctPanelTitle'); if(t)t.textContent=cfg.titulo;
+  const nav=document.getElementById('acctPanelNav');
+  nav.innerHTML=cfg.items.map((it,i)=>
+    `<button class="acct-nav-item${i===0?' active':''}" data-sec="${it.id}">${escapeHtml(it.label)}</button>`).join('');
+  nav.querySelectorAll('.acct-nav-item').forEach(b=>b.addEventListener('click',()=>{
+    nav.querySelectorAll('.acct-nav-item').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    acctRenderPane(cfg.items.find(i=>i.id===b.dataset.sec));
+  }));
+  acctRenderPane(cfg.items[0]);
+  document.getElementById('acctPanel').classList.add('active');
+}
+function acctRenderPane(item){
+  const pane=document.getElementById('acctPanelPane'); if(!pane||!item)return;
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
+    <div class="acct-soon">Próximamente</div>`;
+}
+function acctClosePanel(){document.getElementById('acctPanel').classList.remove('active')}
+
+function acctInit(){
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  on('acctTrigger',e=>{e.stopPropagation();acctToggle()});
+  on('acctProfile',()=>{acctClose();openProfileModal()});
+  on('acctSettings',()=>acctOpenPanel('settings'));
+  on('acctHelp',()=>acctOpenPanel('help'));
+  on('acctLogout',()=>{acctClose();handleLogout()});
+  on('acctMe',()=>{});           // identidad: sin lógica todavía (por diseño)
+  on('acctPanelClose',acctClosePanel);
+  const panel=document.getElementById('acctPanel');
+  if(panel)panel.addEventListener('click',e=>{if(e.target===panel)acctClosePanel()});
+  // Cerrar el menú al clickear afuera o con Escape.
+  document.addEventListener('click',e=>{
+    const m=document.getElementById('acctMenu');
+    if(m&&m.classList.contains('active')&&!m.contains(e.target))acctClose();
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    acctClose();
+    const p=document.getElementById('acctPanel');
+    if(p&&p.classList.contains('active'))acctClosePanel();
+  });
 }
 
 // ===== PLAN GATING =====
@@ -8003,6 +8134,7 @@ async function onUserLoggedIn(user){
   const footer=document.getElementById('userFooter');
   footer.style.display='flex';
   document.getElementById('userEmail').textContent=user.email||'';
+  acctFillIdentity(user);
   updatePlanBadge();
   // Cargar proyectos y perfil global en paralelo con conversaciones sueltas
   await Promise.all([
@@ -8379,7 +8511,7 @@ function init(){
   // Auth form handlers (modal fallback)
   document.getElementById('authForm').addEventListener('submit',handleAuthSubmit);
   document.getElementById('authToggle').addEventListener('click',toggleAuthMode);
-  document.getElementById('logoutBtn').addEventListener('click',handleLogout);
+  // El logout ahora vive en el menú de cuenta (#acctLogout, ver acctInit).
 
   els.sidebarToggle.addEventListener('click',toggleSidebar);
   els.sidebarClose.addEventListener('click',()=>els.sidebar.classList.add('collapsed'));
@@ -8443,6 +8575,7 @@ function init(){
   const _sub=document.getElementById('workspacesSubnav');if(_sub)_sub.addEventListener('scroll',closeCtxMenu,{passive:true});
   // Mi perfil
   document.getElementById('openProfileBtn').addEventListener('click',openProfileModal);
+  acctInit();
   document.getElementById('profileModalClose').addEventListener('click',closeProfileModal);
   document.getElementById('profileModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProfileModal()});
   document.getElementById('profileAddBtn').addEventListener('click',addProfileItem);

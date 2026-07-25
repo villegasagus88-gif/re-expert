@@ -201,6 +201,48 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .sidebar-footer{padding:10px 14px;border-top:1px solid var(--border-sidebar)}
 .model-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-sidebar-muted);font-weight:500}
 
+/* ─── Cuenta: trigger del footer + menú desplegable (estilo ChatGPT) ─── */
+.acct-trigger{display:flex;align-items:center;gap:9px;width:100%;margin-top:8px;padding:8px 8px;background:transparent;border:none;border-radius:var(--radius-md);cursor:pointer;font-family:var(--font);text-align:left;transition:background .15s var(--ease-out)}
+.acct-trigger:hover{background:var(--bg-sidebar-hover)}
+.acct-trigger:focus-visible{outline:2px solid var(--accent-brand);outline-offset:2px}
+.acct-avatar{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,var(--accent-brand),#8f3d02);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;text-transform:uppercase}
+.acct-avatar-lg{width:34px;height:34px;font-size:13px}
+.acct-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:500;color:rgba(255,255,255,.82)}
+.acct-caret{flex-shrink:0;color:var(--text-sidebar-muted);opacity:.7}
+
+.acct-menu{position:fixed;left:10px;bottom:64px;width:var(--sidebar-w);max-width:calc(100vw - 20px);background:var(--bg-modal);border:1px solid var(--border-0);border-radius:var(--radius-lg);box-shadow:var(--shadow-xl);padding:6px;display:none;flex-direction:column;gap:1px;z-index:400}
+.acct-menu.active{display:flex;animation:acctIn .16s var(--ease) both}
+@keyframes acctIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+.acct-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-1);font-size:13px;font-family:var(--font);text-align:left;cursor:pointer;transition:background .13s var(--ease-out)}
+.acct-item:hover{background:var(--bg-2)}
+.acct-item:focus-visible{outline:2px solid var(--accent-brand);outline-offset:-2px}
+.acct-item svg{flex-shrink:0;opacity:.75}
+.acct-chev{margin-left:auto;opacity:.45}
+.acct-item-me{gap:11px;padding:9px 10px}
+.acct-me-txt{display:flex;flex-direction:column;min-width:0}
+.acct-me-name{font-size:13.5px;font-weight:600;color:var(--text-0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-sep{height:1px;background:var(--border-1);margin:5px 4px}
+
+/* Panel de Configuración / Ayuda */
+.acct-panel{width:660px;max-width:94vw}
+.acct-panel-body{display:grid;grid-template-columns:200px 1fr;min-height:330px}
+.acct-nav{display:flex;flex-direction:column;gap:2px;padding:12px 10px;border-right:1px solid var(--border-1)}
+.acct-nav-item{padding:8px 11px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-2);font-size:12.5px;font-family:var(--font);text-align:left;cursor:pointer;transition:all .13s var(--ease-out)}
+.acct-nav-item:hover{background:var(--bg-2);color:var(--text-0)}
+.acct-nav-item.active{background:var(--bg-2);color:var(--accent-brand);font-weight:600}
+.acct-nav-item:focus-visible{outline:2px solid var(--accent-brand);outline-offset:-2px}
+.acct-pane{padding:20px 22px}
+.acct-pane-title{font-size:15px;font-weight:700;color:var(--text-0);margin:0 0 6px}
+.acct-pane-desc{font-size:12.5px;color:var(--text-2);line-height:1.55;margin:0 0 16px;max-width:44ch}
+.acct-soon{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-3);background:var(--bg-2);border:1px dashed var(--border-1);border-radius:100px;padding:5px 12px}
+@media (max-width:768px){
+  .acct-menu{left:8px;right:8px;width:auto;bottom:70px}
+  .acct-panel-body{grid-template-columns:1fr}
+  .acct-nav{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border-1)}
+  .acct-nav-item{white-space:nowrap}
+}
+@media (prefers-reduced-motion:reduce){.acct-menu.active{animation:none}}
+
 /* Proyectos (workspaces) — integrado como sidebar-nav-item expandible */
 .sidebar-nav-expandable{position:relative}
 .sidebar-nav-expandable .nav-label{flex:1;text-align:left}
