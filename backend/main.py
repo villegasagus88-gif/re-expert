@@ -17,6 +17,7 @@ from api.routes.creditos import router as creditos_router
 from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
+from api.routes.location import router as location_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
 from api.routes.opportunity import router as opportunity_router
@@ -338,6 +339,8 @@ app.include_router(channels_router, dependencies=_paid)
 # autentica por secret header. Detrás de require_access devolvía 401 → canal roto.
 app.include_router(channels_webhook_router)
 app.include_router(contacts_router, dependencies=_paid)
+# Geolocalización (capacidad de plataforma; consent-first, ver api/routes/location.py)
+app.include_router(location_router, dependencies=_paid)
 
 # Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
