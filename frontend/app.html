@@ -23,6 +23,7 @@
   <script src="config.js"></script>
   <script src="sentry.js"></script>
   <script src="authService.js"></script>
+  <script src="location.js"></script>
   <style id="route-guard-styles">
     /* Oculta el contenido hasta que requireAuth() resuelva, para evitar
        flash de UI protegida antes de redirigir a login. */
@@ -4752,18 +4753,32 @@ function corAskZona(){
   const l=$('#corZonaLabel');if(l)l.textContent='Elegí tu zona';
   const f=$('#corZonaForm');if(f){f.hidden=false;const i=$('#corZonaInput');if(i)i.focus();}
 }
-function corGeolocate(){
-  if(!navigator.geolocation){corAskZona();return;}
+async function corZonaFromCoords(lat,lon){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/corralones/geo',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lat,lon})});
+    if(!r.ok)return false;
+    const d=await r.json();
+    if(d&&d.zona){corSetZona(d.zona);return true;}
+  }catch(e){}
+  return false;
+}
+async function corGeolocate(){
   const l=$('#corZonaLabel');if(l)l.textContent='Detectando tu zona…';
+  // 1) La ubicación que la plataforma ya tiene del usuario (módulo RELocation
+  //    de Mati, consent-first): si hay un fix reciente, se reutiliza sin
+  //    volver a pedir permiso.
+  try{
+    if(window.RELocation&&window.RELocation.getLatest){
+      const fix=await window.RELocation.getLatest().catch(()=>null);
+      if(fix&&fix.lat!=null&&await corZonaFromCoords(fix.lat,fix.lon))return;
+    }
+  }catch(e){}
+  // 2) Pedir al navegador directamente
+  if(!navigator.geolocation){corAskZona();return;}
   navigator.geolocation.getCurrentPosition(async pos=>{
-    try{
-      const r=await window.REAuthService.authFetch(apiBase()+'/api/corralones/geo',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({lat:pos.coords.latitude,lon:pos.coords.longitude})});
-      if(!r.ok)throw new Error('geo '+r.status);
-      const d=await r.json();
-      if(d&&d.zona)corSetZona(d.zona);else corAskZona();
-    }catch(e){corAskZona();}
+    if(!(await corZonaFromCoords(pos.coords.latitude,pos.coords.longitude)))corAskZona();
   },()=>corAskZona(),{timeout:8000,maximumAge:600000});
 }
 async function corLoadCats(){
