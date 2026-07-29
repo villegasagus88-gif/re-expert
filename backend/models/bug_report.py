@@ -19,7 +19,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from models.base import Base
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Identity, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,8 +40,11 @@ class BugReport(Base):
         server_default=func.gen_random_uuid(),
     )
     # Número corto y legible para hablar con el usuario ("tu reporte #1042").
-    # Lo genera Postgres con una secuencia propia: nunca se repite ni se reusa.
-    ticket: Mapped[int] = mapped_column(Integer, nullable=False, unique=True, index=True)
+    # IDENTITY: lo genera Postgres (arranca en 1000); nunca se repite ni se reusa.
+    ticket: Mapped[int] = mapped_column(
+        Integer, Identity(always=False, start=1000, increment=1),
+        nullable=False, unique=True, index=True,
+    )
 
     # ondelete=SET NULL: si el usuario borra su cuenta, el reporte sobrevive
     # (nos sirve para el historial de bugs) pero pierde el vínculo personal.
