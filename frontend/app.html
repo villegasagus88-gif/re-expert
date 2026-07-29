@@ -2105,6 +2105,9 @@ function acctFillIdentity(user){
   const ini=(nombre.trim()[0]||'?').toUpperCase();
   const set=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
   set('acctAvatar',ini); set('acctMeAvatar',ini); set('acctMeName',nombre);
+  set('userEmail',nombre);        // trigger del sidebar: nombre, no email
+  const t=document.getElementById('acctTrigger');
+  if(t&&email)t.title=email;      // el email queda en el tooltip
 }
 
 function acctOpen(){
@@ -8133,8 +8136,7 @@ async function onUserLoggedIn(user){
   // Mostrar user footer en sidebar
   const footer=document.getElementById('userFooter');
   footer.style.display='flex';
-  document.getElementById('userEmail').textContent=user.email||'';
-  acctFillIdentity(user);
+  acctFillIdentity(user);   // el trigger muestra el NOMBRE (no el email)
   updatePlanBadge();
   // Cargar proyectos y perfil global en paralelo con conversaciones sueltas
   await Promise.all([
@@ -8528,7 +8530,9 @@ function init(){
   const _railExpand=document.getElementById('railExpand');
   if(_railExpand)_railExpand.addEventListener('click',()=>els.sidebar.classList.remove('collapsed'));
   const _railProfile=document.getElementById('railProfileBtn');
-  if(_railProfile)_railProfile.addEventListener('click',()=>{const p=document.getElementById('openProfileBtn');if(p)p.click()});
+  // Con el sidebar oculto, el icono de perfil del rail abre el MISMO menú de
+  // cuenta que el nombre del footer (no el modal de perfil: ese está adentro).
+  if(_railProfile)_railProfile.addEventListener('click',e=>{e.stopPropagation();acctToggle()});
   initSmartScroll();
   els.newChatBtn.addEventListener('click',newConversation);
   els.messageInput.addEventListener('input',()=>{updateSendBtn();autoResize()});

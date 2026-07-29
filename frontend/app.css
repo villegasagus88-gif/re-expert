@@ -212,6 +212,8 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 
 .acct-menu{position:fixed;left:10px;bottom:64px;width:var(--sidebar-w);max-width:calc(100vw - 20px);background:var(--bg-modal);border:1px solid var(--border-0);border-radius:var(--radius-lg);box-shadow:var(--shadow-xl);padding:6px;display:none;flex-direction:column;gap:1px;z-index:400}
 .acct-menu.active{display:flex;animation:acctIn .16s var(--ease) both}
+/* Sidebar oculto: el menú sale al lado del rail (54px) para no quedar tapado. */
+body:has(.sidebar.collapsed) .acct-menu{left:62px;bottom:14px}
 @keyframes acctIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
 .acct-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-1);font-size:13px;font-family:var(--font);text-align:left;cursor:pointer;transition:background .13s var(--ease-out)}
 .acct-item:hover{background:var(--bg-2)}
