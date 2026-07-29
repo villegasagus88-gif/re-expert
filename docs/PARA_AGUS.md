@@ -6,16 +6,24 @@
 
 ## 🔴 URGENTE — El backend NO se está desplegando en Railway (necesitamos tu dashboard)
 
-**Síntoma**: Railway sirve el commit **`4704d42` (25-jul)**. `main` está en
-`00009b5`. Los 2 commits que tocan `backend/` no llegaron nunca a producción:
+**Síntoma**: Railway sigue sirviendo el commit **`4704d42` (25-jul)**. `main` ya
+está en `8ffe7af`. Los commits que tocan `backend/` no llegaron nunca a producción:
 - `f5b5ff0` — feat(ayuda): informar un error (tabla nueva + migración 0036)
 - `f85b4bf` — fix: la migración usa IDENTITY en vez de CREATE SEQUENCE
+- `8ffe7af` — feat(config): Almacenamiento (**sin migración**, solo rutas nuevas)
 
 **Prod está SANO** (`/health` 200, `/health/db` 200, login y landing OK): Railway
 aborta el deploy si el `preDeployCommand` falla y deja corriendo la versión
-anterior. Los usuarios no ven nada raro. Lo que sí falla es la feature nueva: el
-frontend (que Netlify SÍ publicó) le pide `POST /api/bugs` a un backend que
-todavía no conoce esa ruta → 404 → "No pudimos enviarlo".
+anterior. Los usuarios no ven nada raro. Lo que sí falla son las features nuevas,
+porque Netlify SÍ publicó el frontend y este le pega a rutas que ese backend
+todavía no conoce:
+- **Informar un error** → `POST /api/bugs` = 404 → "No pudimos enviarlo".
+- **Configuración → Almacenamiento** → `GET /api/storage/files` = 404 → "No
+  pudimos cargar tus archivos".
+
+> Dato que ACOTA la hipótesis: `8ffe7af` (Almacenamiento) **no trae ninguna
+> migración** — son rutas nuevas y nada más. Así que si después de destrabar esto
+> el deploy sigue fallando, el problema NO es Alembic.
 
 **Hipótesis principal (ya mitigada de nuestro lado)**: `backend/railway.json`
 tiene `"preDeployCommand": "alembic upgrade head"`. La migración 0036 original
