@@ -226,6 +226,26 @@ body:has(.sidebar.collapsed) .acct-menu{left:62px;bottom:14px}
 .acct-me-name{font-size:13.5px;font-weight:600;color:var(--text-0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct-sep{height:1px;background:var(--border-1);margin:5px 4px}
 
+/* Selector de cuentas: sale al costado del menú (como ChatGPT). */
+.acct-switcher{left:calc(10px + var(--sidebar-w) + 8px);bottom:64px;width:288px}
+body:has(.sidebar.collapsed) .acct-switcher{left:calc(62px + var(--sidebar-w) + 8px);bottom:14px}
+.acct-sw-head{font-size:11px;color:var(--text-3);padding:8px 11px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-sw-list{display:flex;flex-direction:column;gap:1px;max-height:250px;overflow-y:auto}
+.acct-sw-item{gap:10px}
+.acct-sw-item.is-current{background:var(--bg-2)}
+.acct-sw-item.is-loading{opacity:.55;pointer-events:none}
+.acct-sw-item:disabled{cursor:default}
+.acct-sw-txt{display:flex;flex-direction:column;min-width:0;flex:1;text-align:left}
+.acct-sw-name{font-size:12.5px;font-weight:600;color:var(--text-0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-sw-mail{font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-sw-check{flex-shrink:0;color:var(--accent-brand)}
+.acct-sw-empty{font-size:11.5px;color:var(--text-3);padding:8px 11px}
+#acctAdd:disabled{opacity:.45;cursor:default}
+#acctAdd:disabled:hover{background:transparent}
+@media (max-width:768px){
+  .acct-switcher,body:has(.sidebar.collapsed) .acct-switcher{left:8px;right:8px;width:auto;bottom:70px}
+}
+
 /* Panel de Configuración / Ayuda — ancho cómodo: adentro viven formularios
    (informar un error), no solo texto. Alto acotado al viewport con scroll
    propio en el contenido, para que nunca se corte en pantallas bajas. */

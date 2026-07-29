@@ -1034,9 +1034,10 @@
     <!-- Menú de cuenta (estilo ChatGPT). Se abre desde el nombre en el footer
          del sidebar. Los submenús Configuración/Ayuda abren el panel de abajo. -->
     <div class="acct-menu" id="acctMenu" role="menu" aria-hidden="true">
-      <button class="acct-item acct-item-me" id="acctMe" role="menuitem">
+      <button class="acct-item acct-item-me" id="acctMe" role="menuitem" aria-haspopup="true" aria-expanded="false">
         <span class="acct-avatar acct-avatar-lg" id="acctMeAvatar">?</span>
         <span class="acct-me-txt"><span class="acct-me-name" id="acctMeName">—</span></span>
+        <svg class="acct-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
       <div class="acct-sep" role="separator"></div>
       <button class="acct-item" id="acctProfile" role="menuitem">
@@ -1063,6 +1064,18 @@
       <button class="acct-item" id="acctLogout" role="menuitem">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         Cerrar sesión
+      </button>
+    </div>
+
+    <!-- Selector de cuentas (estilo ChatGPT): se abre desde el nombre dentro
+         del menú. Lista las cuentas guardadas + "Añadir cuenta". -->
+    <div class="acct-menu acct-switcher" id="acctSwitcher" role="menu" aria-hidden="true">
+      <div class="acct-sw-head" id="acctSwEmail">—</div>
+      <div class="acct-sw-list" id="acctSwList"></div>
+      <div class="acct-sep" role="separator"></div>
+      <button class="acct-item" id="acctAdd" role="menuitem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Añadir cuenta
       </button>
     </div>
 
@@ -2123,12 +2136,74 @@ function acctOpen(){
 }
 function acctClose(){
   const m=document.getElementById('acctMenu'),t=document.getElementById('acctTrigger');
+  if(typeof acctSwClose==='function')acctSwClose();   // el selector va con él
   if(!m)return; m.classList.remove('active'); m.setAttribute('aria-hidden','true');
   if(t)t.setAttribute('aria-expanded','false');
 }
 function acctToggle(){
   const m=document.getElementById('acctMenu');
   if(m&&m.classList.contains('active'))acctClose();else acctOpen();
+}
+
+// ── Selector de cuentas (multi-cuenta estilo ChatGPT) ──────────────────────
+// La lógica de sesiones vive en authService (roster + switch); acá solo la UI.
+function acctSwOpen(){
+  const sw=document.getElementById('acctSwitcher'), me=document.getElementById('acctMe');
+  const A=window.REAuthService;
+  if(!sw||!A||!A.listAccounts)return;
+  const cuentas=A.listAccounts();
+  const u=(A.getStoredUser&&A.getStoredUser())||{};
+  const mail=document.getElementById('acctSwEmail');
+  if(mail)mail.textContent=u.email||'';
+  const lista=document.getElementById('acctSwList');
+  if(lista){
+    lista.innerHTML=cuentas.map(c=>{
+      const ini=((c.name||c.email||'?').trim()[0]||'?').toUpperCase();
+      const nombre=c.name||c.email;
+      return `<button class="acct-item acct-sw-item${c.current?' is-current':''}" role="menuitem" data-acct="${escapeHtml(c.key)}">
+        <span class="acct-avatar">${escapeHtml(ini)}</span>
+        <span class="acct-sw-txt">
+          <span class="acct-sw-name">${escapeHtml(nombre)}</span>
+          ${c.name?`<span class="acct-sw-mail">${escapeHtml(c.email)}</span>`:''}
+        </span>
+        ${c.current?'<svg class="acct-sw-check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+      </button>`;
+    }).join('')||'<div class="acct-sw-empty">Solo esta cuenta.</div>';
+    lista.querySelectorAll('[data-acct]').forEach(b=>{
+      b.addEventListener('click',()=>acctSwitchTo(b.dataset.acct,b));
+    });
+  }
+  // Tope de cuentas: si llegó al máximo, "Añadir cuenta" queda deshabilitado.
+  const add=document.getElementById('acctAdd');
+  if(add){
+    const lleno=cuentas.length>=(A.MAX_ACCOUNTS||5);
+    add.disabled=lleno;
+    add.title=lleno?`Máximo ${A.MAX_ACCOUNTS||5} cuentas guardadas`:'';
+  }
+  sw.classList.add('active'); sw.setAttribute('aria-hidden','false');
+  if(me)me.setAttribute('aria-expanded','true');
+}
+function acctSwClose(){
+  const sw=document.getElementById('acctSwitcher'), me=document.getElementById('acctMe');
+  if(!sw)return;
+  sw.classList.remove('active'); sw.setAttribute('aria-hidden','true');
+  if(me)me.setAttribute('aria-expanded','false');
+}
+function acctSwToggle(){
+  const sw=document.getElementById('acctSwitcher');
+  if(sw&&sw.classList.contains('active'))acctSwClose();else acctSwOpen();
+}
+async function acctSwitchTo(key,btn){
+  const A=window.REAuthService;
+  if(!A||!A.switchAccount)return;
+  if(btn&&btn.classList.contains('is-current')){acctSwClose();acctClose();return;}
+  if(btn){btn.disabled=true;btn.classList.add('is-loading');}
+  const ok=await A.switchAccount(key);   // si sale bien, recarga la página
+  if(!ok){
+    if(btn){btn.disabled=false;btn.classList.remove('is-loading');}
+    alert('Esa sesión expiró. Volvé a iniciar sesión con esa cuenta.');
+    acctSwOpen();                        // refrescar la lista (ya sin esa cuenta)
+  }
 }
 
 function acctOpenPanel(key){
@@ -2295,19 +2370,25 @@ function acctInit(){
   on('acctSettings',()=>acctOpenPanel('settings'));
   on('acctHelp',()=>acctOpenPanel('help'));
   on('acctLogout',()=>{acctClose();handleLogout()});
-  on('acctMe',()=>{});           // identidad: sin lógica todavía (por diseño)
+  on('acctMe',e=>{e.stopPropagation();acctSwToggle()});   // abre el selector de cuentas
+  on('acctAdd',()=>{const A=window.REAuthService;if(A&&A.addAccount)A.addAccount()});
   on('acctBugs',()=>{acctClose();window.location.href='admin-bugs.html'});
   bugRefreshAdminBadge();        // solo hace algo si sos admin
   on('acctPanelClose',acctClosePanel);
   const panel=document.getElementById('acctPanel');
   if(panel)panel.addEventListener('click',e=>{if(e.target===panel)acctClosePanel()});
-  // Cerrar el menú al clickear afuera o con Escape.
+  // Cerrar el menú al clickear afuera o con Escape (el selector de cuentas
+  // cuenta como "adentro": está fuera del menú en el DOM pero es parte de él).
   document.addEventListener('click',e=>{
-    const m=document.getElementById('acctMenu');
-    if(m&&m.classList.contains('active')&&!m.contains(e.target))acctClose();
+    const m=document.getElementById('acctMenu'), sw=document.getElementById('acctSwitcher');
+    const dentroSw=sw&&sw.contains(e.target);
+    if(sw&&sw.classList.contains('active')&&!dentroSw&&!(m&&m.contains(e.target)))acctSwClose();
+    if(m&&m.classList.contains('active')&&!m.contains(e.target)&&!dentroSw){acctSwClose();acctClose();}
   });
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
+    const sw=document.getElementById('acctSwitcher');
+    if(sw&&sw.classList.contains('active')){acctSwClose();return;}  // 1º el selector
     acctClose();
     const p=document.getElementById('acctPanel');
     if(p&&p.classList.contains('active'))acctClosePanel();

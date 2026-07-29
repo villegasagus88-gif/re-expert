@@ -118,6 +118,13 @@
   }
 
   async function redirectIfAuthenticated() {
+    // Multi-cuenta: si venimos de "Añadir cuenta" (?add=1), la sesión actual
+    // sigue viva a propósito y hay que MOSTRAR el formulario igual, para poder
+    // loguear una segunda cuenta. Sin este early-return el rebote a app.html
+    // haría imposible agregar otra. Los flujos normales (sin ?add=1) no cambian.
+    try {
+      if (new URLSearchParams(window.location.search).get('add') === '1') return;
+    } catch { /* URL rara: seguimos con el comportamiento de siempre */ }
     const stored = localStorage.getItem('re_access_token');
     if (!stored) return;
     const payload = _parseJwtPayload(stored);

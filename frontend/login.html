@@ -72,6 +72,11 @@
       <div class="auth-toggle">
         ¿No tenés cuenta? <a href="register.html">Crear una cuenta</a>
       </div>
+
+      <!-- Solo en el flujo "Añadir cuenta" (multi-cuenta). Oculto por defecto. -->
+      <div class="auth-toggle" id="add-account-note" style="display:none">
+        Estás agregando otra cuenta. <a href="app.html">Volver a la app</a>
+      </div>
     </div>
 
     <div class="auth-footer">© 2026 RE Expert · Real Estate AI para Argentina</div>
@@ -81,7 +86,12 @@
   <script src="auth.js"></script>
   <script>
     // Si ya estamos logueados, saltamos directo a la app.
+    // (Excepción: ?add=1 = flujo "Añadir cuenta", se queda en el formulario.)
     window.REAuth.redirectIfAuthenticated();
+
+    if (new URLSearchParams(location.search).get('add') === '1') {
+      document.getElementById('add-account-note').style.display = '';
+    }
 
     document.getElementById('login-form').addEventListener('submit', window.REAuth.handleLogin);
     document.getElementById('forgot-link').addEventListener('click', window.REAuth.handleForgotPassword);

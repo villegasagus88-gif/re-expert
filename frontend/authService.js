@@ -17,6 +17,64 @@
   const STORAGE_USER = 're_user';
   const REFRESH_LEAD_MS = 60_000;
 
+  // ── Multi-cuenta (estilo ChatGPT) ─────────────────────────────────────────
+  // La sesión ACTIVA sigue viviendo en las 3 claves de arriba, exactamente como
+  // antes: todo el código que ya existe (app.html, admin*, account, pricing…)
+  // no se entera de nada. Acá solo se guarda un ROSTER extra de las cuentas que
+  // el usuario dejó agregadas, para poder cambiar entre ellas sin re-loguearse.
+  const STORAGE_ACCOUNTS = 're_accounts';
+  const MAX_ACCOUNTS = 5;
+
+  function _readAccounts() {
+    try {
+      const raw = localStorage.getItem(STORAGE_ACCOUNTS);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.filter(a => a && a.email && a.refresh) : [];
+    } catch { return []; }
+  }
+
+  function _writeAccounts(list) {
+    try {
+      localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(list.slice(0, MAX_ACCOUNTS)));
+    } catch { /* storage lleno o bloqueado: multi-cuenta es opcional, no rompe nada */ }
+  }
+
+  function _accountKey(user, email) {
+    return String((user && user.id) || email || '').toLowerCase();
+  }
+
+  /** Registra (o actualiza) la cuenta en el roster y la marca como activa. */
+  function _rememberAccount(accessToken, refreshToken, user) {
+    const email = (user && user.email) || '';
+    if (!email || !refreshToken) return;          // sin refresh no se puede volver
+    const key = _accountKey(user, email);
+    const list = _readAccounts().filter(a => a.key !== key);
+    list.unshift({
+      key,
+      email,
+      name: (user && user.full_name) || '',
+      refresh: refreshToken,
+      access: accessToken || '',
+      savedAt: Date.now(),
+    });
+    _writeAccounts(list);
+  }
+
+  /** Saca una cuenta del roster (por key). Devuelve el roster resultante. */
+  function _forgetAccount(key) {
+    const list = _readAccounts().filter(a => a.key !== key);
+    _writeAccounts(list);
+    return list;
+  }
+
+  /** Key de la cuenta que está activa ahora (según re_user). */
+  function _currentKey() {
+    try {
+      const u = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+      return u ? _accountKey(u, u.email) : '';
+    } catch { return ''; }
+  }
+
   // Solo nombres base. isPublicPage() acepta tanto "/login" como "/login.html"
   // (Netlify Pretty URLs rewrites internal links a la forma sin extensión).
   const PUBLIC_ROUTES = [
@@ -30,6 +88,7 @@
 
   let _accessToken = null;
   let _refreshTimer = null;
+  let _logoutEnCurso = null;   // guard de reentrada de logout() (ver abajo)
 
   let _readyResolve;
   const _readyPromise = new Promise((r) => { _readyResolve = r; });
@@ -54,6 +113,11 @@
   const isAuthPage = isPublicPage;
 
   function redirectToLogin() {
+    // Multi-cuenta: la sesión que expiró sale del roster (su refresh ya no
+    // sirve), pero las OTRAS cuentas guardadas se conservan. Sin esto, vencer
+    // una sesión borraba todas las cuentas del usuario.
+    const key = _currentKey();
+    if (key) _forgetAccount(key);
     sessionStorage.removeItem(FLAG_KEY);
     localStorage.removeItem(STORAGE_ACCESS);
     localStorage.removeItem(STORAGE_REFRESH);
@@ -147,6 +211,9 @@
     localStorage.setItem(STORAGE_ACCESS, accessToken);
     if (refreshToken) localStorage.setItem(STORAGE_REFRESH, refreshToken);
     if (user) localStorage.setItem(STORAGE_USER, JSON.stringify(user));
+    // Multi-cuenta: además de la sesión activa (arriba, sin cambios), dejamos
+    // registrada la cuenta para poder volver a ella sin re-loguearse.
+    _rememberAccount(accessToken, refreshToken || localStorage.getItem(STORAGE_REFRESH), user);
     sessionStorage.setItem(FLAG_KEY, '1');
     const payload = _parseJwtPayload(accessToken);
     if (payload && payload.exp) scheduleRefresh(payload.exp);
@@ -242,14 +309,96 @@
     return resp;
   }
 
+  /**
+   * Cierra la sesión de la cuenta ACTUAL (decisión de producto, estilo ChatGPT).
+   * Si quedan otras cuentas guardadas, cambia a la más reciente en vez de
+   * mandar al login. Con una sola cuenta, se comporta igual que siempre.
+   */
   async function logout() {
+    // Guard de reentrada: varios 401 en paralelo (p.ej. el Promise.all de
+    // loaders al abrir la app) llaman logout() casi a la vez. Sin esto se
+    // dispararían N cambios de cuenta y N reloads. El primero manda.
+    if (_logoutEnCurso) return _logoutEnCurso;
+    _logoutEnCurso = (async () => {
+    const key = _currentKey();
+    const quedan = key ? _forgetAccount(key) : _readAccounts();
     localStorage.removeItem(STORAGE_ACCESS);
     localStorage.removeItem(STORAGE_REFRESH);
     localStorage.removeItem(STORAGE_USER);
     sessionStorage.removeItem(FLAG_KEY);
     _accessToken = null;
     if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
+    if (quedan.length) {
+      const ok = await switchAccount(quedan[0].key);   // recarga si sale bien
+      if (ok) return;
+    }
     redirectToLogin();
+    })();
+    return _logoutEnCurso;
+  }
+
+  /** Cierra TODAS las cuentas guardadas y va al login. */
+  async function logoutAll() {
+    _writeAccounts([]);
+    localStorage.removeItem(STORAGE_ACCOUNTS);
+    localStorage.removeItem(STORAGE_ACCESS);
+    localStorage.removeItem(STORAGE_REFRESH);
+    localStorage.removeItem(STORAGE_USER);
+    sessionStorage.removeItem(FLAG_KEY);
+    _accessToken = null;
+    if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
+    if (!isAuthPage()) window.location.replace(LOGIN_URL);
+  }
+
+  /** Cuentas guardadas, con `current:true` en la activa. */
+  function listAccounts() {
+    const cur = _currentKey();
+    return _readAccounts().map(a => ({
+      key: a.key, email: a.email, name: a.name || '', current: a.key === cur,
+    }));
+  }
+
+  /**
+   * Cambia a otra cuenta guardada: canjea su refresh token por una sesión nueva
+   * y RECARGA la página (garantiza que no quede en pantalla ningún dato de la
+   * cuenta anterior: chats, proyectos, memoria). Devuelve false si no pudo.
+   */
+  async function switchAccount(key) {
+    const acc = _readAccounts().find(a => a.key === key);
+    if (!acc) return false;
+    if (key === _currentKey()) return true;          // ya estás en esa cuenta
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: acc.refresh }),
+      });
+      if (!resp.ok) {                                 // refresh vencido/revocado
+        _forgetAccount(key);
+        return false;
+      }
+      const data = await resp.json();
+      _storeSession(data.access_token, data.refresh_token || acc.refresh, data.user || null);
+      window.location.reload();
+      return true;
+    } catch {
+      return false;                                   // red caída: no tocamos nada
+    }
+  }
+
+  /** Saca una cuenta guardada (sin tocar la sesión activa, salvo que sea ella). */
+  async function removeAccount(key) {
+    if (key === _currentKey()) return logout();
+    _forgetAccount(key);
+    return true;
+  }
+
+  /**
+   * "Añadir cuenta": va al login conservando el roster. Al loguearse, la nueva
+   * queda registrada y activa (lo hace _storeSession).
+   */
+  function addAccount() {
+    window.location.href = LOGIN_URL + '?add=1';
   }
 
   function isAuthenticatedHint() {
@@ -269,6 +418,13 @@
     getAccessToken,
     authFetch,
     logout,
+    // Multi-cuenta (aditivo: nada de lo de arriba cambió de firma)
+    logoutAll,
+    listAccounts,
+    switchAccount,
+    removeAccount,
+    addAccount,
+    MAX_ACCOUNTS,
     isAuthenticatedHint,
     requireAuth,
     getStoredUser,
