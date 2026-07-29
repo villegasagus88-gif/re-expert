@@ -139,6 +139,36 @@ async def login_user(email: str, password: str) -> dict:
                 detail="Email o contraseña incorrectos",
             )
 
+        # ── 2FA activo → NO entregar tokens todavía ─────────────────────────
+        # Devolvemos un challenge corto (5 min) que prueba "password OK"; los
+        # tokens reales salen recién en POST /api/auth/2fa/verify. Para usuarios
+        # SIN 2FA este bloque no ejecuta y el login queda idéntico al de siempre.
+        # (Si hay una baja pendiente, acá NO se cancela: entrar de verdad exige
+        # el segundo factor — se cancela al verificar el código.)
+        if getattr(user, "twofa_method", None):
+            from services.jwt_service import create_2fa_challenge
+
+            enviado = True
+            if user.twofa_method == "email":
+                from services.account_security_service import send_login_code
+                enviado = await send_login_code(user, db)
+            return {
+                "twofa_required": True,
+                "twofa_method": user.twofa_method,
+                "challenge_token": create_2fa_challenge(user.id, user.token_version),
+                # False → el mail no salió (Resend caído / sin API key). El front
+                # lo dice y sugiere un código de recuperación en vez de dejar al
+                # usuario esperando un correo que nunca va a llegar.
+                "email_sent": enviado,
+            }
+
+        # ── Baja pendiente → el login exitoso la cancela ────────────────────
+        # Semántica pedida: "si entra se cancela la eliminación y debe volver a
+        # hacerla". El flag viaja en la respuesta para que el front avise.
+        deletion_cancelled = user.deletion_requested_at is not None
+        if deletion_cancelled:
+            user.deletion_requested_at = None
+
         # Update last_login
         user.last_login = datetime.now(UTC)
         await db.commit()
@@ -148,11 +178,14 @@ async def login_user(email: str, password: str) -> dict:
         access_token, refresh_token = create_token_pair(
             user.id, user.token_version, refresh_expire_days=_refresh_days(user))
 
-        return {
+        out = {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "user": _user_to_dict(user),
         }
+        if deletion_cancelled:
+            out["deletion_cancelled"] = True
+        return out
 
 
 async def refresh_session(refresh_token: str) -> dict:

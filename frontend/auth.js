@@ -188,19 +188,99 @@
       }
 
       const data = await resp.json();
-      if (window.REAuthService && window.REAuthService._storeSession) {
-        window.REAuthService._storeSession(data.access_token, data.refresh_token, data.user || null);
-      } else {
-        localStorage.setItem('re_access_token', data.access_token);
-        localStorage.setItem('re_refresh_token', data.refresh_token);
-        if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
-        sessionStorage.setItem('re_authed', '1');
+
+      // 2FA activo: el backend devuelve un desafío en vez de los tokens.
+      // Mostramos el paso del código; los tokens salen en handleTwofaSubmit.
+      if (data.twofa_required) {
+        _twofaChallenge = data.challenge_token;
+        const form = byId('login-form');
+        const box = byId('twofa-box');
+        if (form && box) {
+          form.style.display = 'none';
+          box.style.display = '';
+          const hint = byId('twofa-hint');
+          if (hint) hint.textContent = data.twofa_method !== 'email'
+            ? 'Abrí tu app authenticator e ingresá el código (o usá un código de recuperación).'
+            : data.email_sent === false
+              // No mentirle: el mail no salió (Resend caído / sin API key).
+              ? 'No pudimos enviarte el código por email. Usá uno de tus códigos de recuperación.'
+              : 'Te enviamos un código a tu correo.';
+          const inp = byId('twofa-code');
+          if (inp) { inp.value = ''; inp.focus(); }
+        }
+        return;
       }
-      window.location.replace(_postAuthDestination());
+
+      _finishLogin(data);
     } catch {
       showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
     } finally {
       setLoading('submit-btn', false);
+    }
+  }
+
+  // Cierre común del login (paso único o post-2FA): guardar sesión y entrar.
+  let _twofaChallenge = null;
+  function _finishLogin(data) {
+    if (window.REAuthService && window.REAuthService._storeSession) {
+      window.REAuthService._storeSession(data.access_token, data.refresh_token, data.user || null);
+    } else {
+      localStorage.setItem('re_access_token', data.access_token);
+      localStorage.setItem('re_refresh_token', data.refresh_token);
+      if (data.user) localStorage.setItem('re_user', JSON.stringify(data.user));
+      sessionStorage.setItem('re_authed', '1');
+    }
+    if (data.deletion_cancelled) {
+      // Entró dentro de la gracia de 30 días: la baja queda CANCELADA (así lo
+      // definimos: entrar = arrepentirse). Avisar antes de seguir.
+      alert('Tu pedido de eliminación de cuenta quedó cancelado al iniciar sesión. ' +
+            'Si querés eliminarla igual, pedila de nuevo desde Configuración → Cuenta.');
+    }
+    window.location.replace(_postAuthDestination());
+  }
+
+  // Volver del paso del código al formulario de siempre. Sin esto, un desafío
+  // vencido (dura 5 min) dejaba al usuario mirando una pantalla sin salida:
+  // el form estaba en display:none y no había ningún control para recuperarlo.
+  function backToLogin() {
+    _twofaChallenge = null;
+    const form = byId('login-form'), box = byId('twofa-box');
+    if (box) box.style.display = 'none';
+    if (form) form.style.display = '';
+    const pass = byId('password');
+    if (pass) { pass.value = ''; pass.focus(); }
+  }
+
+  // ===== LOGIN — paso 2 (código 2FA) =====
+  async function handleTwofaSubmit(event) {
+    event.preventDefault();
+    const code = (byId('twofa-code') && byId('twofa-code').value || '').trim();
+    if (!code) return;
+    setLoading('twofa-btn', true);
+    try {
+      const resp = await fetch(_apiBase() + '/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge_token: _twofaChallenge, code }),
+      });
+      if (resp.status === 401) {
+        const d = await resp.json().catch(() => ({}));
+        const msg = typeof d.detail === 'string' ? d.detail : 'Código incorrecto.';
+        showAlert(msg);
+        // Desafío vencido: no tiene sentido dejarlo en la pantalla del código.
+        if (/venc/i.test(msg)) backToLogin();
+        return;
+      }
+      if (resp.status === 429) {
+        showAlert('Demasiados intentos. Esperá unos minutos.');
+        return;
+      }
+      if (!resp.ok) { showAlert('Error al validar el código. Probá de nuevo.'); return; }
+      _finishLogin(await resp.json());
+    } catch {
+      showAlert('No pudimos conectarnos. Verificá tu conexión e intentá de nuevo.');
+    } finally {
+      setLoading('twofa-btn', false);
     }
   }
 
@@ -398,6 +478,8 @@
   // Exports
   window.REAuth = {
     handleLogin,
+    handleTwofaSubmit,
+    backToLogin,
     handleRegister,
     handleForgotPassword,
     handleForgotSubmit,

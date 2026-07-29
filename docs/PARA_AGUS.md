@@ -6,11 +6,14 @@
 
 ## 🔴 URGENTE — El backend NO se está desplegando en Railway (necesitamos tu dashboard)
 
-**Síntoma**: Railway sigue sirviendo el commit **`4704d42` (25-jul)**. `main` ya
-está en `8ffe7af`. Los commits que tocan `backend/` no llegaron nunca a producción:
+**Síntoma**: Railway sigue sirviendo el commit **`4704d42` (25-jul)**. Los
+commits que tocan `backend/` no llegaron nunca a producción:
 - `f5b5ff0` — feat(ayuda): informar un error (tabla nueva + migración 0036)
 - `f85b4bf` — fix: la migración usa IDENTITY en vez de CREATE SEQUENCE
 - `8ffe7af` — feat(config): Almacenamiento (**sin migración**, solo rutas nuevas)
+- feat(cuenta): Configuración → Cuenta (2FA authenticator/email, cambio de email
+  verificado, baja con 30 días) — migración **0037** (10 `ADD COLUMN` nullables
+  sobre `profiles`, puramente aditiva, verificada con `alembic upgrade --sql`)
 
 **Prod está SANO** (`/health` 200, `/health/db` 200, login y landing OK): Railway
 aborta el deploy si el `preDeployCommand` falla y deja corriendo la versión
@@ -175,3 +178,10 @@ Railway estén seteadas: `JWT_SECRET` (fuerte, ≥32 chars), `FRONTEND_URL`, y a
 menos una de `ANTHROPIC_API_KEY` / `GEMINI_API_KEY`. (Si el deploy actual está en
 200, ya están bien.) Opcionales que suman: `TELEGRAM_BOT_TOKEN` (SOL por Telegram,
 gratis), `SENTRY_DSN` (monitoreo de errores JS — hoy vacío).
+
+**`RESEND_API_KEY` subió de importancia**: antes solo la usaba "recuperar
+contraseña"; ahora también alimenta el **cambio de email verificado** y el **2FA
+por código de email** de Configuración → Cuenta. Sin la key, esos dos flujos
+devuelven 503 con mensaje honesto ("no pudimos enviar el código") y el usuario
+puede usar igual el 2FA por app authenticator (TOTP, no necesita email ni SMS).
+Setearla en Railway (https://resend.com/api-keys) los enciende a los tres.

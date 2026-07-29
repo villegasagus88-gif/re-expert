@@ -69,6 +69,33 @@
         </button>
       </form>
 
+      <!-- Paso 2 del login (solo si el usuario activó 2FA). Oculto por defecto. -->
+      <form id="twofa-box" style="display:none" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="twofa-code">Código de verificación</label>
+          <p id="twofa-hint" class="auth-subtitle" style="margin:0 0 10px"></p>
+          <!-- Sin inputmode=numeric: los códigos de recuperación son hex
+               (A3F9-0B2C) y el teclado numérico de mobile no tiene letras —
+               justo cuando más se los necesita (perdiste el authenticator). -->
+          <input
+            id="twofa-code"
+            name="twofa-code"
+            type="text"
+            class="form-input"
+            placeholder="123456 o código de recuperación"
+            autocomplete="one-time-code"
+            maxlength="16"
+          >
+        </div>
+        <button type="submit" id="twofa-btn" class="btn-primary">
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span class="btn-label">Verificar y entrar</span>
+        </button>
+        <button type="button" id="twofa-back" class="forgot-link" style="margin-top:12px">
+          ← Volver a iniciar sesión
+        </button>
+      </form>
+
       <div class="auth-toggle">
         ¿No tenés cuenta? <a href="register.html">Crear una cuenta</a>
       </div>
@@ -95,6 +122,8 @@
 
     document.getElementById('login-form').addEventListener('submit', window.REAuth.handleLogin);
     document.getElementById('forgot-link').addEventListener('click', window.REAuth.handleForgotPassword);
+    document.getElementById('twofa-box').addEventListener('submit', window.REAuth.handleTwofaSubmit);
+    document.getElementById('twofa-back').addEventListener('click', window.REAuth.backToLogin);
   </script>
 </body>
 </html>

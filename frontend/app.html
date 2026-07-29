@@ -2215,6 +2215,9 @@ function acctOpenPanel(key){
   nav.innerHTML=cfg.items.map((it,i)=>
     `<button class="acct-nav-item${i===0?' active':''}" data-sec="${it.id}">${escapeHtml(it.label)}</button>`).join('');
   nav.querySelectorAll('.acct-nav-item').forEach(b=>b.addEventListener('click',()=>{
+    // Cuenta puede tener códigos de recuperación en pantalla sin confirmar:
+    // se muestran una sola vez, así que pedimos confirmación antes de perderlos.
+    if(typeof cuPuedeSalir==='function'&&!cuPuedeSalir())return;
     nav.querySelectorAll('.acct-nav-item').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     acctRenderPane(cfg.items.find(i=>i.id===b.dataset.sec));
@@ -2228,6 +2231,7 @@ function acctRenderPane(item){
   // placeholder hasta que les toque.
   if(item.id==='error'){bugRenderPane(pane,item);return;}
   if(item.id==='almacenamiento'){stRenderPane(pane,item);return;}
+  if(item.id==='cuenta'){cuRenderPane(pane,item);return;}
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
@@ -2594,6 +2598,462 @@ function stInvalidarPlanos(){
   }catch{}
 }
 
+// ═══ Configuración → Cuenta ══════════════════════════════════════════════
+// Nombre, email (cambio verificado por código), teléfono, contraseña, 2FA
+// (app authenticator o código por email) y baja con 30 días de gracia.
+// Todo pega contra /api/auth/* (sin gate de plan: son derechos sobre la
+// propia cuenta). El estado viene de GET /api/auth/account/security.
+const cuState={sec:null,cargando:false};
+
+async function cuApi(path,opts){
+  // OJO: acá un 401 casi siempre significa "contraseña/código incorrectos"
+  // (no sesión vencida) — cada handler lo muestra inline. La sesión vencida
+  // de verdad ya la maneja authFetch con su refresh + redirect.
+  const o=opts||{};
+  o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{});
+  if(o.body&&typeof o.body!=='string')o.body=JSON.stringify(o.body);
+  return window.REAuthService.authFetch(apiBase()+path,o);
+}
+
+// Mensajito inline de resultado (éxito o error) al pie de cada tarjeta.
+function cuMsg(id,texto,ok){
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=texto; el.className='cu-msg '+(ok?'cu-msg-ok':'cu-msg-err');
+  el.hidden=false;
+}
+
+function cuRenderPane(pane,item){
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">Tus datos, tu contraseña y la seguridad de tu cuenta.</p>
+    <div id="cuBody"><div class="st-loading">Cargando tu cuenta…</div></div>`;
+  cuLoad();
+}
+
+async function cuLoad(){
+  const body=document.getElementById('cuBody'); if(!body)return;
+  try{
+    const r=await cuApi('/api/auth/account/security');
+    if(!r.ok)throw new Error('http '+r.status);
+    cuState.sec=await r.json();
+  }catch{
+    body.innerHTML=`<div class="st-error">No pudimos cargar tu cuenta.
+      <button class="btn-sm" onclick="cuLoad()">Reintentar</button></div>`;
+    return;
+  }
+  cuRenderBody();
+}
+
+function cuRenderBody(){
+  const body=document.getElementById('cuBody'); if(!body)return;
+  const s=cuState.sec;
+  const twofaTxt=s.twofa_method==='totp'?'Activada — app authenticator'
+    :s.twofa_method==='email'?'Activada — código por email':'Desactivada';
+
+  body.innerHTML=`
+  <div class="cu-card">
+    <div class="cu-card-t">Nombre y apellido</div>
+    <div class="cu-row">
+      <input class="bug-input" id="cuNombre" maxlength="255" value="${escapeHtml(s.full_name||'')}" aria-label="Nombre y apellido">
+      <button class="btn-sm cu-primary" id="cuNombreBtn">Guardar</button>
+    </div>
+    <div class="cu-msg" id="cuNombreMsg" hidden></div>
+  </div>
+
+  <div class="cu-card">
+    <div class="cu-card-t">Correo electrónico</div>
+    <div class="cu-actual">Actual: <b>${escapeHtml(s.email)}</b></div>
+    <div id="cuEmailZona">
+      <button class="btn-sm" id="cuEmailAbrir">Cambiar email</button>
+    </div>
+    <div class="cu-msg" id="cuEmailMsg" hidden></div>
+  </div>
+
+  <div class="cu-card">
+    <div class="cu-card-t">Teléfono</div>
+    <div class="cu-row">
+      <input class="bug-input" id="cuTel" maxlength="32" value="${escapeHtml(s.phone||'')}" placeholder="+54 9 261 555 1234" aria-label="Teléfono">
+      <button class="btn-sm cu-primary" id="cuTelBtn">Guardar</button>
+    </div>
+    <div class="cu-hint">Formato internacional. Lo usa SOL para tus avisos.</div>
+    <div class="cu-msg" id="cuTelMsg" hidden></div>
+  </div>
+
+  <div class="cu-card">
+    <div class="cu-card-t">Contraseña</div>
+    <div class="cu-col">
+      <input class="bug-input" id="cuPassAct" type="password" placeholder="Contraseña actual" autocomplete="current-password" aria-label="Contraseña actual">
+      <input class="bug-input" id="cuPassNueva" type="password" placeholder="Nueva contraseña (mín. 8, una mayúscula y un número)" autocomplete="new-password" aria-label="Nueva contraseña">
+      <input class="bug-input" id="cuPassRep" type="password" placeholder="Repetir la nueva" autocomplete="new-password" aria-label="Repetir nueva contraseña">
+      <button class="btn-sm cu-primary" id="cuPassBtn">Cambiar contraseña</button>
+    </div>
+    <div class="cu-hint">Al cambiarla se cierran todas tus sesiones y volvés a entrar.</div>
+    <div class="cu-msg" id="cuPassMsg" hidden></div>
+  </div>
+
+  <div class="cu-card">
+    <div class="cu-card-t">Verificación en dos pasos</div>
+    <div class="cu-actual">Estado: <b>${twofaTxt}</b>${s.twofa_method&&s.recovery_codes_left!=null?` · ${s.recovery_codes_left} códigos de recuperación`:''}</div>
+    <div id="cuTfZona">${s.twofa_method?`
+      <div class="cu-col">
+        <input class="bug-input" id="cuTfOffPass" type="password" placeholder="Tu contraseña" autocomplete="current-password" aria-label="Contraseña">
+        <input class="bug-input" id="cuTfOffCode" placeholder="${s.twofa_method==='email'?'Código del email o de recuperación':'Código de la app o de recuperación'}" maxlength="16" aria-label="Código">
+        <div class="cu-row-wrap">
+          ${s.twofa_method==='email'?'<button class="btn-sm" id="cuTfSend">Enviarme un código</button>':''}
+          <button class="btn-sm" id="cuTfOff">Desactivar</button>
+        </div>
+      </div>`:`
+      <div class="cu-col">
+        <input class="bug-input" id="cuTfPass" type="password" placeholder="Tu contraseña" autocomplete="current-password" aria-label="Contraseña">
+        <div class="cu-row-wrap">
+          <button class="btn-sm cu-primary" id="cuTfApp">Usar app authenticator</button>
+          <button class="btn-sm" id="cuTfMail">Recibir código por email</button>
+        </div>
+      </div>
+      <div class="cu-hint">Recomendado: app authenticator (Google Authenticator, Authy, 1Password): funciona sin señal y no depende del correo. El SMS queda para más adelante.</div>`}
+    </div>
+    <div class="cu-msg" id="cuTfMsg" hidden></div>
+  </div>
+
+  <div class="cu-card cu-danger-card">
+    <div class="cu-card-t">Eliminar cuenta</div>
+    <p class="cu-hint">La cuenta se desactiva por 30 días y después se elimina definitivamente
+    con todos tus datos. Si iniciás sesión dentro de esos 30 días, la eliminación se cancela.</p>
+    ${s.subscription_active?`
+      <div class="cu-aviso">Tenés una suscripción activa. Para eliminar la cuenta, primero
+      cancelala desde <b>Configuración → Facturación</b>.</div>`:`
+      <div class="cu-col">
+        <input class="bug-input" id="cuDelPass" type="password" placeholder="Tu contraseña" autocomplete="current-password" aria-label="Contraseña">
+        ${s.twofa_method?`<input class="bug-input" id="cuDelCode" placeholder="${s.twofa_method==='email'?'Código del email o de recuperación':'Código de la app o de recuperación'}" maxlength="16" aria-label="Código 2FA">`:''}
+        <div class="cu-row-wrap">
+          ${s.twofa_method==='email'?'<button class="btn-sm" id="cuDelSend">Enviarme un código</button>':''}
+          <button class="btn-sm st-danger" id="cuDelBtn">Eliminar mi cuenta</button>
+        </div>
+      </div>`}
+    <div class="cu-msg" id="cuDelMsg" hidden></div>
+  </div>`;
+
+  cuWire();
+}
+
+function cuWire(){
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+
+  // ── Nombre ──
+  on('cuNombreBtn',async ev=>{
+    const v=document.getElementById('cuNombre').value.trim();
+    if(!v){cuMsg('cuNombreMsg','El nombre no puede quedar vacío.',false);return}
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/me',{method:'PUT',body:{full_name:v}});
+      if(!r.ok)throw 0;
+      // Reflejar en el resto de la UI sin esperar un reload (sidebar, menú,
+      // roster multi-cuenta): _storeSession actualiza todo con los tokens vigentes.
+      const u=JSON.parse(localStorage.getItem('re_user')||'{}'); u.full_name=v;
+      window.REAuthService._storeSession(localStorage.getItem('re_access_token'),
+        localStorage.getItem('re_refresh_token'),u);
+      if(typeof acctFillIdentity==='function')acctFillIdentity(u);
+      cuState.sec.full_name=v;
+      cuMsg('cuNombreMsg','Nombre actualizado.',true);
+    }catch{cuMsg('cuNombreMsg','No pudimos guardar el nombre.',false)}
+    ev.target.disabled=false;
+  });
+
+  // ── Email (2 pasos) ──
+  on('cuEmailAbrir',()=>{
+    // Con 2FA activo pedimos también el segundo factor: cambiar el email
+    // redirige los códigos de login futuros, así que sin esto una sesión
+    // robada + la contraseña alcanzaban para anular el 2FA.
+    const con2fa=!!cuState.sec.twofa_method;
+    document.getElementById('cuEmailZona').innerHTML=`
+      <div class="cu-col">
+        <input class="bug-input" id="cuEmailNuevo" type="email" placeholder="Nuevo correo" autocomplete="email" aria-label="Nuevo correo">
+        <input class="bug-input" id="cuEmailPass" type="password" placeholder="Tu contraseña" autocomplete="current-password" aria-label="Contraseña">
+        ${con2fa?`<input class="bug-input" id="cuEmailCode2fa" placeholder="${cuState.sec.twofa_method==='email'?'Código del email o de recuperación':'Código de la app o de recuperación'}" maxlength="16" aria-label="Código de verificación">`:''}
+        <div class="cu-row-wrap">
+          ${con2fa&&cuState.sec.twofa_method==='email'?'<button class="btn-sm" id="cuEmailSend">Enviarme un código</button>':''}
+          <button class="btn-sm cu-primary" id="cuEmailPedir">Enviar código al correo nuevo</button>
+          <button class="btn-sm" id="cuEmailCancel">Cancelar</button>
+        </div>
+      </div>`;
+    cuWireEmail();
+  });
+
+  // ── Teléfono ──
+  on('cuTelBtn',async ev=>{
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/phone',{method:'PUT',body:{phone:document.getElementById('cuTel').value}});
+      if(r.status===422){cuMsg('cuTelMsg','Teléfono inválido. Usá formato internacional (+54 …).',false);ev.target.disabled=false;return}
+      if(!r.ok)throw 0;
+      cuMsg('cuTelMsg','Teléfono actualizado.',true);
+    }catch{cuMsg('cuTelMsg','No pudimos guardar el teléfono.',false)}
+    ev.target.disabled=false;
+  });
+
+  // ── Contraseña ──
+  on('cuPassBtn',async ev=>{
+    const act=document.getElementById('cuPassAct').value,
+          nue=document.getElementById('cuPassNueva').value,
+          rep=document.getElementById('cuPassRep').value;
+    if(!act||!nue){cuMsg('cuPassMsg','Completá la contraseña actual y la nueva.',false);return}
+    if(nue!==rep){cuMsg('cuPassMsg','Las contraseñas nuevas no coinciden.',false);return}
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/me',{method:'PUT',body:{current_password:act,new_password:nue}});
+      if(r.status===401){cuMsg('cuPassMsg','La contraseña actual es incorrecta.',false);ev.target.disabled=false;return}
+      if(r.status===422){
+        let d={};try{d=await r.json()}catch{}
+        const det=Array.isArray(d.detail)?(d.detail[0]&&d.detail[0].msg)||'':d.detail;
+        cuMsg('cuPassMsg',det||'La nueva contraseña no cumple los requisitos.',false);
+        ev.target.disabled=false;return;
+      }
+      if(!r.ok)throw 0;
+      cuMsg('cuPassMsg','Contraseña actualizada. Cerrando tu sesión…',true);
+      // El backend invalida TODAS las sesiones (token_version): re-loguear.
+      setTimeout(()=>{window.REAuthService.logoutAll?window.REAuthService.logoutAll():window.REAuthService.logout()},1800);
+    }catch{cuMsg('cuPassMsg','No pudimos cambiar la contraseña.',false);ev.target.disabled=false}
+  });
+
+  // ── 2FA ──
+  on('cuTfApp',ev=>cuTotpStart(ev));
+  on('cuTfMail',ev=>cuEmail2faStart(ev));
+  on('cuTfSend',ev=>cuEnviarCodigo(ev,'cuTfMsg'));
+  on('cuDelSend',ev=>cuEnviarCodigo(ev,'cuDelMsg'));
+  on('cuTfOff',async ev=>{
+    const pass=document.getElementById('cuTfOffPass').value,
+          code=document.getElementById('cuTfOffCode').value.trim();
+    if(!pass||!code){cuMsg('cuTfMsg','Completá contraseña y código.',false);return}
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/2fa/disable',{method:'POST',body:{password:pass,code}});
+      if(r.status===401){cuMsg('cuTfMsg','Contraseña o código incorrectos.',false);ev.target.disabled=false;return}
+      if(r.status===429){cuMsg('cuTfMsg','Demasiados intentos. Esperá unos minutos.',false);ev.target.disabled=false;return}
+      if(!r.ok)throw 0;
+      cuState.sec.twofa_method=null;cuState.sec.recovery_codes_left=null;
+      cuRenderBody();cuMsg('cuTfMsg','Verificación en dos pasos desactivada.',true);
+    }catch{cuMsg('cuTfMsg','No pudimos desactivarla.',false);ev.target.disabled=false}
+  });
+
+  // ── Baja ──
+  on('cuDelBtn',async ev=>{
+    const pass=document.getElementById('cuDelPass').value;
+    const codeEl=document.getElementById('cuDelCode');
+    if(!pass){cuMsg('cuDelMsg','Ingresá tu contraseña.',false);return}
+    if(!confirm('¿Eliminar tu cuenta?\n\nSe desactiva ahora y se borra DEFINITIVAMENTE en 30 días con todos tus datos (chats, proyectos, planos). Si te arrepentís, alcanza con volver a iniciar sesión antes de esa fecha.'))return;
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/account/delete',{method:'POST',
+        body:{password:pass,code:codeEl?codeEl.value.trim()||null:null}});
+      if(r.status===401){cuMsg('cuDelMsg','Contraseña o código incorrectos.',false);ev.target.disabled=false;return}
+      if(r.status===429){cuMsg('cuDelMsg','Demasiados intentos. Esperá unos minutos.',false);ev.target.disabled=false;return}
+      if(r.status===409){
+        let d={};try{d=await r.json()}catch{}
+        cuMsg('cuDelMsg',typeof d.detail==='string'?d.detail:'No se pudo pedir la baja.',false);
+        ev.target.disabled=false;return;
+      }
+      if(!r.ok&&r.status!==202)throw 0;
+      let purga='';try{const d=await r.json();if(d.purge_at)purga=new Date(d.purge_at).toLocaleDateString('es-AR')}catch{}
+      alert('Listo. Tu cuenta queda desactivada y se elimina definitivamente el '+(purga||'(30 días)')+'.\nSi te arrepentís, volvé a iniciar sesión antes de esa fecha.');
+      window.REAuthService.logoutAll?window.REAuthService.logoutAll():window.REAuthService.logout();
+    }catch{cuMsg('cuDelMsg','No pudimos procesar la baja. Probá de nuevo.',false);ev.target.disabled=false}
+  });
+}
+
+function cuWireEmail(){
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  on('cuEmailCancel',()=>cuRenderBody());
+  on('cuEmailSend',ev=>cuEnviarCodigo(ev,'cuEmailMsg'));
+  on('cuEmailPedir',async ev=>{
+    const nuevo=document.getElementById('cuEmailNuevo').value.trim(),
+          pass=document.getElementById('cuEmailPass').value,
+          c2=(document.getElementById('cuEmailCode2fa')||{}).value||'';
+    if(!nuevo||!pass){cuMsg('cuEmailMsg','Completá el correo nuevo y tu contraseña.',false);return}
+    if(cuState.sec.twofa_method&&!c2.trim()){cuMsg('cuEmailMsg','Ingresá tu código de verificación.',false);return}
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/email-change/request',{method:'POST',
+        body:{new_email:nuevo,password:pass,code:c2.trim()||null}});
+      if(r.status===401){
+        let d={};try{d=await r.json()}catch{}
+        const esCodigo=typeof d.detail==='string'&&/[Cc]ódigo/.test(d.detail);
+        cuMsg('cuEmailMsg',esCodigo?'Código de verificación incorrecto.':'Contraseña incorrecta.',false);
+        ev.target.disabled=false;return;
+      }
+      if(r.status===429){cuMsg('cuEmailMsg','Demasiados intentos. Esperá unos minutos.',false);ev.target.disabled=false;return}
+      if(r.status===409){cuMsg('cuEmailMsg','Ese email ya está en uso.',false);ev.target.disabled=false;return}
+      if(r.status===422){cuMsg('cuEmailMsg','Revisá el formato del correo.',false);ev.target.disabled=false;return}
+      if(r.status===503){cuMsg('cuEmailMsg','No pudimos enviar el código. Probá más tarde.',false);ev.target.disabled=false;return}
+      if(!r.ok)throw 0;
+      document.getElementById('cuEmailZona').innerHTML=`
+        <div class="cu-col">
+          <div class="cu-hint">Te enviamos un código de 6 dígitos a <b>${escapeHtml(nuevo)}</b>.</div>
+          <input class="bug-input" id="cuEmailCode" placeholder="Código" maxlength="16" inputmode="numeric" autocomplete="one-time-code" aria-label="Código">
+          <div class="cu-row-wrap">
+            <button class="btn-sm cu-primary" id="cuEmailConf">Confirmar cambio</button>
+            <button class="btn-sm" id="cuEmailCancel2">Cancelar</button>
+          </div>
+        </div>`;
+      const on2=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+      on2('cuEmailCancel2',()=>cuRenderBody());
+      on2('cuEmailConf',async ev2=>{
+        const code=document.getElementById('cuEmailCode').value.trim();
+        if(!code)return;
+        ev2.target.disabled=true;
+        try{
+          const r2=await cuApi('/api/auth/email-change/confirm',{method:'POST',body:{code}});
+          if(r2.status===401){cuMsg('cuEmailMsg','Código incorrecto o vencido.',false);ev2.target.disabled=false;return}
+          if(r2.status===409){cuMsg('cuEmailMsg','Ese email ya está en uso.',false);ev2.target.disabled=false;return}
+          if(!r2.ok)throw 0;
+          const d=await r2.json();
+          // Reflejar el email nuevo en la sesión y el roster multi-cuenta.
+          const u=JSON.parse(localStorage.getItem('re_user')||'{}'); u.email=d.email;
+          window.REAuthService._storeSession(localStorage.getItem('re_access_token'),
+            localStorage.getItem('re_refresh_token'),u);
+          if(typeof acctFillIdentity==='function')acctFillIdentity(u);
+          cuState.sec.email=d.email;
+          cuRenderBody();cuMsg('cuEmailMsg','Email actualizado.',true);
+        }catch{cuMsg('cuEmailMsg','No pudimos confirmar el cambio.',false);ev2.target.disabled=false}
+      });
+    }catch{cuMsg('cuEmailMsg','No pudimos enviar el código.',false);ev.target.disabled=false}
+  });
+}
+
+// Manda un código al correo cuando el 2FA por email YA está activo (para
+// desactivarlo o pedir la baja). Sin esto el usuario que no guardó sus códigos
+// de recuperación quedaba sin forma de hacer ninguna de las dos cosas.
+async function cuEnviarCodigo(ev,destinoMsg){
+  const b=ev.target, txt=b.textContent;
+  b.disabled=true; b.textContent='Enviando…';
+  try{
+    const r=await cuApi('/api/auth/2fa/email/send-code',{method:'POST'});
+    if(r.status===503){cuMsg(destinoMsg,'No pudimos enviarte el código. Usá un código de recuperación.',false)}
+    else if(r.status===429){cuMsg(destinoMsg,'Demasiados pedidos. Esperá unos minutos.',false)}
+    else if(!r.ok)throw 0;
+    else cuMsg(destinoMsg,'Te enviamos un código a tu correo.',true);
+  }catch{cuMsg(destinoMsg,'No pudimos enviarte el código.',false)}
+  b.disabled=false; b.textContent=txt;
+}
+
+// ── 2FA: enrolar app authenticator ──
+async function cuTotpStart(ev){
+  const pass=(document.getElementById('cuTfPass')||{}).value||'';
+  if(!pass){cuMsg('cuTfMsg','Ingresá tu contraseña para activar el doble factor.',false);return}
+  const b=ev&&ev.target; if(b)b.disabled=true;
+  let d;
+  try{
+    const r=await cuApi('/api/auth/2fa/totp/start',{method:'POST',body:{password:pass}});
+    if(r.status===401){cuMsg('cuTfMsg','Contraseña incorrecta.',false);if(b)b.disabled=false;return}
+    if(r.status===429){cuMsg('cuTfMsg','Demasiados intentos. Esperá unos minutos.',false);if(b)b.disabled=false;return}
+    if(!r.ok)throw 0;
+    d=await r.json();
+  }catch{cuMsg('cuTfMsg','No pudimos generar la clave. Probá de nuevo.',false);if(b)b.disabled=false;return}
+  const sec=(d.secret||'').replace(/(.{4})/g,'$1 ').trim();
+  document.getElementById('cuTfZona').innerHTML=`
+    <div class="cu-col">
+      <div class="cu-hint">1) En tu app authenticator elegí <b>“Agregar cuenta” → “Clave de configuración”</b> y pegá esta clave
+      (en el celular podés <a href="${escapeHtml(d.otpauth_uri)}" class="cu-link">tocar acá</a> para abrirla directo):</div>
+      <div class="cu-code" id="cuTfSecret">${escapeHtml(sec)}</div>
+      <button class="btn-sm" id="cuTfCopy">Copiar clave</button>
+      <div class="cu-hint">2) Ingresá el código de 6 dígitos que te muestra la app:</div>
+      <input class="bug-input" id="cuTfCode" placeholder="123456" maxlength="8" inputmode="numeric" autocomplete="one-time-code" aria-label="Código de la app">
+      <div class="cu-row-wrap">
+        <button class="btn-sm cu-primary" id="cuTfConf">Activar</button>
+        <button class="btn-sm" id="cuTfCancel">Cancelar</button>
+      </div>
+    </div>`;
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  on('cuTfCancel',()=>cuRenderBody());
+  on('cuTfCopy',async ev=>{
+    try{await navigator.clipboard.writeText(d.secret);ev.target.textContent='Copiada ✓';
+      setTimeout(()=>{ev.target.textContent='Copiar clave'},1500);}catch{}
+  });
+  on('cuTfConf',async ev=>{
+    const code=document.getElementById('cuTfCode').value.trim();
+    if(!code)return;
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/2fa/totp/confirm',{method:'POST',body:{code}});
+      if(r.status===401){cuMsg('cuTfMsg','Código incorrecto. Revisá que la clave esté bien cargada.',false);ev.target.disabled=false;return}
+      if(!r.ok)throw 0;
+      const dd=await r.json();
+      cuState.sec.twofa_method='totp';cuState.sec.recovery_codes_left=(dd.recovery_codes||[]).length;
+      cuShowRecovery(dd.recovery_codes||[]);
+    }catch{cuMsg('cuTfMsg','No pudimos activar el doble factor.',false);ev.target.disabled=false}
+  });
+}
+
+// ── 2FA: método email ──
+async function cuEmail2faStart(ev){
+  const pass=(document.getElementById('cuTfPass')||{}).value||'';
+  if(!pass){cuMsg('cuTfMsg','Ingresá tu contraseña para activar el doble factor.',false);return}
+  const b=ev&&ev.target; if(b)b.disabled=true;
+  try{
+    const r=await cuApi('/api/auth/2fa/email/start',{method:'POST',body:{password:pass}});
+    if(r.status===401){cuMsg('cuTfMsg','Contraseña incorrecta.',false);if(b)b.disabled=false;return}
+    if(r.status===503){cuMsg('cuTfMsg','No pudimos enviar el código por email. Usá la app authenticator.',false);if(b)b.disabled=false;return}
+    if(r.status===429){cuMsg('cuTfMsg','Demasiados intentos. Esperá unos minutos.',false);if(b)b.disabled=false;return}
+    if(!r.ok)throw 0;
+  }catch{cuMsg('cuTfMsg','No pudimos enviar el código. Probá de nuevo.',false);if(b)b.disabled=false;return}
+  document.getElementById('cuTfZona').innerHTML=`
+    <div class="cu-col">
+      <div class="cu-hint">Te enviamos un código a tu correo. Ingresalo para activar:</div>
+      <input class="bug-input" id="cuTfCode" placeholder="123456" maxlength="8" inputmode="numeric" autocomplete="one-time-code" aria-label="Código">
+      <div class="cu-row-wrap">
+        <button class="btn-sm cu-primary" id="cuTfConfMail">Activar</button>
+        <button class="btn-sm" id="cuTfCancel">Cancelar</button>
+      </div>
+    </div>`;
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  on('cuTfCancel',()=>cuRenderBody());
+  on('cuTfConfMail',async ev=>{
+    const code=document.getElementById('cuTfCode').value.trim();
+    if(!code)return;
+    ev.target.disabled=true;
+    try{
+      const r=await cuApi('/api/auth/2fa/email/confirm',{method:'POST',body:{code}});
+      if(r.status===401){cuMsg('cuTfMsg','Código incorrecto o vencido.',false);ev.target.disabled=false;return}
+      if(!r.ok)throw 0;
+      const dd=await r.json();
+      cuState.sec.twofa_method='email';cuState.sec.recovery_codes_left=(dd.recovery_codes||[]).length;
+      cuShowRecovery(dd.recovery_codes||[]);
+    }catch{cuMsg('cuTfMsg','No pudimos activar el doble factor.',false);ev.target.disabled=false}
+  });
+}
+
+// Los códigos de recuperación se muestran UNA sola vez y no se pueden
+// regenerar: mientras estén en pantalla bloqueamos la navegación del panel,
+// porque un click distraído en otra sección los borraba para siempre.
+let _cuRecovAbierto=false;
+function cuShowRecovery(codigos){
+  _cuRecovAbierto=true;
+  document.getElementById('cuTfZona').innerHTML=`
+    <div class="cu-col">
+      <div class="cu-hint"><b>Guardá estos códigos de recuperación</b> en un lugar seguro
+      (se muestran una sola vez). Cada uno sirve para entrar UNA vez si perdés el acceso:</div>
+      <div class="cu-recovery" id="cuRecov">${codigos.map(c=>`<span>${escapeHtml(c)}</span>`).join('')}</div>
+      <div class="cu-row-wrap">
+        <button class="btn-sm" id="cuRecovCopy">Copiar todos</button>
+        <button class="btn-sm cu-primary" id="cuRecovOk">Ya los guardé</button>
+      </div>
+    </div>`;
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+  on('cuRecovCopy',async ev=>{
+    try{await navigator.clipboard.writeText(codigos.join('\n'));ev.target.textContent='Copiados ✓';
+      setTimeout(()=>{ev.target.textContent='Copiar todos'},1500);}catch{}
+  });
+  on('cuRecovOk',()=>{_cuRecovAbierto=false;cuRenderBody();
+    cuMsg('cuTfMsg','Verificación en dos pasos activada.',true)});
+}
+
+// ¿Se puede salir del pane ahora? Solo si no hay códigos sin confirmar.
+function cuPuedeSalir(){
+  if(!_cuRecovAbierto)return true;
+  if(confirm('Todavía no confirmaste que guardaste tus códigos de recuperación.\n\nNo se vuelven a mostrar y no se pueden regenerar. ¿Salir igual?')){
+    _cuRecovAbierto=false; return true;
+  }
+  return false;
+}
+
 // ═══ Ayuda → Informar un error ═══════════════════════════════════════════
 // Form de reporte + lista de "mis reportes" con su estado. El contexto técnico
 // (sección, navegador, viewport, url) se captura solo: es lo que después evita
@@ -2724,6 +3184,7 @@ async function bugLoadMine(){
   }
 }
 function acctClosePanel(){
+  if(typeof cuPuedeSalir==='function'&&!cuPuedeSalir())return;
   document.getElementById('acctPanel').classList.remove('active');
   stInvalidarPlanos();   // si se borró/renombró en Almacenamiento, refrescar Planos
 }

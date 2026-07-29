@@ -327,6 +327,31 @@ body:has(.sidebar.collapsed) .acct-switcher{left:calc(62px + var(--sidebar-w) + 
   .st-size{display:none}
 }
 
+/* ─── Configuración → Cuenta ───
+   Prefijo .cu- para no pisar nada. Reusa .bug-input, .btn-sm y .st-danger. */
+.cu-card{background:var(--bg-card);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:12px}
+.cu-card-t{font-size:13px;font-weight:700;color:var(--text-0);margin-bottom:10px}
+.cu-actual{font-size:12.5px;color:var(--text-2);margin-bottom:10px}
+.cu-actual b{color:var(--text-0);font-weight:600}
+.cu-row{display:flex;gap:8px;align-items:center}
+.cu-row .bug-input{flex:1;min-width:0}
+.cu-row-wrap{display:flex;gap:8px;flex-wrap:wrap}
+.cu-col{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.cu-col .bug-input{width:100%;max-width:380px}
+.cu-hint{font-size:11.5px;color:var(--text-3);margin-top:7px;line-height:1.5;max-width:56ch}
+.cu-msg{font-size:12px;font-weight:600;margin-top:8px}
+.cu-msg-ok{color:#16a34a}
+.cu-msg-err{color:#dc2626}
+.cu-primary{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff}
+.cu-primary:hover:not(:disabled){background:var(--accent-hover,var(--accent-brand));color:#fff}
+.cu-link{color:var(--accent-brand);font-weight:600}
+.cu-code{font-family:var(--mono,ui-monospace,monospace);font-size:15px;font-weight:700;letter-spacing:1.5px;background:var(--bg-2);border:1px dashed var(--border-1);border-radius:var(--radius-sm);padding:10px 14px;user-select:all;word-break:break-all}
+.cu-recovery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;width:100%;max-width:420px}
+.cu-recovery span{font-family:var(--mono,ui-monospace,monospace);font-size:12.5px;font-weight:700;background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--radius-sm);padding:6px 8px;text-align:center;user-select:all}
+.cu-danger-card{border-color:rgba(220,38,38,.35)}
+.cu-aviso{font-size:12.5px;color:#d97706;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.5}
+@media (max-width:768px){.cu-row{flex-wrap:wrap}.cu-col .bug-input{max-width:none}}
+
 /* ─── Ayuda → Informar un error ─── */
 .bug-form{display:flex;flex-direction:column;gap:5px}
 .bug-lbl{font-size:12px;font-weight:600;color:var(--text-1);margin-top:13px}

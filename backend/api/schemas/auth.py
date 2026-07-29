@@ -99,5 +99,62 @@ class UpdateProfileRequest(BaseModel):
             raise ValueError("Debes enviar al menos full_name o new_password")
 
 
+# ═══ Cuenta / seguridad (Configuración → Cuenta) ═══════════════════════════
+
+class EmailChangeRequest(BaseModel):
+    """Paso 1 del cambio de email: contraseña actual (+ código si hay 2FA)."""
+
+    new_email: EmailStr
+    password: str = Field(..., min_length=1)
+    code: str | None = Field(None, max_length=16)   # requerido solo si hay 2FA
+
+
+class PasswordOnlyRequest(BaseModel):
+    """Acciones que solo re-autentican con la contraseña (enrolar 2FA)."""
+
+    password: str = Field(..., min_length=1)
+
+
+class CodeRequest(BaseModel):
+    """Un código de verificación (6 dígitos o código de recuperación)."""
+
+    code: str = Field(..., min_length=4, max_length=16)
+
+
+class PhoneRequest(BaseModel):
+    """Teléfono en formato internacional; None/vacío lo borra."""
+
+    phone: str | None = Field(None, max_length=32)
+
+    @field_validator("phone")
+    @classmethod
+    def normalizar(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        v = v.strip()
+        if not v:
+            return None
+        if not re.fullmatch(r"\+?[0-9 \-()]{6,31}", v):
+            raise ValueError("Teléfono inválido (usá formato internacional, ej: +54 9 261 ...)")
+        return v
+
+
+class TwoFADisableRequest(BaseModel):
+    password: str = Field(..., min_length=1)
+    code: str = Field(..., min_length=4, max_length=16)
+
+
+class TwoFAVerifyRequest(BaseModel):
+    """Paso 2 del login con 2FA."""
+
+    challenge_token: str = Field(..., min_length=10)
+    code: str = Field(..., min_length=4, max_length=16)
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(..., min_length=1)
+    code: str | None = Field(None, max_length=16)   # requerido solo si hay 2FA
+
+
 # Rebuild model refs
 AuthResponse.model_rebuild()

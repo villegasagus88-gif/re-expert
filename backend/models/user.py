@@ -48,6 +48,35 @@ class User(Base):
     )
     # Teléfono del usuario en formato internacional (lo pide SOL en onboarding).
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # ── Cuenta / seguridad (migración 0037) ──────────────────────────────────
+    # 2FA: 'totp' (app authenticator) | 'email' | NULL (desactivado).
+    twofa_method: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    twofa_secret: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Secret generado pero todavía no confirmado con un primer código válido.
+    twofa_pending_secret: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Códigos de recuperación de un solo uso, HASHEADOS (sha256 hex).
+    twofa_recovery: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Código de un solo uso del método email (login / activación), hasheado.
+    twofa_code_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    twofa_code_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Intentos fallidos contra el código vigente (throttling POR CUENTA: el rate
+    # limit por IP no frena un ataque distribuido).
+    twofa_code_attempts: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
+    # Cambio de email en dos pasos: el código viaja al correo NUEVO.
+    pending_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    pending_email_code_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    pending_email_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Baja con gracia: si está seteado, la cuenta espera purga (30 días).
+    # El login exitoso lo limpia (cancela la baja).
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Preferencias de automatización que SOL aprende: qué avisar, por qué canal, etc.
     automation_prefs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     last_login: Mapped[datetime | None] = mapped_column(

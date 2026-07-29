@@ -205,12 +205,39 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
     )
     rem_deleted = res_rem.rowcount or 0
 
+    # Cuentas con baja pedida hace 30+ días → purga DEFINITIVA. El login dentro
+    # de la gracia limpia deletion_requested_at, así que lo que sigue acá es
+    # gente que no volvió. Los FK ondelete CASCADE arrastran todos sus datos
+    # (conversaciones, proyectos, planos, pagos, workspaces). Doble cinturón:
+    # jamás purgar a alguien con suscripción activa (no debería existir — la
+    # baja se bloquea con plan pro — pero si un webhook lo re-activó en el
+    # medio, acá se respeta).
+    # La ventana sale de la MISMA constante que le prometemos al usuario por
+    # email y en la respuesta de la API: dos fuentes de verdad acá significan
+    # borrar cuentas antes de la fecha prometida.
+    from services.account_security_service import DELETION_GRACE_DAYS
+
+    cutoff_del = now - timedelta(days=DELETION_GRACE_DAYS)
+    usuarios_purga = (await db.execute(
+        select(User.id, User.email).where(
+            User.deletion_requested_at.isnot(None),
+            User.deletion_requested_at < cutoff_del,
+            User.plan != "pro",
+        )
+    )).all()
+    users_purged = 0
+    for uid, uemail in usuarios_purga:
+        await db.execute(delete(User).where(User.id == uid))
+        users_purged += 1
+        logger.info("Cuenta purgada definitivamente: %s (%s)", uid, uemail)
+
     await db.commit()
     return {
         "password_resets_deleted": pr_deleted,
         "stripe_events_deleted": se_deleted,
         "kv_cache_deleted": kv_deleted,
         "reminders_deleted": rem_deleted,
+        "users_purged": users_purged,
     }
 
 

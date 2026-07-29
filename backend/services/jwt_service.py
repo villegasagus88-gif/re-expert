@@ -64,6 +64,39 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
 
 
+def create_2fa_challenge(user_id: UUID, token_version: int = 0) -> str:
+    """Token corto (5 min) que prueba que el password ya fue validado.
+
+    Es el puente entre el paso 1 del login (password OK) y el paso 2 (código
+    2FA). type='2fa' → NO sirve como access ni refresh token: get_current_user
+    y refresh_session lo rechazan por tipo.
+    """
+    now = datetime.now(UTC)
+    payload = {
+        "sub": str(user_id),
+        "type": "2fa",
+        "tv": int(token_version),
+        "iat": now,
+        "exp": now + timedelta(minutes=5),
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
+
+
+def decode_2fa_challenge(token: str) -> dict | None:
+    """Payload ({sub, tv, ...}) si el challenge es válido y del tipo correcto.
+
+    El caller debe comparar `tv` contra el token_version actual del usuario:
+    si la contraseña cambió entre el paso 1 y el 2, el challenge muere con ella.
+    """
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
+    except jwt.InvalidTokenError:
+        return None
+    if payload.get("type") != "2fa" or not payload.get("sub"):
+        return None
+    return payload
+
+
 def create_token_pair(
     user_id: UUID, token_version: int = 0, refresh_expire_days: int | None = None
 ) -> tuple[str, str]:
