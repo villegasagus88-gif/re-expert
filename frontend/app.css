@@ -226,29 +226,38 @@ body:has(.sidebar.collapsed) .acct-menu{left:62px;bottom:14px}
 .acct-me-name{font-size:13.5px;font-weight:600;color:var(--text-0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct-sep{height:1px;background:var(--border-1);margin:5px 4px}
 
-/* Panel de Configuración / Ayuda */
-.acct-panel{width:660px;max-width:94vw}
-.acct-panel-body{display:grid;grid-template-columns:200px 1fr;min-height:330px}
-.acct-nav{display:flex;flex-direction:column;gap:2px;padding:12px 10px;border-right:1px solid var(--border-1)}
-.acct-nav-item{padding:8px 11px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-2);font-size:12.5px;font-family:var(--font);text-align:left;cursor:pointer;transition:all .13s var(--ease-out)}
+/* Panel de Configuración / Ayuda — ancho cómodo: adentro viven formularios
+   (informar un error), no solo texto. Alto acotado al viewport con scroll
+   propio en el contenido, para que nunca se corte en pantallas bajas. */
+/* `.modal.acct-panel` y no `.acct-panel` a secas: con una sola clase perdía en
+   especificidad contra `.modal{width:380px}` y el panel salía angosto. No se
+   toca `.modal-wide` (lo usan otros 6 modales). */
+.modal.acct-panel{width:860px;max-width:94vw}
+.acct-panel-body{display:grid;grid-template-columns:224px 1fr;min-height:440px;max-height:min(74vh,660px)}
+.acct-nav{display:flex;flex-direction:column;gap:2px;padding:14px 12px;border-right:1px solid var(--border-1);overflow-y:auto}
+.acct-nav-item{padding:9px 12px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-2);font-size:13px;font-family:var(--font);text-align:left;cursor:pointer;transition:all .13s var(--ease-out)}
 .acct-nav-item:hover{background:var(--bg-2);color:var(--text-0)}
 .acct-nav-item.active{background:var(--bg-2);color:var(--accent-brand);font-weight:600}
 .acct-nav-item:focus-visible{outline:2px solid var(--accent-brand);outline-offset:-2px}
-.acct-pane{padding:20px 22px}
-.acct-pane-title{font-size:15px;font-weight:700;color:var(--text-0);margin:0 0 6px}
-.acct-pane-desc{font-size:12.5px;color:var(--text-2);line-height:1.55;margin:0 0 16px;max-width:44ch}
+.acct-pane{padding:24px 28px;overflow-y:auto}
+.acct-pane-title{font-size:16px;font-weight:700;color:var(--text-0);margin:0 0 7px}
+.acct-pane-desc{font-size:13px;color:var(--text-2);line-height:1.6;margin:0 0 18px;max-width:60ch}
 .acct-soon{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-3);background:var(--bg-2);border:1px dashed var(--border-1);border-radius:100px;padding:5px 12px}
 
 /* ─── Ayuda → Informar un error ─── */
-.bug-form{display:flex;flex-direction:column;gap:4px}
-.bug-lbl{font-size:11.5px;font-weight:600;color:var(--text-1);margin-top:10px}
+.bug-form{display:flex;flex-direction:column;gap:5px}
+.bug-lbl{font-size:12px;font-weight:600;color:var(--text-1);margin-top:13px}
 .bug-opt{font-weight:400;color:var(--text-3)}
-.bug-input{width:100%;padding:8px 11px;background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-md);color:var(--text-0);font-size:13px;font-family:var(--font);transition:border-color .15s var(--ease-out)}
+.bug-input{width:100%;padding:9px 12px;background:var(--bg-input);border:1px solid var(--border-0);border-radius:var(--radius-md);color:var(--text-0);font-size:13.5px;font-family:var(--font);transition:border-color .15s var(--ease-out)}
 .bug-input:focus{outline:none;border-color:var(--accent-brand)}
-.bug-textarea{resize:vertical;line-height:1.5}
-.bug-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bug-actions{display:flex;align-items:center;gap:12px;margin-top:14px}
-.bug-msg{flex:1;font-size:11.5px;color:var(--text-2);line-height:1.4}
+/* Los <select> traen su propio ancho intrínseco: sin esto se desbordaban de la
+   grilla y el texto de la opción salía cortado ("Me complica el t…"). */
+.bug-form select.bug-input{min-width:0;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
+.bug-textarea{resize:vertical;line-height:1.55}
+.bug-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bug-row>div{min-width:0}
+.bug-actions{display:flex;align-items:center;gap:14px;margin-top:18px}
+.bug-msg{flex:1;font-size:12px;color:var(--text-2);line-height:1.45}
 .bug-msg-ok{color:#16a34a;font-weight:600}
 .bug-msg-err{color:#dc2626;font-weight:600}
 .bug-mine{margin-top:22px;padding-top:16px;border-top:1px solid var(--border-1)}
