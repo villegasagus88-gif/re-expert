@@ -2227,9 +2227,371 @@ function acctRenderPane(item){
   // Secciones ya desarrolladas: renderizan su propia UI. El resto muestra el
   // placeholder hasta que les toque.
   if(item.id==='error'){bugRenderPane(pane,item);return;}
+  if(item.id==='almacenamiento'){stRenderPane(pane,item);return;}
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
+}
+
+// ═══ Configuración → Almacenamiento ══════════════════════════════════════
+// Tus archivos en un solo lugar: buscar, renombrar, descargar y borrar. Hoy la
+// única fuente real son los planos (es lo único que el sistema guarda a tu
+// nombre); el subtítulo lo dice para que nadie busque un informe que nunca
+// estuvo. La lista es un acordeón: la fila muestra lo justo y al abrirla
+// aparecen el detalle y las acciones.
+// `summary` es el subtotal de lo que se está viendo (respeta los filtros);
+// `global` es el total real de la cuenta. Se muestran por separado a propósito:
+// poner el subtotal filtrado bajo el rótulo "Espacio usado" haría creer que se
+// borraron archivos apenas escribís en el buscador.
+const stState={items:[],total:0,summary:null,global:null,q:'',type:'',sort:'recent',
+  loading:false,error:'',abiertos:new Set(),muto:false,seq:0,_deb:null};
+
+const ST_ICONOS={pdf:'📕',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',webp:'🖼️'};
+
+function stFmtBytes(n){
+  n=Number(n)||0;
+  if(n<1024)return n+' B';
+  const u=['KB','MB','GB'];let i=-1;
+  do{n/=1024;i++}while(n>=1024&&i<u.length-1);
+  return (n<10?n.toFixed(1):Math.round(n))+' '+u[i];
+}
+function stFmtFecha(iso){
+  if(!iso)return '—';
+  const d=new Date(iso); if(isNaN(d))return '—';
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function stRenderPane(pane,item){
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">Los archivos que subiste a la app. Podés renombrarlos, descargarlos o eliminarlos.
+      Los informes que genera el asistente se descargan desde el chat y no quedan guardados en tu cuenta.</p>
+    <div class="st-kpis" id="stKpis"></div>
+    <div class="st-toolbar">
+      <div class="mat-search st-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="stQ" type="search" placeholder="Buscar por nombre, tipo o proyecto…" aria-label="Buscar archivos" autocomplete="off">
+      </div>
+      <select class="st-select" id="stType" aria-label="Filtrar por tipo">
+        <option value="">Todos los tipos</option>
+        <option value="pdf">PDF</option>
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="webp">WEBP</option>
+      </select>
+      <select class="st-select" id="stSort" aria-label="Ordenar">
+        <option value="recent">Más recientes</option>
+        <option value="oldest">Más antiguos</option>
+        <option value="name">Nombre (A-Z)</option>
+        <option value="size">Más pesados</option>
+      </select>
+    </div>
+    <div class="st-cuenta" id="stCuenta" hidden></div>
+    <div class="st-list" id="stList"></div>
+    <div class="st-pie" id="stPie" hidden></div>`;
+
+  const q=document.getElementById('stQ');
+  q.value=stState.q;
+  q.addEventListener('input',()=>{
+    stState.q=q.value;
+    clearTimeout(stState._deb);
+    stState._deb=setTimeout(stLoad,300);   // no pegarle al backend en cada tecla
+  });
+  const t=document.getElementById('stType'), s=document.getElementById('stSort');
+  t.value=stState.type; s.value=stState.sort;
+  t.addEventListener('change',()=>{stState.type=t.value;stLoad()});
+  s.addEventListener('change',()=>{stState.sort=s.value;stLoad()});
+
+  stLoad();
+  stLoadGlobal();
+}
+
+async function stLoad(){
+  const list=document.getElementById('stList'); if(!list)return;
+  const mio=++stState.seq;                 // descarta respuestas viejas
+  stState.loading=true; stState.error='';
+  list.innerHTML=`<div class="st-loading">Cargando tus archivos…</div>`;
+  try{
+    const p=new URLSearchParams({sort:stState.sort,page_size:'200'});
+    if(stState.q)p.set('q',stState.q);
+    if(stState.type)p.set('type',stState.type);
+    const r=await window.REAuthService.authFetch(`${apiBase()}/api/storage/files?${p}`);
+    if(mio!==stState.seq)return;
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok){
+      stState.error = r.status===402||r.status===403
+        ? 'Tu plan no está activo, así que el almacenamiento está bloqueado.'
+        : 'No pudimos cargar tus archivos. Probá de nuevo en un momento.';
+      throw new Error('http '+r.status);
+    }
+    const d=await r.json();
+    stState.items=d.items||[]; stState.total=d.total||0; stState.summary=d.summary||null;
+  }catch(e){
+    if(mio!==stState.seq)return;
+    if(!stState.error)stState.error='No pudimos cargar tus archivos. Revisá tu conexión.';
+    stState.items=[]; stState.total=0;
+  }finally{
+    if(mio===stState.seq){stState.loading=false; stRenderList();}
+  }
+}
+
+// Total REAL de la cuenta, independiente de los filtros del buscador.
+async function stLoadGlobal(){
+  try{
+    const r=await window.REAuthService.authFetch(`${apiBase()}/api/storage/summary`);
+    if(!r.ok)return;
+    stState.global=await r.json();
+    stRenderKpis();
+  }catch{/* si falla, los KPIs caen al subtotal: no vale romper el pane por esto */}
+}
+
+function stRenderKpis(){
+  const k=document.getElementById('stKpis'); if(!k)return;
+  const g=stState.global||stState.summary||{total_files:0,total_bytes:0};
+  k.innerHTML=`
+    <div class="pln-kpi"><div class="pln-kpi-num">${g.total_files||0}</div><div class="pln-kpi-lbl">Archivos en tu cuenta</div></div>
+    <div class="pln-kpi"><div class="pln-kpi-num">${stFmtBytes(g.total_bytes)}</div><div class="pln-kpi-lbl">Espacio usado</div></div>`;
+}
+
+// Contador de lo que se está viendo + aviso si la lista quedó cortada. Sin esto
+// la lista se truncaba en 200 sin decir nada y contradecía al KPI de arriba.
+function stRenderContadores(){
+  const c=document.getElementById('stCuenta'), pie=document.getElementById('stPie');
+  const filtrando=!!(stState.q||stState.type);
+  if(c){
+    if(filtrando&&!stState.error){
+      const tot=(stState.global&&stState.global.total_files)||stState.total;
+      c.hidden=false;
+      c.textContent=`${stState.total} de ${tot} archivo${tot===1?'':'s'} · ${stFmtBytes((stState.summary||{}).total_bytes)}`;
+    }else c.hidden=true;
+  }
+  if(pie){
+    const faltan=stState.total-stState.items.length;
+    if(faltan>0){
+      pie.hidden=false;
+      pie.textContent=`Mostrando ${stState.items.length} de ${stState.total}. Afiná la búsqueda para ver el resto.`;
+    }else pie.hidden=true;
+  }
+}
+
+function stRenderList(){
+  stRenderKpis();
+  stRenderContadores();
+  const list=document.getElementById('stList'); if(!list)return;
+
+  if(stState.error){
+    list.innerHTML=`<div class="st-error">${escapeHtml(stState.error)}
+      <button class="btn-sm" id="stRetry">Reintentar</button></div>`;
+    const b=document.getElementById('stRetry'); if(b)b.addEventListener('click',stLoad);
+    return;
+  }
+  if(!stState.items.length){
+    const filtrando=stState.q||stState.type;
+    list.innerHTML=`<div class="empty-state">
+      <div class="st-empty-ico">${filtrando?'🔍':'📂'}</div>
+      <div class="st-empty-t">${filtrando?'No encontramos archivos con ese filtro':'Todavía no subiste archivos'}</div>
+      <div class="st-empty-d">${filtrando?'Probá con otro nombre o limpiá los filtros.':'Los planos que subas a Análisis de Planos van a aparecer acá.'}</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML=stState.items.map(f=>{
+    const ab=stState.abiertos.has(f.id);
+    return `<div class="st-row${ab?' is-open':''}" data-id="${escapeHtml(f.id)}">
+      <button class="st-head" aria-expanded="${ab}" data-act="toggle">
+        <span class="st-ico">${ST_ICONOS[f.file_type]||'📄'}</span>
+        <span class="st-main">
+          <span class="st-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+          <span class="st-meta">
+            <span class="pln-chip">${escapeHtml((f.file_type||'').toUpperCase())}</span>
+            <span>${escapeHtml(f.source_label||'')}</span>
+            <span class="st-sep">·</span>
+            <span>${stFmtFecha(f.created_at)}</span>
+          </span>
+        </span>
+        <span class="st-size">${stFmtBytes(f.size_bytes)}</span>
+        <svg class="st-caret" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="st-body">
+        <dl class="st-detalle">
+          <div><dt>Proyecto</dt><dd>${escapeHtml((f.container&&f.container.name)||'—')}</dd></div>
+          <div><dt>Sección</dt><dd>${escapeHtml(f.source_label||'—')}</dd></div>
+          <div><dt>Versión</dt><dd>v${f.version||1}${f.is_current?' <span class="pln-chip">vigente</span>':''}</dd></div>
+          <div><dt>Estado</dt><dd>${escapeHtml(f.status||'—')}</dd></div>
+        </dl>
+        <div class="st-acciones">
+          <button class="btn-sm" data-act="rename">Renombrar</button>
+          <button class="btn-sm" data-act="download">Descargar</button>
+          <button class="btn-sm st-danger" data-act="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.st-row').forEach(row=>{
+    const id=row.dataset.id;
+    row.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.preventDefault(); ev.stopPropagation();
+      const a=b.dataset.act;
+      if(a==='toggle'){
+        // Solo esta fila: el CSS ya resuelve abierto/cerrado con .is-open.
+        // Re-renderizar la lista entera perdía el foco del teclado y borraba
+        // lo que el usuario estuviera tipeando en "Renombrar" de otra fila.
+        const abierto=!stState.abiertos.has(id);
+        if(abierto)stState.abiertos.add(id);else stState.abiertos.delete(id);
+        row.classList.toggle('is-open',abierto);
+        b.setAttribute('aria-expanded',String(abierto));
+      }
+      else if(a==='rename')stRenameInline(row,id);
+      else if(a==='download')stDownload(id,b);
+      else if(a==='delete')stDelete(id,b);
+    }));
+  });
+}
+
+// Renombrar sin modal: la fila abierta se convierte en un input.
+function stRenameInline(row,id){
+  const f=stState.items.find(x=>x.id===id); if(!f)return;
+  const cont=row.querySelector('.st-acciones'); if(!cont||row.querySelector('.st-rename'))return;
+  const box=document.createElement('div');
+  box.className='st-rename';
+  box.innerHTML=`<input class="st-rename-input" maxlength="255" aria-label="Nuevo nombre">
+    <button class="btn-sm st-primary" data-r="ok">Guardar</button>
+    <button class="btn-sm" data-r="no">Cancelar</button>
+    <div class="st-rename-err" hidden></div>`;
+  cont.parentNode.insertBefore(box,cont);
+  const inp=box.querySelector('.st-rename-input');
+  inp.value=f.name; inp.focus(); inp.select();
+  const err=box.querySelector('.st-rename-err');
+  const cerrar=()=>box.remove();
+  box.querySelector('[data-r="no"]').addEventListener('click',cerrar);
+  inp.addEventListener('keydown',e=>{
+    // stopPropagation: si no, el Escape burbujea al listener global del panel
+    // y en vez de cancelar el renombre te cierra Configuración entera.
+    if(e.key==='Escape'){e.stopPropagation();cerrar();return}
+    if(e.key==='Enter'){e.preventDefault();box.querySelector('[data-r="ok"]').click()}
+  });
+  box.querySelector('[data-r="ok"]').addEventListener('click',async ev=>{
+    const nuevo=inp.value.trim();
+    if(!nuevo||nuevo===f.name){cerrar();return}
+    ev.target.disabled=true;
+    try{
+      const r=await window.REAuthService.authFetch(
+        `${apiBase()}/api/storage/files/${encodeURIComponent(id)}`,
+        {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nuevo})});
+      if(r.status===401){window.REAuthService.logout();return}
+      if(!r.ok){
+        err.hidden=false;
+        err.textContent = r.status===422
+          ? 'Ese nombre no se puede usar (probá sin / \\ : * ? " < > |).'
+          : 'No pudimos renombrarlo. Probá de nuevo.';
+        ev.target.disabled=false; return;
+      }
+      const upd=await r.json();
+      const i=stState.items.findIndex(x=>x.id===id);
+      if(i>=0)stState.items[i]=upd;
+      stState.muto=true;
+      stRenderList();
+    }catch{
+      err.hidden=false; err.textContent='Sin conexión. Probá de nuevo.'; ev.target.disabled=false;
+    }
+  });
+}
+
+async function stDownload(id,btn){
+  const f=stState.items.find(x=>x.id===id); if(!f)return;
+  const txt=btn.textContent; btn.disabled=true; btn.textContent='Bajando…';
+  try{
+    // El endpoint exige Authorization, así que no sirve un <a href> directo:
+    // bajamos el blob y lo entregamos con un enlace temporal.
+    const r=await window.REAuthService.authFetch(
+      `${apiBase()}/api/storage/files/${encodeURIComponent(id)}/download`);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(!r.ok)throw new Error('http '+r.status);
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=f.name||'archivo';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch{
+    alert('No pudimos descargar el archivo. Probá de nuevo.');
+  }finally{
+    btn.disabled=false; btn.textContent=txt;
+  }
+}
+
+async function stDelete(id,btn){
+  const f=stState.items.find(x=>x.id===id); if(!f)return;
+  if(!confirm(`¿Eliminar "${f.name}"?\n\nEsta acción no se puede deshacer.`))return;
+  const txt=btn.textContent; btn.disabled=true; btn.textContent='Eliminando…';
+  const pegar=async force=>window.REAuthService.authFetch(
+    `${apiBase()}/api/storage/files/${encodeURIComponent(id)}${force?'?force=true':''}`,
+    {method:'DELETE'});
+  try{
+    let r=await pegar(false);
+    if(r.status===401){window.REAuthService.logout();return}
+    if(r.status===409){
+      // El backend avisa qué se lleva puesto: se lo mostramos al usuario ANTES
+      // de confirmar, en vez de un "¿seguro?" que no dice nada.
+      let d={}; try{d=(await r.json()).detail||{}}catch{}
+      const im=d.impact||{};
+      const partes=[];
+      if(im.analyses)partes.push(`${im.analyses} análisis de IA`);
+      if(im.alerts)partes.push(`${im.alerts} observaciones`);
+      if(im.tasks)partes.push(`${im.tasks} tareas quedan sin su plano`);
+      if(im.versions)partes.push(`se corta el historial de ${im.versions} versión(es)`);
+      if(im.last_current_of_project)partes.push('el proyecto queda sin planos vigentes para analizar');
+      const detalle=partes.length?'\n\n• '+partes.join('\n• '):'';
+      if(!confirm(`Al eliminar "${f.name}" también se pierde:${detalle}\n\n¿Eliminar igual?`)){
+        btn.disabled=false; btn.textContent=txt; return;
+      }
+      r=await pegar(true);
+      if(r.status===401){window.REAuthService.logout();return}
+    }
+    if(!r.ok&&r.status!==204)throw new Error('http '+r.status);
+    stState.items=stState.items.filter(x=>x.id!==id);
+    stState.abiertos.delete(id);
+    stState.total=Math.max(0,stState.total-1);
+    [stState.summary,stState.global].forEach(s=>{
+      if(!s)return;
+      s.total_files=Math.max(0,(s.total_files||1)-1);
+      s.total_bytes=Math.max(0,(s.total_bytes||0)-(f.size_bytes||0));
+    });
+    stState.muto=true;
+    stRenderList();
+  }catch{
+    alert('No pudimos eliminar el archivo. Probá de nuevo.');
+    btn.disabled=false; btn.textContent=txt;
+  }
+}
+
+// Si desde acá se renombró o borró algo, la sección Planos quedó con datos
+// viejos cacheados (y con object URLs colgando). La refrescamos al cerrar.
+//
+// OJO con dos cosas que ya rompieron una vez:
+//  1. plnState._blobs guarda {blob,url}, NO la url pelada: revocar el objeto es
+//     un no-op silencioso y las URLs quedan colgadas para siempre.
+//  2. El panel es un overlay: la vista de Planos puede estar montada atrás y sus
+//     handlers usan plnState.project.id SIN guard. Nulear `project` haría reventar
+//     subir plano, crear tarea y analizar. Por eso se recarga, no se vacía.
+function stInvalidarPlanos(){
+  if(!stState.muto)return;
+  stState.muto=false;
+  try{
+    if(typeof plnState==='undefined'||!plnState)return;
+    Object.values(plnState._blobs||{}).forEach(e=>{
+      try{
+        const u=(e&&typeof e==='object'&&e.url)?e.url:e;
+        if(typeof u==='string')URL.revokeObjectURL(u);
+        if(e&&e.pdf&&typeof e.pdf.destroy==='function')e.pdf.destroy();
+      }catch{}
+    });
+    plnState._blobs={};
+    plnState.loaded=false;                       // el dashboard se refetchea solo
+    if(plnState.project&&plnState.project.id&&typeof plnOpenProject==='function'){
+      plnOpenProject(plnState.project.id);       // re-hidrata de verdad
+    }
+  }catch{}
 }
 
 // ═══ Ayuda → Informar un error ═══════════════════════════════════════════
@@ -2361,7 +2723,10 @@ async function bugLoadMine(){
     box.innerHTML='<div class="bug-empty">No pudimos cargar tus reportes.</div>';
   }
 }
-function acctClosePanel(){document.getElementById('acctPanel').classList.remove('active')}
+function acctClosePanel(){
+  document.getElementById('acctPanel').classList.remove('active');
+  stInvalidarPlanos();   // si se borró/renombró en Almacenamiento, refrescar Planos
+}
 
 function acctInit(){
   const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
