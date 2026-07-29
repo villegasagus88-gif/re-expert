@@ -2248,7 +2248,7 @@ function acctRenderPane(item){
 // poner el subtotal filtrado bajo el rótulo "Espacio usado" haría creer que se
 // borraron archivos apenas escribís en el buscador.
 const stState={items:[],total:0,summary:null,global:null,q:'',type:'',sort:'recent',
-  loading:false,error:'',abiertos:new Set(),muto:false,seq:0,_deb:null};
+  loading:false,error:'',noPublicado:false,abiertos:new Set(),muto:false,seq:0,_deb:null};
 
 const ST_ICONOS={pdf:'📕',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',webp:'🖼️'};
 
@@ -2321,12 +2321,18 @@ async function stLoad(){
     const r=await window.REAuthService.authFetch(`${apiBase()}/api/storage/files?${p}`);
     if(mio!==stState.seq)return;
     if(r.status===401){window.REAuthService.logout();return}
+    if(r.status===404){
+      // El servidor todavía no conoce esta ruta: falta publicar el backend.
+      stState.noPublicado=true;
+      throw new Error('no publicado');
+    }
     if(!r.ok){
       stState.error = r.status===402||r.status===403
         ? 'Tu plan no está activo, así que el almacenamiento está bloqueado.'
         : 'No pudimos cargar tus archivos. Probá de nuevo en un momento.';
       throw new Error('http '+r.status);
     }
+    stState.noPublicado=false;
     const d=await r.json();
     stState.items=d.items||[]; stState.total=d.total||0; stState.summary=d.summary||null;
   }catch(e){
@@ -2382,6 +2388,11 @@ function stRenderList(){
   stRenderContadores();
   const list=document.getElementById('stList'); if(!list)return;
 
+  if(stState.noPublicado){
+    list.innerHTML=cuAvisoNoPublicado('Almacenamiento');
+    const k=document.getElementById('stKpis'); if(k)k.innerHTML='';
+    return;
+  }
   if(stState.error){
     list.innerHTML=`<div class="st-error">${escapeHtml(stState.error)}
       <button class="btn-sm" id="stRetry">Reintentar</button></div>`;
@@ -2633,6 +2644,10 @@ async function cuLoad(){
   const body=document.getElementById('cuBody'); if(!body)return;
   try{
     const r=await cuApi('/api/auth/account/security');
+    // 404 = el servidor todavía no conoce esta ruta (falta publicar la última
+    // versión del backend). Decirlo así evita que parezca que la cuenta del
+    // usuario está rota o que perdió sus datos.
+    if(r.status===404){body.innerHTML=cuAvisoNoPublicado('Cuenta');return}
     if(!r.ok)throw new Error('http '+r.status);
     cuState.sec=await r.json();
   }catch{
@@ -2641,6 +2656,15 @@ async function cuLoad(){
     return;
   }
   cuRenderBody();
+}
+
+// Aviso compartido para secciones cuyo backend todavía no está publicado.
+function cuAvisoNoPublicado(seccion){
+  return `<div class="cu-aviso cu-aviso-deploy">
+    <b>${escapeHtml(seccion)} todavía no está disponible.</b><br>
+    La sección ya está lista, pero falta publicar la última versión del servidor.
+    Tus datos están intactos: apenas se publique, funciona sin que hagas nada.
+  </div>`;
 }
 
 function cuRenderBody(){
