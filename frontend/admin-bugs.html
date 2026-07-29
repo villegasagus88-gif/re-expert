@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin — Reportes de error · RE Expert</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="auth.css">
+  <script src="config.js"></script>
+  <style>
+    body { display:block; min-height:100dvh; background:var(--bg-0); color:var(--text-0); font-family:var(--font); }
+    .admin-wrap { max-width: 1000px; margin: 0 auto; padding: 24px 18px 60px; }
+    .admin-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+    .admin-title { font-size:20px; font-weight:700; }
+    .admin-sub { font-size:13px; color:var(--text-2); margin-bottom:22px; }
+    .admin-links { display:flex; gap:14px; }
+    .admin-link { font-size:13px; color:var(--accent); text-decoration:none; }
+    .card { background:var(--bg-card); border:1px solid var(--border-0); border-radius:12px; padding:16px 18px; margin-bottom:18px; }
+    .card-title { font-size:14px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    .btn:hover { opacity:.9; }
+    .btn:disabled { opacity:.5; cursor:default; }
+    .btn-sm { padding:5px 11px; font-size:12px; }
+    .btn-ghost { background:var(--bg-1); color:var(--text-1); border:1px solid var(--border-0); }
+    .muted { color:var(--text-3); font-size:13px; }
+    .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px; display:none; }
+    .alert.ok { background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); display:block; }
+    .alert.err { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; display:block; }
+    /* filtros + búsqueda */
+    .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .filters { display:flex; gap:6px; flex-wrap:wrap; }
+    .chip { background:var(--bg-1); color:var(--text-2); border:1px solid var(--border-0); border-radius:999px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:var(--font); }
+    .chip.active { background:var(--accent); color:#fff; border-color:transparent; }
+    .search { flex:1; min-width:180px; padding:7px 12px; background:var(--bg-input,var(--bg-1)); border:1px solid var(--border-0); border-radius:8px; color:var(--text-0); font-size:13px; font-family:var(--font); }
+    .search:focus { outline:none; border-color:var(--accent); }
+    /* reporte */
+    .bug { border-bottom:1px solid var(--border-0); padding:14px 0; }
+    .bug:last-child { border-bottom:none; }
+    .bug-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .bug-tk { font-family:ui-monospace,monospace; font-size:12px; font-weight:700; color:var(--accent); }
+    .bug-t { font-size:14px; font-weight:600; flex:1; min-width:160px; }
+    .badge { font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+    .b-new { background:rgba(59,130,246,.16); color:#3b82f6; }
+    .b-in_review { background:rgba(245,158,11,.18); color:#d97706; }
+    .b-resolved { background:rgba(34,197,94,.16); color:#22c55e; }
+    .b-dismissed { background:var(--bg-1); color:var(--text-3); }
+    .sev-high { background:rgba(220,38,38,.14); color:#dc2626; }
+    .sev-normal { background:var(--bg-1); color:var(--text-2); }
+    .sev-low { background:var(--bg-1); color:var(--text-3); }
+    .bug-meta { font-size:11.5px; color:var(--text-3); margin-top:5px; display:flex; gap:12px; flex-wrap:wrap; }
+    .bug-desc { font-size:13px; color:var(--text-1); line-height:1.55; margin-top:9px; white-space:pre-wrap; }
+    .bug-notes { font-size:12.5px; color:var(--text-2); line-height:1.5; margin-top:8px; padding-left:10px; border-left:2px solid var(--border-0); }
+    .ctx { background:var(--bg-1); border:1px solid var(--border-0); border-radius:8px; padding:9px 12px; margin-top:10px; font-size:11.5px; color:var(--text-2); display:none; }
+    .ctx.open { display:block; }
+    .ctx-row { padding:2px 0; }
+    .ctx-k { color:var(--text-3); display:inline-block; min-width:110px; }
+    .bug-actions { display:flex; gap:7px; margin-top:11px; flex-wrap:wrap; align-items:center; }
+    .note-in { flex:1; min-width:200px; padding:6px 10px; background:var(--bg-1); border:1px solid var(--border-0); border-radius:7px; color:var(--text-0); font-size:12.5px; font-family:var(--font); }
+    .note-in:focus { outline:none; border-color:var(--accent); }
+    .pager { display:flex; align-items:center; gap:12px; justify-content:center; margin-top:14px; }
+    .pager:empty { display:none; }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap" id="adminWrap" style="display:none">
+    <div class="admin-head">
+      <div class="admin-title">🐞 Reportes de error</div>
+      <div class="admin-links">
+        <a href="admin.html" class="admin-link">🗂️ Knowledge Base</a>
+        <a href="admin-creditos.html" class="admin-link">💳 Créditos</a>
+        <a href="app.html" class="admin-link">← Volver a la app</a>
+      </div>
+    </div>
+    <div class="admin-sub">Lo que reportan los usuarios desde <b>Ayuda → Informar un error</b>, con el contexto técnico de su sesión. Cambiá el estado a medida que los revisás; la nota interna no la ve el usuario.</div>
+
+    <div id="alert" class="alert"></div>
+
+    <div class="toolbar">
+      <span class="filters" id="filters">
+        <button class="chip active" data-f="new">Nuevos (<span id="c-new">0</span>)</button>
+        <button class="chip" data-f="in_review">En revisión (<span id="c-in_review">0</span>)</button>
+        <button class="chip" data-f="resolved">Resueltos (<span id="c-resolved">0</span>)</button>
+        <button class="chip" data-f="dismissed">Descartados (<span id="c-dismissed">0</span>)</button>
+        <button class="chip" data-f="">Todos</button>
+      </span>
+      <input class="search" id="search" placeholder="Buscar por título, texto o email…" aria-label="Buscar reportes">
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>Bandeja (<span id="total">0</span>)</span></div>
+      <div id="list"><div class="muted">Cargando…</div></div>
+      <div id="pager" class="pager"></div>
+    </div>
+  </div>
+
+  <script src="authService.js"></script>
+  <script>
+  const apiBase = () => (window.RE_CONFIG && window.RE_CONFIG.API_BASE) || '';
+  const API = apiBase() + '/api/admin/bugs';
+  const $ = s => document.querySelector(s);
+  const PAGE_SIZE = 30;
+  let _filter = 'new', _q = '', _tmr = null, _page = 1, _seq = 0;
+
+  const ESTADOS = { new:'Nuevo', in_review:'En revisión', resolved:'Resuelto', dismissed:'Descartado' };
+  const SEVER  = { high:'No puede usar la app', normal:'Le complica el trabajo', low:'Molesto' };
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function showAlert(msg, ok){ const el=$('#alert'); el.className='alert '+(ok?'ok':'err'); el.textContent=msg; if(ok)setTimeout(()=>{el.className='alert';},4000); }
+  function fmtFecha(iso){ try{ return new Date(iso).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}); }catch(e){ return iso||''; } }
+
+  async function load(){
+    const params = new URLSearchParams();
+    if(_filter) params.set('estado', _filter);
+    if(_q) params.set('q', _q);
+    params.set('page', String(_page));
+    params.set('page_size', String(PAGE_SIZE));
+    // Guard de secuencia: si el usuario cambia de filtro mientras una consulta
+    // lenta está en vuelo, la respuesta vieja NO debe pisar a la nueva.
+    const mine = ++_seq;
+    try{
+      const r = await window.REAuthService.authFetch(API + '?' + params);
+      if(!r.ok) throw new Error('Error '+r.status);
+      const data = await r.json();
+      if(mine !== _seq) return;              // llegó tarde: la descartamos
+      const c = data.counts||{};
+      ['new','in_review','resolved','dismissed'].forEach(k=>{ const el=$('#c-'+k); if(el) el.textContent=c[k]||0; });
+      const total = data.total||0, items = data.items||[];
+      $('#total').textContent = total;
+      render(items);
+      renderPager(total, items.length);
+    }catch(e){
+      if(mine !== _seq) return;
+      $('#list').innerHTML = '<div class="muted">No se pudieron cargar los reportes.</div>';
+      $('#pager').innerHTML = '';
+    }
+  }
+
+  // Paginador: sin esto la bandeja mostraba el total real pero solo la primera
+  // página de resultados, y los reportes viejos quedaban inalcanzables.
+  function renderPager(total, enPagina){
+    const box = $('#pager'); if(!box) return;
+    const paginas = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if(paginas <= 1){ box.innerHTML = ''; return; }
+    const desde = (_page-1)*PAGE_SIZE + 1, hasta = (_page-1)*PAGE_SIZE + enPagina;
+    box.innerHTML = `<button class="btn btn-sm btn-ghost" data-pg="prev" ${_page<=1?'disabled':''}>← Anteriores</button>
+      <span class="muted">${desde}–${hasta} de ${total}</span>
+      <button class="btn btn-sm btn-ghost" data-pg="next" ${_page>=paginas?'disabled':''}>Siguientes →</button>`;
+  }
+
+  function render(items){
+    if(!items.length){ $('#list').innerHTML = '<div class="muted">No hay reportes con este filtro.</div>'; return; }
+    $('#list').innerHTML = items.map(b => {
+      const ctx = b.context||{};
+      const ctxRows = Object.keys(ctx).map(k =>
+        `<div class="ctx-row"><span class="ctx-k">${esc(k)}</span>${esc(ctx[k])}</div>`).join('');
+      return `<div class="bug" data-id="${esc(b.id)}">
+        <div class="bug-head">
+          <span class="bug-tk">#${b.ticket}</span>
+          <span class="bug-t">${esc(b.title)}</span>
+          <span class="badge sev-${esc(b.severity)}">${esc(SEVER[b.severity]||b.severity)}</span>
+          <span class="badge b-${esc(b.status)}">${esc(ESTADOS[b.status]||b.status)}</span>
+        </div>
+        <div class="bug-meta">
+          <span>${esc(b.reporter_email||'usuario eliminado')}</span>
+          ${b.section?`<span>📍 ${esc(b.section)}</span>`:''}
+          <span>🕒 ${fmtFecha(b.created_at)}</span>
+          ${ctxRows?`<a href="#" class="admin-link" data-ctx>ver contexto técnico</a>`:''}
+        </div>
+        <div class="bug-desc">${esc(b.description)}</div>
+        ${b.notes?`<div class="bug-notes">${esc(b.notes)}</div>`:''}
+        ${ctxRows?`<div class="ctx">${ctxRows}</div>`:''}
+        <div class="bug-actions">
+          ${b.status!=='in_review'?`<button class="btn btn-sm btn-ghost" data-st="in_review">Tomar</button>`:''}
+          ${b.status!=='resolved'?`<button class="btn btn-sm" data-st="resolved">Resuelto</button>`:''}
+          ${b.status!=='dismissed'?`<button class="btn btn-sm btn-ghost" data-st="dismissed">Descartar</button>`:''}
+          <input class="note-in" data-note placeholder="Nota interna (no la ve el usuario)…" value="${esc(b.admin_note||'')}" aria-label="Nota interna">
+          <button class="btn btn-sm btn-ghost" data-savenote>Guardar nota</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function patch(id, payload, okMsg){
+    try{
+      const r = await window.REAuthService.authFetch(API+'/'+id, {
+        method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      });
+      if(!r.ok) throw new Error('Error '+r.status);
+      showAlert(okMsg, true);
+      load();
+    }catch(e){ showAlert('No se pudo actualizar el reporte.', false); }
+  }
+
+  $('#filters').addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if(!c) return;
+    document.querySelectorAll('#filters .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    _filter = c.getAttribute('data-f');
+    _page = 1;                       // cambiar de filtro vuelve a la 1ª página
+    load();
+  });
+  $('#search').addEventListener('input', e => {
+    clearTimeout(_tmr); const v = e.target.value.trim();
+    _tmr = setTimeout(()=>{ _q = v; _page = 1; load(); }, 350);
+  });
+  $('#pager').addEventListener('click', e => {
+    const b = e.target.closest('[data-pg]'); if(!b || b.disabled) return;
+    _page = Math.max(1, _page + (b.getAttribute('data-pg')==='next' ? 1 : -1));
+    load();
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+  $('#list').addEventListener('click', e => {
+    const bug = e.target.closest('.bug'); if(!bug) return;
+    const id = bug.getAttribute('data-id');
+    if(e.target.closest('[data-ctx]')){ e.preventDefault(); bug.querySelector('.ctx').classList.toggle('open'); return; }
+    const st = e.target.closest('[data-st]');
+    if(st){ patch(id, {status: st.getAttribute('data-st')}, 'Reporte actualizado.'); return; }
+    if(e.target.closest('[data-savenote]')){
+      patch(id, {admin_note: bug.querySelector('[data-note]').value}, 'Nota guardada.');
+    }
+  });
+
+  // Guard: requiere sesión + ser admin. El backend igual exige require_admin.
+  (async function init(){
+    try{
+      await window.REAuthService.requireAuth();
+      const r = await window.REAuthService.authFetch(apiBase()+'/api/auth/me');
+      const me = r.ok ? await r.json() : {};
+      if(!me.is_admin){ window.location.href='app.html'; return; }
+      $('#adminWrap').style.display='';
+      load();
+    }catch(e){ window.location.href='login.html'; }
+  })();
+  </script>
+</body>
+</html>

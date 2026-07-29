@@ -1053,6 +1053,12 @@
         Ayuda
         <svg class="acct-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
+      <!-- Solo admins: bandeja de reportes de error con el contador de nuevos. -->
+      <button class="acct-item" id="acctBugs" role="menuitem" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 2l1.5 2M16 2l-1.5 2"/><path d="M12 20a6 6 0 006-6v-3a6 6 0 00-12 0v3a6 6 0 006 6z"/><path d="M12 8v12M3 12h3M18 12h3M4 7l2.5 1.5M20 7l-2.5 1.5M4 17l2.5-1.5M20 17l-2.5-1.5"/></svg>
+        Reportes de error
+        <span class="acct-badge" id="acctBugsBadge" style="display:none">0</span>
+      </button>
       <div class="acct-sep" role="separator"></div>
       <button class="acct-item" id="acctLogout" role="menuitem">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -2143,9 +2149,142 @@ function acctOpenPanel(key){
 }
 function acctRenderPane(item){
   const pane=document.getElementById('acctPanelPane'); if(!pane||!item)return;
+  // Secciones ya desarrolladas: renderizan su propia UI. El resto muestra el
+  // placeholder hasta que les toque.
+  if(item.id==='error'){bugRenderPane(pane,item);return;}
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
+}
+
+// ═══ Ayuda → Informar un error ═══════════════════════════════════════════
+// Form de reporte + lista de "mis reportes" con su estado. El contexto técnico
+// (sección, navegador, viewport, url) se captura solo: es lo que después evita
+// el ida y vuelta de "¿en qué pantalla te pasó?".
+const BUG_ESTADOS={new:{txt:'Recibido',cls:'nuevo'},in_review:{txt:'En revisión',cls:'revision'},
+  resolved:{txt:'Resuelto',cls:'resuelto'},dismissed:{txt:'Descartado',cls:'descartado'}};
+const BUG_SECCIONES=['Chat Experto','Análisis de Planos','Cotización Materiales','Panel de Proyecto',
+  'Opportunity Scanner','Noticias','SOL — Asistente','Academia','Créditos','Cuenta / Sesión','Otra'];
+
+function bugContexto(){
+  const nav=navigator||{};
+  return {
+    seccion_app: (state&&state.currentView)||'',
+    url: location.pathname,
+    navegador: (nav.userAgent||'').slice(0,300),
+    idioma: nav.language||'',
+    pantalla: `${window.innerWidth}x${window.innerHeight}`,
+    tema: document.documentElement.getAttribute('data-theme')||'dark',
+    fecha_local: new Date().toString().slice(0,33),
+  };
+}
+
+function bugRenderPane(pane,item){
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">Contanos qué falló y lo revisamos. Se envía junto con datos técnicos de tu sesión (sección, navegador y pantalla) para poder reproducirlo.</p>
+    <form class="bug-form" id="bugForm">
+      <label class="bug-lbl" for="bugTitle">¿Qué pasó?</label>
+      <input class="bug-input" id="bugTitle" maxlength="200" required placeholder="Ej: el panel de Planos queda cargando" aria-label="Qué pasó">
+      <div class="bug-row">
+        <div>
+          <label class="bug-lbl" for="bugSection">¿Dónde?</label>
+          <select class="bug-input" id="bugSection" aria-label="Sección donde ocurrió">
+            <option value="">Elegí una sección…</option>
+            ${BUG_SECCIONES.map(s=>`<option>${escapeHtml(s)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="bug-lbl" for="bugSeverity">¿Qué tan grave?</label>
+          <select class="bug-input" id="bugSeverity" aria-label="Gravedad">
+            <option value="low">Molesto, puedo seguir</option>
+            <option value="normal" selected>Me complica el trabajo</option>
+            <option value="high">No puedo usar la app</option>
+          </select>
+        </div>
+      </div>
+      <label class="bug-lbl" for="bugDesc">Contanos con detalle</label>
+      <textarea class="bug-input bug-textarea" id="bugDesc" maxlength="5000" required rows="4" placeholder="Qué estabas haciendo, qué esperabas que pasara y qué pasó en su lugar." aria-label="Descripción del error"></textarea>
+      <label class="bug-lbl" for="bugNotes">Notas <span class="bug-opt">(opcional)</span></label>
+      <textarea class="bug-input bug-textarea" id="bugNotes" maxlength="2000" rows="2" placeholder="Cualquier dato extra que nos ayude." aria-label="Notas adicionales"></textarea>
+      <div class="bug-actions">
+        <span class="bug-msg" id="bugMsg" role="status" aria-live="polite"></span>
+        <button type="submit" class="btn-primary" id="bugSend">Enviar reporte</button>
+      </div>
+    </form>
+    <div class="bug-mine">
+      <div class="bug-mine-title">Tus reportes</div>
+      <div id="bugMineList" class="bug-mine-list"><div class="bug-empty">Cargando…</div></div>
+    </div>`;
+  document.getElementById('bugForm').addEventListener('submit',bugSubmit);
+  bugLoadMine();
+}
+
+async function bugSubmit(e){
+  e.preventDefault();
+  const btn=document.getElementById('bugSend'), msg=document.getElementById('bugMsg');
+  const title=document.getElementById('bugTitle').value.trim();
+  const description=document.getElementById('bugDesc').value.trim();
+  if(title.length<3||description.length<10){
+    msg.textContent='Completá el título y contanos un poco más.';msg.className='bug-msg bug-msg-err';return;
+  }
+  btn.disabled=true;msg.textContent='Enviando…';msg.className='bug-msg';
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/bugs',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,description,
+        section:document.getElementById('bugSection').value||null,
+        notes:document.getElementById('bugNotes').value.trim()||null,
+        severity:document.getElementById('bugSeverity').value,
+        context:bugContexto()}),
+    });
+    if(!r.ok)throw new Error('Error '+r.status);
+    const data=await r.json();
+    document.getElementById('bugForm').reset();
+    msg.textContent=`¡Gracias! Tu reporte quedó registrado como #${data.ticket}.`;
+    msg.className='bug-msg bug-msg-ok';
+    bugLoadMine();
+  }catch(err){
+    msg.textContent='No pudimos enviarlo. Probá de nuevo en unos segundos.';
+    msg.className='bug-msg bug-msg-err';
+  }finally{btn.disabled=false}
+}
+
+// Badge de "reportes sin abrir" en el menú (solo admins). Silencioso: si no sos
+// admin el endpoint devuelve 403 y el item queda oculto, sin ruido en consola.
+async function bugRefreshAdminBadge(){
+  const item=document.getElementById('acctBugs'), badge=document.getElementById('acctBugsBadge');
+  if(!item||!badge)return;
+  try{
+    if(!window.REAuthService||!window.REAuthService.authFetch)return;
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/admin/bugs/new-count');
+    if(!r.ok)return;                       // no admin (403) → el item sigue oculto
+    const n=(await r.json()).new||0;
+    item.style.display='';                 // sos admin: mostramos la entrada
+    if(n>0){badge.textContent=n;badge.style.display='';}
+    else{badge.style.display='none';}
+  }catch(e){/* decorativo: nunca romper el menú */}
+}
+
+async function bugLoadMine(){
+  const box=document.getElementById('bugMineList'); if(!box)return;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/bugs/mine');
+    if(!r.ok)throw new Error('Error '+r.status);
+    const items=(await r.json()).items||[];
+    if(!items.length){box.innerHTML='<div class="bug-empty">Todavía no reportaste ningún error.</div>';return;}
+    box.innerHTML=items.map(b=>{
+      const e=BUG_ESTADOS[b.status]||BUG_ESTADOS.new;
+      const f=new Date(b.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'short'});
+      return `<div class="bug-item">
+        <span class="bug-ticket">#${b.ticket}</span>
+        <span class="bug-item-title">${escapeHtml(b.title)}</span>
+        <span class="bug-estado bug-estado-${e.cls}">${e.txt}</span>
+        <span class="bug-fecha">${f}</span>
+      </div>`;
+    }).join('');
+  }catch(err){
+    box.innerHTML='<div class="bug-empty">No pudimos cargar tus reportes.</div>';
+  }
 }
 function acctClosePanel(){document.getElementById('acctPanel').classList.remove('active')}
 
@@ -2157,6 +2296,8 @@ function acctInit(){
   on('acctHelp',()=>acctOpenPanel('help'));
   on('acctLogout',()=>{acctClose();handleLogout()});
   on('acctMe',()=>{});           // identidad: sin lógica todavía (por diseño)
+  on('acctBugs',()=>{acctClose();window.location.href='admin-bugs.html'});
+  bugRefreshAdminBadge();        // solo hace algo si sos admin
   on('acctPanelClose',acctClosePanel);
   const panel=document.getElementById('acctPanel');
   if(panel)panel.addEventListener('click',e=>{if(e.target===panel)acctClosePanel()});

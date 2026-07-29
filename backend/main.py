@@ -7,6 +7,8 @@ from api.routes.academia import router as academia_router
 from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
+from api.routes.bugs import admin_router as bugs_admin_router
+from api.routes.bugs import router as bugs_router
 from api.routes.channels import router as channels_router
 from api.routes.channels import webhook_router as channels_webhook_router
 from api.routes.chat import router as chat_router
@@ -307,6 +309,11 @@ app.include_router(usage_router)
 # Landing pública: muestra read-only y cacheada de materiales + noticias
 # (sin auth y sin datos de usuario; ver api/routes/public_landing.py).
 app.include_router(public_landing_router)
+# Reportes de error: a propósito SIN gate de plan. Un usuario que no puede
+# entrar o tiene un problema de facturación tiene que poder avisarnos justamente
+# de eso. Igual exigen sesión (get_current_user) y tienen rate limit.
+app.include_router(bugs_router)
+app.include_router(bugs_admin_router)   # cada endpoint ya exige require_admin
 
 # Routes de PRODUCTO: requieren suscripción activa (trial vigente o pro).
 # Modelo pago-only — un usuario sin acceso recibe 403 (paywall) en cualquiera.
