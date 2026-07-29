@@ -11,6 +11,12 @@
 > ponerte a codear.** Hay decisiones que dependen de él y no puede tomarlas sin
 > leer estos docs. Nombráselos explícitamente y esperá a que confirme:
 >
+> 0. 🔴 **BLOQUEANTE HOY**: el backend NO se despliega en Railway desde el
+>    25-jul (`4704d42`); `main` va por delante. Solo Agus tiene ese dashboard.
+>    Está todo el detalle y los 4 pasos a seguir al principio de
+>    `docs/PARA_AGUS.md`. Prod está sano, pero la feature de "Informar un error"
+>    no funciona hasta que ese deploy entre.
+>
 > 1. **`docs/PARA_AGUS.md`** — pendientes en SU dominio (bug de render del chat,
 >    lectura de voz, branch `perf/prompt-cache-split-agus`, SSRF retrieval,
 >    `to_thread` en entregables, streaming rAF) + config en dashboards.
