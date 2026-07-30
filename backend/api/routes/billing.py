@@ -13,14 +13,19 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 from functools import partial
+from uuid import UUID
 
 import stripe
+from api.schemas.billing import CardTokenOpcional, CardTokenRequest
 from config.settings import settings
 from core.auth import get_current_user, is_admin
 from core.plan_gate import has_access
-from fastapi import APIRouter, Depends, Header, Request
+from core.rate_limit import limiter
+from fastapi import APIRouter, Depends, Header, Request, Response
 from models.base import get_db
 from models.user import User
+from services import cards_service as cards
+from services.billing_issues import obtener_issue_abierto, resolver_con_respaldo
 from services.mercadopago_service import (
     cancel_subscription as mp_cancel_subscription,
 )
@@ -218,3 +223,122 @@ async def mp_webhook(
 )
 async def billing_portal(user: User = Depends(get_current_user)):
     return await create_billing_portal_session(user)
+
+
+# ═══ Tarjetas guardadas ════════════════════════════════════════════════════
+# El número de tarjeta NUNCA llega acá: el navegador lo manda directo a Mercado
+# Pago con su SDK y nos devuelve un token de un solo uso. Estos endpoints sólo
+# manejan ese token y los identificadores de la bóveda de MP.
+
+
+@router.get("/cards", summary="Tarjetas guardadas del usuario")
+async def listar_tarjetas(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tarjetas = await cards.listar(db, user)
+    issue = await obtener_issue_abierto(db, user)
+    return {
+        "cards": [cards.a_dict(t) for t in tarjetas],
+        "max": cards.MAX_TARJETAS,
+        "mp_enabled": mp_enabled(),
+        # Si hay un cobro rechazado sin resolver, el front muestra el aviso y
+        # el botón para pagar con la tarjeta de respaldo.
+        "billing_issue": issue,
+    }
+
+
+@router.post(
+    "/cards",
+    status_code=201,
+    summary="Guardar una tarjeta (recibe el token que generó el SDK de MP)",
+    responses={
+        409: {"description": "Ya llegó al máximo de tarjetas"},
+        422: {"description": "Falta el token"},
+        502: {"description": "Mercado Pago rechazó la tarjeta"},
+        503: {"description": "MP no configurado"},
+    },
+)
+@limiter.limit("10/hour")
+async def agregar_tarjeta(
+    request: Request,
+    body: CardTokenRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tarjeta = await cards.agregar(db, user, body.card_token)
+    return cards.a_dict(tarjeta)
+
+
+@router.delete(
+    "/cards/{card_id}",
+    status_code=204,
+    summary="Quitar una tarjeta guardada",
+    responses={
+        404: {"description": "No es tuya o no existe"},
+        409: {"description": "Es la única y la suscripción está activa"},
+    },
+)
+async def quitar_tarjeta(
+    card_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await cards.quitar(db, user, card_id)
+    return Response(status_code=204)
+
+
+@router.patch(
+    "/cards/{card_id}/principal",
+    summary="Usar esta tarjeta para cobrar (la otra pasa a respaldo)",
+    responses={
+        404: {"description": "No es tuya o no existe"},
+        422: {"description": "Con suscripción activa hace falta el token (CVV)"},
+        502: {"description": "Mercado Pago rechazó el cambio"},
+    },
+)
+@limiter.limit("10/hour")
+async def hacer_principal(
+    request: Request,
+    card_id: UUID,
+    body: CardTokenOpcional | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Cambia con qué tarjeta se cobra. Si hay una suscripción viva, el cambio se
+    aplica primero en Mercado Pago (por eso pide el token con el código de
+    seguridad) y recién ahí se guarda el rol: la pantalla nunca puede decir
+    "se cobra con esta" sobre una tarjeta que MP no va a cobrar.
+    """
+    tarjetas = await cards.marcar_principal(
+        db, user, card_id, body.card_token if body else None
+    )
+    return {"cards": [cards.a_dict(t) for t in tarjetas]}
+
+
+@router.post(
+    "/cards/reintentar",
+    summary="Reintentar el cobro con otra tarjeta (requiere el código de seguridad)",
+    responses={
+        400: {"description": "No hay un cobro pendiente de resolver"},
+        502: {"description": "Mercado Pago rechazó el cambio"},
+        503: {"description": "MP no configurado"},
+    },
+)
+@limiter.limit("10/hour")
+async def reintentar_cobro(
+    request: Request,
+    body: CardTokenRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Apunta la suscripción a la otra tarjeta y la deja lista para el reintento
+    de Mercado Pago.
+
+    Por qué pide el código de seguridad: MP no permite generar un token desde
+    una tarjeta guardada sin él. Es un límite de su API, no una decisión
+    nuestra — por eso este paso siempre lo confirma la persona.
+    """
+    return await resolver_con_respaldo(db, user, body.card_token)

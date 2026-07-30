@@ -2232,6 +2232,7 @@ function acctRenderPane(item){
   if(item.id==='error'){bugRenderPane(pane,item);return;}
   if(item.id==='almacenamiento'){stRenderPane(pane,item);return;}
   if(item.id==='cuenta'){cuRenderPane(pane,item);return;}
+  if(item.id==='facturacion'){facRenderPane(pane,item);return;}
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
@@ -2607,6 +2608,427 @@ function stInvalidarPlanos(){
       plnOpenProject(plnState.project.id);       // re-hidrata de verdad
     }
   }catch{}
+}
+
+// ═══ Configuración → Facturación ═════════════════════════════════════════
+// Suscripción y tarjetas guardadas.
+//
+// IMPORTANTE: el número de tarjeta NUNCA pasa por nuestro backend. El SDK de
+// Mercado Pago monta los campos sensibles como iframes propios; el dato viaja
+// del navegador directo a MP y lo único que nosotros mandamos al servidor es un
+// token de un solo uso. Eso es lo que sostiene lo que dicen los Términos, y
+// además nos mantiene fuera del alcance PCI-DSS.
+const facState={status:null,cards:[],issue:null,mpEnabled:false,publicKey:'',
+  cargando:false,sdkListo:false,formMontado:null,campoCvv:null};
+
+const FAC_SDK='https://sdk.mercadopago.com/js/v2';
+
+async function facApi(path,opts){
+  const o=opts||{};
+  o.headers=Object.assign({'Content-Type':'application/json'},o.headers||{});
+  if(o.body&&typeof o.body!=='string')o.body=JSON.stringify(o.body);
+  return window.REAuthService.authFetch(apiBase()+path,o);
+}
+
+function facMsg(id,texto,ok){
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=texto; el.className='cu-msg '+(ok?'cu-msg-ok':'cu-msg-err'); el.hidden=false;
+}
+
+// Carga el SDK de MP una sola vez y sólo cuando hace falta. Un fallo NO se
+// cachea: si se cayó la red un segundo, el siguiente intento tiene que poder
+// volver a pedirlo (cachear el error dejaba al usuario sin formulario hasta
+// recargar la app entera).
+function facCargarSDK(){
+  if(window.MercadoPago)return Promise.resolve(true);
+  if(facState._sdkPromise)return facState._sdkPromise;
+  facState._sdkPromise=new Promise(res=>{
+    const s=document.createElement('script');
+    s.src=FAC_SDK; s.async=true;
+    s.onload=()=>res(true);
+    s.onerror=()=>{facState._sdkPromise=null; s.remove(); res(false)};
+    document.head.appendChild(s);
+  });
+  return facState._sdkPromise;
+}
+
+function facRenderPane(pane,item){
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">Tu suscripción y los medios de pago con los que se cobra.</p>
+    <div id="facBody"><div class="st-loading">Cargando tu facturación…</div></div>`;
+  facLoad();
+}
+
+async function facLoad(){
+  const body=document.getElementById('facBody'); if(!body)return;
+  try{
+    const [rs,rc]=await Promise.all([
+      facApi('/api/billing/status'),
+      facApi('/api/billing/cards'),
+    ]);
+    if(rs.status===404||rc.status===404){
+      body.innerHTML=cuAvisoNoPublicado('Facturación'); return;
+    }
+    if(!rs.ok||!rc.ok)throw new Error('http');
+    facState.status=await rs.json();
+    const c=await rc.json();
+    facState.cards=c.cards||[]; facState.issue=c.billing_issue||null;
+    facState.mpEnabled=!!c.mp_enabled;
+  }catch{
+    body.innerHTML=`<div class="st-error">No pudimos cargar tu facturación.
+      <button class="btn-sm" onclick="facLoad()">Reintentar</button></div>`;
+    return;
+  }
+  facRenderBody();
+}
+
+function facEstadoTexto(s){
+  if(!s)return {titulo:'—',detalle:''};
+  if(s.is_pro)return {titulo:'Suscripción activa',detalle:'Se renueva automáticamente cada 30 días.',cls:'ok'};
+  if(s.is_trial){
+    const f=s.trial_ends_at?new Date(s.trial_ends_at):null;
+    const dias=f?Math.max(0,Math.ceil((f-new Date())/86400000)):null;
+    return {titulo:'Período de prueba',
+      detalle:dias!=null?`Te ${dias===1?'queda 1 día':'quedan '+dias+' días'} de prueba.`:'',cls:'trial'};
+  }
+  return {titulo:'Sin suscripción activa',detalle:'Suscribite para volver a tener acceso completo.',cls:'off'};
+}
+
+function facRenderBody(){
+  const body=document.getElementById('facBody'); if(!body)return;
+  const s=facState.status||{}, est=facEstadoTexto(s);
+  const hayIssue=!!facState.issue;
+  const respaldo=facState.cards.find(c=>!c.es_principal);
+
+  // Si el usuario ya cambió el medio de pago, el cartel deja de ser un reclamo
+  // y pasa a "esperando a MP": repetir "no pudimos cobrarte" cuando ya hizo lo
+  // que le pedimos es lo que hace que la gente escriba a soporte.
+  const enCurso=hayIssue&&!!facState.issue.reintento_pedido;
+
+  body.innerHTML=`
+  ${hayIssue?`
+  <div class="cu-card fac-issue${enCurso?' fac-issue-curso':''}">
+    <div class="cu-card-t">${enCurso?'Reintento en curso':'No pudimos cobrarte'}</div>
+    ${enCurso?`
+    <p class="cu-hint" style="margin-top:0">Actualizamos tu medio de pago. Mercado Pago
+    va a reintentar el cobro en las próximas horas y te avisamos cuando se acredite.</p>`
+    :`
+    <p class="cu-hint" style="margin-top:0">${escapeHtml(facState.issue.motivo)}
+    ${facState.issue.gracia_hasta&&!facState.issue.gracia_vencida
+      ? `Tenés acceso hasta el <b>${new Date(facState.issue.gracia_hasta).toLocaleDateString('es-AR')}</b> para resolverlo.`
+      : 'Resolvelo para no perder el acceso.'}</p>
+    ${respaldo?`
+      <div class="cu-hint">Podés reintentar con tu ${escapeHtml(respaldo.brand)} ••••${escapeHtml(respaldo.last_four)}.
+      Por seguridad, Mercado Pago pide que ingreses el código de seguridad.</div>
+      <button class="btn-sm cu-primary" id="facReintentar">Pagar con la otra tarjeta</button>`
+    :`<div class="cu-hint">Agregá otra tarjeta más abajo para reintentar el cobro.</div>`}`}
+    <div class="cu-msg" id="facIssueMsg" hidden></div>
+  </div>`:''}
+
+  <div class="cu-card">
+    <div class="cu-card-t">Tu suscripción</div>
+    <div class="fac-estado fac-${est.cls||'off'}">
+      <span class="fac-dot"></span>
+      <div>
+        <div class="fac-estado-t">${escapeHtml(est.titulo)}</div>
+        <div class="cu-hint" style="margin-top:2px">${escapeHtml(est.detalle)}</div>
+      </div>
+    </div>
+    <div class="cu-row-wrap" style="margin-top:12px">
+      ${s.is_pro
+        ? `<button class="btn-sm st-danger" id="facCancelar">Cancelar suscripción</button>`
+        : `<button class="btn-sm cu-primary" id="facSuscribir">Suscribirme</button>`}
+    </div>
+    <div class="cu-msg" id="facSubMsg" hidden></div>
+  </div>
+
+  <div class="cu-card">
+    <div class="cu-card-t">Tus tarjetas</div>
+    ${!facState.mpEnabled?`
+      <div class="cu-aviso">Los pagos todavía no están habilitados. Vas a poder cargar
+      tu tarjeta apenas se active el cobro.</div>`
+    :`
+      <div class="fac-cards" id="facCards">
+        ${facState.cards.length?facState.cards.map(c=>`
+          <div class="fac-card" data-id="${escapeHtml(c.id)}">
+            <span class="fac-card-ico">${c.es_principal?'💳':'🔁'}</span>
+            <div class="fac-card-main">
+              <div class="fac-card-t">${escapeHtml(c.brand||'Tarjeta')} ••••${escapeHtml(c.last_four)}</div>
+              <div class="fac-card-sub">${c.es_principal?'Se cobra con esta':'Respaldo'}${
+                c.exp_month&&c.exp_year?` · vence ${String(c.exp_month).padStart(2,'0')}/${String(c.exp_year).slice(-2)}`:''}</div>
+            </div>
+            <div class="fac-card-acc">
+              ${!c.es_principal?`<button class="btn-sm" data-fac="principal">Usar esta</button>`:''}
+              <button class="btn-sm st-danger" data-fac="quitar">Quitar</button>
+            </div>
+          </div>`).join('')
+        :`<div class="cu-hint">Todavía no cargaste ninguna tarjeta.</div>`}
+      </div>
+      <div id="facAddZona" style="margin-top:12px">
+        ${facState.cards.length<2
+          ? `<button class="btn-sm cu-primary" id="facAdd">Agregar tarjeta</button>`
+          : `<div class="cu-hint">Llegaste al máximo de 2 tarjetas. Quitá una para agregar otra.</div>`}
+      </div>
+      <div class="cu-hint">Los datos de tu tarjeta los procesa Mercado Pago: no pasan por
+      nuestros servidores. Guardamos sólo la marca y los últimos cuatro dígitos.</div>
+    `}
+    <div class="cu-msg" id="facCardMsg" hidden></div>
+  </div>`;
+
+  facWire();
+}
+
+function facWire(){
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn)};
+
+  on('facSuscribir',async ev=>{
+    ev.target.disabled=true; ev.target.textContent='Abriendo…';
+    try{
+      const r=await facApi('/api/billing/checkout',{method:'POST'});
+      if(!r.ok)throw 0;
+      const d=await r.json();
+      if(d.url)window.location.href=d.url;
+      else throw 0;
+    }catch{
+      facMsg('facSubMsg','No pudimos iniciar la suscripción. Probá de nuevo.',false);
+      ev.target.disabled=false; ev.target.textContent='Suscribirme';
+    }
+  });
+
+  on('facCancelar',async ev=>{
+    if(!confirm('¿Cancelar la suscripción?\n\nSe deja de cobrar y perdés el acceso a las funciones pagas. Tus datos se conservan.'))return;
+    ev.target.disabled=true; ev.target.textContent='Cancelando…';
+    try{
+      const r=await facApi('/api/billing/mp/cancel',{method:'POST'});
+      if(!r.ok)throw 0;
+      facMsg('facSubMsg','Suscripción cancelada.',true);
+      setTimeout(facLoad,1200);
+    }catch{
+      facMsg('facSubMsg','No pudimos cancelarla. Escribinos y lo resolvemos.',false);
+      ev.target.disabled=false; ev.target.textContent='Cancelar suscripción';
+    }
+  });
+
+  on('facAdd',()=>facAbrirForm('facAddZona','agregar'));
+  on('facReintentar',()=>facAbrirForm('facIssueMsg','reintentar',
+    facState.cards.find(c=>!c.es_principal)));
+
+  document.querySelectorAll('#facCards .fac-card').forEach(row=>{
+    const id=row.dataset.id;
+    row.querySelectorAll('[data-fac]').forEach(b=>b.addEventListener('click',async ev=>{
+      const acc=b.dataset.fac;
+      if(acc==='quitar'){
+        if(!confirm('¿Quitar esta tarjeta?'))return;
+        b.disabled=true;
+        try{
+          const r=await facApi('/api/billing/cards/'+encodeURIComponent(id),{method:'DELETE'});
+          if(r.status===409){
+            let d={};try{d=await r.json()}catch{}
+            facMsg('facCardMsg',typeof d.detail==='string'?d.detail:'No se puede quitar.',false);
+            b.disabled=false; return;
+          }
+          if(!r.ok&&r.status!==204)throw 0;
+          facLoad();
+        }catch{facMsg('facCardMsg','No pudimos quitarla.',false);b.disabled=false}
+      }else if(acc==='principal'){
+        const tarjeta=facState.cards.find(c=>c.id===id);
+        // Con suscripción activa, cambiar la tarjeta de cobro se hace CONTRA
+        // Mercado Pago, y MP exige el código de seguridad. Se pide igual que en
+        // el reintento; sin suscripción es sólo una preferencia y va directo.
+        if(facState.status&&facState.status.is_pro){
+          facAbrirForm('facCardMsg','principal',tarjeta);
+          return;
+        }
+        b.disabled=true;
+        try{
+          const r=await facApi('/api/billing/cards/'+encodeURIComponent(id)+'/principal',{method:'PATCH',body:{}});
+          if(!r.ok)throw 0;
+          facLoad();
+        }catch{facMsg('facCardMsg','No pudimos cambiarla.',false);b.disabled=false}
+      }
+    }));
+  });
+}
+
+// Formulario de tarjeta. Los campos sensibles son iframes del SDK de MP: el
+// número, el vencimiento y el código de seguridad nunca tocan nuestro código.
+async function facAbrirForm(anclaId,modo,tarjeta){
+  // Un solo formulario a la vez: sin esto, dos clics seguidos insertaban dos
+  // contenedores con los mismos ids (facForm, facCvv, facGuardar…) y el SDK
+  // montaba sus iframes sobre el equivocado.
+  if(document.querySelector('.fac-form'))return;
+  const zona=document.getElementById(anclaId);
+  if(!zona)return;
+  const conCvv=modo!=='agregar';
+  if(conCvv&&!(tarjeta&&tarjeta.mp_card_id)){
+    facMsg(modo==='principal'?'facCardMsg':'facIssueMsg',
+      'No encontramos esa tarjeta. Recargá la página e intentá de nuevo.',false);
+    return;
+  }
+  const cont=document.createElement('div');
+  cont.className='fac-form';
+  const titulos={reintentar:'Reintentar el cobro',principal:'Usar esta tarjeta',agregar:'Guardar tarjeta'};
+  cont.innerHTML=`
+    <div class="cu-hint" style="margin-top:0">${modo==='reintentar'
+      ? 'Ingresá el código de seguridad de tu tarjeta de respaldo para reintentar el cobro.'
+      : modo==='principal'
+      ? `Ingresá el código de seguridad de tu ${escapeHtml(tarjeta.brand||'tarjeta')} ••••${escapeHtml(tarjeta.last_four)} para que Mercado Pago pase a cobrarte con ella.`
+      : 'Los datos van directo a Mercado Pago. Nosotros no los vemos.'}</div>
+    <form id="facForm" class="fac-form-grid">
+      ${modo==='agregar'?`
+        <div class="fac-field"><label>Número de tarjeta</label><div id="facNumero" class="fac-mp"></div></div>
+        <div class="fac-field"><label>Vencimiento</label><div id="facVto" class="fac-mp"></div></div>
+        <div class="fac-field"><label>Código de seguridad</label><div id="facCvv" class="fac-mp"></div></div>
+        <div class="fac-field fac-full"><label for="facTitular">Titular como figura en la tarjeta</label>
+          <input class="bug-input" id="facTitular" autocomplete="cc-name"></div>
+        <div class="fac-field fac-full"><label for="facDoc">DNI del titular</label>
+          <input class="bug-input" id="facDoc" inputmode="numeric" maxlength="11"></div>
+      `:`
+        <div class="fac-field fac-full"><label>Código de seguridad</label><div id="facCvv" class="fac-mp"></div></div>
+      `}
+      <div class="cu-row-wrap fac-full">
+        <button type="submit" class="btn-sm cu-primary" id="facGuardar" disabled>
+          ${titulos[modo]||'Confirmar'}</button>
+        <button type="button" class="btn-sm" id="facCancelForm">Cancelar</button>
+      </div>
+    </form>
+    <div class="cu-msg" id="facFormMsg" hidden></div>`;
+  zona.parentNode.insertBefore(cont,zona.nextSibling);
+  // preventDefault ANTES de cualquier await: si el SDK no carga, el form queda
+  // sin handler y el submit recargaría la app entera perdiendo el estado.
+  cont.querySelector('#facForm').addEventListener('submit',e=>e.preventDefault());
+
+  const ocultar=['facAdd','facReintentar'].map(id=>document.getElementById(id)).filter(Boolean);
+  ocultar.forEach(b=>b.style.display='none');
+  const cerrar=()=>{
+    try{facState.campoCvv&&facState.campoCvv.unmount()}catch{}
+    facState.campoCvv=null; facState.formMontado=null;
+    cont.remove(); ocultar.forEach(b=>b.style.display='');
+  };
+  document.getElementById('facCancelForm').addEventListener('click',cerrar);
+
+  const ok=await facCargarSDK();
+  if(!ok||!window.MercadoPago){
+    facMsg('facFormMsg','No pudimos cargar el formulario de pago. Revisá tu conexión.',false);
+    return;
+  }
+  // La public key la da /api/billing/mp/config. Es pública por diseño (va en el
+  // navegador); la que nunca sale del backend es el access token.
+  if(!facState.publicKey){
+    try{
+      const r=await facApi('/api/billing/mp/config');
+      const d=await r.json();
+      facState.publicKey=d.public_key||'';
+    }catch{}
+  }
+  if(!facState.publicKey){
+    facMsg('facFormMsg','Los pagos todavía no están habilitados.',false);
+    return;
+  }
+  const mp=new window.MercadoPago(facState.publicKey);
+  if(modo==='agregar')facMontarCardForm(mp,cont,cerrar);
+  else facMontarSoloCvv(mp,cont,modo,tarjeta,cerrar);
+}
+
+// Manda el token al backend y resuelve la pantalla. Común a los tres modos.
+async function facEnviarToken(modo,tarjeta,token,cerrar){
+  const btn=document.getElementById('facGuardar');
+  const txt=btn?btn.textContent:'';
+  if(btn){btn.disabled=true; btn.textContent='Procesando…'}
+  const restaurar=()=>{if(btn){btn.disabled=false; btn.textContent=txt}};
+  try{
+    let r;
+    if(modo==='agregar')
+      r=await facApi('/api/billing/cards',{method:'POST',body:{card_token:token}});
+    else if(modo==='reintentar')
+      r=await facApi('/api/billing/cards/reintentar',{method:'POST',body:{card_token:token}});
+    else
+      r=await facApi('/api/billing/cards/'+encodeURIComponent(tarjeta.id)+'/principal',
+        {method:'PATCH',body:{card_token:token}});
+
+    if(r.status===409||r.status===400||r.status===422){
+      let d={};try{d=await r.json()}catch{}
+      facMsg('facFormMsg',typeof d.detail==='string'?d.detail:'No se pudo completar.',false);
+      restaurar(); return;
+    }
+    if(r.status===502){
+      facMsg('facFormMsg','Mercado Pago no aceptó la tarjeta. Revisá los datos.',false);
+      restaurar(); return;
+    }
+    if(!r.ok&&r.status!==201)throw new Error('http '+r.status);
+    // El backend explica qué va a pasar ahora (el reintento no es instantáneo):
+    // descartarlo dejaba al usuario mirando el mismo cartel rojo.
+    let msg='';
+    try{const d=await r.json(); msg=(d&&d.message)||''}catch{}
+    cerrar();
+    if(msg)facMsg(modo==='principal'?'facCardMsg':'facIssueMsg',msg,true);
+    facLoad();
+  }catch{
+    facMsg('facFormMsg','No pudimos procesar la tarjeta. Probá de nuevo.',false);
+    restaurar();
+  }
+}
+
+// Alta de tarjeta nueva: formulario completo del SDK (todos los campos
+// sensibles son iframes de MP).
+function facMontarCardForm(mp,cont,cerrar){
+  const cardForm=mp.cardForm({
+    amount:'1',            // requerido por el SDK; no se cobra nada acá
+    iframe:true,           // ← los campos sensibles son iframes de MP
+    form:{id:'facForm',
+      cardNumber:{id:'facNumero',placeholder:'0000 0000 0000 0000'},
+      expirationDate:{id:'facVto',placeholder:'MM/AA'},
+      securityCode:{id:'facCvv',placeholder:'123'},
+      cardholderName:{id:'facTitular'},
+      identificationNumber:{id:'facDoc'}},
+    callbacks:{
+      onFormMounted: err => {
+        const btn=document.getElementById('facGuardar');
+        if(err){facMsg('facFormMsg','No pudimos preparar el formulario.',false); return}
+        if(btn)btn.disabled=false;
+      },
+      onSubmit: async ev => {
+        ev.preventDefault();
+        const {token}=cardForm.getCardFormData();
+        if(!token){facMsg('facFormMsg','Revisá los datos de la tarjeta.',false); return}
+        await facEnviarToken('agregar',null,token,cerrar);
+      },
+      onError: () => facMsg('facFormMsg','Revisá los datos de la tarjeta.',false),
+    },
+  });
+  facState.formMontado=cardForm;
+}
+
+// Tarjeta YA guardada en la bóveda de MP: no hay número que tipear, sólo el
+// código de seguridad. `cardForm` no sirve acá (tokeniza a partir del número
+// del propio formulario): la API para esto es fields.createCardToken({cardId}),
+// que toma el CVV del campo seguro montado y devuelve un token de un solo uso.
+function facMontarSoloCvv(mp,cont,modo,tarjeta,cerrar){
+  let campo;
+  try{
+    campo=mp.fields.create('securityCode',{placeholder:'123'});
+    campo.mount('facCvv');
+  }catch{
+    facMsg('facFormMsg','No pudimos preparar el formulario.',false);
+    return;
+  }
+  facState.campoCvv=campo;
+  const btn=document.getElementById('facGuardar');
+  if(btn)btn.disabled=false;
+
+  cont.querySelector('#facForm').addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    let token='';
+    try{
+      const res=await mp.fields.createCardToken({cardId:tarjeta.mp_card_id});
+      token=(res&&(res.id||res.token))||'';
+    }catch{token=''}
+    if(!token){
+      facMsg('facFormMsg','El código de seguridad no es correcto. Revisalo e intentá de nuevo.',false);
+      return;
+    }
+    await facEnviarToken(modo,tarjeta,token,cerrar);
+  });
 }
 
 // ═══ Configuración → Cuenta ══════════════════════════════════════════════

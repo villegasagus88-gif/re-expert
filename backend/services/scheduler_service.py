@@ -220,14 +220,14 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
 
     cutoff_del = now - timedelta(days=DELETION_GRACE_DAYS)
     usuarios_purga = (await db.execute(
-        select(User.id, User.email).where(
+        select(User.id).where(
             User.deletion_requested_at.isnot(None),
             User.deletion_requested_at < cutoff_del,
             User.plan != "pro",
         )
     )).all()
     users_purged = 0
-    for uid, uemail in usuarios_purga:
+    for (uid,) in usuarios_purga:
         # Anonimizar los reportes de error ANTES de borrar la fila del usuario.
         # `bug_reports.user_id` es ondelete=SET NULL y `reporter_email` es una
         # copia: sin este paso el email sobrevivía a la baja y contradecía lo
@@ -246,13 +246,101 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
         logger.info("Cuenta purgada definitivamente: %s", uid)
 
     await db.commit()
+
+    # Aviso previo a la renovación de la suscripción. Los Términos prometen
+    # avisar con 3 días de anticipación a cada cobro: esto es lo que lo cumple.
+    # Va después del commit para que un fallo del envío no revierta la limpieza.
+    avisos = await _avisar_proximos_cobros(db)
+
+    # Fin de la gracia por cobro rechazado: acá se aplica el corte de acceso que
+    # el webhook difirió. Es la contracara de la promesa de los 5 días.
+    from services.billing_issues import aplicar_downgrades_vencidos
+
+    cortes = await aplicar_downgrades_vencidos(db)
+
     return {
         "password_resets_deleted": pr_deleted,
         "stripe_events_deleted": se_deleted,
         "kv_cache_deleted": kv_deleted,
         "reminders_deleted": rem_deleted,
         "users_purged": users_purged,
+        "avisos_de_cobro": avisos,
+        "gracias_vencidas": cortes,
     }
+
+
+# Días de anticipación del aviso previo al cobro. Tiene que coincidir con lo
+# que dicen los Términos (cláusula 5.1.1).
+DIAS_AVISO_COBRO = 3
+
+
+async def _avisar_proximos_cobros(db: AsyncSession) -> int:
+    """
+    Avisa por email a quienes se les renueva la suscripción en 3 días.
+
+    Idempotente: `charge_notice_sent_for` guarda para qué fecha ya se avisó, así
+    el aviso sale una sola vez aunque el job corra varias veces.
+    """
+    ahora = datetime.now(timezone.utc)
+    # La ventana arranca EN los 3 días, no "dentro de los próximos 3": los
+    # Términos prometen avisar "con al menos 3 días de anticipación", así que
+    # avisar el día 2 sería incumplirlos. El job corre una vez por día, por eso
+    # la ventana es de 24 h ([+3d, +4d]) y nadie se queda sin aviso.
+    desde = ahora + timedelta(days=DIAS_AVISO_COBRO)
+    hasta = desde + timedelta(days=1)
+
+    candidatos = (await db.execute(
+        select(User).where(
+            User.plan == "pro",
+            User.next_charge_at.isnot(None),
+            User.next_charge_at >= desde,
+            User.next_charge_at < hasta,
+        )
+    )).scalars().all()
+
+    enviados = 0
+    for u in candidatos:
+        ya = u.charge_notice_sent_for
+        if ya is not None and ya.tzinfo is None:
+            ya = ya.replace(tzinfo=timezone.utc)
+        if ya is not None and ya == u.next_charge_at:
+            continue                      # ya se avisó para esta fecha
+
+        cuando = u.next_charge_at
+        if cuando.tzinfo is None:
+            cuando = cuando.replace(tzinfo=timezone.utc)
+        try:
+            from services.account_security_service import _send_email
+            from services.billing_issues import _html_aviso
+
+            importe = (
+                f" por ${u.next_charge_amount:,.2f}".replace(",", "@").replace(".", ",")
+                .replace("@", ".")
+                if u.next_charge_amount is not None else ""
+            )
+            ok = await _send_email(
+                u.email,
+                "Tu suscripción se renueva en unos días — RE Expert",
+                _html_aviso(
+                    "Tu suscripción se renueva pronto", u.full_name or "",
+                    f"El {cuando.strftime('%d/%m/%Y')} se renueva automáticamente tu "
+                    f"suscripción a RE Expert y se cobrará{importe} al medio de pago "
+                    f"que tenés registrado. Si no querés continuar, podés cancelar "
+                    f"antes de esa fecha desde Configuración → Facturación, con un "
+                    f"clic y sin ningún trámite.",
+                ),
+            )
+        except Exception as e:  # noqa: BLE001 — un email caído no frena el job
+            logger.warning("No se pudo avisar la renovación a %s: %s", u.id, e)
+            continue
+        if ok:
+            u.charge_notice_sent_for = u.next_charge_at
+            enviados += 1
+
+    if enviados:
+        await db.commit()
+        logger.info("Avisos de renovación enviados: %d", enviados)
+    return enviados
 
 
 async def _scheduler_loop():

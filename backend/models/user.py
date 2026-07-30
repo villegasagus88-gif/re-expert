@@ -6,10 +6,11 @@ Our app-level User data lives in public.profiles which references auth.users
 via the id column. Email is mirrored here for convenience (queries, display).
 """
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 
 from models.base import Base
-from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Integer, Numeric, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -76,6 +77,22 @@ class User(Base):
     # El login exitoso lo limpia (cancela la baja).
     deletion_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # ── Facturación (migración 0038) ─────────────────────────────────────────
+    # Próximo cobro de la suscripción, según lo informa Mercado Pago. Se usa
+    # para avisar ANTES de renovar, que es lo que prometen los Términos.
+    next_charge_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Para qué fecha ya se mandó el aviso: evita repetirlo en cada corrida del
+    # scheduler.
+    charge_notice_sent_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Importe del próximo cobro, como lo informa MP. Los Términos prometen
+    # avisar el importe además de la fecha.
+    next_charge_amount: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
     )
     # Preferencias de automatización que SOL aprende: qué avisar, por qué canal, etc.
     automation_prefs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

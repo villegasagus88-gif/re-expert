@@ -27,6 +27,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 import httpx
@@ -34,6 +36,7 @@ from config.settings import settings
 from fastapi import HTTPException
 from models.user import User
 from sqlalchemy import select
+from sqlalchemy import update as sa_update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -512,6 +515,42 @@ async def cancel_subscription(db: AsyncSession, user: User) -> dict:
     }
 
 
+async def _guardar_proximo_cobro(
+    db: AsyncSession, external_reference: str, pre: dict
+) -> None:
+    """
+    Anota en el usuario la fecha del próximo cobro que informa MP.
+
+    Se usa para el aviso previo a la renovación. Es best-effort a propósito: si
+    MP cambia el nombre del campo o manda un formato raro, se ignora en silencio
+    en vez de romper el webhook — el estado de la suscripción es lo crítico y ya
+    se aplicó antes de llegar acá.
+    """
+    crudo = pre.get("next_payment_date") or (pre.get("auto_recurring") or {}).get(
+        "next_payment_date"
+    )
+    if not crudo:
+        return
+    try:
+        uid = UUID(external_reference)
+        fecha = datetime.fromisoformat(str(crudo).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        logger.info("MP: no pude interpretar next_payment_date (%r)", crudo)
+        return
+    if fecha.tzinfo is None:
+        fecha = fecha.replace(tzinfo=UTC)
+    valores: dict = {"next_charge_at": fecha}
+    # El importe también, para que el aviso previo diga "el importe y la fecha"
+    # como prometen los Términos y no una fecha suelta.
+    monto = (pre.get("auto_recurring") or {}).get("transaction_amount")
+    try:
+        if monto is not None:
+            valores["next_charge_amount"] = Decimal(str(monto))
+    except (InvalidOperation, ValueError, TypeError):
+        logger.info("MP: no pude interpretar transaction_amount (%r)", monto)
+    await db.execute(sa_update(User).where(User.id == uid).values(**valores))
+
+
 async def _apply_status_to_user(
     db: AsyncSession, external_reference: str, status: str | None
 ) -> str | None:
@@ -531,6 +570,20 @@ async def _apply_status_to_user(
     if not db_user:
         logger.warning("MP webhook: usuario %s no encontrado", uid)
         return None
+    # Gracia por cobro rechazado: si MP PAUSÓ la suscripción y el usuario está
+    # dentro de los días de gracia que le prometimos, el corte se difiere hasta
+    # que la gracia venza (lo aplica el scheduler). Sin esto la gracia sería un
+    # cartel: MP pausa tras el primer rechazo y el acceso se cortaba igual.
+    # `cancelled` NO se difiere nunca: es una baja explícita.
+    if new_plan == "inactive" and (status or "").lower() == "paused":
+        from services.billing_issues import marcar_downgrade_diferido
+
+        if await marcar_downgrade_diferido(db, uid):
+            logger.info(
+                "MP webhook: user %s pausado, corte diferido hasta el fin de la gracia", uid
+            )
+            return str(uid)
+
     db_user.plan = new_plan
     if new_plan == "pro":
         # Ya tiene tarjeta/sub activa (o trial gestionado por MP): el gate
@@ -622,8 +675,103 @@ async def handle_webhook(
         status = pre.get("status")
         ext_ref = pre.get("external_reference") or ""
         updated = await _apply_status_to_user(db, ext_ref, status)
+        # Guardar cuándo cobra MP la próxima vez, para poder avisar ANTES de la
+        # renovación (lo que prometen los Términos). Best-effort: si MP no lo
+        # manda o viene raro, no se rompe el webhook.
+        await _guardar_proximo_cobro(db, ext_ref, pre)
         await db.commit()
         return {"status": "ok" if updated else "noop", "preapproval_status": status}
 
+    # Cada cobro de la suscripción. Antes se ignoraba; ahora se usa para NO
+    # cortarle el acceso a alguien por un rechazo puntual: se abre un cobro
+    # pendiente con días de gracia y se le ofrece su tarjeta de respaldo.
+    # El estado de la suscripción lo sigue gobernando subscription_preapproval.
+    if t == "subscription_authorized_payment":
+        resultado = await _apply_recurring_payment(db, data_id)
+        # El commit va acá, igual que en los otros branches: `_record_mp_event`
+        # sólo hizo flush, así que sin esto la fila de idempotencia se pierde al
+        # cerrar la sesión y MP podría reprocesar la misma entrega.
+        await db.commit()
+        return resultado
+
     logger.info("MP webhook: tipo %r ignorado", notif_type)
     return {"status": "ignored", "type": notif_type}
+
+
+# ─────────────────── cobros recurrentes de la suscripción ───────────────────
+
+async def fetch_authorized_payment(auth_payment_id: str) -> dict:
+    """Detalle de un cobro de suscripción (`GET /authorized_payments/{id}`)."""
+    _require_mp()
+    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        r = await client.get(
+            f"{MP_API}/authorized_payments/{auth_payment_id}", headers=_auth_headers()
+        )
+    if r.status_code >= 300:
+        logger.error("MP authorized_payments %s → %s", auth_payment_id, r.status_code)
+        raise HTTPException(status_code=502, detail="No pudimos consultar el cobro en Mercado Pago.")
+    return r.json() or {}
+
+
+async def buscar_preapproval_id(user: User) -> str | None:
+    """Id de la suscripción viva del usuario en MP, o None."""
+    if not mp_enabled():
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            r = await client.get(
+                f"{MP_API}/preapproval/search",
+                params={"external_reference": str(user.id)},
+                headers=_auth_headers(),
+            )
+        if r.status_code >= 300:
+            return None
+        for item in (r.json() or {}).get("results") or []:
+            if (item.get("status") or "").lower() in ("authorized", "paused", "pending"):
+                return item.get("id")
+    except httpx.HTTPError as e:
+        logger.warning("No se pudo buscar el preapproval de %s: %s", user.id, e)
+    return None
+
+
+async def _apply_recurring_payment(db: AsyncSession, auth_payment_id: str) -> dict:
+    """
+    Aplica el resultado de un cobro recurrente.
+
+    Aprobado  → cierra los cobros pendientes del usuario.
+    Rechazado → abre uno con días de gracia. **No toca el plan**: el acceso
+                sigue vivo mientras el usuario resuelve. Si nunca lo resuelve,
+                MP termina pausando o cancelando la suscripción y ESE webhook
+                (subscription_preapproval) es el que corta el acceso.
+    """
+    from services.billing_issues import abrir_issue, cerrar_issues
+
+    pago = await fetch_authorized_payment(auth_payment_id)
+    estado = (pago.get("status") or "").lower()
+    detalle = pago.get("status_detail") or ""
+    preapproval_id = pago.get("preapproval_id") or ""
+
+    # El authorized_payment no trae external_reference: se resuelve por el
+    # preapproval al que pertenece.
+    user_id = None
+    if preapproval_id:
+        try:
+            pre = await fetch_preapproval(preapproval_id)
+            ext = pre.get("external_reference") or ""
+            if ext:
+                user_id = UUID(ext)
+        except (HTTPException, ValueError, TypeError):
+            user_id = None
+    if not user_id:
+        logger.warning("Cobro recurrente %s sin usuario asociado", auth_payment_id)
+        return {"status": "noop", "reason": "sin usuario"}
+
+    if estado == "approved":
+        cerrados = await cerrar_issues(db, user_id)
+        return {"status": "ok", "payment_status": estado, "issues_cerrados": cerrados}
+
+    if estado in ("rejected", "cancelled"):
+        await abrir_issue(db, user_id, detalle, str(pago.get("id") or auth_payment_id))
+        return {"status": "ok", "payment_status": estado, "detalle": detalle}
+
+    return {"status": "noop", "payment_status": estado}

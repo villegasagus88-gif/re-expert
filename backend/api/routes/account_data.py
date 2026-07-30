@@ -87,6 +87,7 @@ async def export_my_data(
     from models.milestone import Milestone
     from models.opportunity import Opportunity
     from models.payment import Payment
+    from models.payment_method import BillingIssue, PaymentMethod
     from models.plan_analysis import (
         PlanAlert,
         PlanAnalysis,
@@ -175,6 +176,13 @@ async def export_my_data(
         "canales_de_notificacion": await traer(UserChannel),
         "ubicaciones": await traer(UserLocation),
         "preferencias_de_ubicacion": await traer(UserLocationSettings),
+        # Tarjetas: sólo lo que el usuario reconoce (marca, últimos 4, rol). Los
+        # identificadores de la bóveda de Mercado Pago se excluyen: son internos
+        # y no le sirven al titular.
+        "tarjetas_guardadas": await traer(
+            PaymentMethod, excluir={"mp_customer_id", "mp_card_id"}
+        ),
+        "cobros_rechazados": await traer(BillingIssue),
         "compras_de_cursos": await traer(CoursePurchase),
         "interes_en_cursos": await traer(AcademiaInterest),
         "interes_en_materiales": await traer(MaterialInterest),

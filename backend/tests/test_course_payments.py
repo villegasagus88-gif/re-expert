@@ -283,9 +283,6 @@ async def test_webhook_payment_despacha_a_cursos(monkeypatch):
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("topic", [
-    # Cobro recurrente de suscripción: contiene "payment" pero NO es un pago de
-    # curso — data.id no existe en /v1/payments → si se procesara, 502 en loop.
-    "subscription_authorized_payment",
     # Notificación de plan: contiene "preapproval" pero NO es un preapproval.
     "subscription_preapproval_plan",
     "merchant_order",
@@ -307,6 +304,50 @@ async def test_webhook_topics_no_manejados_se_ignoran_sin_red(monkeypatch, topic
         None, data_id="123", notif_type=topic, x_signature="", x_request_id="",
     )
     assert out["status"] == "ignored"
+
+
+@pytest.mark.anyio
+async def test_el_cobro_recurrente_ya_no_se_ignora_y_no_toca_pagos_de_curso(monkeypatch):
+    """`subscription_authorized_payment` ANTES se ignoraba; desde la gestión de
+    tarjetas se maneja para abrir un cobro pendiente en vez de cortar el acceso.
+
+    Lo que NO puede pasar —y es lo que este test protege— es que caiga en el
+    branch de pagos de curso: su data.id no existe en /v1/payments y MP entraría
+    en loop de reintentos por el 502.
+    """
+    monkeypatch.setattr(settings, "MP_ACCESS_TOKEN", "TEST", raising=False)
+    monkeypatch.setattr(settings, "MP_PLAN_ID", "PLAN123", raising=False)
+    monkeypatch.setattr(settings, "MP_WEBHOOK_SECRET", "", raising=False)
+    monkeypatch.setattr(settings, "DEBUG", True, raising=False)
+
+    async def _boom_pago(*_a, **_k):
+        raise AssertionError("no debe consultarse /v1/payments para un cobro de suscripción")
+    monkeypatch.setattr(mp, "fetch_payment", _boom_pago)
+
+    llamado = {}
+
+    async def _fake_authorized(pid):
+        llamado["id"] = pid
+        return {"status": "approved", "status_detail": "accredited", "preapproval_id": ""}
+    monkeypatch.setattr(mp, "fetch_authorized_payment", _fake_authorized)
+
+    # El branch commitea (la fila de idempotencia de `_record_mp_event` sólo
+    # está flusheada), así que necesita una sesión aunque no escriba nada más.
+    class _DB:
+        commits = 0
+
+        async def commit(self):
+            type(self).commits += 1
+
+    db = _DB()
+    out = await mp.handle_webhook(
+        db, data_id="AP-123", notif_type="subscription_authorized_payment",
+        x_signature="", x_request_id="",
+    )
+    assert llamado.get("id") == "AP-123", "debe consultarse /authorized_payments"
+    # Sin preapproval_id no hay usuario al que aplicarlo: noop, nunca una excepción.
+    assert out["status"] == "noop"
+    assert _DB.commits == 1, "sin commit se pierde el registro de la entrega"
 
 
 @pytest.mark.anyio

@@ -13,7 +13,7 @@
 > publicar: declarar un proveedor que no se usa es inexacto, y omitir uno que sí se usa
 > es una infracción.
 
-**Versión:** 1.2 (borrador)
+**Versión:** 1.3 (borrador)
 **Fecha de última actualización:** [CONFIRMAR CON TITULAR]
 **Marco normativo:** Ley 25.326 de Protección de los Datos Personales, su Decreto
 Reglamentario 1558/2001 y las resoluciones de la Agencia de Acceso a la Información
@@ -111,9 +111,21 @@ completo], CUIT [CONFIRMAR CON TITULAR], con domicilio en [CONFIRMAR CON TITULAR
 ### 3.4. Datos de facturación
 
 Cuando contratás el Servicio se registra el **hecho del pago** (fecha, importe, estado e
-identificadores que devuelve la pasarela). **Los datos de tu tarjeta no pasan por
-nuestros sistemas en ningún momento**: los ingresás directamente en la plataforma del
-procesador de pago, que es quien los trata.
+identificadores que devuelve la pasarela), y si un cobro se rechaza, **el motivo que nos
+informa el procesador** y la fecha, para poder avisarte y darte el período de gracia.
+
+**Tarjetas guardadas.** Si guardás una tarjeta para la suscripción, conservamos
+únicamente: la **marca** (Visa, Mastercard…), los **últimos cuatro dígitos**, el
+**mes y año de vencimiento**, el **nombre del titular tal como lo ingresaste** y un
+**identificador que nos devuelve Mercado Pago** para poder operar el cobro.
+
+> **Lo que NO guardamos, y no es una promesa vacía sino cómo está construido:** el
+> número completo de la tarjeta y el código de seguridad **nunca llegan a nuestros
+> servidores**. Cuando cargás una tarjeta, los campos donde escribís pertenecen al
+> procesador de pago —están incrustados en nuestra pantalla pero son suyos—, y esos
+> datos viajan de tu navegador directo a él. Lo único que nuestro sistema recibe es un
+> código de un solo uso. Por eso tampoco podemos "recuperar" ni mostrarte tu número de
+> tarjeta: no lo tenemos.
 
 ### 3.5. Datos que NO tratamos
 
@@ -323,7 +335,7 @@ pedís que gestione tu perfil, recibe también tu **teléfono**.
 
 | Proveedor | Qué recibe | Estado |
 |---|---|---|
-| **Mercado Pago / Stripe** | Tu correo y un identificador interno de tu cuenta, para asociar el pago. **Nunca los datos de tu tarjeta, que trata el propio procesador** | Según configuración del medio de pago |
+| **Mercado Pago / Stripe** | Tu correo, tu nombre y un identificador interno de tu cuenta, para asociar el pago. Si guardás una tarjeta, **los datos de la tarjeta los recibe el procesador directamente desde tu navegador** y los conserva en su bóveda: nosotros sólo manejamos la referencia (ver 3.4) | Según configuración del medio de pago |
 | **Resend** | Tu correo, tu nombre y el contenido de los mensajes transaccionales (códigos de verificación, enlaces de recuperación) | *[CONFIRMAR CON TITULAR]* |
 | **OpenStreetMap / Nominatim** | Tu ubicación **redondeada a unos 110 metros antes de enviarse** —suficiente para identificar la localidad y no tu domicilio—, si autorizás la geolocalización. La coordenada exacta no sale de nuestros sistemas | **Activo** (Unión Europea / Reino Unido) |
 | **Google Maps** | Las direcciones que le indicás al Asistente para optimizar recorridos | *[CONFIRMAR CON TITULAR]* |
@@ -601,6 +613,7 @@ consulta.
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| 1.3 | — | Se suma la gestión de medios de pago: qué se guarda de una tarjeta (marca, últimos cuatro, vencimiento, titular y la referencia del procesador) y qué explícitamente no, con la explicación de por qué el número no puede llegar a nuestros servidores. Se detalla el registro de cobros rechazados y su motivo. |
 | 1.2 | — | Correcciones de exactitud tras contrastar contra el código: se declara la **ficha de contexto** que se envía al proveedor de IA en cada intercambio con el Asistente (nombre, correo, plan, proyectos, pagos pendientes, recordatorios y oportunidades); se corrige el alcance del **filtro de datos financieros** (aplica a la memoria, no al chat); se describe con precisión el tratamiento de la **ubicación** y se aclara que el historial todavía no está habilitado ni tiene purga autoservicio; los reportes de error pasan de "anónimos" a **"disociados"**, declarando qué sobrevive; se detalla el alcance real del **export** (ampliado a 27 colecciones) y la restricción de la baja con período pago vigente. |
 | 1.1 | — | Se actualiza tras el endurecimiento técnico: secreto de 2FA cifrado, enlaces de informes firmados y con vencimiento, filtrado de datos financieros en la memoria automática, minimización de la ubicación, exportación integral de datos disponible y anonimización del correo en los reportes de error al dar de baja. Se incorporan: bases legales completas, punto 6 sobre tratamiento automatizado, punto 12 sobre información anonimizada, conservación para defensa de derechos, plazo concreto de notificación de incidentes y registro del consentimiento. |
 | 1.0 | — | Versión inicial. |

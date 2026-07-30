@@ -114,6 +114,14 @@ async def test_daily_cleanup_purga_kv_cache_y_reminders():
     class _Res:
         rowcount = 3
 
+        # El cleanup también SELECTea cuentas a purgar y cobros por vencer.
+        # Sin filas: este test mira la limpieza por TTL, no esas ramas.
+        def all(self):
+            return []
+
+        def scalars(self):
+            return self
+
     class _DB:
         async def execute(self, stmt):
             ejecutados.append(str(stmt))
@@ -128,9 +136,15 @@ async def test_daily_cleanup_purga_kv_cache_y_reminders():
         "stripe_events_deleted",
         "kv_cache_deleted",
         "reminders_deleted",
+        "users_purged",
+        "avisos_de_cobro",
+        "gracias_vencidas",
     }
     assert out["kv_cache_deleted"] == 3 and out["reminders_deleted"] == 3
     # 4 DELETE ejecutados, incluyendo las tablas nuevas
-    assert len(ejecutados) == 4
-    assert any("kv_cache" in s for s in ejecutados)
-    assert any("reminders" in s for s in ejecutados)
+    deletes = [s for s in ejecutados if s.lstrip().upper().startswith("DELETE")]
+    assert len(deletes) == 4
+    assert any("kv_cache" in s for s in deletes)
+    assert any("reminders" in s for s in deletes)
+    # Sin cuentas vencidas no se borra ni una, y sin cobros próximos no se avisa.
+    assert out["users_purged"] == 0 and out["avisos_de_cobro"] == 0

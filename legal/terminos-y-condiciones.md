@@ -183,25 +183,46 @@ responsabilidad no utilizarla en dispositivos compartidos o públicos.**
 
 ## 5. Planes, precios y pago
 
-5.1. **Modelo comercial: pago único, sin renovación automática.**
+5.1. **Modelo comercial: suscripción con renovación automática.**
 RE Expert es un servicio pago. Se ofrece un **período de prueba de 7 (siete) días** con
-acceso completo a las funcionalidades. Finalizado ese período, el acceso se contrata
-mediante un **pago único que habilita el uso del Servicio durante 30 (treinta) días
-corridos**.
+acceso completo. Finalizado ese período, el acceso se contrata mediante una
+**suscripción que se renueva automáticamente cada 30 (treinta) días corridos** y se
+cobra al medio de pago que tengas registrado, hasta que la canceles.
 
-**No es una suscripción:** no hay débito automático, no se te vuelve a cobrar y no
-tenés que cancelar nada. Cumplidos los 30 días el acceso simplemente vence, y si querés
-continuar, contratás otro período.
+**Qué implica, en criollo:** guardás una tarjeta y se te cobra solo cada 30 días. No
+hace falta que hagas nada para seguir usando el Servicio, y **podés cancelar cuando
+quieras** desde Configuración → Facturación, sin llamar ni escribir a nadie.
+
+5.1.1. **Aviso previo a cada cobro.** Te avisamos al correo registrado **con al menos
+3 (tres) días de anticipación** a cada renovación, informando el importe y la fecha, para
+que puedas cancelar antes si no querés continuar.
+
+5.1.2. **Medios de pago.** Podés tener hasta **2 tarjetas guardadas**: una con la que se
+cobra y otra de respaldo. Podés agregar o quitar tarjetas en cualquier momento y cambiar
+cuál se usa para cobrar; ese cambio, por exigencia del procesador de pago, requiere que
+confirmes con el código de seguridad de la tarjeta elegida, y se aplica sobre tu
+suscripción recién cuando el procesador lo acepta. **Los datos de tu tarjeta no pasan
+por nuestros sistemas** (ver 5.4).
+
+5.1.3. **Si un cobro falla.** No te cortamos el acceso de inmediato: se abre un período
+de **5 (cinco) días corridos de gracia** durante el cual conservás el Servicio, te
+avisamos el motivo **por correo electrónico y dentro de la aplicación**, y podés
+reintentar con tu tarjeta de respaldo. Por exigencia del
+procesador de pago, el reintento requiere que ingreses el código de seguridad de la
+tarjeta — no podemos hacerlo automáticamente. Si al vencer la gracia el pago sigue sin
+acreditarse, la suscripción se suspende y perdés el acceso a las funciones pagas, **sin
+que se eliminen tus datos**.
 
 5.2. **Precio.** El precio vigente se informa en la sección de precios del Sitio antes
 de la contratación.
 [CONFIRMAR CON TITULAR — precio actual publicado: $69.900 ARS. Confirmar si incluye IVA
 y la condición fiscal del Titular.]
 
-5.3. **Modificación de precios.** Podemos modificar el precio de futuras contrataciones.
-**El cambio nunca afecta un período ya abonado**, que se presta íntegramente a las
-condiciones y al precio vigentes al momento de contratarlo. El precio actualizado se
-informa en el Sitio antes de que contrates un período nuevo.
+5.3. **Modificación de precios.** Podemos modificar el precio de la suscripción. Todo
+cambio te será notificado con una antelación mínima de **30 (treinta) días corridos** al
+correo registrado y regirá para las renovaciones posteriores a esa notificación.
+**Nunca se aplica retroactivamente a un período ya abonado.** Si no estás de acuerdo,
+podés cancelar antes de que entre en vigencia y no se te cobra la renovación.
 
 5.4. **Procesamiento de pagos.** Los pagos se procesan a través de proveedores externos
 (Mercado Pago y/o Stripe). **El Titular no recibe, almacena ni procesa los datos
@@ -209,12 +230,13 @@ completos de tu tarjeta de crédito o débito**: esa información es tratada
 exclusivamente por el procesador de pago, conforme a sus propios términos y políticas
 de privacidad, que te recomendamos leer.
 
-5.5. **Vencimiento del período.** Cumplidos los 30 días, se suspende el acceso al
-Servicio, **con excepción de las gestiones sobre tu propia Cuenta** (consultar y
-modificar tus datos, exportarlos, cambiar la contraseña, configurar la seguridad y
-solicitar la baja), que permanecen siempre disponibles. **Tus datos no se eliminan al
-vencer el período**: se conservan y recuperás el acceso contratando un período nuevo,
-sin perjuicio de tu derecho a solicitar la baja y supresión en cualquier momento.
+5.5. **Suspensión por falta de pago.** Agotada la gracia del punto 5.1.3 sin que el
+cobro se acredite, se suspende el acceso al Servicio, **con excepción de las gestiones
+sobre tu propia Cuenta** (consultar y modificar tus datos, exportarlos, cambiar la
+contraseña, configurar la seguridad, gestionar tus tarjetas y solicitar la baja), que
+permanecen siempre disponibles. **Tus datos no se eliminan por falta de pago**: se
+conservan y recuperás el acceso regularizando el pago, sin perjuicio de tu derecho a
+solicitar la baja y supresión en cualquier momento.
 
 5.6. **Errores de facturación.** Si detectás un cobro duplicado, un importe que no
 corresponde o cualquier otra inconsistencia, escribinos a `contacto@re-expert.app`
@@ -226,11 +248,13 @@ corregiremos y devolveremos lo cobrado de más.**
 > previo. Si lo exigiera, debe informarse de forma clara, destacada y previa a la
 > contratación (art. 4 Ley 24.240 y Resolución 424/2020).
 >
-> **Nota sobre el modelo elegido:** el esquema de pago único sin renovación automática
-> **reduce sensiblemente la exposición del Titular**. Evita los reclamos más frecuentes
-> del comercio electrónico —débitos no reconocidos, dificultad para dar de baja, cobros
-> tras la cancelación— y no queda alcanzado por las obligaciones sobre cancelación de
-> servicios de renovación automática. Se recomienda mantenerlo.
+> **Nota sobre el modelo elegido:** la renovación automática es cómoda para el usuario
+> y estabiliza el ingreso, pero **concentra los reclamos más frecuentes del comercio
+> electrónico**: débitos no reconocidos, dificultad para dar de baja y cobros posteriores
+> a la cancelación. Las tres defensas que este documento incorpora —**aviso previo de
+> 3 días** antes de cada cobro (5.1.1), **cancelación con un clic** sin trámite (6.2.1) y
+> **gracia de 5 días** ante un cobro fallido (5.1.3)— son justamente las que desactivan
+> ese tipo de reclamo. Conviene conservarlas aunque no sean obligatorias una por una.
 
 ---
 
@@ -256,13 +280,23 @@ utilizado, dentro de los plazos que fije la normativa aplicable.
 > con independencia de lo que digan estos Términos. **Debe implementarse antes de la
 > publicación de este documento.** Ver "Riesgos detectados en el código", ítem R12.
 
-### 6.2. Sin renovación automática y sin reembolso fuera del plazo de revocación
+### 6.2. Cancelación de la suscripción y reembolsos
 
-6.2.1. **No hay nada que cancelar.** Al ser un pago único por 30 días (punto 5.1), no
-existe débito automático ni renovación: el acceso vence solo y no se te vuelve a cobrar.
-Si no querés continuar, simplemente no contratás otro período.
+6.2.1. **Podés cancelar cuando quieras**, desde Configuración → Facturación, con un
+clic y sin ningún otro trámite. La cancelación **detiene los cobros futuros de forma
+inmediata**: no se te vuelve a cobrar.
 
-6.2.2. **Fuera del plazo de revocación del punto 6.1, el período abonado no es
+6.2.2. **Efecto sobre el acceso.** Al cancelar, el acceso a las funciones pagas se
+interrumpe. **Tus datos se conservan** y podés volver a suscribirte cuando quieras.
+
+> **[REVISIÓN LEGAL]** ⚠️ El sistema hoy corta el acceso **en el acto** al cancelar, aun
+> quedando días del período abonado. Frente a un consumidor eso es discutible: se le
+> cobró un período completo. La salida recomendada es **técnica**: que la cancelación
+> detenga la renovación pero mantenga el acceso hasta el fin del período pago. Mientras
+> no se implemente, esta cláusula describe el comportamiento real, que es lo correcto,
+> pero conviene resolverlo.
+
+6.2.3. **Fuera del plazo de revocación del punto 6.1, el período abonado no es
 reembolsable**, salvo que:
 
 a) la falta de prestación sea imputable al Titular (por ejemplo, una interrupción
@@ -272,7 +306,7 @@ b) exista un **error de facturación**, en los términos del punto 5.6; o
 
 c) la normativa de consumo disponga lo contrario.
 
-6.2.3. **Cómo reclamar.** Si considerás que se da alguno de esos supuestos, escribinos a
+6.2.4. **Cómo reclamar.** Si considerás que se da alguno de esos supuestos, escribinos a
 `contacto@re-expert.app` con el detalle de la operación. Analizaremos el caso y te
 responderemos por escrito.
 
