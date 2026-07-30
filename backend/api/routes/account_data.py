@@ -74,16 +74,31 @@ async def export_my_data(
     user: User = Depends(get_current_user),
 ):
     """Descarga un JSON con todos los datos asociados a la cuenta."""
+    from models.academia import AcademiaInterest
+    from models.budget import Budget
+    from models.bug_report import BugReport
     from models.contact import Contact
     from models.conversation import Conversation
+    from models.course_purchase import CoursePurchase
+    from models.material import Material
+    from models.material_interest import MaterialInterest
+    from models.material_list import UserMaterialList
     from models.message import Message
+    from models.milestone import Milestone
     from models.opportunity import Opportunity
     from models.payment import Payment
-    from models.plan_analysis import PlanFile, PlanProject
+    from models.plan_analysis import (
+        PlanAlert,
+        PlanAnalysis,
+        PlanFile,
+        PlanProject,
+        PlanTask,
+    )
     from models.project import Project
     from models.reminder import Reminder
+    from models.token_usage import TokenUsage
     from models.user_channel import UserChannel
-    from models.user_location import UserLocation
+    from models.user_location import UserLocation, UserLocationSettings
     from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 
     uid = user.id
@@ -141,9 +156,16 @@ async def export_my_data(
         "mensajes": mensajes,
         "proyectos_de_obra": await traer(Project),
         "pagos_de_obra": await traer(Payment),
+        "presupuestos": await traer(Budget),
+        "hitos": await traer(Milestone),
+        "materiales": await traer(Material),
+        "listas_de_materiales": await traer(UserMaterialList),
         "proyectos_de_planos": await traer(PlanProject),
         # file_data = los bytes del plano: se excluye a propósito (ver docstring)
         "planos": await traer(PlanFile, excluir={"file_data"}),
+        "analisis_de_planos": await traer(PlanAnalysis),
+        "observaciones_de_planos": await traer(PlanAlert),
+        "tareas_de_planos": await traer(PlanTask),
         "workspaces": _filas(wss),
         "memoria_de_workspace": memoria_ws,
         "memoria_de_perfil": await traer(UserProfileGlobal),
@@ -152,6 +174,14 @@ async def export_my_data(
         "recordatorios": await traer(Reminder),
         "canales_de_notificacion": await traer(UserChannel),
         "ubicaciones": await traer(UserLocation),
+        "preferencias_de_ubicacion": await traer(UserLocationSettings),
+        "compras_de_cursos": await traer(CoursePurchase),
+        "interes_en_cursos": await traer(AcademiaInterest),
+        "interes_en_materiales": await traer(MaterialInterest),
+        "consumo_de_modelos_de_ia": await traer(TokenUsage),
+        # admin_note es una anotación interna del equipo de soporte, no un dato
+        # aportado por el titular: se excluye del export.
+        "reportes_de_error": await traer(BugReport, excluir={"admin_note"}),
     }
 
     logger.info("Export de datos generado para user %s", uid)

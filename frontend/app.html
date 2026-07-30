@@ -2738,10 +2738,21 @@ function cuRenderBody(){
     <div class="cu-msg" id="cuTfMsg" hidden></div>
   </div>
 
+  <div class="cu-card">
+    <div class="cu-card-t">Tus datos</div>
+    <p class="cu-hint" style="margin-top:0">Descargá una copia de tus datos: conversaciones,
+    proyectos, planos, contactos, memoria del asistente y más. No incluye el archivo de
+    los planos —esos se bajan de a uno desde Almacenamiento— ni tus credenciales.
+    Es tu derecho de acceso (Ley 25.326).</p>
+    <button class="btn-sm" id="cuExportBtn">Exportar mis datos</button>
+    <div class="cu-msg" id="cuExportMsg" hidden></div>
+  </div>
+
   <div class="cu-card cu-danger-card">
     <div class="cu-card-t">Eliminar cuenta</div>
     <p class="cu-hint">La cuenta se desactiva por 30 días y después se elimina definitivamente
-    con todos tus datos. Si iniciás sesión dentro de esos 30 días, la eliminación se cancela.</p>
+    junto con tus chats, proyectos, planos y demás contenido. Si iniciás sesión dentro de
+    esos 30 días, la eliminación se cancela.</p>
     ${s.subscription_active?`
       <div class="cu-aviso">Tenés una suscripción activa. Para eliminar la cuenta, primero
       cancelala desde <b>Configuración → Facturación</b>.</div>`:`
@@ -2838,6 +2849,34 @@ function cuWire(){
     }catch{cuMsg('cuPassMsg','No pudimos cambiar la contraseña.',false);ev.target.disabled=false}
   });
 
+  // ── Exportar mis datos (derecho de acceso, Ley 25.326 art. 14) ──
+  on('cuExportBtn',async ev=>{
+    const b=ev.target, txt=b.textContent;
+    b.disabled=true; b.textContent='Preparando…';
+    try{
+      const r=await cuApi('/api/account/export');
+      if(r.status===404){
+        cuMsg('cuExportMsg','Esta función todavía no está disponible en el servidor.',false);
+      }else if(r.status===429){
+        cuMsg('cuExportMsg','Ya pediste tu exportación hace poco. Probá de nuevo en un rato.',false);
+      }else if(!r.ok){
+        cuMsg('cuExportMsg','No pudimos generar el archivo. Probá de nuevo.',false);
+      }else{
+        // El backend manda Content-Disposition, pero el fetch no dispara la
+        // descarga solo: hay que materializarla desde el blob.
+        const blob=await r.blob();
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;
+        a.download=`re-expert-mis-datos-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),1000);
+        cuMsg('cuExportMsg','Listo, se descargó la copia de tus datos.',true);
+      }
+    }catch{cuMsg('cuExportMsg','No pudimos generar el archivo. Revisá tu conexión.',false)}
+    b.disabled=false; b.textContent=txt;
+  });
+
   // ── 2FA ──
   on('cuTfApp',ev=>cuTotpStart(ev));
   on('cuTfMail',ev=>cuEmail2faStart(ev));
@@ -2863,7 +2902,7 @@ function cuWire(){
     const pass=document.getElementById('cuDelPass').value;
     const codeEl=document.getElementById('cuDelCode');
     if(!pass){cuMsg('cuDelMsg','Ingresá tu contraseña.',false);return}
-    if(!confirm('¿Eliminar tu cuenta?\n\nSe desactiva ahora y se borra DEFINITIVAMENTE en 30 días con todos tus datos (chats, proyectos, planos). Si te arrepentís, alcanza con volver a iniciar sesión antes de esa fecha.'))return;
+    if(!confirm('¿Eliminar tu cuenta?\n\nSe desactiva ahora y se borra DEFINITIVAMENTE en 30 días junto con tus chats, proyectos, planos y demás contenido. Si te arrepentís, alcanza con volver a iniciar sesión antes de esa fecha.'))return;
     ev.target.disabled=true;
     try{
       const r=await cuApi('/api/auth/account/delete',{method:'POST',

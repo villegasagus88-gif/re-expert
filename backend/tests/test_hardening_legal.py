@@ -242,6 +242,27 @@ def test_export_no_esta_detras_del_gate_de_plan():
     raise AssertionError("no existe GET /api/account/export")
 
 
+def test_el_export_cubre_todas_las_tablas_del_usuario():
+    """La política declara qué incluye el export. Si mañana se agrega un modelo con
+    datos del usuario y no se suma acá, el documento pasa a mentir por omisión."""
+    import re
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parents[1]
+    src = (raiz / "api" / "routes" / "account_data.py").read_text(encoding="utf-8")
+    exportados = set(re.findall(r"from models\.([a-z_]+) import", src))
+
+    con_fk = {
+        f.stem
+        for f in (raiz / "models").glob("*.py")
+        if "profiles.id" in f.read_text(encoding="utf-8")
+    }
+    # Excluidos a propósito: credenciales, tabla interna, y la cuenta misma.
+    excluidos = {"password_reset", "credit", "user"}
+    faltan = con_fk - exportados - excluidos
+    assert not faltan, f"modelos con datos del usuario fuera del export: {sorted(faltan)}"
+
+
 def test_el_export_no_incluye_credenciales_ni_bytes():
     """Exportar hashes o secretos de 2FA sería crear una vía de fuga."""
     import inspect

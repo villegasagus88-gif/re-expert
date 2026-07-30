@@ -183,28 +183,25 @@ responsabilidad no utilizarla en dispositivos compartidos o públicos.**
 
 ## 5. Planes, precios y pago
 
-5.1. **Modelo comercial.** RE Expert es un servicio pago. Se ofrece un **período de
-prueba de 7 (siete) días** con acceso completo a las funcionalidades.
+5.1. **Modelo comercial: pago único, sin renovación automática.**
+RE Expert es un servicio pago. Se ofrece un **período de prueba de 7 (siete) días** con
+acceso completo a las funcionalidades. Finalizado ese período, el acceso se contrata
+mediante un **pago único que habilita el uso del Servicio durante 30 (treinta) días
+corridos**.
 
-> **[CONFIRMAR CON TITULAR]** ⚠️ El momento desde el que corre el período de prueba
-> **depende de una decisión de configuración que hay que confirmar antes de publicar**:
-> con el cobro por Mercado Pago desactivado, el trial arranca al registrarse; con el
-> cobro activado, el usuario debe registrar un medio de pago y el plazo corre desde la
-> autorización de la suscripción, cobrándose automáticamente el primer período si no
-> cancela antes del vencimiento. **Ambos supuestos deben informarse de forma clara,
-> destacada y previa a la contratación** (art. 4 Ley 24.240 y Resolución 424/2020).
-> Definida la modalidad, dejar en esta cláusula únicamente la que corresponda.
+**No es una suscripción:** no hay débito automático, no se te vuelve a cobrar y no
+tenés que cancelar nada. Cumplidos los 30 días el acceso simplemente vence, y si querés
+continuar, contratás otro período.
 
-5.2. **Precio.** Finalizado el período de prueba, el acceso requiere una suscripción
-cuyo precio vigente se informa en `https://re-expert.app/pricing.html`.
-[CONFIRMAR CON TITULAR — precio actual publicado: $69.900 ARS. Confirmar periodicidad
-(mensual/anual), si incluye IVA y la condición fiscal del Titular.]
+5.2. **Precio.** El precio vigente se informa en la sección de precios del Sitio antes
+de la contratación.
+[CONFIRMAR CON TITULAR — precio actual publicado: $69.900 ARS. Confirmar si incluye IVA
+y la condición fiscal del Titular.]
 
-5.3. **Modificación de precios.** Podemos modificar los precios. Todo cambio te será
-notificado con una antelación mínima de **30 (treinta) días corridos** al correo
-registrado y regirá para los períodos de facturación posteriores a esa notificación.
-**Nunca se aplicará retroactivamente a un período ya abonado.** Si no estás de acuerdo,
-podés cancelar la suscripción antes de que el nuevo precio entre en vigencia.
+5.3. **Modificación de precios.** Podemos modificar el precio de futuras contrataciones.
+**El cambio nunca afecta un período ya abonado**, que se presta íntegramente a las
+condiciones y al precio vigentes al momento de contratarlo. El precio actualizado se
+informa en el Sitio antes de que contrates un período nuevo.
 
 5.4. **Procesamiento de pagos.** Los pagos se procesan a través de proveedores externos
 (Mercado Pago y/o Stripe). **El Titular no recibe, almacena ni procesa los datos
@@ -212,17 +209,28 @@ completos de tu tarjeta de crédito o débito**: esa información es tratada
 exclusivamente por el procesador de pago, conforme a sus propios términos y políticas
 de privacidad, que te recomendamos leer.
 
-5.5. **Falta de pago.** Si la suscripción no se abona o el pago es rechazado, se
-suspende el acceso al Servicio, **con excepción de las gestiones sobre tu propia Cuenta**
-(consultar y modificar tus datos, cambiar la contraseña, configurar la seguridad y
-solicitar la baja), que permanecen disponibles. **Tus datos no se eliminan por falta de
-pago**: podés recuperar el acceso regularizando la suscripción, sin perjuicio de tu
-derecho a solicitar la baja y supresión en cualquier momento.
+5.5. **Vencimiento del período.** Cumplidos los 30 días, se suspende el acceso al
+Servicio, **con excepción de las gestiones sobre tu propia Cuenta** (consultar y
+modificar tus datos, exportarlos, cambiar la contraseña, configurar la seguridad y
+solicitar la baja), que permanecen siempre disponibles. **Tus datos no se eliminan al
+vencer el período**: se conservan y recuperás el acceso contratando un período nuevo,
+sin perjuicio de tu derecho a solicitar la baja y supresión en cualquier momento.
+
+5.6. **Errores de facturación.** Si detectás un cobro duplicado, un importe que no
+corresponde o cualquier otra inconsistencia, escribinos a `contacto@re-expert.app`
+detallando la operación. **Revisaremos el caso y, si el error es nuestro, lo
+corregiremos y devolveremos lo cobrado de más.**
 
 > **[REVISIÓN LEGAL]** Confirmar el tratamiento fiscal (emisión de comprobantes,
-> condición frente al IVA) y si el período de prueba requiere o no ingreso previo de
-> medio de pago. Si lo requiriera, debe informarse de forma clara, destacada y previa
-> a la contratación (art. 4 Ley 24.240 y Resolución 424/2020).
+> condición frente al IVA) y si el período de prueba exige registrar un medio de pago
+> previo. Si lo exigiera, debe informarse de forma clara, destacada y previa a la
+> contratación (art. 4 Ley 24.240 y Resolución 424/2020).
+>
+> **Nota sobre el modelo elegido:** el esquema de pago único sin renovación automática
+> **reduce sensiblemente la exposición del Titular**. Evita los reclamos más frecuentes
+> del comercio electrónico —débitos no reconocidos, dificultad para dar de baja, cobros
+> tras la cancelación— y no queda alcanzado por las obligaciones sobre cancelación de
+> servicios de renovación automática. Se recomienda mantenerlo.
 
 ---
 
@@ -248,33 +256,41 @@ utilizado, dentro de los plazos que fije la normativa aplicable.
 > con independencia de lo que digan estos Términos. **Debe implementarse antes de la
 > publicación de este documento.** Ver "Riesgos detectados en el código", ítem R12.
 
-### 6.2. Cancelación de la suscripción
+### 6.2. Sin renovación automática y sin reembolso fuera del plazo de revocación
 
-6.2.1. Podés cancelar tu suscripción en cualquier momento. **La cancelación es
-inmediata:** al confirmarla cesan los cobros futuros y el acceso a las funcionalidades
-pagas se interrumpe en el acto. El período en curso ya abonado no se reintegra de forma
-proporcional, salvo el supuesto del punto 6.1.
+6.2.1. **No hay nada que cancelar.** Al ser un pago único por 30 días (punto 5.1), no
+existe débito automático ni renovación: el acceso vence solo y no se te vuelve a cobrar.
+Si no querés continuar, simplemente no contratás otro período.
 
-> **[REVISIÓN LEGAL]** ⚠️ Este punto describe el comportamiento actual del sistema, pero
-> **es problemático frente a un consumidor**: se le cobró un período completo y el
-> acceso se corta antes de que termine. La salida recomendada es **técnica, no de
-> redacción**: implementar la baja diferida al fin del período abonado y ajustar esta
-> cláusula. Prometer un período que se cobró y no se presta es el peor de los dos mundos.
+6.2.2. **Fuera del plazo de revocación del punto 6.1, el período abonado no es
+reembolsable**, salvo que:
 
-6.2.2. **Fuera del plazo de revocación del punto 6.1, los períodos ya abonados no son
-reembolsables**, salvo que la falta de prestación sea imputable al Titular o que la
-normativa de consumo disponga lo contrario.
+a) la falta de prestación sea imputable al Titular (por ejemplo, una interrupción
+prolongada del Servicio);
 
-> **[CONFIRMAR CON TITULAR]** Definir la política de reembolso para casos fuera del
-> plazo de revocación (por ejemplo: caída prolongada del servicio, cobro duplicado,
-> error de facturación). Sin una política definida, cada caso se resuelve
-> discrecionalmente y eso genera exposición.
+b) exista un **error de facturación**, en los términos del punto 5.6; o
+
+c) la normativa de consumo disponga lo contrario.
+
+6.2.3. **Cómo reclamar.** Si considerás que se da alguno de esos supuestos, escribinos a
+`contacto@re-expert.app` con el detalle de la operación. Analizaremos el caso y te
+responderemos por escrito.
+
+> **[LÍMITE LEGAL]** Qué quisimos: que no haya reembolsos en ningún caso. Hasta dónde se
+> puede: el derecho de revocación de 10 días del punto 6.1 es **irrenunciable** (art. 34
+> Ley 24.240) y ninguna cláusula puede eliminarlo. Tampoco es válido excluir el reembolso
+> cuando el Servicio no se prestó. Por eso la regla general de "sin reembolso" se
+> redactó **con las tres excepciones mínimas que la ley impone**: así la cláusula es
+> exigible en todo lo demás, en vez de caer entera por abusiva.
+>
+> **Impacto real, para dimensionarlo:** son 10 días sobre 30, y en el modelo de pago
+> único el usuario ya usó parte del servicio, por lo que puede prorratearse lo consumido.
 
 ---
 
 ## 7. Licencia de uso
 
-7.1. Sujeto al cumplimiento de estos Términos y al pago de la suscripción, te
+7.1. Sujeto al cumplimiento de estos Términos y al pago del período contratado, te
 otorgamos una licencia **personal, limitada, revocable, no exclusiva, no
 sublicenciable e intransferible** para acceder y usar el Servicio con la finalidad
 prevista en la cláusula 3.1.
@@ -451,8 +467,8 @@ los proveedores mencionados en 11.3.
 11.5. **Modificación y discontinuidad de funcionalidades.** Podemos modificar, agregar
 o discontinuar funcionalidades. Si una discontinuidad afectara de forma sustancial y
 negativa la prestación contratada, te lo notificaremos con **30 (treinta) días
-corridos** de antelación y podrás cancelar la suscripción, con reintegro proporcional
-del período abonado y no utilizado.
+corridos** de antelación y podrás solicitar el **reintegro proporcional del período
+abonado y no utilizado**.
 
 ---
 
@@ -569,8 +585,9 @@ Configuración → Cuenta. La Cuenta se **desactiva de inmediato** y se elimina 
 definitiva transcurridos **30 (treinta) días corridos**. Si iniciás sesión dentro de
 ese plazo, la eliminación queda sin efecto y deberás solicitarla nuevamente.
 
-14.2. **No puede solicitarse la baja mientras exista una suscripción activa**: debés
-cancelarla previamente desde Configuración → Facturación.
+14.2. **Si tenés un período pago vigente, la baja implica renunciar a los días
+restantes**, que no se reintegran salvo los supuestos del punto 6.2.2. Podés esperar a
+que venza y darte de baja después, sin costo alguno.
 
 14.3. **Suspensión o baja por nuestra parte.** Podemos suspender o dar de baja tu
 Cuenta si: (a) incumplís estos Términos, en especial la cláusula 8; (b) tu uso genera
@@ -599,9 +616,9 @@ corridos de antelación** al correo registrado y/o mediante aviso destacado en l
 Plataforma, indicando la fecha de entrada en vigencia.
 
 15.3. Si continuás usando el Servicio después de esa fecha, se entenderá que aceptás
-la nueva versión. **Si no estás de acuerdo, podés cancelar la suscripción sin costo
-antes de que entre en vigencia**, con reintegro proporcional del período abonado y no
-utilizado.
+la nueva versión. **Si no estás de acuerdo, podés dejar de usar el Servicio antes de que
+entre en vigencia y solicitar el reintegro proporcional del período abonado y no
+utilizado.**
 
 15.4. Conservaremos las versiones anteriores para consulta.
 
@@ -715,7 +732,7 @@ de tu jurisdicción o a través de `https://autogestion.produccion.gob.ar/consum
 |---|---|---|---|
 | 1 | 12.1 | Excluir toda garantía. | Frente a consumidores la exclusión total es inválida (art. 37 Ley 24.240). Se acotó con "hasta el máximo permitido por la ley". La protección real está en la cláusula 3. |
 | 2 | 12.2 | Tope económico universal. | El art. 37 inc. a) Ley 24.240 tiene por no escritas las limitaciones de responsabilidad frente a consumidores. El tope se acotó a Usuarios Profesionales, donde sí es exigible. |
-| 3 | 6.1 | Restringir reembolsos. | El derecho de revocación de 10 días es irrenunciable (art. 34 Ley 24.240). No se puede limitar. |
+| 3 | 6.1 y 6.2 | Que no hubiera reembolsos en ningún caso. | El derecho de revocación de 10 días es irrenunciable (art. 34 Ley 24.240) y tampoco puede excluirse el reembolso cuando el Servicio no se prestó. Se redactó "sin reembolso" con las tres excepciones mínimas que impone la ley, para que la cláusula sea exigible en todo lo demás en vez de caer entera por abusiva. |
 | 4 | 16.2 | Fijar jurisdicción única. | Frente a consumidores es competente el juez de su domicilio y es irrenunciable (art. 36 Ley 24.240). |
 
 ### [CONFIRMAR CON TITULAR]
@@ -725,9 +742,9 @@ de tu jurisdicción o a través de `https://autogestion.produccion.gob.ar/consum
 | 2 | Fecha de publicación | Encabezado |
 | 3 | Edad mínima (se sugiere 18) | 4.2 |
 | 4 | Precio, periodicidad, IVA y condición fiscal | 5.2 |
-| 5 | Si el trial exige medio de pago previo (cambia según esté activo el cobro) | 5.1 |
+| 5 | Si el período de prueba exige registrar un medio de pago previo | 5.1 |
 | 6 | ⚠️ **Implementar el Botón de Arrepentimiento antes de publicar** | 6.1.3 |
-| 7 | Política de reembolso fuera del plazo de revocación + procedimiento operativo | 6.2.2 |
+| 7 | ✅ Definida: sin reembolso salvo revocación, falta de prestación o error de facturación (6.2.2). Falta definir el **procedimiento operativo**: quién ejecuta la devolución, en qué panel y en cuántos días hábiles | 6.2.2, 5.6 |
 | 8 | Jurisdicción para Usuarios Profesionales | 16.3 |
 | 9 | Si se ofrecerá SLA a clientes corporativos | 11.1 |
 | 10 | ⚠️ **Dominio definitivo y casilla de contacto operativa** | 1.1, 18 |

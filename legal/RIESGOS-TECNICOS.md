@@ -152,8 +152,9 @@ proveedores ya ofrecen — es gratis y cierra el punto.
 exports son parciales (memoria de un workspace, bajar un plano).
 **Exposición:** art. 14 Ley 25.326 da **10 días corridos** para responder un pedido de
 acceso; habilita habeas data y sanción de la AAIP.
-**✅ CORREGIDO:** `GET /api/account/export` (`api/routes/account_data.py`) devuelve un
-JSON con todo lo que cuelga de la cuenta: conversaciones y mensajes, proyectos, pagos,
+**✅ CORREGIDO Y AMPLIADO:** `GET /api/account/export` (`api/routes/account_data.py`)
+devuelve un JSON con **las 21 tablas** que cuelgan de la cuenta (27 colecciones), con un
+test que falla si mañana se agrega un modelo con datos del usuario y no se suma acá: conversaciones y mensajes, proyectos, pagos,
 planos (metadatos), workspaces y memoria, contactos, oportunidades, recordatorios,
 canales y ubicaciones. **No incluye credenciales** (hash de contraseña, secreto de 2FA,
 códigos de recuperación) ni los bytes de los planos, que se bajan de a uno desde
@@ -238,6 +239,35 @@ un User-Agent, y `RESEND_API_KEY` no está configurada.
 Arrepentimiento y el ejercicio de derechos ARCO. **Antes de publicar hay que confirmar
 que el dominio es nuestro y que esa casilla recibe y se lee.**
 
+### R23 — El historial de ubicaciones existe pero no está expuesto ni tiene purga
+`frontend/location.js` define `RELocation.purge()`, `setConsent()`, `captureOnce()` y
+`startWatch()` — **ninguna tiene llamador en la app**. `Configuración → Controles de
+datos` sigue en "Próximamente".
+Consecuencia: el usuario **no puede elegir la precisión ni purgar el historial**, y el
+modelo arranca con `precision="exact"` por defecto (`models/user_location.py`).
+**Estado:** hoy no se persiste ninguna ubicación (el flujo real de corralones no guarda),
+así que no hay exposición activa. **La Política lo declara con precisión.**
+**Tarea, si se habilita:** exponer en la misma pantalla el selector de precisión y el
+botón de purga. Declarar el historial sin esos dos controles es el problema que este
+parche evitó.
+
+### R24 — El filtro de datos financieros sólo cubre la memoria, no el chat
+`core/pii_guard.py` se invoca en un único punto (`api/routes/chat.py`, antes del INSERT
+en memoria). **Un CBU escrito en el chat se guarda en `messages` y viaja al proveedor de
+IA como cualquier otro mensaje.**
+**Estado:** ✅ **declarado con honestidad** en los puntos 3.5 y 6.2 de la Política, que
+además advierten al usuario que no cargue datos bancarios en el chat.
+**Mejora opcional:** aplicar el mismo filtro como advertencia no bloqueante en el chat
+(avisar, no impedir). Bloquear el mensaje sería peor UX que el problema que resuelve.
+Detalle menor: `_VENCIMIENTO` está definido y no se usa en `detectar_dato_financiero`.
+
+### R25 — La cuenta con plan `pro` no se purga nunca
+`services/scheduler_service.py` excluye de la purga a toda cuenta con `plan == "pro"`.
+Es un doble cinturón intencional, pero si un webhook de la pasarela reactivara el plan
+durante los 30 días de gracia, **esa cuenta quedaría en limbo permanente**.
+**Tarea:** loggear una alerta cuando el filtro descarte a alguien con
+`deletion_requested_at` ya vencido, para poder detectarlo.
+
 ---
 
 ## Resumen de tareas técnicas
@@ -264,3 +294,6 @@ que el dominio es nuestro y que esa casilla recibe y se lee.**
 | R20 | Procedimiento de reembolso definido | 🟠 Alto | Proceso |
 | R19 | ✅ Limpiar `re_voice_memory` en el logout | 🟡 Medio | **Una línea** |
 | R21 | Respaldo contable desvinculado de la cuenta | 🟡 Medio | Medio |
+| R23 | Exponer precisión y purga si se habilita el historial de ubicaciones | 🟡 Medio | Medio |
+| R24 | Advertencia (no bloqueo) de datos financieros en el chat | 🟢 Opcional | Bajo |
+| R25 | Alerta cuando la purga descarta una cuenta `pro` vencida | 🟢 Opcional | **Una línea** |
