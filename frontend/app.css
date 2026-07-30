@@ -253,13 +253,21 @@ body:has(.sidebar.collapsed) .acct-switcher{left:calc(62px + var(--sidebar-w) + 
    especificidad contra `.modal{width:380px}` y el panel salía angosto. No se
    toca `.modal-wide` (lo usan otros 6 modales). */
 .modal.acct-panel{width:860px;max-width:94vw}
-.acct-panel-body{display:grid;grid-template-columns:224px 1fr;min-height:440px;max-height:min(74vh,660px)}
+/* overflow:hidden + la fila en minmax(0,1fr): sin esto el max-height limita la
+   caja pero la fila del grid sigue midiendo lo que mide el contenido, así que el
+   pane se desbordaba por fuera del modal en vez de scrollear. */
+.acct-panel-body{display:grid;grid-template-columns:224px 1fr;grid-template-rows:minmax(0,1fr);min-height:440px;max-height:min(74vh,660px);overflow:hidden}
 .acct-nav{display:flex;flex-direction:column;gap:2px;padding:14px 12px;border-right:1px solid var(--border-1);overflow-y:auto}
 .acct-nav-item{padding:9px 12px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-2);font-size:13px;font-family:var(--font);text-align:left;cursor:pointer;transition:all .13s var(--ease-out)}
 .acct-nav-item:hover{background:var(--bg-2);color:var(--text-0)}
 .acct-nav-item.active{background:var(--bg-2);color:var(--accent-brand);font-weight:600}
 .acct-nav-item:focus-visible{outline:2px solid var(--accent-brand);outline-offset:-2px}
-.acct-pane{padding:24px 28px;overflow-y:auto}
+/* min-height:0 es OBLIGATORIO acá: como grid item, el default `min-height:auto`
+   impide que el pane se encoja por debajo de su contenido, así que crecía en vez
+   de scrollear y el contenido que pasaba del alto del panel quedaba INALCANZABLE
+   (en Cuenta se perdían 4 tarjetas: contraseña, 2FA, exportar y eliminar). */
+.acct-pane{padding:24px 28px;overflow-y:auto;min-height:0}
+.acct-nav{min-height:0}
 .acct-pane-title{font-size:16px;font-weight:700;color:var(--text-0);margin:0 0 7px}
 .acct-pane-desc{font-size:13px;color:var(--text-2);line-height:1.6;margin:0 0 18px;max-width:60ch}
 .acct-soon{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-3);background:var(--bg-2);border:1px dashed var(--border-1);border-radius:100px;padding:5px 12px}
@@ -334,7 +342,9 @@ body:has(.sidebar.collapsed) .acct-switcher{left:calc(62px + var(--sidebar-w) + 
 .cu-actual{font-size:12.5px;color:var(--text-2);margin-bottom:10px}
 .cu-actual b{color:var(--text-0);font-weight:600}
 .cu-row{display:flex;gap:8px;align-items:center}
-.cu-row .bug-input{flex:1;min-width:0}
+/* Mismo ancho que los inputs apilados de .cu-col: si estos se estiraran con
+   flex:1 quedarían ~77px más largos y las tarjetas no alinearían entre sí. */
+.cu-row .bug-input{flex:0 1 380px;min-width:0;max-width:380px}
 .cu-row-wrap{display:flex;gap:8px;flex-wrap:wrap}
 .cu-col{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .cu-col .bug-input{width:100%;max-width:380px}
