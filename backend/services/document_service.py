@@ -376,13 +376,20 @@ async def _upload_to_supabase(
 
 def _save_local(filename: str, blob: bytes) -> str:
     """Guarda el PDF en disco y devuelve URL ABSOLUTA (necesario para que el
-    link funcione cuando se manda por WhatsApp/Telegram al destinatario)."""
+    link funcione cuando se manda por WhatsApp/Telegram al destinatario).
+
+    La URL va FIRMADA con vencimiento (48 h): antes cualquiera que adivinara el
+    nombre del archivo se bajaba el informe financiero de otro. Sigue siendo
+    compartible con quien no tiene cuenta — sólo que ahora caduca y no se puede
+    enumerar. Ver core/signed_files.py.
+    """
     from config.settings import settings
+    from core.signed_files import firmar_query
 
     p = REPORTS_DIR / filename
     p.write_bytes(blob)
     base = settings.BACKEND_PUBLIC_URL.rstrip("/") if settings.BACKEND_PUBLIC_URL else ""
-    return f"{base}/static/reports/{filename}"
+    return f"{base}/static/reports/{filename}?{firmar_query(filename)}"
 
 
 async def generate_report(

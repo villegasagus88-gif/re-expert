@@ -20,13 +20,14 @@ from datetime import datetime, timedelta, timezone
 
 from config.settings import settings
 from models.base import get_session_factory
+from models.bug_report import BugReport
 from models.kv_cache import KVCache
 from models.password_reset import PasswordReset
 from models.reminder import Reminder
 from models.stripe_event import StripeEvent
 from models.user import User
 from services.notification_dispatcher import dispatch
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -227,9 +228,22 @@ async def _run_daily_cleanup(db: AsyncSession) -> dict[str, int]:
     )).all()
     users_purged = 0
     for uid, uemail in usuarios_purga:
+        # Anonimizar los reportes de error ANTES de borrar la fila del usuario.
+        # `bug_reports.user_id` es ondelete=SET NULL y `reporter_email` es una
+        # copia: sin este paso el email sobrevivía a la baja y contradecía lo
+        # que le prometemos al usuario ("se borra con todos tus datos").
+        # El reporte queda (sirve para estadísticas y para no perder el hilo de
+        # un bug), pero deja de ser un dato personal.
+        await db.execute(
+            update(BugReport)
+            .where(BugReport.user_id == uid)
+            .values(reporter_email="")
+        )
         await db.execute(delete(User).where(User.id == uid))
         users_purged += 1
-        logger.info("Cuenta purgada definitivamente: %s (%s)", uid, uemail)
+        # NO loggear el email: escribirlo justo cuando se borra la cuenta lo
+        # deja vivo en los logs del hosting, con retención que no controlamos.
+        logger.info("Cuenta purgada definitivamente: %s", uid)
 
     await db.commit()
     return {

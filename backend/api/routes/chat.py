@@ -33,6 +33,7 @@ from uuid import UUID
 from api.schemas.chat import ChatRequest
 from config.settings import settings
 from core.auth import get_current_user
+from core.pii_guard import texto_seguro_para_memoria
 from core.rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -244,6 +245,24 @@ async def _persist_memory_item(
         confidence = "high"
     if not key or not value:
         return {"error": "key y value son obligatorios", "saved": False}
+
+    # Barrera determinista contra persistir datos financieros o credenciales.
+    # La memoria se guarda EN SILENCIO (source="auto-silent"), sin que el
+    # usuario confirme, y hasta acá lo único que lo impedía era una frase en el
+    # prompt — o sea, nada verificable. Esto corre en el servidor, antes del
+    # INSERT, y no depende de que el modelo obedezca.
+    seguro, tipo = texto_seguro_para_memoria(key, value)
+    if not seguro:
+        logger.warning(
+            "Memoria bloqueada para user %s: se detectó %s en el contenido", user_id, tipo
+        )
+        return {
+            "error": (
+                f"No guardo datos de este tipo ({tipo}) por seguridad. "
+                "Si necesitás tenerlo a mano, usá un gestor de contraseñas."
+            ),
+            "saved": False,
+        }
 
     now = datetime.now(UTC)
 

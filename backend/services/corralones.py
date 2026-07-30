@@ -82,7 +82,15 @@ def _norm(s: str) -> str:
 
 
 async def reverse_geocode(lat: float, lon: float) -> dict:
-    """Coordenadas → zona legible ("Godoy Cruz, Mendoza")."""
+    """Coordenadas → zona legible ("Godoy Cruz, Mendoza").
+
+    Minimización de datos: se redondea a 3 decimales (~110 m) ANTES de salir
+    hacia un tercero. Con `zoom=13` sólo se resuelve la ciudad/partido, así que
+    la precisión de GPS crudo no aporta nada al resultado y sí expone de más
+    (el domicilio exacto del usuario). Art. 4 Ley 25.326: los datos deben ser
+    adecuados y no excesivos respecto de la finalidad.
+    """
+    lat, lon = round(float(lat), 3), round(float(lon), 3)
     async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=6.0)) as client:
         resp = await client.get(_NOMINATIM, params={
             "format": "jsonv2", "lat": lat, "lon": lon,

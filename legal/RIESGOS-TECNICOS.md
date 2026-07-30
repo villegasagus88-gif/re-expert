@@ -8,9 +8,26 @@
 > **No son tareas legales: son tareas técnicas nuestras.** Están ordenadas por gravedad
 > y con la evidencia para poder atacarlas.
 >
-> **Ninguno fue modificado en esta sesión** (se reportan, no se arreglan).
->
 > Auditoría sobre el commit `3ce696a` de la branch `refactor/sol-hardening`.
+>
+> ## Estado: 8 de 22 ya corregidos
+>
+> | # | Riesgo | Estado |
+> |---|---|---|
+> | R3 | Informes financieros sin autenticación | ✅ **Corregido** — enlaces firmados con HMAC + vencimiento de 48 h |
+> | R5 | Secreto TOTP en claro en la base | ✅ **Corregido** — cifrado en reposo, retrocompatible |
+> | R7 | El LLM decidía solo qué persistir | ✅ **Corregido** — filtro determinista server-side |
+> | R8 | El email sobrevivía a la baja | ✅ **Corregido** — la purga lo anonimiza |
+> | R9 | Sentry podía filtrar contraseñas | ✅ **Corregido** — `include_local_variables=False` |
+> | R11 | Sin forma de ejercer derechos ARCO | ✅ **Corregido** — `GET /api/account/export` |
+> | R15 | GPS exacto a un tercero | ✅ **Corregido** — redondeo a 3 decimales |
+> | R19 | El logout dejaba la memoria de voz | ✅ **Corregido** — se limpia en los 3 caminos |
+>
+> Verificado con 46 tests nuevos (`backend/tests/test_hardening_legal.py`) y
+> regresión de 241 tests sobre auth, chat, planos, storage y billing.
+>
+> **Lo que sigue abierto** son los que dependen de decisiones de producto, de
+> trámites o del dashboard de Agus. Están detallados abajo.
 
 ---
 
@@ -40,10 +57,11 @@ preservado a propósito. Además, los documentos generados en el bucket `reports
 se borran (`services/document_service.py:6-8`).
 **Exposición:** art. 16 Ley 25.326 (supresión). Es una declaración **escrita y
 verificable** que el propio sistema desmiente — el peor tipo de prueba.
-**Hay que elegir una:** (a) que la purga limpie `reporter_email` y los objetos del
-bucket, o (b) cambiar el copy de la app para declarar las excepciones. La Política de
-Privacidad quedó redactada declarando las excepciones (opción b), pero **el copy de la
-app sigue diciendo "todos"**.
+**✅ CORREGIDO (opción a, la honesta):** la purga anonimiza `reporter_email` antes de
+borrar la cuenta, y se dejó de escribir el email en los logs justo al purgarla. El
+reporte sobrevive sin dato personal, así que ya no contradice la promesa.
+**Pendiente:** los objetos del bucket `reports/` siguen sin borrarse (no tienen `user_id`
+con el que identificarlos). La Política lo declara como excepción.
 
 ---
 
@@ -58,6 +76,11 @@ entropía con prefijo predecible**.
 **Exposición:** arts. 9 y 10 Ley 25.326. Fuga por enumeración o por reenvío del link.
 Imposible sostener "medidas técnicas adecuadas" en una pericia.
 **Agrava:** el `share_message` empuja al usuario a mandar ese link por WhatsApp.
+**✅ CORREGIDO:** se sacó el mount de `StaticFiles` y se sirve por una ruta que exige
+enlace firmado (HMAC-SHA256 + vencimiento de 48 h, `core/signed_files.py`). Sigue siendo
+compartible con quien no tiene cuenta —que era el caso de uso real— pero ya no se puede
+enumerar y caduca solo. La firma cubre nombre + vencimiento, así que no se puede mover a
+otro archivo ni estirar el plazo.
 
 ### R9 — Sentry puede exfiltrar contraseñas en texto plano el día que se active
 **Evidencia:** `backend/main.py:61-77` setea `send_default_pii=False` y
@@ -67,15 +90,19 @@ default es `True` en `sentry-sdk 2.18.0`.
 Cualquier excepción ahí adentro (timeout de DB, error de bcrypt) manda **email y
 contraseña en claro** a un tercero.
 **Hoy es inerte** (`SENTRY_DSN` vacío), pero la documentación del proyecto empuja a
-activarlo. **Arreglo de una línea.**
+activarlo.
+**✅ CORREGIDO:** `include_local_variables=False` en el init de Sentry.
 
 ### R5 — El secreto TOTP del 2FA se guarda sin cifrar
 **Evidencia:** `backend/models/user.py:54` — `twofa_secret` es `String` plano; se asigna
 sin transformar en `account_security_service.py`. Los códigos de recuperación **sí**
 están hasheados; la semilla no.
 **Exposición:** con un dump de `profiles` se generan códigos 2FA válidos → el segundo
-factor deja de existir frente a una filtración. Ofrecer "verificación en dos pasos"
-mientras la semilla está en claro no resiste una pericia.
+factor deja de existir frente a una filtración.
+**✅ CORREGIDO:** cifrado en reposo con `core/secret_box.py` (encrypt-then-MAC sobre la
+stdlib, sin sumar dependencias al build). La clave vive en las env vars, no en la base:
+un dump ya no alcanza. La lectura es tolerante, así que los secretos que hubieran quedado
+en claro siguen funcionando y nadie tiene que volver a enrolar su app.
 
 ### R4 — Credenciales de hasta 5 cuentas en `localStorage`, con CSP permisivo
 **Evidencia:** `frontend/authService.js` guarda `{refresh, access}` por cuenta;
@@ -94,8 +121,11 @@ remember sin pedir permiso)"* (`anthropic_service.py:470-472`). La única barrer
 guardar un CBU o una tarjeta es **texto en el prompt** — no hay regex ni validación.
 **Exposición:** arts. 4 (finalidad determinada) y 5-6 (consentimiento) Ley 25.326. El
 alcance de la recolección lo fija un modelo probabilístico.
-**Mitigación sugerida:** filtro server-side (CBU/CUIT/tarjeta) en `_persist_memory_item`
-+ un interruptor para desactivar la memoria automática.
+**✅ CORREGIDO:** `core/pii_guard.py` corre en el servidor, antes del INSERT, y bloquea
+CBU/CVU, alias bancario, tarjetas (validadas con Luhn), CVV y contraseñas. Verificado
+con 7 casos que debe bloquear y 10 que NO (montos, superficies, expedientes, CUIT,
+coordenadas): cero falsos positivos.
+**Pendiente opcional:** un interruptor para desactivar del todo la memoria automática.
 
 ### R6 — Datos de terceros que nunca consintieron
 **Evidencia:** `models/contact.py:34-40` (nombre, teléfono, email), `plan_projects.client_name`,
@@ -122,8 +152,12 @@ proveedores ya ofrecen — es gratis y cierra el punto.
 exports son parciales (memoria de un workspace, bajar un plano).
 **Exposición:** art. 14 Ley 25.326 da **10 días corridos** para responder un pedido de
 acceso; habilita habeas data y sanción de la AAIP.
-**Dato útil:** el mapa de FK `CASCADE` es exactamente la lista de lo que debería incluir
-un `GET /api/account/export`.
+**✅ CORREGIDO:** `GET /api/account/export` (`api/routes/account_data.py`) devuelve un
+JSON con todo lo que cuelga de la cuenta: conversaciones y mensajes, proyectos, pagos,
+planos (metadatos), workspaces y memoria, contactos, oportunidades, recordatorios,
+canales y ubicaciones. **No incluye credenciales** (hash de contraseña, secreto de 2FA,
+códigos de recuperación) ni los bytes de los planos, que se bajan de a uno desde
+Almacenamiento. Sin gate de plan: ejercer derechos no depende de estar al día.
 
 ### R10 — No hay evidencia de backups automáticos ni de restore probado
 `docs/BACKUPS.md:29` dice textualmente que en el plan **Free no hay backups
@@ -141,8 +175,9 @@ técnico menor que elimina la transferencia.
 ### R15 — Nominatim recibe coordenadas GPS exactas, sin redondeo
 `backend/api/routes/corralones.py:84-98` envía lat/lon sin truncar, y el User-Agent
 expone `contacto@re-expert.app`.
-**Mitigación trivial:** redondear a 2-3 decimales (~1 km) alcanza de sobra para
-resolver el nombre de la zona.
+**✅ CORREGIDO:** se redondea a 3 decimales (~110 m) antes de salir. Con `zoom=13` sólo
+se resuelve ciudad/partido, así que la precisión de GPS crudo no aportaba nada al
+resultado y sí exponía el domicilio.
 
 ---
 
@@ -180,8 +215,8 @@ respaldo probatorio.**
 `authService.js` borra ACCESS/REFRESH/USER/FLAG pero **no `re_voice_memory`**, que
 contiene datos que el usuario pidió recordar. Queda en el equipo después de cerrar
 sesión — problema en computadoras compartidas.
-**Arreglo:** una línea (`localStorage.removeItem('re_voice_memory')`) en `logout()` y en
-la baja.
+**✅ CORREGIDO:** se limpia en los tres caminos de salida (`logout`, `logoutAll` y
+`redirectToLogin`). Verificado en el navegador.
 
 ### R20 — No hay procedimiento de reembolso
 Cero llamadas a la API de refunds en todo el backend.
@@ -211,21 +246,21 @@ que el dominio es nuestro y que esa casilla recibe y se lee.**
 |---|---|---|---|
 | R12 | Botón de Arrepentimiento (obligación legal incumplida) | 🔴 Bloqueante | Medio |
 | R1 | Publicar los documentos en la app + footer | 🔴 Bloqueante | Bajo |
-| R8 | Resolver la contradicción del "todos tus datos" | 🔴 Bloqueante | Bajo |
-| R3 | Autenticar `/static/reports` | 🟠 Alto | Bajo |
-| R9 | `include_local_variables=False` en Sentry | 🟠 Alto | **Una línea** |
-| R5 | Cifrar el secreto TOTP en reposo | 🟠 Alto | Medio |
-| R7 | Filtro server-side de datos financieros en la memoria automática | 🟠 Alto | Medio |
+| R8 | ✅ Resolver la contradicción del "todos tus datos" | 🔴 Bloqueante | Bajo |
+| R3 | ✅ Autenticar `/static/reports` | 🟠 Alto | Bajo |
+| R9 | ✅ `include_local_variables=False` en Sentry | 🟠 Alto | **Una línea** |
+| R5 | ✅ Cifrar el secreto TOTP en reposo | 🟠 Alto | Medio |
+| R7 | ✅ Filtro server-side de datos financieros en la memoria automática | 🟠 Alto | Medio |
 | R4 | Sacar `'unsafe-inline'` del CSP + logout server-side | 🟠 Alto | Medio |
-| R11 | `GET /api/account/export` | 🟡 Medio | Medio |
+| R11 | ✅ `GET /api/account/export` | 🟡 Medio | Medio |
 | R10 | Backups automáticos + prueba de restore | 🟡 Medio | Config |
 | R2 | Adherir a los DPA de los proveedores | 🟡 Medio | Trámite |
 | R14 | Alojar las tipografías localmente | 🟡 Medio | Bajo |
-| R15 | Redondear coordenadas antes de geocodificar | 🟡 Medio | **Una línea** |
+| R15 | ✅ Redondear coordenadas antes de geocodificar | 🟡 Medio | **Una línea** |
 | R17 | Sección Facturación operativa (hoy "Próximamente") | 🔴 Bloqueante | Medio |
 | R18 | Enlaces legales + checkbox de aceptación en el registro | 🔴 Bloqueante | Bajo |
 | R22 | Confirmar dominio y casilla de contacto operativa | 🔴 Bloqueante | Trámite |
 | R16 | Baja diferida al fin del período abonado | 🟠 Alto | Medio |
 | R20 | Procedimiento de reembolso definido | 🟠 Alto | Proceso |
-| R19 | Limpiar `re_voice_memory` en el logout | 🟡 Medio | **Una línea** |
+| R19 | ✅ Limpiar `re_voice_memory` en el logout | 🟡 Medio | **Una línea** |
 | R21 | Respaldo contable desvinculado de la cuenta | 🟡 Medio | Medio |

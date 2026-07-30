@@ -23,6 +23,10 @@
   // no se entera de nada. Acá solo se guarda un ROSTER extra de las cuentas que
   // el usuario dejó agregadas, para poder cambiar entre ellas sin re-loguearse.
   const STORAGE_ACCOUNTS = 're_accounts';
+  // Datos que el asistente de voz guarda A PEDIDO del usuario (nombre, zona,
+  // preferencias). Es contenido personal, no una preferencia de interfaz: tiene
+  // que irse al cerrar sesión, sobre todo en computadoras compartidas.
+  const STORAGE_VOZ = 're_voice_memory';
   const MAX_ACCOUNTS = 5;
 
   function _readAccounts() {
@@ -122,6 +126,7 @@
     localStorage.removeItem(STORAGE_ACCESS);
     localStorage.removeItem(STORAGE_REFRESH);
     localStorage.removeItem(STORAGE_USER);
+    localStorage.removeItem(STORAGE_VOZ);
     _accessToken = null;
     if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
     if (isAuthPage()) return;
@@ -325,6 +330,7 @@
     localStorage.removeItem(STORAGE_ACCESS);
     localStorage.removeItem(STORAGE_REFRESH);
     localStorage.removeItem(STORAGE_USER);
+    localStorage.removeItem(STORAGE_VOZ);
     sessionStorage.removeItem(FLAG_KEY);
     _accessToken = null;
     if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }
@@ -344,6 +350,7 @@
     localStorage.removeItem(STORAGE_ACCESS);
     localStorage.removeItem(STORAGE_REFRESH);
     localStorage.removeItem(STORAGE_USER);
+    localStorage.removeItem(STORAGE_VOZ);
     sessionStorage.removeItem(FLAG_KEY);
     _accessToken = null;
     if (_refreshTimer) { clearTimeout(_refreshTimer); _refreshTimer = null; }

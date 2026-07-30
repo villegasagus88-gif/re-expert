@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path as _Path
 
 from api.routes.academia import router as academia_router
+from api.routes.account_data import router as account_data_router
 from api.routes.agent import router as agent_router
 from api.routes.auth import router as auth_router
 from api.routes.billing import router as billing_router
@@ -38,9 +39,9 @@ from config.settings import settings
 from core.auth import require_admin
 from core.plan_gate import require_access
 from core.rate_limit import limiter
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from services.scheduler_service import start_scheduler, stop_scheduler
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -68,6 +69,10 @@ if settings.SENTRY_DSN:
         # Don't include request bodies — they can contain user prompts / PII.
         send_default_pii=False,
         max_request_body_size="never",
+        # CRÍTICO: sin esto (default True) Sentry adjunta las variables locales de
+        # cada frame del stack. Una excepción dentro de login_user(email, password)
+        # mandaría la CONTRASEÑA EN CLARO de un usuario real a un tercero.
+        include_local_variables=False,
         integrations=[
             StarletteIntegration(transaction_style="endpoint"),
             FastApiIntegration(transaction_style="endpoint"),
@@ -315,6 +320,9 @@ app.include_router(public_landing_router)
 # de eso. Igual exigen sesión (get_current_user) y tienen rate limit.
 app.include_router(bugs_router)
 app.include_router(bugs_admin_router)   # cada endpoint ya exige require_admin
+# Derechos del titular (Ley 25.326): sin gate de plan a propósito — ejercerlos
+# sobre los propios datos no depende de estar al día con la suscripción.
+app.include_router(account_data_router)
 
 # Routes de PRODUCTO: requieren suscripción activa (trial vigente o pro).
 # Modelo pago-only — un usuario sin acceso recibe 403 (paywall) en cualquiera.
@@ -353,15 +361,38 @@ app.include_router(contacts_router, dependencies=_paid)
 # Geolocalización (capacidad de plataforma; consent-first, ver api/routes/location.py)
 app.include_router(location_router, dependencies=_paid)
 
-# Static files: reportes generados (PDF/DOCX) servidos como fallback de Supabase Storage.
+# Reportes generados (PDF/DOCX/XLSX) servidos como fallback de Supabase Storage.
 # La carpeta se crea on-demand en services/document_service.py.
+#
+# NO se monta con StaticFiles: eso los dejaba accesibles a cualquiera que
+# adivinara el nombre (8 hex chars = 32 bits, con prefijo predecible), y
+# contienen presupuesto, costo real, pagos y proveedores de la obra.
+# Ahora exige enlace firmado con vencimiento (core/signed_files.py): sigue
+# siendo compartible por WhatsApp con quien no tiene cuenta, pero no se puede
+# enumerar y caduca solo.
 _reports_dir = _Path(__file__).resolve().parent / "data" / "reports"
 _reports_dir.mkdir(parents=True, exist_ok=True)
-app.mount(
-    "/static/reports",
-    StaticFiles(directory=str(_reports_dir)),
-    name="reports",
-)
+
+
+@app.get("/static/reports/{filename}", include_in_schema=False)
+async def serve_report(filename: str, exp: str | None = None, sig: str | None = None):
+    from core.signed_files import verificar
+
+    # Path traversal: el nombre viene de la URL. Sólo el basename, y sólo las
+    # extensiones que generamos.
+    nombre = _Path(filename).name
+    if nombre != filename or not nombre.lower().endswith((".pdf", ".docx", ".xlsx", ".csv")):
+        raise HTTPException(status_code=404, detail="No encontrado")
+    if not verificar(nombre, exp, sig):
+        raise HTTPException(status_code=404, detail="Enlace inválido o vencido")
+    ruta = _reports_dir / nombre
+    if not ruta.is_file():
+        raise HTTPException(status_code=404, detail="No encontrado")
+    return FileResponse(
+        str(ruta),
+        filename=nombre,
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @app.get("/health")

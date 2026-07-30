@@ -24,6 +24,7 @@ from uuid import UUID
 
 import httpx
 from config.settings import settings
+from core.secret_box import cifrar, descifrar_o_plano
 from fastapi import HTTPException, status
 from models.base import get_session_factory
 from models.user import User
@@ -99,7 +100,10 @@ def _verify_second_factor(user: User, code: str) -> bool:
     code = (code or "").strip().replace(" ", "").replace("-", "")
     if user.twofa_method == "totp" and user.twofa_secret:
         ya_usado = _check_code_hash(code, user.twofa_code_hash, user.twofa_code_expires_at)
-        if not ya_usado and verify_totp(user.twofa_secret, code):
+        # El secreto se guarda cifrado; `descifrar_o_plano` tolera los que
+        # hayan quedado en claro de antes de esta versión.
+        secreto = descifrar_o_plano(user.twofa_secret)
+        if not ya_usado and secreto and verify_totp(secreto, code):
             user.twofa_code_hash = _sha256(code)
             user.twofa_code_expires_at = _now() + timedelta(seconds=95)  # ventana ±1 período
             return True
@@ -290,7 +294,9 @@ async def totp_start(user_id, password: str) -> dict:
         if user.twofa_method:
             raise HTTPException(status_code=409, detail="Ya tenés el doble factor activado")
         secret = generate_secret()
-        user.twofa_pending_secret = secret
+        # Cifrado en reposo: con un dump de la base, el secreto no alcanza para
+        # generar códigos válidos (la clave vive en las env vars del hosting).
+        user.twofa_pending_secret = cifrar(secret)
         await db.commit()
         return {"secret": secret, "otpauth_uri": otpauth_uri(secret, user.email)}
 
@@ -316,7 +322,8 @@ async def totp_confirm(user_id, code: str) -> dict:
             raise HTTPException(status_code=409, detail="Ya tenés el doble factor activado")
         if not user.twofa_pending_secret:
             raise HTTPException(status_code=400, detail="Primero generá la clave (paso anterior)")
-        if not verify_totp(user.twofa_pending_secret, code):
+        pendiente = descifrar_o_plano(user.twofa_pending_secret)
+        if not pendiente or not verify_totp(pendiente, code):
             raise HTTPException(
                 status_code=401,
                 detail="Código incorrecto. Revisá que la app tenga la clave bien cargada.",
