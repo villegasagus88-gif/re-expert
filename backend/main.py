@@ -20,6 +20,8 @@ from api.routes.creditos import router as creditos_router
 from api.routes.creditos_admin import router as creditos_admin_router
 from api.routes.ingest import router as ingest_router
 from api.routes.knowledge import router as knowledge_router
+from api.routes.legal import admin_router as legal_admin_router
+from api.routes.legal import router as legal_router
 from api.routes.location import router as location_router
 from api.routes.materials import router as materials_router
 from api.routes.news import router as news_router
@@ -323,6 +325,11 @@ app.include_router(bugs_admin_router)   # cada endpoint ya exige require_admin
 # Derechos del titular (Ley 25.326): sin gate de plan a propósito — ejercerlos
 # sobre los propios datos no depende de estar al día con la suscripción.
 app.include_router(account_data_router)
+# Botón de Arrepentimiento (Res. 424/2020): SIN sesión y SIN gate de plan.
+# Exigir login sería el "trámite adicional" que la Resolución prohíbe. Tiene
+# rate limit propio (5/hora por IP).
+app.include_router(legal_router)
+app.include_router(legal_admin_router)  # cada endpoint ya exige require_admin
 
 # Routes de PRODUCTO: requieren suscripción activa (trial vigente o pro).
 # Modelo pago-only — un usuario sin acceso recibe 403 (paywall) en cualquiera.

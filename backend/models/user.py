@@ -73,6 +73,12 @@ class User(Base):
     pending_email_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Cuándo aceptó los Términos y la Política al registrarse (migración 0039).
+    # NULL en las cuentas anteriores al checkbox: no se les puede inventar una
+    # fecha de aceptación que nunca ocurrió.
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Baja con gracia: si está seteado, la cuenta espera purga (30 días).
     # El login exitoso lo limpia (cancela la baja).
     deletion_requested_at: Mapped[datetime | None] = mapped_column(

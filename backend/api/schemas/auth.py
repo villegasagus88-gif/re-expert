@@ -11,6 +11,16 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     full_name: SanitizedStr = Field(..., min_length=1, max_length=255)
+    # Aceptación de Términos y Política. El checkbox del registro lo manda en
+    # true y la fecha queda guardada en `profiles.terms_accepted_at`, que es lo
+    # que le da respaldo probatorio.
+    #
+    # Opcional a propósito, y el backend NO rechaza si viene en false: Netlify
+    # cachea el HTML y el JS por separado, así que durante la ventana de deploy
+    # puede haber un navegador con el register.html viejo (sin checkbox) contra
+    # el backend nuevo. Rechazarlo ahí dejaría a gente real sin poder crear
+    # cuenta. El bloqueo real lo hace el frontend; acá se registra el hecho.
+    accepted_terms: bool = False
 
     @field_validator("password")
     @classmethod

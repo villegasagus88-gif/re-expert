@@ -56,6 +56,7 @@ async def register(request: Request, body: RegisterRequest):
         email=body.email,
         password=body.password,
         full_name=body.full_name,
+        accepted_terms=body.accepted_terms,
     )
 
 

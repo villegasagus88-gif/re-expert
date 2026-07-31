@@ -49,15 +49,22 @@ Hacé `git pull` de `main` y listo. Backend **y** frontend están live y al día
 ## 1. 🔑 Config en Railway — es lo que bloquea features enteras
 
 > ⚠️ **Antes de arrancar, una cuestión de orden.** Prender Mercado Pago es lo que
-> más desbloquea, pero **no lo prendas antes** de que estén: (a) los documentos
-> legales publicados y linkeados, (b) el checkbox de aceptación en el registro y
-> (c) el Botón de Arrepentimiento en la home. Hoy faltan los tres (sección 2).
-> Sin cobros eso es un incumplimiento formal; **con cobros es un incumplimiento
-> con consumidores que pagaron**, que es otra categoría. (a), (b) y (c) son
-> código nuestro: pedínoslos y salen rápido. Sumale que la cancelación todavía
-> corta el acceso en el acto aunque el período esté pagado (R16 en
-> `legal/RIESGOS-TECNICOS.md`) — también conviene resolverlo antes del primer
-> cobro real.
+> más desbloquea, pero antes tienen que estar tres cosas. Dos ya las hicimos:
+>
+> - ✅ **Botón de Arrepentimiento** — funcionando, visible en la home y en
+>   pricing (`arrepentimiento.html` + `POST /api/legal/arrepentimiento`).
+> - ✅ **Checkbox de aceptación en el registro** — arranca desmarcado y bloquea
+>   el alta, con links a los dos documentos.
+> - ✅ **Los documentos publicados** — Términos, Privacidad y Cookies se leen
+>   completos en `terminos.html` / `privacidad.html` / `cookies.html`. Lo único
+>   pendiente son tus datos de identificación, que aparecen marcados dentro del
+>   texto (sección 2). **Eso no lo podemos destrabar nosotros.**
+>
+> Sin cobros, publicar a medias es un incumplimiento formal; **con cobros es un
+> incumplimiento con consumidores que pagaron**, que es otra categoría. Sumale
+> que la cancelación todavía corta el acceso en el acto aunque el período esté
+> pagado (R16 en `legal/RIESGOS-TECNICOS.md`) — también conviene resolverlo antes
+> del primer cobro real.
 
 ### 1.1 Mercado Pago — hoy la sección Facturación está apagada
 
@@ -225,14 +232,33 @@ riesgos (8 ya corregidos en código: R3, R5, R7, R8, R9, R11, R15, R19). Lo que
 queda abierto de acá **es decisión o trámite tuyo/de Mati**, y conviene mirarlo
 antes de seguir sumando features:
 
-- **🔴 Botón de Arrepentimiento — obligación incumplida HOY.** La Resolución
-  424/2020 lo exige visible en la home y que inicie la revocación sin ningún otro
-  trámite. `grep -rni 'arrepentimiento' frontend/` da cero. Es sancionable por sí
-  solo.
-- **Los documentos no están publicados.**
-  `https://re-expert.netlify.app/legal/politica-de-privacidad.md` da 404 y en la
-  app las secciones legales siguen diciendo "Próximamente". Falta cablearlos +
-  checkbox de aceptación en el registro.
+- **✅ Botón de Arrepentimiento — HECHO.** Era la única obligación legal directa
+  e incumplida. Ya está: `arrepentimiento.html` (visible en la home y en pricing)
+  + `POST /api/legal/arrepentimiento`. No pide sesión ni justificación, que es
+  justo lo que la Resolución 424/2020 prohíbe exigir. El pedido se guarda en
+  tabla (`revocation_requests`) y no depende del mail: si Resend está caído, la
+  constancia igual queda. Vos lo ves en `GET /api/admin/revocaciones`.
+- **✅ Checkbox de aceptación en el registro — HECHO.** Arranca desmarcado
+  (precargarlo invalidaría el consentimiento) y bloquea el alta hasta tildarlo.
+- **✅ Los documentos ya se leen completos, ⏳ falta tu identificación.** Las
+  tres páginas (`terminos.html`, `privacidad.html`, `cookies.html`) están
+  publicadas y linkeadas desde la home, el registro, el login, pricing y el
+  panel de Ayuda.
+
+  Lo que ve el usuario NO es el `.md` de `legal/`: eso tiene 42 marcadores y
+  nuestras notas internas de `[LÍMITE LEGAL]` ("qué quisimos lograr y hasta
+  dónde llega la ley"), que publicadas serían un mapa de nuestras cláusulas más
+  débiles. `scripts/publicar_legales.py` genera la versión limpia en
+  `frontend/legal/`, y hay un test que falla si algo se filtra.
+
+  **Lo único que falta es que completes `frontend/legal-config.js`**: razón
+  social, CUIT, domicilio, casilla de contacto y fecha de vigencia. Hasta
+  entonces esos datos salen marcados como `[razón social — pendiente]` dentro
+  del texto, con un aviso de versión preliminar arriba. Completarlos los llena
+  solos en las tres páginas, sin tocar nada más.
+
+  Si además hay que cambiar el TEXTO, se edita el de `legal/` y se regenera con
+  `python scripts/publicar_legales.py`. Nunca a mano en `frontend/legal/`.
 - **Dominio y casilla de contacto.** Los tres documentos apuntan a
   `contacto@re-expert.app` (**17 menciones**: 7 en Términos, 9 en Privacidad, 1
   en Cookies). Necesitamos que confirmes que el dominio es nuestro y que esa
@@ -422,7 +448,7 @@ sección 1.
   cambiar cuál cobra, y recuperación cuando un cobro se rechaza. El número de
   tarjeta nunca llega al backend (lo tokeniza el SDK de MP en el navegador).
 - **`GET /api/account/export`** — derechos del titular (art. 14 de la 25.326 da
-  10 días). Devuelve las **29 colecciones** que cuelgan de la cuenta (eran 27
+  10 días). Devuelve las **30 colecciones** que cuelgan de la cuenta (eran 27
   hasta que Facturación sumó `tarjetas_guardadas` y `cobros_rechazados`). Va
   **sin gate de plan** a propósito, y no incluye credenciales ni los bytes de los
   planos.

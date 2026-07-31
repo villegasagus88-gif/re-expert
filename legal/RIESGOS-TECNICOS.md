@@ -43,12 +43,31 @@ no tiene base informada.
 **Falta:** cablear los documentos a esas dos secciones y a un link público en el footer.
 
 ### R12 — No existe Botón de Arrepentimiento
-**Evidencia:** `grep -rni 'arrepentimiento'` → cero resultados operativos.
+**Evidencia (al detectarlo):** `grep -rni 'arrepentimiento'` → cero resultados operativos.
 **Exposición:** la **Resolución 424/2020** de la Secretaría de Comercio Interior lo
 exige de forma **visible en la página de inicio** y que inicie la revocación sin ningún
 otro trámite. Es sancionable por sí solo, con independencia de lo que digan los T&C.
-**Es el único ítem de esta lista que es obligación legal directa e incumplida hoy.**
-**Tarea:** botón en la home + endpoint de revocación + aviso al titular.
+Era el único ítem de esta lista que era obligación legal directa e incumplida.
+
+**✅ CORREGIDO:** `frontend/arrepentimiento.html`, enlazado desde el footer de la home
+(destacado, no perdido entre los demás links) y desde `pricing.html`, que es donde se
+contrata. El endpoint es `POST /api/legal/arrepentimiento`.
+
+Tres decisiones que sostienen el cumplimiento y conviene no revertir sin pensarlo:
+
+- **No pide sesión.** Obligar a loguearse ES un trámite adicional, y quien quiere
+  arrepentirse puede no acordarse de la contraseña.
+- **No cancela ni reembolsa solo.** Sin sesión, un formulario público que diera de baja
+  suscripciones ajenas con sólo escribir un email sería un vector de abuso trivial. El
+  pedido queda registrado y se atiende dentro del plazo normativo.
+- **Se persiste en tabla (`revocation_requests`), no en un email.** El aviso es
+  best-effort porque `RESEND_API_KEY` puede no estar configurada: si el pedido viviera
+  sólo en un correo, un proveedor caído lo haría desaparecer y perderíamos la constancia
+  de algo que la ley obliga a atender. `processed_at` y `admin_note` son la trazabilidad.
+  El FK es `ondelete=SET NULL`: el pedido sobrevive a la baja de la cuenta.
+
+Sólo el email es obligatorio en el formulario; nombre y motivo son opcionales porque la
+ley prohíbe exigir justificación. Cubierto por `tests/test_legal_publicacion.py`.
 
 ### R8 — La app promete borrar "todos tus datos" y el código conserva el email
 **Evidencia:** promesa en `frontend/app.html:2866`; realidad en
@@ -153,7 +172,7 @@ exports son parciales (memoria de un workspace, bajar un plano).
 **Exposición:** art. 14 Ley 25.326 da **10 días corridos** para responder un pedido de
 acceso; habilita habeas data y sanción de la AAIP.
 **✅ CORREGIDO Y AMPLIADO:** `GET /api/account/export` (`api/routes/account_data.py`)
-devuelve un JSON con **las 21 tablas** que cuelgan de la cuenta (27 colecciones), con un
+devuelve un JSON con **todas las tablas** que cuelgan de la cuenta (30 colecciones), con un
 test que falla si mañana se agrega un modelo con datos del usuario y no se suma acá: conversaciones y mensajes, proyectos, pagos,
 planos (metadatos), workspaces y memoria, contactos, oportunidades, recordatorios,
 canales y ubicaciones. **No incluye credenciales** (hash de contraseña, secreto de 2FA,
@@ -207,10 +226,34 @@ Facturación" para cancelar, y para poder darse de baja hay que cancelar primero
 ese camino no existe.**
 
 ### R18 — Sin punto de aceptación de los documentos
-No hay enlaces legales en el footer, ni checkbox de aceptación en el registro, y las
-secciones "Términos" y "Privacidad" muestran "Próximamente". **Un contrato que declara
-que el usuario acepta al registrarse, sin un punto de aceptación registrable, no tiene
-respaldo probatorio.**
+**Evidencia (al detectarlo):** no había enlaces legales en el footer, ni checkbox de
+aceptación en el registro, y las secciones "Términos" y "Privacidad" mostraban
+"Próximamente". **Un contrato que declara que el usuario acepta al registrarse, sin un
+punto de aceptación registrable, no tiene respaldo probatorio.**
+
+**✅ CORREGIDO en la infraestructura, ⏳ pendiente el contenido.** Ya están: el checkbox
+en `register.html` (arranca DESMARCADO — precargarlo invalidaría el consentimiento — y
+bloquea el alta), los enlaces legales en la home, el login, el registro y pricing, y las
+páginas `privacidad.html` / `terminos.html` / `cookies.html`. El panel de Ayuda dejó de
+decir "Próximamente" y linkea a los documentos.
+
+Los tres documentos **ya se leen completos** en `terminos.html`, `privacidad.html` y
+`cookies.html`. Lo publicado no es el `.md` de trabajo: `scripts/publicar_legales.py`
+genera una versión limpia en `frontend/legal/` que saca el encabezado de BORRADOR, el
+anexo de marcadores y **todos los bloques `[REVISIÓN LEGAL]` y `[LÍMITE LEGAL]`** —
+publicar esas notas sería entregarle a la contraparte el detalle de qué cláusulas
+sabemos que son débiles y por qué. Un test falla si alguna se filtra.
+
+**Lo que falta y no se resuelve con código:** los datos de identificación del
+responsable. Viajan como tokens (`{{titular}}`, `{{cuit}}`, `{{domicilio}}`,
+`{{email}}`) que `legal.js` reemplaza con lo que haya en `frontend/legal-config.js`.
+Mientras estén vacíos se muestran como `[razón social — pendiente]` dentro del texto,
+con un aviso de versión preliminar arriba que los enumera.
+
+Se eligió **declarar el hueco antes que esconder el documento**: no tener publicadas las
+condiciones es un incumplimiento en sí mismo y el usuario tiene derecho a leer lo que se
+le aplica, mientras que inventar una razón social sería peor que cualquiera de las dos.
+Completar `legal-config.js` cierra el riesgo sin tocar nada más.
 
 ### R19 — El logout no limpia la memoria de voz del navegador
 `authService.js` borra ACCESS/REFRESH/USER/FLAG pero **no `re_voice_memory`**, que
