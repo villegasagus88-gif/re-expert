@@ -1169,6 +1169,16 @@ a.cor-meta-item:hover svg{color:var(--accent-brand)}
 @media (max-width:560px){.vc-rec-hint{display:none}}
 @media (prefers-reduced-motion:reduce){.vc-rec,.vc-rec-dot{animation:none}}
 
+/* Pregunta con opciones clickeables (bloque ```opciones del asesor):
+   tocás una opción y se envía como respuesta — estilo widget de ChatGPT. */
+.chat-opts{margin:10px 0 4px;padding:13px 15px;border:1px solid var(--border-1);border-radius:13px;background:var(--bg-card)}
+.chat-opts-q{font-size:13px;font-weight:700;color:var(--text-0);margin-bottom:10px}
+.chat-opts-list{display:flex;flex-wrap:wrap;gap:8px}
+.chat-opt{padding:8px 15px;border-radius:999px;border:1px solid var(--border-1);background:var(--bg-2);color:var(--text-1);font-size:12.5px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:left;transition:all .15s var(--ease-out)}
+.chat-opt:hover:not(:disabled){border-color:var(--accent-brand);color:var(--accent-brand);transform:translateY(-1px)}
+.chat-opt:disabled{opacity:.5;cursor:default}
+.chat-opt.chosen{background:var(--accent-brand);border-color:var(--accent-brand);color:#fff;opacity:1}
+
 /* Sitio nombrado en la conversación = link discreto: misma tipografía y
    color del texto, solo una leve línea abajo; al hover toma el color marca. */
 .message-text .vc-sitelink{color:inherit;font:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--accent-brand) 50%,transparent);transition:color .15s,text-decoration-color .15s}

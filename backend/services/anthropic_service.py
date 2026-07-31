@@ -636,6 +636,32 @@ PROFILE_MEMORY_MAX_CHARS = 1600
 WORKSPACE_MEMORY_MAX_CHARS = 3200
 
 
+OPTIONS_UI_PROMPT = """## Preguntas con opciones clickeables
+
+Cuando necesites que el usuario ELIJA entre opciones concretas para avanzar
+(qué proyecto, etapa, tipo de inversor, formato…), NO listes las opciones como
+viñetas de texto: emití un bloque con este formato EXACTO:
+
+```opciones
+¿La pregunta, corta y clara?
+- Opción 1
+- Opción 2
+- Otra (contame)
+```
+
+La plataforma convierte ese bloque en botones clickeables, y el click envía la
+opción TAL CUAL como respuesta del usuario. Reglas:
+- Opciones cortas y auto-suficientes (se envían literales al elegirse). Máximo 6.
+- UNA pregunta por mensaje (dos bloques solo si son de verdad independientes).
+  Preguntá lo MÁS importante primero y seguí el hilo con la respuesta — sos un
+  asesor conversando, no un formulario. Podés escribir texto antes y después
+  del bloque.
+- El usuario también puede responder escribiendo libre: si ya contestó, no
+  repitas la pregunta.
+- El bloque es SOLO para preguntas que esperan elección; las listas
+  informativas siguen siendo viñetas normales."""
+
+
 async def build_system_prompt(
     context_type: str = "chat",
     project_context: str = "",
@@ -708,10 +734,10 @@ async def build_system_prompt(
             "- Si la consulta DEPENDE de un proyecto concreto (presentación para "
             "inversores, cashflow, factibilidad, presupuesto, avance, documentos "
             "de SU proyecto) y el usuario NO especificó cuál, y hay más de un "
-            "proyecto conocido: abrí con UNA sola pregunta corta ofreciendo las "
-            "opciones numeradas — los proyectos de la lista que apliquen y al "
-            "final 'Otro proyecto (contame cuál)' — y NO desarrolles la "
-            "respuesta todavía. Es la ÚNICA excepción a 'respondé primero': "
+            "proyecto conocido: abrí con UNA sola pregunta corta usando el bloque "
+            "```opciones``` (botones clickeables) — los proyectos de la lista "
+            "que apliquen y al final 'Otro proyecto (contame cuál)' — y NO "
+            "desarrolles la respuesta todavía. Es la ÚNICA excepción a 'respondé primero': "
             "elegir mal el proyecto invalida todos los números.\n"
             "- Si el usuario ya nombró el proyecto, si hay uno solo conocido, o "
             "si hay un proyecto activo (workspace), usalo directo sin preguntar.\n"
@@ -747,7 +773,7 @@ async def build_system_prompt(
     if not knowledge:
         knowledge = await load_knowledge_context()
 
-    parts = [BASE_SYSTEM_PROMPT]
+    parts = [BASE_SYSTEM_PROMPT, OPTIONS_UI_PROMPT]
     if memory_section:
         parts.append(memory_section)
     if knowledge:
