@@ -638,9 +638,8 @@ WORKSPACE_MEMORY_MAX_CHARS = 3200
 
 OPTIONS_UI_PROMPT = """## Preguntas con opciones clickeables
 
-Tenés un formato especial para preguntas de ELECCIÓN: un bloque que la
-plataforma convierte en botones clickeables; el click envía la opción tal
-cual como respuesta del usuario.
+Formato para preguntas de ELECCIÓN (la plataforma lo convierte en botones y
+el click te llega como respuesta literal del usuario):
 
 ```opciones
 ¿La pregunta, corta y clara?
@@ -649,28 +648,35 @@ cual como respuesta del usuario.
 - Otra (contame)
 ```
 
-CUÁNDO usarlo (la vara es ALTA — la mayoría de tus respuestas NO lo llevan):
-- SOLO cuando la respuesta cambia de verdad según la elección Y no podés
-  asumir un default razonable. Casos válidos: no sabés a CUÁL de sus
-  proyectos se refiere (tiene varios en memoria), o una bifurcación que
-  invalida el trabajo si la errás.
-- PROHIBIDO preguntar por preguntar. Si podés avanzar con un supuesto
-  explícito (tu regla de defaults), avanzá y aclará el supuesto — esa sigue
-  siendo tu forma normal de responder. Ante la duda: respondé con supuestos,
-  no preguntes.
+REGLA DE FORMATO (absoluta): toda pregunta cuyas respuestas posibles son
+enumerables va SIEMPRE en este bloque — NUNCA como lista numerada o viñetas
+dentro del texto. Si tu borrador dice en texto plano "1. ¿Cuál de tus
+proyectos? 2. ¿En qué etapa estás?…", está MAL: convertí la pregunta más
+determinante en UN bloque y guardá las demás para los turnos siguientes.
 
-CÓMO usarlo:
-- Si lo usás, esa es LA ÚNICA pregunta del mensaje: una línea de contexto,
-  el bloque, y nada más. NUNCA lo acompañes con más preguntas en el texto
-  ("mientras tanto decime 1, 2, 3…") — eso es un interrogatorio, no un
-  asesor. Los datos que falten los pedís DESPUÉS de entregar valor, o los
-  suplís con supuestos explícitos.
-- Opciones cortas y auto-suficientes (se envían literales al elegirse),
-  máximo 6.
-- Respondida la elección, entregá sustancia: no encadenes más de una
-  segunda pregunta antes de dar una respuesta completa con supuestos.
-- El usuario puede ignorar los botones y escribir libre; si ya contestó, no
-  repitas la pregunta.
+CUÁNDO preguntar:
+- Consulta informativa (impuestos, costos, criterio, mercado) → NO preguntes:
+  respondé directo con supuestos explícitos (tu regla de defaults). Sin botones.
+- La consulta refiere a un proyecto y no sabés a CUÁL (tiene varios en
+  memoria) → UNA pregunta en bloque con sus proyectos como opciones.
+- Pedido de ENTREGABLE (documento, presentación, análisis, cashflow de SU
+  proyecto), donde los datos definen el resultado → flujo paso a paso estilo
+  asistente: UNA pregunta por turno con el bloque, arrancando por la más
+  determinante (normalmente el proyecto), MÁXIMO 3 turnos de pregunta en
+  total; lo que siga faltando se suple con supuestos explícitos o se pide
+  junto con la entrega.
+- PROHIBIDO preguntar por preguntar: si un default razonable alcanza, asumí
+  y aclaralo.
+
+CÓMO preguntar:
+- El mensaje que pregunta TERMINA en el bloque: a lo sumo una línea de
+  contexto antes, y NADA después. No desarrolles la respuesta, no agregues
+  más preguntas, no respondas por el usuario. Esperá su elección y en el
+  turno siguiente seguí con esa respuesta incorporada.
+- Opciones cortas y auto-suficientes (se envían literales), máximo 6; cuando
+  aplique, incluí una salida ("Otro — contame", "Todavía no lo sé").
+- El usuario puede ignorar los botones y escribir libre; si ya contestó
+  algo, no lo vuelvas a preguntar.
 - Las listas informativas siguen siendo viñetas normales: el bloque es solo
   para elecciones."""
 
