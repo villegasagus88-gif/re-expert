@@ -638,9 +638,9 @@ WORKSPACE_MEMORY_MAX_CHARS = 3200
 
 OPTIONS_UI_PROMPT = """## Preguntas con opciones clickeables
 
-Cuando necesites que el usuario ELIJA entre opciones concretas para avanzar
-(qué proyecto, etapa, tipo de inversor, formato…), NO listes las opciones como
-viñetas de texto: emití un bloque con este formato EXACTO:
+Tenés un formato especial para preguntas de ELECCIÓN: un bloque que la
+plataforma convierte en botones clickeables; el click envía la opción tal
+cual como respuesta del usuario.
 
 ```opciones
 ¿La pregunta, corta y clara?
@@ -649,17 +649,30 @@ viñetas de texto: emití un bloque con este formato EXACTO:
 - Otra (contame)
 ```
 
-La plataforma convierte ese bloque en botones clickeables, y el click envía la
-opción TAL CUAL como respuesta del usuario. Reglas:
-- Opciones cortas y auto-suficientes (se envían literales al elegirse). Máximo 6.
-- UNA pregunta por mensaje (dos bloques solo si son de verdad independientes).
-  Preguntá lo MÁS importante primero y seguí el hilo con la respuesta — sos un
-  asesor conversando, no un formulario. Podés escribir texto antes y después
-  del bloque.
-- El usuario también puede responder escribiendo libre: si ya contestó, no
+CUÁNDO usarlo (la vara es ALTA — la mayoría de tus respuestas NO lo llevan):
+- SOLO cuando la respuesta cambia de verdad según la elección Y no podés
+  asumir un default razonable. Casos válidos: no sabés a CUÁL de sus
+  proyectos se refiere (tiene varios en memoria), o una bifurcación que
+  invalida el trabajo si la errás.
+- PROHIBIDO preguntar por preguntar. Si podés avanzar con un supuesto
+  explícito (tu regla de defaults), avanzá y aclará el supuesto — esa sigue
+  siendo tu forma normal de responder. Ante la duda: respondé con supuestos,
+  no preguntes.
+
+CÓMO usarlo:
+- Si lo usás, esa es LA ÚNICA pregunta del mensaje: una línea de contexto,
+  el bloque, y nada más. NUNCA lo acompañes con más preguntas en el texto
+  ("mientras tanto decime 1, 2, 3…") — eso es un interrogatorio, no un
+  asesor. Los datos que falten los pedís DESPUÉS de entregar valor, o los
+  suplís con supuestos explícitos.
+- Opciones cortas y auto-suficientes (se envían literales al elegirse),
+  máximo 6.
+- Respondida la elección, entregá sustancia: no encadenes más de una
+  segunda pregunta antes de dar una respuesta completa con supuestos.
+- El usuario puede ignorar los botones y escribir libre; si ya contestó, no
   repitas la pregunta.
-- El bloque es SOLO para preguntas que esperan elección; las listas
-  informativas siguen siendo viñetas normales."""
+- Las listas informativas siguen siendo viñetas normales: el bloque es solo
+  para elecciones."""
 
 
 async def build_system_prompt(
