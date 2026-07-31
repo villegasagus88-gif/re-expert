@@ -643,6 +643,7 @@ async def build_system_prompt(
     profile_items: list[tuple[str, str]] | None = None,
     workspace_memory: list[tuple[str, str]] | None = None,
     workspace_name: str | None = None,
+    known_projects: list[str] | None = None,
 ) -> str:
     """
     Arma el system prompt para el request actual.
@@ -690,7 +691,42 @@ async def build_system_prompt(
             "Contexto del proyecto activo", workspace_memory, WORKSPACE_MEMORY_MAX_CHARS
         )
 
-    memory_section = "\n\n".join(b for b in (profile_block, workspace_block) if b)
+    # Memoria transversal de proyectos: el chat sabe en qué anda el usuario
+    # aunque la conversación sea nueva y suelta. Si la consulta depende de un
+    # proyecto y no dice cuál, pregunta con opciones (estilo asesor que conoce
+    # al cliente) ANTES de desarrollar — única excepción a "respondé primero".
+    projects_block = ""
+    # Solo para el Chat Experto: SOL ya recibe su propio contexto de proyecto.
+    if known_projects and context_type == "chat":
+        listado = "\n".join(f"{i + 1}. {n}" for i, n in enumerate(known_projects))
+        projects_block = (
+            "## Proyectos del usuario (memoria de la plataforma)\n"
+            "Estos son los proyectos en los que el usuario trabaja o trabajó, "
+            "según la plataforma y chats anteriores:\n"
+            f"{listado}\n\n"
+            "Cómo usar esta lista:\n"
+            "- Si la consulta DEPENDE de un proyecto concreto (presentación para "
+            "inversores, cashflow, factibilidad, presupuesto, avance, documentos "
+            "de SU proyecto) y el usuario NO especificó cuál, y hay más de un "
+            "proyecto conocido: abrí con UNA sola pregunta corta ofreciendo las "
+            "opciones numeradas — los proyectos de la lista que apliquen y al "
+            "final 'Otro proyecto (contame cuál)' — y NO desarrolles la "
+            "respuesta todavía. Es la ÚNICA excepción a 'respondé primero': "
+            "elegir mal el proyecto invalida todos los números.\n"
+            "- Si el usuario ya nombró el proyecto, si hay uno solo conocido, o "
+            "si hay un proyecto activo (workspace), usalo directo sin preguntar.\n"
+            "- Definido el proyecto, respondé con tu estilo de asesor de siempre.\n"
+            "- Si el usuario nombra un proyecto NUEVO que no está en la lista, "
+            "guardalo con remember(scope='profile', key='proyecto_<slug_corto>', "
+            "value='<nombre>, <una línea de contexto>') así queda en su memoria "
+            "para los próximos chats.\n"
+            "- La lista puede estar desactualizada: si el usuario dice que un "
+            "proyecto ya no existe o cambió de nombre, creele a él."
+        )
+
+    memory_section = "\n\n".join(
+        b for b in (profile_block, projects_block, workspace_block) if b
+    )
 
     if context_type == "sol":
         parts = [SOL_SYSTEM_PROMPT]

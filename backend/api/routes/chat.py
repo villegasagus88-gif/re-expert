@@ -40,6 +40,7 @@ from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
 from models.message import Message
+from models.plan_analysis import PlanProject
 from models.project import Project
 from models.user import User
 from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
@@ -161,6 +162,45 @@ async def _load_profile_items(
         )
     )
     return [(i.key, i.value) for i in result.scalars().all()]
+
+
+async def _load_known_projects(
+    db: AsyncSession, user_id: UUID
+) -> list[str]:
+    """Memoria transversal: los proyectos del usuario en TODA la plataforma.
+
+    Junta workspaces, proyectos del Panel y proyectos de Planos (los más
+    recientes primero) para que el chat sepa en qué anda el usuario aunque
+    la conversación sea nueva y suelta. Best-effort: nunca rompe el chat.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+
+    def _add(n: str | None) -> None:
+        n = (n or "").strip()
+        if n and n.lower() not in seen and n.lower() not in ("mi proyecto", "nueva conversación"):
+            seen.add(n.lower())
+            names.append(n[:80])
+
+    try:
+        for row in (await db.execute(
+            select(Workspace.name).where(Workspace.user_id == user_id)
+            .order_by(Workspace.updated_at.desc()).limit(6)
+        )).scalars():
+            _add(row)
+        for row in (await db.execute(
+            select(Project.nombre).where(Project.user_id == user_id)
+            .order_by(Project.updated_at.desc()).limit(6)
+        )).scalars():
+            _add(row)
+        for row in (await db.execute(
+            select(PlanProject.name).where(PlanProject.user_id == user_id)
+            .order_by(PlanProject.created_at.desc()).limit(6)
+        )).scalars():
+            _add(row)
+    except Exception:  # noqa: BLE001 — la memoria nunca tumba el chat
+        logger.exception("known_projects: fallo cargando proyectos")
+    return names[:8]
 
 
 async def _load_workspace_memory(
@@ -526,8 +566,16 @@ async def chat(
     profile_items: list[tuple[str, str]] = []
     workspace_memory: list[tuple[str, str]] = []
     workspace_name: str | None = None
+    known_projects: list[str] = []
     try:
         profile_items = await _load_profile_items(db, current_user.id)
+        known_projects = await _load_known_projects(db, current_user.id)
+        # Proyectos que el propio chat guardó con remember(scope='profile')
+        for k, v in profile_items:
+            if k.startswith("proyecto"):
+                nom = (v.split(",")[0] or "").strip()[:80]
+                if nom and nom.lower() not in {n.lower() for n in known_projects}:
+                    known_projects.append(nom)
         if conv.workspace_id is not None:
             workspace_memory = await _load_workspace_memory(db, conv.workspace_id)
             ws_obj = await db.get(Workspace, conv.workspace_id)
@@ -543,6 +591,7 @@ async def chat(
         profile_items=profile_items,
         workspace_memory=workspace_memory,
         workspace_name=workspace_name,
+        known_projects=known_projects,
     )
 
     conv_id_str = str(conv.id)
