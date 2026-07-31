@@ -1,3 +1,14 @@
+# ⛔ OBSOLETO (2026-06-22) — usá `docs/PARA_AGUS.md`
+
+> **Este documento quedó viejo y contradice el estado real.** Su punto 0 dice que
+> el frontend no se está publicando en Netlify: eso ya está resuelto. Se conserva
+> sólo como registro histórico del launch.
+>
+> 👉 **Lo vigente está en [`PARA_AGUS.md`](PARA_AGUS.md)** (nombre casi igual, no
+> te confundas: ese es el que se mantiene actualizado).
+
+---
+
 # Para Agustín — qué activar para terminar el launch
 
 > Estado al 2026-06-22. En `main` ya está: modelo **pago-only** con trial de

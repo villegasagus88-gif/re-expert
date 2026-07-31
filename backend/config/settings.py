@@ -56,7 +56,11 @@ class Settings(BaseSettings):
     # vacíos, TODO el módulo de MP es inerte y el backend se comporta como antes.
     # Cargar en Railway cuando Agustín cree el plan en Mercado Pago.
     MP_ACCESS_TOKEN: str = ""          # access token privado (Bearer). SECRET.
-    MP_PUBLIC_KEY: str = ""            # public key (para MP.js en el front, opcional).
+    # Public key del SDK de MP en el navegador. Dejó de ser opcional cuando
+    # entraron las tarjetas guardadas: el formulario tokeniza del lado del
+    # cliente y sin esta key no se puede agregar ninguna tarjeta (el checkout
+    # viejo por redirect sí funcionaba sin ella).
+    MP_PUBLIC_KEY: str = ""
     MP_WEBHOOK_SECRET: str = ""        # secreto para verificar la firma del webhook.
     MP_PLAN_ID: str = ""              # id del preapproval_plan (con trial de 7 días).
     MP_BACK_URL: str = ""             # URL de retorno post-checkout. Default: FRONTEND_URL/app.html

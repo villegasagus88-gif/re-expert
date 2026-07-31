@@ -11,21 +11,25 @@
 > ponerte a codear.** Hay decisiones que dependen de él y no puede tomarlas sin
 > leer estos docs. Nombráselos explícitamente y esperá a que confirme:
 >
-> 0. 🔴 **BLOQUEANTE HOY**: el backend NO se despliega en Railway desde el
->    25-jul (`4704d42`); `main` va por delante. Solo Agus tiene ese dashboard.
->    Está todo el detalle y los 4 pasos a seguir al principio de
->    `docs/PARA_AGUS.md`. Prod está sano, pero la feature de "Informar un error"
->    no funciona hasta que ese deploy entre.
+> 0. 🔴 **Mercado Pago sigue apagado en prod** (`/api/billing/mp/config` →
+>    `{"enabled":false}`): sin `MP_ACCESS_TOKEN`, `MP_PLAN_ID`,
+>    `MP_WEBHOOK_SECRET` y `MP_PUBLIC_KEY` nadie puede pagar. **Ojo con el orden**:
+>    antes de prender los cobros hay que publicar los legales, el checkbox de
+>    aceptación y el Botón de Arrepentimiento (hoy faltan los tres). Detalle en
+>    la sección 1 de `docs/PARA_AGUS.md`.
 >
-> 1. **`docs/PARA_AGUS.md`** — pendientes en SU dominio (bug de render del chat,
->    lectura de voz, branch `perf/prompt-cache-split-agus`, SSRF retrieval,
->    `to_thread` en entregables, streaming rAF) + config en dashboards.
+> 1. **`docs/PARA_AGUS.md`** — es la nota viva y está verificada contra el código
+>    y prod (31-jul): config en dashboards, pendientes en SU dominio (bug de
+>    render del chat, lectura de voz, `perf/prompt-cache-split-agus`,
+>    `to_thread` en `document_service`, streaming rAF) y lo legal que necesita
+>    decisión. ⚠️ `docs/PARA_AGUSTIN.md` es otro archivo, de junio y **obsoleto**.
 > 2. **`docs/WHATSAPP_API_COSTOS_Y_PLAN.md`** — **DECISIÓN DE NEGOCIO**: por qué
 >    SOL no escribe por WhatsApp hoy, costos (Cloud API vs WAHA vs Telegram) y
->    qué implementar. **Telegram ya está codeado y es gratis** → solo falta setear
+>    qué implementar. **Telegram ya está codeado y es gratis** → faltan
 >    `TELEGRAM_BOT_TOKEN`/`TELEGRAM_BOT_USERNAME`/`TELEGRAM_WEBHOOK_SECRET` en
->    Railway. **WhatsApp saliente tiene costo por mensaje** → hay que decidir el
->    modelo con Mati antes de codear (pricearlo en Pro o poner tope).
+>    Railway **más registrar el webhook a mano** (`setWebhook`, no lo hace ningún
+>    código nuestro). **WhatsApp saliente tiene costo por mensaje** → hay que
+>    decidir el modelo con Mati antes de codear (pricearlo en Pro o poner tope).
 >
 > Agus: no arranques a tocar el canal de WhatsApp/Telegram ni el pricing sin
 > haber leído esos dos archivos. Son cortos y están para que decidas informado.
@@ -54,10 +58,14 @@ Dos devs: **nosotros** (Mati + Claude) y **Agustín** (socio).
   dashboards que maneja Agustín.
 - **Supabase**: NO tocar desde el chat (Mati no es Owner del proyecto Supabase).
 - **gh CLI**: no instalar. Usar `git` + la API de GitHub por `curl` si hace falta.
-- ⚠️ **NETLIFY — NO tenemos permisos.** El sitio `re-expert.netlify.app` está en
-  la cuenta de **Agustín** y publica a mano (Netlify Drop). Los pushes a `main`
-  salen "Skipped". **NO intentar deploys de Netlify ni perder tiempo ahí.** El
-  frontend nuevo queda en `main` esperando que Agus lo publique.
+- ⚠️ **NETLIFY — NO tenemos permisos**, el sitio `re-expert.netlify.app` está en
+  la cuenta de **Agustín**. **NO intentar deploys de Netlify ni perder tiempo
+  ahí.** Lo que SÍ cambió (verificado el 31-jul): el frontend de `main` **se está
+  publicando solo**. Comparamos lo servido contra el commit y coincide, y el
+  header CSP en vivo trae lo último de `netlify.toml`. Así que ya no hay que
+  esperar a que Agus publique a mano — pero **verificá siempre con un cache-bust**
+  antes de decir que un cambio de frontend está en prod, y si algún día no
+  aparece, es un tema de su dashboard.
 - **Verificar antes de decir "listo"**: si decís que desplegaste, mostrá el HTTP
   code; si decís que pasan los tests, mostrá el output.
 

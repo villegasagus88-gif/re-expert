@@ -37,7 +37,7 @@ Railway → proyecto → Variables. Cargar estas 4 (las 2 opcionales solo si apl
 | `MP_ACCESS_TOKEN` | Access Token del paso 1.1 (secreto) | **Sí** |
 | `MP_PLAN_ID` | plan_id del paso 1.2 | **Sí** (para la suscripción) |
 | `MP_WEBHOOK_SECRET` | clave de firma del webhook, paso 1.3 | **Sí** (en prod, si falta, el webhook rechaza con 503 — fail-closed a propósito) |
-| `MP_PUBLIC_KEY` | Public Key del paso 1.1 | Opcional (no se usa en el flujo redirect) |
+| `MP_PUBLIC_KEY` | Public Key del paso 1.1 | **Sí** — el formulario de tarjetas guardadas tokeniza en el navegador con el SDK de MP y la necesita. (Era opcional cuando el único flujo era el checkout por redirect.) |
 | `MP_BACK_URL` | URL de retorno post-pago | Opcional. Default = `FRONTEND_URL/app.html` |
 | `FRONTEND_URL` | ya debería estar seteada (dominio del front) | Ya seteada |
 
