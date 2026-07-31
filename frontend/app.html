@@ -5200,9 +5200,9 @@ function initVoice(){
   // Observer del chat: botones "Escuchar" + links de entidades nombradas
   // (estilo Google Docs) en TODO mensaje del asistente ya terminado —
   // también el historial y las respuestas del chat normal.
-  new MutationObserver(()=>{clearTimeout(vcState._obsT);vcState._obsT=setTimeout(()=>{vcLinkifyAll();if(VC_TTS)vcAddListenBtns();},250);})
+  new MutationObserver(()=>{clearTimeout(vcState._obsT);vcState._obsT=setTimeout(()=>{vcLinkifyAll();chatOptionsRender();if(VC_TTS)vcAddListenBtns();},250);})
     .observe(els.messagesEl,{childList:true,subtree:true});
-  vcLinkifyAll();
+  vcLinkifyAll();chatOptionsRender();
   if(VC_TTS){vcState.voice=vcPickVoice();vcAddListenBtns();}
 }
 function vcLinkifyAll(){
@@ -5212,6 +5212,37 @@ function vcLinkifyAll(){
       if(t.querySelector('.typing-indicator'))return;
       t.dataset.vclink='1';
       vcLinkifySites(t);
+    });
+  }catch(e){}
+}
+
+// ── Preguntas con opciones clickeables (bloques ```opciones del asesor) ──
+// El modelo emite un fence con lenguaje "opciones" (1ª línea = pregunta,
+// líneas "- " = opciones); acá se convierte en botones. Click = se envía la
+// opción como respuesta por el MISMO sendMessage de siempre. Si algo falla,
+// queda el bloque de texto tal cual: degradación sin roturas.
+function chatOptionsRender(){
+  try{
+    els.messagesEl.querySelectorAll('.message-assistant .message-text pre>code[class*="language-opciones"]').forEach(code=>{
+      const pre=code.closest('pre');
+      if(!pre||pre.closest('#streamMsg'))return;
+      const lines=code.textContent.split('\n').map(l=>l.trim()).filter(Boolean);
+      if(lines.length<2)return;
+      const q=lines[0];
+      const opts=lines.slice(1).filter(l=>/^[-*•]\s+/.test(l)).map(l=>l.replace(/^[-*•]\s+/,'').trim()).filter(Boolean).slice(0,6);
+      if(!opts.length)return;
+      const w=document.createElement('div');
+      w.className='chat-opts';
+      w.innerHTML='<div class="chat-opts-q">'+esc(q)+'</div>'
+        +'<div class="chat-opts-list">'+opts.map(o=>'<button class="chat-opt" type="button">'+esc(o)+'</button>').join('')+'</div>';
+      pre.replaceWith(w);
+      w.querySelectorAll('.chat-opt').forEach(b=>b.addEventListener('click',()=>{
+        if(w.classList.contains('answered')||state.isStreaming)return;
+        w.classList.add('answered');
+        b.classList.add('chosen');
+        w.querySelectorAll('.chat-opt').forEach(x=>x.disabled=true);
+        try{sendMessage(b.textContent);}catch(e){}
+      }));
     });
   }catch(e){}
 }

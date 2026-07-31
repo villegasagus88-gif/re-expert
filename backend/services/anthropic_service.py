@@ -636,6 +636,51 @@ PROFILE_MEMORY_MAX_CHARS = 1600
 WORKSPACE_MEMORY_MAX_CHARS = 3200
 
 
+OPTIONS_UI_PROMPT = """## Preguntas con opciones clickeables
+
+Formato para preguntas de ELECCIÓN (la plataforma lo convierte en botones y
+el click te llega como respuesta literal del usuario):
+
+```opciones
+¿La pregunta, corta y clara?
+- Opción 1
+- Opción 2
+- Otra (contame)
+```
+
+REGLA DE FORMATO (absoluta): toda pregunta cuyas respuestas posibles son
+enumerables va SIEMPRE en este bloque — NUNCA como lista numerada o viñetas
+dentro del texto. Si tu borrador dice en texto plano "1. ¿Cuál de tus
+proyectos? 2. ¿En qué etapa estás?…", está MAL: convertí la pregunta más
+determinante en UN bloque y guardá las demás para los turnos siguientes.
+
+CUÁNDO preguntar:
+- Consulta informativa (impuestos, costos, criterio, mercado) → NO preguntes:
+  respondé directo con supuestos explícitos (tu regla de defaults). Sin botones.
+- La consulta refiere a un proyecto y no sabés a CUÁL (tiene varios en
+  memoria) → UNA pregunta en bloque con sus proyectos como opciones.
+- Pedido de ENTREGABLE (documento, presentación, análisis, cashflow de SU
+  proyecto), donde los datos definen el resultado → flujo paso a paso estilo
+  asistente: UNA pregunta por turno con el bloque, arrancando por la más
+  determinante (normalmente el proyecto), MÁXIMO 3 turnos de pregunta en
+  total; lo que siga faltando se suple con supuestos explícitos o se pide
+  junto con la entrega.
+- PROHIBIDO preguntar por preguntar: si un default razonable alcanza, asumí
+  y aclaralo.
+
+CÓMO preguntar:
+- El mensaje que pregunta TERMINA en el bloque: a lo sumo una línea de
+  contexto antes, y NADA después. No desarrolles la respuesta, no agregues
+  más preguntas, no respondas por el usuario. Esperá su elección y en el
+  turno siguiente seguí con esa respuesta incorporada.
+- Opciones cortas y auto-suficientes (se envían literales), máximo 6; cuando
+  aplique, incluí una salida ("Otro — contame", "Todavía no lo sé").
+- El usuario puede ignorar los botones y escribir libre; si ya contestó
+  algo, no lo vuelvas a preguntar.
+- Las listas informativas siguen siendo viñetas normales: el bloque es solo
+  para elecciones."""
+
+
 async def build_system_prompt(
     context_type: str = "chat",
     project_context: str = "",
@@ -643,6 +688,7 @@ async def build_system_prompt(
     profile_items: list[tuple[str, str]] | None = None,
     workspace_memory: list[tuple[str, str]] | None = None,
     workspace_name: str | None = None,
+    known_projects: list[str] | None = None,
 ) -> str:
     """
     Arma el system prompt para el request actual.
@@ -690,7 +736,42 @@ async def build_system_prompt(
             "Contexto del proyecto activo", workspace_memory, WORKSPACE_MEMORY_MAX_CHARS
         )
 
-    memory_section = "\n\n".join(b for b in (profile_block, workspace_block) if b)
+    # Memoria transversal de proyectos: el chat sabe en qué anda el usuario
+    # aunque la conversación sea nueva y suelta. Si la consulta depende de un
+    # proyecto y no dice cuál, pregunta con opciones (estilo asesor que conoce
+    # al cliente) ANTES de desarrollar — única excepción a "respondé primero".
+    projects_block = ""
+    # Solo para el Chat Experto: SOL ya recibe su propio contexto de proyecto.
+    if known_projects and context_type == "chat":
+        listado = "\n".join(f"{i + 1}. {n}" for i, n in enumerate(known_projects))
+        projects_block = (
+            "## Proyectos del usuario (memoria de la plataforma)\n"
+            "Estos son los proyectos en los que el usuario trabaja o trabajó, "
+            "según la plataforma y chats anteriores:\n"
+            f"{listado}\n\n"
+            "Cómo usar esta lista:\n"
+            "- Si la consulta DEPENDE de un proyecto concreto (presentación para "
+            "inversores, cashflow, factibilidad, presupuesto, avance, documentos "
+            "de SU proyecto) y el usuario NO especificó cuál, y hay más de un "
+            "proyecto conocido: abrí con UNA sola pregunta corta usando el bloque "
+            "```opciones``` (botones clickeables) — los proyectos de la lista "
+            "que apliquen y al final 'Otro proyecto (contame cuál)' — y NO "
+            "desarrolles la respuesta todavía. Es la ÚNICA excepción a 'respondé primero': "
+            "elegir mal el proyecto invalida todos los números.\n"
+            "- Si el usuario ya nombró el proyecto, si hay uno solo conocido, o "
+            "si hay un proyecto activo (workspace), usalo directo sin preguntar.\n"
+            "- Definido el proyecto, respondé con tu estilo de asesor de siempre.\n"
+            "- Si el usuario nombra un proyecto NUEVO que no está en la lista, "
+            "guardalo con remember(scope='profile', key='proyecto_<slug_corto>', "
+            "value='<nombre>, <una línea de contexto>') así queda en su memoria "
+            "para los próximos chats.\n"
+            "- La lista puede estar desactualizada: si el usuario dice que un "
+            "proyecto ya no existe o cambió de nombre, creele a él."
+        )
+
+    memory_section = "\n\n".join(
+        b for b in (profile_block, projects_block, workspace_block) if b
+    )
 
     if context_type == "sol":
         parts = [SOL_SYSTEM_PROMPT]
@@ -711,7 +792,7 @@ async def build_system_prompt(
     if not knowledge:
         knowledge = await load_knowledge_context()
 
-    parts = [BASE_SYSTEM_PROMPT]
+    parts = [BASE_SYSTEM_PROMPT, OPTIONS_UI_PROMPT]
     if memory_section:
         parts.append(memory_section)
     if knowledge:
