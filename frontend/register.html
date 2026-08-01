@@ -75,7 +75,20 @@
           <span class="form-hint">Mínimo 8 caracteres, una mayúscula y un número.</span>
         </div>
 
-        <button type="submit" id="submit-btn" class="btn-primary" style="margin-top:18px">
+        <!-- Punto de aceptación. Sin un acto positivo del usuario no hay
+             consentimiento acreditable (Ley 25.326 art. 5) ni contrato
+             oponible: un "al registrarte aceptás" en letra chica no alcanza.
+             Arranca DESMARCADO a propósito — precargarlo lo invalidaría. -->
+        <div class="form-group" style="margin-top:18px">
+          <label for="acceptTerms" style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:13.5px; line-height:1.5;">
+            <input id="acceptTerms" name="acceptTerms" type="checkbox" style="margin-top:2px; width:16px; height:16px; flex:0 0 auto; accent-color:#BE5103; cursor:pointer;">
+            <span>Leí y acepto los <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a>
+            y la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>.</span>
+          </label>
+          <div id="acceptTerms-error" class="form-error"></div>
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn-primary" style="margin-top:10px">
           <span class="btn-spinner" aria-hidden="true"></span>
           <span class="btn-label">Crear cuenta</span>
         </button>
@@ -86,7 +99,12 @@
       </div>
     </div>
 
-    <div class="auth-footer">© 2026 RE Expert · Real Estate AI para Argentina</div>
+    <div class="auth-footer">
+      © 2026 RE Expert · Real Estate AI para Argentina<br>
+      <a href="terminos.html">Términos</a> ·
+      <a href="privacidad.html">Privacidad</a> ·
+      <a href="arrepentimiento.html">Botón de Arrepentimiento</a>
+    </div>
   </div>
 
   <script src="authService.js"></script>

@@ -97,6 +97,7 @@ async def export_my_data(
     )
     from models.project import Project
     from models.reminder import Reminder
+    from models.revocation_request import RevocationRequest
     from models.token_usage import TokenUsage
     from models.user_channel import UserChannel
     from models.user_location import UserLocation, UserLocationSettings
@@ -188,8 +189,12 @@ async def export_my_data(
         "interes_en_materiales": await traer(MaterialInterest),
         "consumo_de_modelos_de_ia": await traer(TokenUsage),
         # admin_note es una anotación interna del equipo de soporte, no un dato
-        # aportado por el titular: se excluye del export.
+        # aportado por el titular: se excluye del export (mismo criterio en los
+        # pedidos de revocación).
         "reportes_de_error": await traer(BugReport, excluir={"admin_note"}),
+        # Botón de Arrepentimiento. Va en el export porque es del titular y le
+        # sirve de constancia de que ejerció el derecho, con fecha.
+        "pedidos_de_revocacion": await traer(RevocationRequest, excluir={"admin_note"}),
     }
 
     logger.info("Export de datos generado para user %s", uid)

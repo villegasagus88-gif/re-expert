@@ -1,18 +1,8 @@
 # Términos y Condiciones de Uso — RE Expert
 
-> ## ⚠️ BORRADOR — Requiere revisión de abogado matriculado antes de su publicación
->
-> Este documento fue redactado sobre la base de una auditoría técnica del código
-> fuente de RE Expert. **No constituye asesoramiento legal.** Debe ser revisado y
-> aprobado por un profesional matriculado antes de publicarse o de tener efectos
-> frente a usuarios.
->
-> Los marcadores **[REVISIÓN LEGAL]**, **[LÍMITE LEGAL]** y
-> **[CONFIRMAR CON TITULAR]** señalan los puntos que requieren decisión o
-> validación humana. Están listados al final del documento.
 
-**Versión:** 1.0 (borrador)
-**Fecha de última actualización:** [CONFIRMAR CON TITULAR — fecha de publicación]
+**Versión:** 1.0
+**Fecha de última actualización:** {{vigenciaDesde}}
 **Vigencia:** desde su publicación en el Sitio.
 
 ---
@@ -23,19 +13,10 @@ A los efectos de este documento:
 
 1.1. **"RE Expert"**, **"la Plataforma"** o **"el Servicio"**: la aplicación web de
 asistencia mediante inteligencia artificial orientada al sector inmobiliario y de la
-construcción en Argentina, accesible en [CONFIRMAR CON TITULAR — URL definitiva] y sus
+construcción en Argentina, accesible en {{sitio}} y sus
 subdominios.
 
-> **[CONFIRMAR CON TITULAR]** ⚠️ **Dominio y casilla de contacto.** La documentación
-> técnica del proyecto indica que `re-expert.app` es un dominio **pendiente de compra**
-> (`docs/DOMAIN.md`), y que el sitio productivo hoy es `re-expert.netlify.app`. Todas
-> las menciones a `re-expert.app` y a `contacto@re-expert.app` en este documento deben
-> reemplazarse por la URL y la casilla reales. **Un canal de contacto que rebota deja
-> sin efecto práctico el Botón de Arrepentimiento (cláusula 6.1.3) y el ejercicio de
-> derechos.**
-
-1.2. **"Titular"**, **"nosotros"**: [CONFIRMAR CON TITULAR — razón social o nombre
-completo], CUIT [CONFIRMAR CON TITULAR], con domicilio en [CONFIRMAR CON TITULAR].
+1.2. **"Titular"**, **"nosotros"**: {{titular}}, CUIT {{cuit}}, con domicilio en {{domicilio}}.
 
 1.3. **"Usuario"**, **"vos"**: toda persona humana o jurídica que se registra y accede
 al Servicio.
@@ -146,13 +127,6 @@ cualquier otra que produzca efectos jurídicos o económicos.
 herramienta de apoyo; vos conservás el control y la responsabilidad profesional sobre
 tus decisiones y sobre el trabajo que entregues a tus propios clientes.
 
-> **[REVISIÓN LEGAL]** Esta sección 3 es la principal defensa del Titular. No opera
-> como una exención de responsabilidad (que sería inválida frente a consumidores) sino
-> como **delimitación del objeto de la prestación**: define qué se contrata. Se
-> recomienda al abogado revisar que la redacción sostenga esa naturaleza y evaluar si
-> corresponde reforzarla con una aceptación específica y registrada al momento del
-> alta.
-
 ---
 
 ## 4. Registro, Cuenta y edad mínima
@@ -162,14 +136,14 @@ dirección de correo electrónico válida y una contraseña. Te obligás a que e
 sean **verdaderos, exactos y actuales**, y a mantenerlos actualizados.
 
 4.2. **Edad mínima.** El Servicio está dirigido exclusivamente a personas mayores de
-[CONFIRMAR CON TITULAR — se sugiere 18] años. Al registrarte declarás tener la edad
+18 años. Al registrarte declarás tener la edad
 mínima requerida y capacidad legal para contratar. Si detectamos que una cuenta
 pertenece a una persona que no cumple este requisito, podremos suspenderla o
 eliminarla.
 
 4.3. **La Cuenta es personal e intransferible.** Sos responsable de mantener la
 confidencialidad de tu contraseña y de toda actividad realizada desde tu Cuenta.
-Debés notificarnos de inmediato a `contacto@re-expert.app` ante cualquier uso no
+Debés notificarnos de inmediato a {{email}} ante cualquier uso no
 autorizado.
 
 4.4. Ponemos a tu disposición verificación en dos pasos. **Su activación es
@@ -215,8 +189,7 @@ que se eliminen tus datos**.
 
 5.2. **Precio.** El precio vigente se informa en la sección de precios del Sitio antes
 de la contratación.
-[CONFIRMAR CON TITULAR — precio actual publicado: $69.900 ARS. Confirmar si incluye IVA
-y la condición fiscal del Titular.]
+$69.900 ARS por período de 30 (treinta) días
 
 5.3. **Modificación de precios.** Podemos modificar el precio de la suscripción. Todo
 cambio te será notificado con una antelación mínima de **30 (treinta) días corridos** al
@@ -239,22 +212,9 @@ conservan y recuperás el acceso regularizando el pago, sin perjuicio de tu dere
 solicitar la baja y supresión en cualquier momento.
 
 5.6. **Errores de facturación.** Si detectás un cobro duplicado, un importe que no
-corresponde o cualquier otra inconsistencia, escribinos a `contacto@re-expert.app`
+corresponde o cualquier otra inconsistencia, escribinos a {{email}}
 detallando la operación. **Revisaremos el caso y, si el error es nuestro, lo
 corregiremos y devolveremos lo cobrado de más.**
-
-> **[REVISIÓN LEGAL]** Confirmar el tratamiento fiscal (emisión de comprobantes,
-> condición frente al IVA) y si el período de prueba exige registrar un medio de pago
-> previo. Si lo exigiera, debe informarse de forma clara, destacada y previa a la
-> contratación (art. 4 Ley 24.240 y Resolución 424/2020).
->
-> **Nota sobre el modelo elegido:** la renovación automática es cómoda para el usuario
-> y estabiliza el ingreso, pero **concentra los reclamos más frecuentes del comercio
-> electrónico**: débitos no reconocidos, dificultad para dar de baja y cobros posteriores
-> a la cancelación. Las tres defensas que este documento incorpora —**aviso previo de
-> 3 días** antes de cada cobro (5.1.1), **cancelación con un clic** sin trámite (6.2.1) y
-> **gracia de 5 días** ante un cobro fallido (5.1.3)— son justamente las que desactivan
-> ese tipo de reclamo. Conviene conservarlas aunque no sean obligatorias una por una.
 
 ---
 
@@ -284,13 +244,6 @@ inmediata**: no se te vuelve a cobrar.
 6.2.2. **Efecto sobre el acceso.** Al cancelar, el acceso a las funciones pagas se
 interrumpe. **Tus datos se conservan** y podés volver a suscribirte cuando quieras.
 
-> **[REVISIÓN LEGAL]** ⚠️ El sistema hoy corta el acceso **en el acto** al cancelar, aun
-> quedando días del período abonado. Frente a un consumidor eso es discutible: se le
-> cobró un período completo. La salida recomendada es **técnica**: que la cancelación
-> detenga la renovación pero mantenga el acceso hasta el fin del período pago. Mientras
-> no se implemente, esta cláusula describe el comportamiento real, que es lo correcto,
-> pero conviene resolverlo.
-
 6.2.3. **Fuera del plazo de revocación del punto 6.1, el período abonado no es
 reembolsable**, salvo que:
 
@@ -302,18 +255,8 @@ b) exista un **error de facturación**, en los términos del punto 5.6; o
 c) la normativa de consumo disponga lo contrario.
 
 6.2.4. **Cómo reclamar.** Si considerás que se da alguno de esos supuestos, escribinos a
-`contacto@re-expert.app` con el detalle de la operación. Analizaremos el caso y te
+{{email}} con el detalle de la operación. Analizaremos el caso y te
 responderemos por escrito.
-
-> **[LÍMITE LEGAL]** Qué quisimos: que no haya reembolsos en ningún caso. Hasta dónde se
-> puede: el derecho de revocación de 10 días del punto 6.1 es **irrenunciable** (art. 34
-> Ley 24.240) y ninguna cláusula puede eliminarlo. Tampoco es válido excluir el reembolso
-> cuando el Servicio no se prestó. Por eso la regla general de "sin reembolso" se
-> redactó **con las tres excepciones mínimas que la ley impone**: así la cláusula es
-> exigible en todo lo demás, en vez de caer entera por abusiva.
->
-> **Impacto real, para dimensionarlo:** son 10 días sobre 30, y en el modelo de pago
-> único el usuario ya usó parte del servicio, por lo que puede prorratearse lo consumido.
 
 ---
 
@@ -394,12 +337,6 @@ artificial.** Según el proveedor que opere en cada momento, sus propias condici
 podrían habilitarlo a utilizar los contenidos para mejorar sus modelos; el detalle y su
 verificación están en la Política de Privacidad.
 
-> **[CONFIRMAR CON TITULAR]** ⚠️ Los niveles gratuitos de algunos proveedores de IA
-> habilitan expresamente el uso de los contenidos para mejorar sus modelos. **Antes de
-> publicar hay que verificar qué nivel de cuenta corre en producción** y, si fuera un
-> nivel gratuito con esa condición, migrar a uno de pago con compromiso de no
-> entrenamiento o dejar la salvedad anterior de forma destacada.
-
 ### 9.3. Datos personales de terceros — cláusula esencial
 
 > **La Plataforma permite cargar datos de personas que no son usuarias**: contactos
@@ -430,12 +367,6 @@ incumplimiento de las declaraciones de esta cláusula, en los términos de la cl
 9.3.4. Si un tercero nos contacta para ejercer derechos sobre datos que vos cargaste,
 **te lo notificaremos y te daremos intervención**, sin perjuicio de nuestras
 obligaciones legales.
-
-> **[REVISIÓN LEGAL]** Esta cláusula es crítica: la Plataforma trata datos de personas
-> que nunca tuvieron relación con el Titular y que no pueden consentir a través del
-> Usuario. Evaluar si corresponde formalizar un **acuerdo de encargado de tratamiento**
-> separado para Usuarios Profesionales, y verificar el encuadre bajo la Ley 25.326 y su
-> reglamentación.
 
 ### 9.4. Salidas generadas
 
@@ -474,8 +405,6 @@ alguno, más allá de la licencia de uso de la cláusula 7.
 11.1. **No garantizamos que el Servicio esté disponible de forma ininterrumpida,
 continua ni libre de errores.** Hacemos esfuerzos razonables para mantener una
 disponibilidad adecuada, pero no ofrecemos un nivel de servicio (SLA) comprometido.
-[CONFIRMAR CON TITULAR — si en el futuro se ofrece un SLA a clientes corporativos,
-debe instrumentarse en un anexo específico.]
 
 11.2. Podemos realizar tareas de mantenimiento, actualización o corrección que
 impliquen la suspensión temporal del Servicio. Cuando sean programadas y previsibles,
@@ -510,16 +439,6 @@ provee "**en el estado en que se encuentra**" y "**según disponibilidad**", sin
 garantías implícitas de comerciabilidad, adecuación a un fin particular, exactitud de
 las Salidas ni ausencia de errores.
 
-> **[LÍMITE LEGAL]** Qué quisimos: excluir toda garantía. Hasta dónde se puede: frente
-> a **Usuarios Consumidores**, la exclusión total de garantías es inválida. El art. 37
-> de la Ley 24.240 tiene por no escritas las cláusulas que desnaturalicen las
-> obligaciones o importen renuncia de derechos del consumidor, y el art. 1117 y ss. del
-> CCyC declara abusivas las que desequilibren significativamente los derechos de las
-> partes. Por eso la cláusula se limita expresamente con "hasta el máximo permitido por
-> la legislación aplicable": **frente a consumidores rige la garantía legal, sin
-> importar lo que diga este documento.** La protección real del Titular no está acá,
-> sino en la cláusula 3 (delimitación del objeto).
-
 ### 12.2. Limitación de responsabilidad
 
 12.2.1. **Frente a Usuarios Profesionales** y hasta el máximo permitido por la ley:
@@ -543,18 +462,6 @@ permita.**
 12.2.3. **En ningún caso** se limita o excluye la responsabilidad por **dolo, culpa
 grave, daños a la vida o integridad física de las personas**, ni cualquier otra que
 resulte inderogable por ley.
-
-> **[LÍMITE LEGAL]** Qué quisimos: un tope económico universal. Hasta dónde se puede:
-> el art. 37 inc. a) de la Ley 24.240 tiene por **no escritas** las cláusulas que
-> limiten la responsabilidad por daños frente a consumidores. Un tope de ese tipo
-> aplicado a un consumidor sería nulo — y una cláusula nula no protege nada. Por eso el
-> tope se redactó **acotado a Usuarios Profesionales**, donde sí es válido y exigible.
-> Intentar extenderlo a consumidores habría puesto en riesgo la validez de toda la
-> cláusula.
->
-> **[REVISIÓN LEGAL]** Validar el criterio de distinción consumidor/profesional y su
-> acreditación práctica (por ejemplo, mediante declaración al momento del alta o
-> facturación a CUIT).
 
 ### 12.3. Indemnidad del Usuario
 
@@ -600,10 +507,6 @@ forma significativa tus datos personales, te notificaremos **sin dilación indeb
 correo registrado, informando: la naturaleza del incidente, las categorías de datos
 afectadas, las medidas adoptadas y las recomendaciones a tu alcance. Notificaremos a
 la autoridad de control cuando corresponda.
-
-> **[REVISIÓN LEGAL]** Definir un plazo concreto de notificación (se sugiere 72 horas
-> desde la detección) y elaborar un protocolo interno de respuesta a incidentes. Ver
-> `docs/RUNBOOK_INCIDENTES.md`.
 
 ---
 
@@ -651,11 +554,6 @@ utilizado.**
 
 15.4. Conservaremos las versiones anteriores para consulta.
 
-> **[REVISIÓN LEGAL]** Frente a consumidores, la modificación unilateral de cláusulas
-> es materia sensible (art. 37 Ley 24.240 y art. 988 CCyC). El mecanismo previsto
-> —preaviso, derecho de cancelación sin costo y reintegro proporcional— busca evitar el
-> reproche de abusividad. Validar su suficiencia.
-
 ---
 
 ## 16. Ley aplicable y jurisdicción
@@ -669,23 +567,12 @@ podés recurrir gratuitamente al **Servicio de Conciliación Previa en las Relac
 Consumo (COPREC)** y a las autoridades de defensa del consumidor de tu jurisdicción.
 
 16.3. **Usuarios Profesionales:** las partes se someten a la jurisdicción de los
-**tribunales ordinarios de [CONFIRMAR CON TITULAR — jurisdicción del domicilio del
-Titular]**, con renuncia a todo otro fuero.
+**tribunales ordinarios de la Ciudad Autónoma de Buenos Aires**, con renuncia a todo otro fuero.
 
 16.4. **Instancia previa de buena fe.** Antes de iniciar una acción judicial, las
 partes procurarán resolver la controversia de buena fe mediante comunicación directa a
-`contacto@re-expert.app` dentro de un plazo de 30 días. **Esta instancia no es
+{{email}} dentro de un plazo de 30 días. **Esta instancia no es
 obligatoria ni suspende plazos para el Usuario Consumidor.**
-
-> **[REVISIÓN LEGAL]** No se incluyó cláusula de arbitraje obligatorio ni renuncia a
-> acciones colectivas: frente a consumidores serían inválidas en Argentina y su
-> inclusión debilitaría el resto del documento. Para contratos B2B de volumen, evaluar
-> un convenio arbitral en instrumento separado.
->
-> **[CONFIRMAR CON TITULAR]** Ámbito territorial: hoy el Servicio se dirige al mercado
-> argentino. Ante la expansión internacional prevista, deberá revisarse este documento
-> y sumar los requisitos de cada jurisdicción (en la Unión Europea, RGPD; en Brasil,
-> LGPD; etc.). **[VERIFICAR NORMATIVA LOCAL]**
 
 ---
 
@@ -733,61 +620,10 @@ La versión en español es la única con valor legal. Las traducciones son de co
 
 ## 18. Contacto
 
-**Titular:** [CONFIRMAR CON TITULAR — razón social o nombre]
-**CUIT:** [CONFIRMAR CON TITULAR]
-**Domicilio:** [CONFIRMAR CON TITULAR]
-**Correo de contacto:** `contacto@re-expert.app`
+**Titular:** {{titular}}
+**CUIT:** {{cuit}}
+**Domicilio:** {{domicilio}}
+**Correo de contacto:** {{email}}
 
 **Defensa del Consumidor:** podés presentar reclamos ante la autoridad de aplicación
 de tu jurisdicción o a través de `https://autogestion.produccion.gob.ar/consumidores`.
-
----
-
-## Anexo — Marcadores para revisión legal
-
-### [REVISIÓN LEGAL]
-| # | Cláusula | Punto a validar |
-|---|---|---|
-| 1 | 3 (completa) | Que la delimitación del objeto se sostenga como tal y no sea reinterpretada como exención. Evaluar aceptación específica registrada al alta. |
-| 2 | 5 | Tratamiento fiscal y si el trial exige medio de pago previo. |
-| 3 | 9.3 | Encuadre del tratamiento de datos de terceros; conveniencia de un acuerdo de encargado separado para B2B. |
-| 4 | 12.2 | Criterio de distinción consumidor/profesional y su acreditación práctica. |
-| 5 | 13.4 | Plazo concreto de notificación de incidentes (se sugiere 72 h). |
-| 6 | 15 | Suficiencia del mecanismo de modificación unilateral frente a consumidores. |
-| 7 | 16 | Ausencia deliberada de arbitraje y de renuncia a acciones colectivas. |
-
-### [LÍMITE LEGAL]
-| # | Cláusula | Qué quisimos | Hasta dónde se puede |
-|---|---|---|---|
-| 1 | 12.1 | Excluir toda garantía. | Frente a consumidores la exclusión total es inválida (art. 37 Ley 24.240). Se acotó con "hasta el máximo permitido por la ley". La protección real está en la cláusula 3. |
-| 2 | 12.2 | Tope económico universal. | El art. 37 inc. a) Ley 24.240 tiene por no escritas las limitaciones de responsabilidad frente a consumidores. El tope se acotó a Usuarios Profesionales, donde sí es exigible. |
-| 3 | 6.1 y 6.2 | Que no hubiera reembolsos en ningún caso. | El derecho de revocación de 10 días es irrenunciable (art. 34 Ley 24.240) y tampoco puede excluirse el reembolso cuando el Servicio no se prestó. Se redactó "sin reembolso" con las tres excepciones mínimas que impone la ley, para que la cláusula sea exigible en todo lo demás en vez de caer entera por abusiva. |
-| 4 | 16.2 | Fijar jurisdicción única. | Frente a consumidores es competente el juez de su domicilio y es irrenunciable (art. 36 Ley 24.240). |
-
-### [CONFIRMAR CON TITULAR]
-| # | Dato | Cláusula |
-|---|---|---|
-| 1 | Razón social / nombre, CUIT y domicilio legal | 1.2, 18 |
-| 2 | Fecha de publicación | Encabezado |
-| 3 | Edad mínima (se sugiere 18) | 4.2 |
-| 4 | Precio, periodicidad, IVA y condición fiscal | 5.2 |
-| 5 | Si el período de prueba exige registrar un medio de pago previo | 5.1 |
-| 6 | ⚠️ **Implementar el Botón de Arrepentimiento antes de publicar** | 6.1.3 |
-| 7 | ✅ Definida: sin reembolso salvo revocación, falta de prestación o error de facturación (6.2.2). Falta definir el **procedimiento operativo**: quién ejecuta la devolución, en qué panel y en cuántos días hábiles | 6.2.2, 5.6 |
-| 8 | Jurisdicción para Usuarios Profesionales | 16.3 |
-| 9 | Si se ofrecerá SLA a clientes corporativos | 11.1 |
-| 10 | ⚠️ **Dominio definitivo y casilla de contacto operativa** | 1.1, 18 |
-| 11 | ⚠️ **Nivel de cuenta del proveedor de IA** (si el gratuito habilita entrenamiento) | 9.2 |
-| 12 | ⚠️ **Habilitar "Configuración → Facturación"**: hoy no existe y es el camino obligado para cancelar y para poder darse de baja | 6.2.1, 14.2 |
-| 13 | ⚠️ **Punto de aceptación**: enlaces legales en el footer y casilla de aceptación en el registro | 2.1 |
-
-### Bloqueantes de producto (no de redacción)
-
-Estos **no se resuelven escribiendo** y condicionan la publicación del documento:
-
-| # | Qué | Por qué bloquea |
-|---|---|---|
-| 1 | El módulo de baja y 2FA **no está desplegado en producción** | Las cláusulas 4.4 y 14 prometen funciones que hoy responden 404 |
-| 2 | "Configuración → Facturación" muestra "Próximamente" | Las cláusulas 6.2.1 y 14.2 mandan al usuario ahí |
-| 3 | No existe el Botón de Arrepentimiento | Obligación legal directa (Res. 424/2020), sancionable por sí sola |
-| 4 | No hay dónde leer ni aceptar estos documentos | Un contrato que declara aceptación sin punto de aceptación no tiene respaldo probatorio |

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botón de Arrepentimiento · RE Expert</title>
+  <meta name="description" content="Revocá tu contratación de RE Expert dentro de los 10 días corridos, sin expresar causa y sin costo (art. 34 Ley 24.240, Res. 424/2020).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
+  <link rel="stylesheet" href="legal.css">
+</head>
+<body>
+  <header class="lg-top">
+    <div class="lg-top-in">
+      <a href="index.html" class="lg-brand" aria-label="RE Expert">
+        <div class="lg-logo">RE</div>
+        <span class="lg-brand-t">RE Expert</span>
+      </a>
+      <nav class="lg-top-nav">
+        <a href="terminos.html">Términos</a>
+        <a href="privacidad.html">Privacidad</a>
+        <a href="cookies.html">Cookies</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="lg-main">
+    <div class="lg-wrap">
+      <div class="lg-kicker">Ley 24.240 · Resolución 424/2020</div>
+      <h1 class="lg-h1">Botón de Arrepentimiento</h1>
+      <p class="lg-lead">
+        Si contrataste a distancia, podés dar marcha atrás dentro de los
+        <b>10 días corridos</b> desde que contrataste, <b>sin explicar por qué</b> y
+        <b>sin que te cueste nada</b>. Es un derecho tuyo y no te lo podemos limitar.
+      </p>
+
+      <div class="lg-card">
+        <h2>Completá esto y listo</h2>
+        <p>
+          No hay ningún otro trámite. No hace falta que inicies sesión, ni que nos
+          digas el motivo, ni que llames a nadie. Con tu correo alcanza.
+        </p>
+
+        <form id="arrForm" novalidate>
+          <div class="lg-field">
+            <label class="lg-label" for="arrEmail">Correo con el que contrataste *</label>
+            <input class="lg-input" id="arrEmail" name="email" type="email"
+                   autocomplete="email" placeholder="tunombre@email.com" required>
+            <div class="lg-err" id="arrEmailErr"></div>
+          </div>
+
+          <div class="lg-field">
+            <label class="lg-label" for="arrNombre">Nombre y apellido <span style="font-weight:400;color:#897b6d">(opcional)</span></label>
+            <input class="lg-input" id="arrNombre" name="nombre" type="text"
+                   autocomplete="name" maxlength="120" placeholder="Para poder dirigirnos a vos">
+          </div>
+
+          <div class="lg-field">
+            <label class="lg-label" for="arrMotivo">¿Querés contarnos por qué? <span style="font-weight:400;color:#897b6d">(opcional)</span></label>
+            <textarea class="lg-textarea" id="arrMotivo" name="motivo" maxlength="2000"
+                      placeholder="Nos sirve para mejorar, pero no hace falta que lo completes."></textarea>
+            <div class="lg-hint">
+              La ley nos prohíbe exigirte una justificación. Si lo dejás vacío, tu
+              solicitud vale exactamente igual.
+            </div>
+          </div>
+
+          <button type="submit" class="lg-btn" id="arrBtn">Enviar mi solicitud</button>
+        </form>
+
+        <div class="lg-msg" id="arrMsg" hidden></div>
+      </div>
+
+      <div class="lg-card">
+        <h2>Qué pasa después</h2>
+        <ul>
+          <li>Te llega un correo con el <b>número de tu solicitud</b>, como constancia.</li>
+          <li>Damos de baja la contratación y, si ya se te había cobrado, se te
+              <b>devuelve por el mismo medio de pago</b> que usaste.</li>
+          <li>No te vamos a pedir que hagas nada más ni que expliques nada.</li>
+        </ul>
+        <p>
+          Si ya tenés sesión iniciada y sólo querés dejar de pagar de acá en más
+          (sin pedir devolución), también podés hacerlo vos mismo con un clic desde
+          <b>Configuración → Facturación</b>.
+        </p>
+      </div>
+
+      <div class="lg-card">
+        <h2>Marco legal</h2>
+        <p>
+          Este botón existe por el <b>artículo 34 de la Ley 24.240</b> de Defensa del
+          Consumidor y el <b>artículo 1110 del Código Civil y Comercial</b>, que te
+          dan 10 días corridos para revocar una contratación hecha a distancia sin
+          expresar causa. La <b>Resolución 424/2020</b> de la Secretaría de Comercio
+          Interior nos obliga a tenerlo visible y a que no te pidamos ningún trámite
+          adicional. Este derecho es <b>irrenunciable</b>.
+        </p>
+        <p>Podés leer el detalle en nuestros <a href="terminos.html">Términos y Condiciones</a>.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="lg-foot">
+    <div class="lg-foot-in">
+      <div>© 2026 RE Expert · Real Estate AI · Hecho en Argentina 🇦🇷</div>
+      <div><a href="index.html">Volver al inicio</a></div>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="legal-config.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    // `config.js` define window.RE_CONFIG.API_BASE (vacío en prod = same-origin,
+    // porque Netlify hace reverse-proxy de /api/* al backend).
+    function apiBase() {
+      var c = window.RE_CONFIG || {};
+      return (c.API_BASE == null) ? '' : c.API_BASE;
+    }
+    var form = document.getElementById('arrForm');
+    var btn = document.getElementById('arrBtn');
+    var msg = document.getElementById('arrMsg');
+    var errEmail = document.getElementById('arrEmailErr');
+
+    function mostrar(texto, ok) {
+      msg.textContent = texto;
+      msg.className = 'lg-msg ' + (ok ? 'lg-msg-ok' : 'lg-msg-err');
+      msg.hidden = false;
+    }
+
+    form.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      errEmail.textContent = '';
+      msg.hidden = true;
+
+      var email = document.getElementById('arrEmail').value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errEmail.textContent = 'Escribí el correo con el que contrataste.';
+        return;
+      }
+
+      btn.disabled = true;
+      var txt = btn.textContent;
+      btn.textContent = 'Enviando…';
+      try {
+        var r = await fetch(apiBase() + '/api/legal/arrepentimiento', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            nombre: document.getElementById('arrNombre').value.trim(),
+            motivo: document.getElementById('arrMotivo').value.trim(),
+          }),
+        });
+        if (r.status === 429) {
+          mostrar('Recibimos varias solicitudes desde esta conexión. Esperá un rato y volvé a intentar; si es urgente, escribinos.', false);
+          btn.disabled = false; btn.textContent = txt; return;
+        }
+        if (!r.ok && r.status !== 201) throw new Error('http ' + r.status);
+        var d = await r.json();
+        form.style.display = 'none';
+        mostrar(d.mensaje || 'Recibimos tu solicitud. No tenés que hacer ningún otro trámite.', true);
+      } catch (e) {
+        // Nunca dejar a alguien que está ejerciendo un derecho sin una salida.
+        mostrar('No pudimos registrar tu solicitud por un problema técnico. ' +
+                'Escribinos desde Ayuda → Informar un error dentro de la app, o volvé a ' +
+                'intentar en unos minutos. Tu derecho a revocar no se pierde por esto.', false);
+        btn.disabled = false;
+        btn.textContent = txt;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

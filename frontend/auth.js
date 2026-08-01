@@ -299,14 +299,32 @@
     if (nameErr) setInputError('fullName', nameErr);
     if (emailErr) setInputError('email', emailErr);
     if (passErr) setInputError('password', passErr);
-    if (nameErr || emailErr || passErr) return;
+
+    // Aceptación de los legales. El checkbox tiene que ser un acto positivo del
+    // usuario: si no está, no hay consentimiento acreditable. `accept` es null
+    // en cualquier otro formulario que reuse esta función, y ahí no bloquea.
+    const accept = byId('acceptTerms');
+    const acceptErr = (accept && !accept.checked)
+      ? 'Para crear la cuenta tenés que aceptar los Términos y la Política de Privacidad.'
+      : null;
+    if (acceptErr) {
+      const box = byId('acceptTerms-error');
+      if (box) { box.textContent = acceptErr; box.classList.add('is-visible'); }
+    }
+
+    if (nameErr || emailErr || passErr || acceptErr) return;
 
     setLoading('submit-btn', true);
     try {
       const resp = await fetch(_apiBase() + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, full_name: fullName.trim() }),
+        // `accepted_terms` deja constancia de la aceptación en el servidor: sin
+        // eso el checkbox sería sólo un adorno del navegador, sin valor probatorio.
+        body: JSON.stringify({
+          email, password, full_name: fullName.trim(),
+          accepted_terms: !!(accept && accept.checked),
+        }),
       });
 
       if (resp.status === 409) {

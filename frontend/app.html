@@ -2235,9 +2235,52 @@ function acctRenderPane(item){
   if(item.id==='almacenamiento'){stRenderPane(pane,item);return;}
   if(item.id==='cuenta'){cuRenderPane(pane,item);return;}
   if(item.id==='facturacion'){facRenderPane(pane,item);return;}
+  if(item.id==='privacidad'||item.id==='terminos'){legalRenderPane(pane,item);return;}
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
+}
+
+// ═══ Ayuda → Política y privacidad / Términos de servicio ════════════════
+// Los documentos viven fuera de la app (privacidad.html / terminos.html), que
+// es lo que permite linkearlos desde el registro y desde el Botón de
+// Arrepentimiento. Acá sólo va la puerta de entrada: un placeholder genérico
+// que dice "Próximamente" sobre algo que la ley obliga a tener disponible sería
+// peor que decir en qué estado está de verdad.
+const LEGAL_PAGINAS={
+  privacidad:{archivo:'privacidad.html',nombre:'Política de Privacidad',
+    resumen:'Qué datos tomamos, para qué los usamos, con quién los compartimos y cómo pedís verlos, corregirlos o borrarlos.'},
+  terminos:{archivo:'terminos.html',nombre:'Términos y Condiciones',
+    resumen:'Qué estás contratando, cómo se cobra, cómo lo cancelás y qué responsabilidad asumimos.'},
+};
+
+function legalRenderPane(pane,item){
+  const cfg=LEGAL_PAGINAS[item.id]; if(!cfg)return;
+  pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
+    <p class="acct-pane-desc">${escapeHtml(cfg.resumen)}</p>
+
+    <div class="cu-card">
+      <div class="cu-card-t">${escapeHtml(cfg.nombre)}</div>
+      <p class="cu-hint" style="margin-top:0">Se abre en una pestaña nueva para que
+      puedas leerlo con calma sin perder lo que estabas haciendo acá.</p>
+      <div class="cu-row-wrap" style="margin-top:10px">
+        <a class="btn-sm cu-primary" href="${cfg.archivo}" target="_blank" rel="noopener"
+           style="text-decoration:none">Abrir ${escapeHtml(cfg.nombre)}</a>
+      </div>
+    </div>
+
+    <div class="cu-card">
+      <div class="cu-card-t">Tus derechos, acá adentro</div>
+      <p class="cu-hint" style="margin-top:0">No dependen de leer ningún documento:</p>
+      <ul class="cu-hint" style="margin:8px 0 0; padding-left:18px; line-height:1.75">
+        <li><b>Ver y descargar todos tus datos</b> — Configuración → Cuenta → Exportar.</li>
+        <li><b>Eliminar tu cuenta</b> — Configuración → Cuenta, con 30 días para arrepentirte.</li>
+        <li><b>Dejar de pagar</b> — Configuración → Facturación, con un clic.</li>
+        <li><b>Revocar una contratación reciente</b> —
+          <a href="arrepentimiento.html" target="_blank" rel="noopener">Botón de Arrepentimiento</a>,
+          dentro de los 10 días y sin explicar por qué.</li>
+      </ul>
+    </div>`;
 }
 
 // ═══ Configuración → Almacenamiento ══════════════════════════════════════

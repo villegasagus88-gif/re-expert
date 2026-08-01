@@ -48,7 +48,9 @@ def _user_to_dict(user: User) -> dict:
     }
 
 
-async def register_user(email: str, password: str, full_name: str) -> dict:
+async def register_user(
+    email: str, password: str, full_name: str, accepted_terms: bool = False
+) -> dict:
     """
     Register a new user with bcrypt-hashed password.
 
@@ -88,6 +90,10 @@ async def register_user(email: str, password: str, full_name: str) -> dict:
             plan=plan,
             trial_ends_at=trial_ends_at,
             last_login=datetime.now(UTC),
+            # Constancia de la aceptación de Términos y Política. NULL si el
+            # cliente no la mandó (frontend viejo cacheado): mejor sin dato que
+            # con una fecha inventada.
+            terms_accepted_at=datetime.now(UTC) if accepted_terms else None,
         )
         db.add(user)
         try:
