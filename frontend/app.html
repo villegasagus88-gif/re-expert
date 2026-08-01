@@ -5163,6 +5163,74 @@ window.addEventListener('re:chat-done',e=>{
   vcSpeakSmart(text,()=>{if(vcState.mode&&!vcState.paused)vcModeListen();});
 });
 
+// ── Apodo (estilo Claude): cómo quiere el usuario que RE Expert lo llame ──
+// Vive en el PERFIL GLOBAL (key 'apodo') → viaja a todos los chats, así que
+// el asesor también lo usa al hablarle. Acá: saludo al entrar + pregunta
+// única la primera vez (sin chocar con el tour de bienvenida). Todo aditivo.
+const nickState={apodo:null};
+function nickGreetingWord(){
+  const h=new Date().getHours();
+  return h<6?'Buenas noches':h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
+}
+function nickApplyGreeting(){
+  if(!nickState.apodo)return;
+  const t=document.querySelector('#welcomeScreen .welcome-title');
+  if(t)t.textContent=nickGreetingWord()+', '+nickState.apodo;
+}
+async function nickSave(v){
+  v=String(v||'').trim().slice(0,40);
+  if(!v)return false;
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:'apodo',value:v})});
+    if(!r.ok)return false;
+    nickState.apodo=v;nickApplyGreeting();
+    return true;
+  }catch(e){return false;}
+}
+function nickAskModal(){
+  let sugerido='';
+  try{const u=JSON.parse(localStorage.getItem('re_user')||'{}');
+    sugerido=String(u.full_name||u.name||'').trim().split(/\s+/)[0]||'';}catch(e){}
+  plnModalOpen(`
+    <h3 class="pln-m-title">👋 ¿Cómo querés que te llame?</h3>
+    <p class="pln-m-sub">RE Expert te va a saludar y a hablarte usando ese nombre — tu nombre, un apodo, como te quede cómodo. Lo podés cambiar cuando quieras desde tu perfil.</p>
+    <input id="nickInput" type="text" maxlength="40" placeholder="Tu nombre o apodo" value="${esc(sugerido)}"
+      style="width:100%;padding:11px 13px;border:1px solid var(--border-1);border-radius:10px;background:var(--bg-card);color:var(--text-0);font-size:14px;font-family:var(--font)">
+    <div class="pln-form-actions" style="margin-top:14px">
+      <button class="vc-pill" id="nickSkip">Ahora no</button>
+      <button class="btn-primary" id="nickSaveBtn">Guardar</button>
+    </div>`);
+  const inp=$('#nickInput');if(inp){inp.focus();inp.select();}
+  $('#nickSkip')?.addEventListener('click',()=>{localStorage.setItem('re_apodo_preguntado','1');plnModalClose();});
+  const go=async()=>{
+    const v=((inp&&inp.value)||'').trim();
+    if(!v)return;
+    localStorage.setItem('re_apodo_preguntado','1');
+    plnModalClose();
+    if(await nickSave(v))plnToast('Listo, '+v+' 👋 Así te va a llamar RE Expert.');
+    else plnToast('No se pudo guardar el apodo — probá desde tu perfil',false);
+  };
+  $('#nickSaveBtn')?.addEventListener('click',go);
+  inp?.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
+}
+async function initApodo(){
+  try{
+    const r=await window.REAuthService.authFetch(apiBase()+'/api/profile');
+    if(!r.ok)return;                      // sin perfil accesible: no molestar
+    const items=((await r.json()).items)||[];
+    const it=items.find(i=>String(i.key||'').toLowerCase()==='apodo');
+    if(it&&it.value){nickState.apodo=String(it.value);nickApplyGreeting();return;}
+    if(localStorage.getItem('re_apodo_preguntado'))return;   // ya se le preguntó
+    // Primera visita con tour de bienvenida pendiente: preguntar recién la próxima
+    if(!localStorage.getItem('re_onboarding_done')){
+      let u={};try{u=JSON.parse(localStorage.getItem('re_user')||'{}');}catch(e){}
+      if(!u.onboarding_completed)return;
+    }
+    setTimeout(nickAskModal,1200);
+  }catch(e){}
+}
 function initVoice(){
   // ¿Voz premium habilitada en el backend? (si falla, queda la del navegador)
   try{
@@ -10202,7 +10270,7 @@ function init(){
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();initVoice();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();initVoice();initApodo();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
 
   // Swipe-derecha-vuelve-atrás (gesto tipo iOS desde el borde izquierdo).
