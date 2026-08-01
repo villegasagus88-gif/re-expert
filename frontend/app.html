@@ -6546,7 +6546,6 @@ function plnBuildReport(enfoque){
   ${simple?'<h2>Próximos pasos</h2><ul><li>Revisar los puntos detectados con el profesional responsable del proyecto.</li><li>Resolver las definiciones pendientes antes de avanzar a la próxima etapa.</li><li>Actualizar la documentación y volver a analizar la nueva versión.</li></ul>':''}
   <div class="disc"><strong>Limitaciones del análisis IA:</strong> ${PLN_DISCLAIMER} El análisis se basa exclusivamente en la legibilidad del documento provisto; medidas y detalles no legibles pueden no estar contemplados.</div>
   <div class="ft">Generado por RE Expert — re-expert.netlify.app · ${today}</div>
-    <script src="consent.js"></script>
 </body></html>`;
   const w=window.open('','_blank');
   if(!w){plnToast('Permití las ventanas emergentes para generar el reporte',false);return;}
@@ -11503,5 +11502,6 @@ function initPlanosIso(canvasEl, opts){
 })();
 </script>
 
+  <script src="consent.js"></script>
 </body>
 </html>
