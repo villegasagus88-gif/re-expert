@@ -97,10 +97,8 @@ async def pedir_revocacion(
     return RevocacionOut(
         numero=pedido.numero,
         mensaje=(
-            f"Recibimos tu solicitud de revocación (N° {pedido.numero}). No tenés que "
-            f"hacer ningún otro trámite. Te vamos a contactar a {email} para "
-            f"confirmarte la baja y, si corresponde, el reembolso por el mismo medio "
-            f"de pago que usaste."
+            f"Registramos tu solicitud con el número {pedido.numero}. "
+            f"Te vamos a responder a {email} con el resultado."
         ),
     )
 
@@ -112,10 +110,8 @@ async def _avisar(pedido: RevocationRequest, user: User | None) -> None:
         from services.account_security_service import _send_email
 
         cuerpo = (
-            f"Recibimos tu solicitud de revocación N° {pedido.numero}. "
-            f"No tenés que hacer ningún otro trámite ni darnos explicaciones. "
-            f"Nos vamos a comunicar a esta misma dirección para confirmarte la baja "
-            f"y, si corresponde, el reembolso por el mismo medio de pago que usaste."
+            f"Registramos tu solicitud de revocación con el número {pedido.numero}. "
+            f"Vamos a responderte a esta misma dirección con el resultado."
         )
         await _send_email(
             pedido.email,
