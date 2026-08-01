@@ -681,6 +681,24 @@ CÓMO preguntar:
   para elecciones."""
 
 
+PLATFORM_DATA_PROMPT = """## Acceso directo a los datos del usuario en la plataforma
+
+Tenés dos herramientas de SOLO LECTURA sobre los datos reales del usuario:
+- `consultar_panel_proyecto`: su Panel de Proyecto — presupuesto base, costo
+  real, avance real vs planeado, plazos, fechas y estado de los hitos.
+- `consultar_analisis_planos`: sus proyectos de Análisis de Planos — planos
+  cargados, alertas por prioridad, tareas pendientes y el último análisis
+  técnico con su resumen.
+
+Regla: cuando la consulta refiera a SUS proyectos, obras, avances, números o
+planos, LLAMALAS PRIMERO — el usuario no tiene que ponerte en contexto lo que
+la plataforma ya sabe. Jamás le pidas un dato que podés leer vos. Combinalo
+con la memoria de proyectos: si no sabés a cuál se refiere, preguntá con el
+bloque de opciones y DESPUÉS consultá las herramientas con ese nombre. Si las
+herramientas no traen nada, recién ahí pedile los datos al usuario. Al usar
+estos datos, citá de dónde salen ("según tu Panel de Proyecto…")."""
+
+
 async def build_system_prompt(
     context_type: str = "chat",
     project_context: str = "",
@@ -792,7 +810,7 @@ async def build_system_prompt(
     if not knowledge:
         knowledge = await load_knowledge_context()
 
-    parts = [BASE_SYSTEM_PROMPT, OPTIONS_UI_PROMPT]
+    parts = [BASE_SYSTEM_PROMPT, OPTIONS_UI_PROMPT, PLATFORM_DATA_PROMPT]
     if memory_section:
         parts.append(memory_section)
     if knowledge:

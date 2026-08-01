@@ -40,8 +40,8 @@ from fastapi.responses import StreamingResponse
 from models.base import get_db
 from models.conversation import Conversation
 from models.message import Message
-from models.plan_analysis import PlanProject
-from models.project import Project
+from models.plan_analysis import PlanAlert, PlanAnalysis, PlanFile, PlanProject, PlanTask
+from models.project import Project, ProjectMilestone
 from models.user import User
 from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
 from services.anthropic_service import build_system_prompt, stream_chat
@@ -389,6 +389,154 @@ async def _persist_memory_item(
     return {"saved": True, "scope": "profile", "key": key}
 
 
+# ════════════════════════════════════════════════════════════════════
+# Acceso directo (SOLO LECTURA) a los datos del usuario en la plataforma:
+# Panel de Proyecto y Análisis de Planos. El modelo las llama cuando la
+# consulta refiere a los proyectos/obras del usuario, en vez de pedirle
+# contexto que la plataforma ya tiene. Siempre scopeado a current_user.
+# ════════════════════════════════════════════════════════════════════
+PROJECT_DATA_TOOL_SCHEMA: dict = {
+    "name": "consultar_panel_proyecto",
+    "description": (
+        "Lee los datos REALES del Panel de Proyecto del usuario: presupuesto "
+        "base, costo real, avance real vs planeado, plazos, fechas y estado de "
+        "los hitos. Llamala SIEMPRE que la consulta refiera a su proyecto/obra "
+        "(números, avance, desvíos, fechas) en vez de pedirle los datos."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "proyecto": {"type": "string",
+                         "description": "Filtro opcional por nombre (o parte) del proyecto"},
+        },
+    },
+}
+
+PLANOS_DATA_TOOL_SCHEMA: dict = {
+    "name": "consultar_analisis_planos",
+    "description": (
+        "Lee los proyectos de Análisis de Planos del usuario: planos cargados, "
+        "alertas por prioridad (críticas/altas/…), tareas pendientes y el resumen "
+        "del último análisis técnico. Llamala SIEMPRE que la consulta refiera a "
+        "sus planos, observaciones de obra o el estado técnico de un proyecto."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "proyecto": {"type": "string",
+                         "description": "Filtro opcional por nombre (o parte) del proyecto"},
+        },
+    },
+}
+
+
+def _fnum(v) -> float:
+    try:
+        return round(float(v), 2)
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+async def _consultar_panel_proyecto(db: AsyncSession, user_id: UUID, inputs: dict) -> dict:
+    filtro = str(inputs.get("proyecto") or "").strip().lower()
+    result = await db.execute(select(Project).where(Project.user_id == user_id))
+    projs = list(result.scalars().all())
+    if filtro:
+        matched = [p for p in projs if filtro in (p.nombre or "").lower()]
+        projs = matched or projs
+    if not projs:
+        return {"proyectos": [], "nota": "No hay proyectos cargados en el Panel de Proyecto."}
+    out = []
+    for p in projs[:5]:
+        ms = (await db.execute(
+            select(ProjectMilestone)
+            .where(ProjectMilestone.project_id == p.id)
+            .order_by(ProjectMilestone.orden.asc())
+        )).scalars().all()
+        out.append({
+            "nombre": p.nombre,
+            "estado": f"{p.estado} — {p.estado_texto}",
+            "presupuesto_base_usd": _fnum(p.presupuesto_base),
+            "costo_real_usd": _fnum(p.costo_real),
+            "avance_real_pct": _fnum(p.avance_real_pct),
+            "avance_plan_pct": _fnum(p.avance_plan_pct),
+            "plazo_meses": f"{p.meses_transcurridos}/{p.meses_total}",
+            "fecha_inicio": p.fecha_inicio.isoformat() if p.fecha_inicio else None,
+            "entrega_programada": p.fecha_entrega_programada.isoformat() if p.fecha_entrega_programada else None,
+            "entrega_estimada": p.fecha_entrega_estimada.isoformat() if p.fecha_entrega_estimada else None,
+            "hitos": [{
+                "nombre": m.nombre,
+                "estado": m.estado,
+                "fecha_objetivo": m.fecha_objetivo.isoformat() if m.fecha_objetivo else None,
+                "fecha_real": m.fecha_real.isoformat() if m.fecha_real else None,
+            } for m in ms[:12]],
+        })
+    return {"proyectos": out}
+
+
+async def _consultar_analisis_planos(db: AsyncSession, user_id: UUID, inputs: dict) -> dict:
+    filtro = str(inputs.get("proyecto") or "").strip().lower()
+    result = await db.execute(select(PlanProject).where(PlanProject.user_id == user_id))
+    projs = list(result.scalars().all())
+    if filtro:
+        matched = [p for p in projs if filtro in (p.name or "").lower()]
+        projs = matched or projs
+    if not projs:
+        return {"proyectos": [], "nota": "No hay proyectos en Análisis de Planos."}
+    out = []
+    for p in projs[:4]:
+        planos = (await db.execute(
+            select(PlanFile.file_name, PlanFile.detected_plan_type, PlanFile.status)
+            .where(PlanFile.project_id == p.id, PlanFile.is_current_version.is_(True))
+        )).all()
+        alerts = (await db.execute(
+            select(PlanAlert)
+            .where(PlanAlert.project_id == p.id,
+                   PlanAlert.status.in_(("pendiente", "en_revision", "validado")))
+            .order_by(PlanAlert.created_at.desc())
+        )).scalars().all()
+        por_prioridad: dict[str, int] = {}
+        for a in alerts:
+            por_prioridad[a.priority] = por_prioridad.get(a.priority, 0) + 1
+        destacadas = [{
+            "titulo": a.title,
+            "prioridad": a.priority,
+            "categoria": a.category,
+            "recomendacion": (a.recommendation or "")[:220],
+        } for a in alerts if a.priority in ("critica", "alta")][:6]
+        tareas = (await db.execute(
+            select(PlanTask)
+            .where(PlanTask.project_id == p.id,
+                   PlanTask.status.in_(("pendiente", "en_curso", "en_revision")))
+            .order_by(PlanTask.created_at.desc())
+        )).scalars().all()
+        ultimo = (await db.execute(
+            select(PlanAnalysis)
+            .where(PlanAnalysis.project_id == p.id)
+            .order_by(PlanAnalysis.created_at.desc())
+            .limit(1)
+        )).scalar_one_or_none()
+        out.append({
+            "nombre": p.name,
+            "tipo_obra": p.obra_type,
+            "ubicacion": p.location or None,
+            "etapa": p.stage,
+            "cliente": p.client_name or None,
+            "planos": [{"archivo": f, "tipo": t or None, "estado": st} for f, t, st in planos[:10]],
+            "alertas_abiertas_por_prioridad": por_prioridad,
+            "alertas_destacadas": destacadas,
+            "tareas_pendientes": [{"titulo": t.title, "prioridad": t.priority,
+                                   "estado": t.status} for t in tareas[:8]],
+            "ultimo_analisis": ({
+                "fecha": ultimo.created_at.isoformat(),
+                "riesgo_general": ultimo.general_risk,
+                "resumen": (ultimo.summary or "")[:600],
+                "recomendaciones": list(ultimo.recommendations or [])[:3],
+            } if ultimo else None),
+        })
+    return {"proyectos": out}
+
+
 def _make_chat_tool_runner(
     db: AsyncSession, user_id: UUID, workspace_id: UUID | None
 ):
@@ -411,6 +559,19 @@ def _make_chat_tool_runner(
             except Exception as e:  # noqa: BLE001
                 logger.exception("generar_documento falló")
                 return {"error": f"No se pudo generar el documento: {e}", "ok": False}
+        # Datos reales del usuario en la plataforma (solo lectura)
+        if name == "consultar_panel_proyecto":
+            try:
+                return await _consultar_panel_proyecto(db, user_id, inputs or {})
+            except Exception as e:  # noqa: BLE001
+                logger.exception("consultar_panel_proyecto falló")
+                return {"error": f"No se pudo leer el Panel de Proyecto: {e}"}
+        if name == "consultar_analisis_planos":
+            try:
+                return await _consultar_analisis_planos(db, user_id, inputs or {})
+            except Exception as e:  # noqa: BLE001
+                logger.exception("consultar_analisis_planos falló")
+                return {"error": f"No se pudo leer Análisis de Planos: {e}"}
         return await run_retrieval_tool(name, inputs)
 
     return _runner
@@ -609,7 +770,8 @@ async def chat(
         tools_arg = (
             RETRIEVAL_TOOL_SCHEMAS
             + CALCULATOR_TOOL_SCHEMAS
-            + [REMEMBER_TOOL_SCHEMA, DOCUMENT_TOOL_SCHEMA]
+            + [REMEMBER_TOOL_SCHEMA, DOCUMENT_TOOL_SCHEMA,
+               PROJECT_DATA_TOOL_SCHEMA, PLANOS_DATA_TOOL_SCHEMA]
         )
         tool_runner_arg = _make_chat_tool_runner(
             db, current_user.id, conv.workspace_id
