@@ -55,6 +55,9 @@ class UserOut(BaseModel):
     automation_prefs: dict | None = None
     # True si el email está en ADMIN_EMAILS (habilita la página /admin.html).
     is_admin: bool = False
+    # False en las cuentas creadas ANTES del checkbox del registro: la app les
+    # pide la aceptación al entrar. No se les puede inventar una fecha.
+    terms_accepted: bool = False
 
 
 class RefreshRequest(BaseModel):

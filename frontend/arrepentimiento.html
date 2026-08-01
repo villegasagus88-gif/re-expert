@@ -6,11 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Botón de Arrepentimiento · RE Expert</title>
   <meta name="description" content="Revocá tu contratación de RE Expert dentro de los 10 días corridos, sin expresar causa y sin costo (art. 34 Ley 24.240, Res. 424/2020).">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tipografías de Google: NO se cargan solas. La URL vive acá y
+       consent.js inyecta el <link> sólo si el visitante lo acepta —
+       cargarlas envía su IP a Google. Sin consentimiento se usa la
+       tipografía del sistema, ya declarada como fallback en el CSS. -->
+  <meta name="re-fuentes" content="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <link rel="stylesheet" href="legal.css">
+  <link rel="stylesheet" href="consent.css">
 </head>
 <body>
   <header class="lg-top">
@@ -23,6 +26,7 @@
         <a href="terminos.html">Términos</a>
         <a href="privacidad.html">Privacidad</a>
         <a href="cookies.html">Cookies</a>
+        <a href="#" onclick="RECookies.abrirPanel();return false;">Preferencias</a>
       </nav>
     </div>
   </header>
@@ -176,5 +180,6 @@
     });
   })();
   </script>
+  <script src="consent.js"></script>
 </body>
 </html>

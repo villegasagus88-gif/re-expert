@@ -356,3 +356,147 @@ def test_la_migracion_agrega_la_columna_sin_reescribir_filas():
     assert "terms_accepted_at" in up
     assert "nullable=True" in up
     assert "server_default" not in up.split("revocation_requests")[0]
+
+
+# ═══ Consentimiento: el banner tiene que GATEAR algo real ═════════════════
+# Un banner con toggles sobre categorías inexistentes da sensación de control
+# sin darlo. Estos tests protegen que lo que se muestra sea cierto.
+
+
+def test_ninguna_pagina_carga_google_fonts_sin_consentimiento():
+    """Era el único envío a un tercero antes de cualquier decisión: el
+    `<link>` estático mandaba la IP del visitante a Google con sólo abrir la
+    página. Ahora la URL vive en un <meta> (que no dispara fetch) y la inyecta
+    consent.js."""
+    import re
+
+    for pagina in _FRONT.glob("*.html"):
+        if pagina.name.startswith("_"):
+            continue
+        html = pagina.read_text(encoding="utf-8")
+        # Fuera de la meta y de los comentarios no puede quedar ninguna
+        # referencia que el navegador vaya a resolver.
+        sin_meta = re.sub(r'<meta name="re-fuentes"[^>]*>', "", html)
+        sin_comentarios = re.sub(r"<!--.*?-->", "", sin_meta, flags=re.S)
+        assert "fonts.googleapis.com" not in sin_comentarios, pagina.name
+        assert "fonts.gstatic.com" not in sin_comentarios, pagina.name
+
+
+def test_las_paginas_con_fuentes_cargan_el_consentimiento():
+    """Si una página declara la meta pero no incluye consent.js, se queda sin
+    tipografía para siempre: nadie le inyecta el link."""
+    for pagina in _FRONT.glob("*.html"):
+        if pagina.name.startswith("_"):
+            continue
+        html = pagina.read_text(encoding="utf-8")
+        if 'name="re-fuentes"' not in html:
+            continue
+        assert '<script src="consent.js"></script>' in html, pagina.name
+        assert 'href="consent.css"' in html, pagina.name
+
+
+def test_el_consentimiento_no_arranca_aceptado():
+    """Un banner que da por aceptado antes de que la persona toque nada no es
+    consentimiento."""
+    js = _leer("consent.js")
+    assert "if (!leer()) mostrarBanner()" in js
+    # y sin decisión previa, permiteFuentes() es false
+    assert "return !!(d && d.fuentes)" in js
+
+
+def test_cerrar_el_banner_no_equivale_a_aceptar():
+    js = _leer("consent.js")
+    i = js.find("function onEsc")
+    assert "decidir(false)" in js[i:i + 300]
+
+
+def test_el_banner_declara_solo_categorias_que_existen():
+    """No hay analítica ni publicidad en el código: ofrecer toggles para eso
+    sería simular un control que no existe."""
+    js = _leer("consent.js")
+    assert "Analítica, publicidad y seguimiento" in js
+    assert "No tenemos." in js
+    # Y el único toggle real es el de las tipografías.
+    assert js.count('type="checkbox"') == 1
+
+
+def test_no_usamos_cookies_de_verdad():
+    """El banner afirma 'no usamos cookies'. Si algún día alguien escribe una,
+    este test lo caza antes de que el texto quede mintiendo.
+
+    Mira CÓDIGO, no comentarios: la primera versión se cazaba a sí misma con el
+    docstring de `consent.js`, que justamente explica que no las usamos.
+    """
+    import re
+
+    for archivo in list(_FRONT.glob("*.js")) + list(_FRONT.glob("*.html")):
+        if archivo.name.startswith("_"):
+            continue
+        texto = archivo.read_text(encoding="utf-8")
+        texto = re.sub(r"/\*.*?\*/", "", texto, flags=re.S)      # bloque JS
+        texto = re.sub(r"^\s*//.*$", "", texto, flags=re.M)       # línea JS
+        texto = re.sub(r"^\s*\*.*$", "", texto, flags=re.M)       # cont. de bloque
+        texto = re.sub(r"<!--.*?-->", "", texto, flags=re.S)      # comentario HTML
+        assert "document.cookie" not in texto, f"{archivo.name} escribe cookies"
+
+
+def test_el_consentimiento_se_puede_retirar():
+    """Retirarlo tiene que ser tan fácil como darlo."""
+    home = _leer("index.html")
+    assert "RECookies.abrirPanel()" in home
+
+
+# ═══ Aceptación de Términos al entrar a la app ════════════════════════════
+
+
+def test_la_app_pide_aceptar_a_las_cuentas_viejas():
+    app_html = _leer("app.html")
+    assert "function termsCheck(" in app_html
+    # y se llama al iniciar sesión, no en una pantalla escondida
+    i = app_html.find("async function onUserLoggedIn")
+    assert "termsCheck(user)" in app_html[i:i + 700]
+
+
+def test_el_modal_no_se_puede_esquivar():
+    """Un aviso que se cierra con Esc o clickeando afuera no es un punto de
+    aceptación: sería el 'al usar la app aceptás' que no tiene valor."""
+    app_html = _leer("app.html")
+    i = app_html.find("function termsCheck(")
+    bloque = app_html[i:i + 3500]
+    assert "termsOut" in bloque, "tiene que ofrecer cerrar sesión como salida"
+    # No hay handler de Escape ni de click en el overlay que lo cierre.
+    assert "Escape" not in bloque
+    assert "terms-overlay').addEventListener" not in bloque
+
+
+def test_el_boton_arranca_deshabilitado():
+    app_html = _leer("app.html")
+    i = app_html.find("function termsCheck(")
+    bloque = app_html[i:i + 3500]
+    assert 'id="termsGo" disabled' in bloque
+
+
+def test_si_falla_el_backend_no_lo_deja_pasar():
+    """Sin constancia registrada, dejarlo entrar nos deja igual que antes."""
+    app_html = _leer("app.html")
+    i = app_html.find("function termsCheck(")
+    bloque = app_html[i:i + 3500]
+    j = bloque.find("catch{")
+    assert "nodo.remove()" not in bloque[j:j + 400], "no puede cerrarse ante un error"
+
+
+def test_el_backend_expone_si_ya_acepto():
+    from api.schemas.auth import UserOut
+
+    assert "terms_accepted" in UserOut.model_fields
+
+
+def test_aceptar_no_re_escribe_la_fecha_original():
+    """La PRIMERA aceptación es la que vale como prueba, no la última visita."""
+    import inspect
+
+    from api.routes.auth import accept_terms
+
+    src = inspect.getsource(accept_terms)
+    assert "terms_accepted_at.is_(None)" in src
+    assert "Ya estaba registrada" in src

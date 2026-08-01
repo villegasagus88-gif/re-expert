@@ -5,9 +5,11 @@
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RE Expert</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tipografías de Google: NO se cargan solas. La URL vive acá y
+       consent.js inyecta el <link> sólo si el visitante lo acepta —
+       cargarlas envía su IP a Google. Sin consentimiento se usa la
+       tipografía del sistema, ya declarada como fallback en el CSS. -->
+  <meta name="re-fuentes" content="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230a0a0a'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <!-- SELF-HOSTED (vendor/): antes venían de cdn.jsdelivr.net. Servirlos desde
        el mismo origen elimina el DNS+TLS al CDN en el primer load Y el punto
@@ -57,6 +59,7 @@
     }
   </style>
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="consent.css">
 </head>
 <body>
   <!-- ROUTE GUARD: overlay que se muestra hasta que requireAuth() resuelva -->
@@ -2239,6 +2242,73 @@ function acctRenderPane(item){
   pane.innerHTML=`<h4 class="acct-pane-title">${escapeHtml(item.label)}</h4>
     <p class="acct-pane-desc">${escapeHtml(item.desc)}</p>
     <div class="acct-soon">Próximamente</div>`;
+}
+
+// ═══ Aceptación de Términos al entrar ════════════════════════════════════
+// Para las cuentas creadas ANTES de que el registro tuviera checkbox. El
+// backend expone `terms_accepted` en /api/auth/me y guarda la fecha en
+// `profiles.terms_accepted_at`: sin eso tendríamos gente usando el Servicio sin
+// ningún punto de aceptación registrable (riesgo R18 del informe legal).
+//
+// Es BLOQUEANTE a propósito: no se cierra con Esc ni clickeando afuera, y no
+// tiene botón de "después". Un aviso que se puede esquivar no es una aceptación
+// —sería exactamente el "al usar la app aceptás" en letra chica que no tiene
+// valor probatorio—. Lo que sí puede hacer quien no quiera aceptar es cerrar
+// sesión, que está a un clic.
+function termsCheck(user){
+  if(!user||user.terms_accepted)return;
+  if(document.getElementById('termsModal'))return;
+
+  const nodo=document.createElement('div');
+  nodo.id='termsModal';
+  nodo.innerHTML=`
+    <div class="terms-overlay"></div>
+    <div class="terms-box" role="dialog" aria-modal="true" aria-labelledby="termsT">
+      <div class="terms-ico" aria-hidden="true">⚖️</div>
+      <h2 class="terms-t" id="termsT">Actualizamos nuestros términos</h2>
+      <p class="terms-p">Publicamos los <b>Términos y Condiciones</b> y la
+        <b>Política de Privacidad</b> de RE Expert. Tu cuenta es anterior, así que
+        necesitamos que los revises una vez para poder seguir.</p>
+
+      <label class="terms-check" for="termsOk">
+        <input type="checkbox" id="termsOk">
+        <span>Leí y acepto los
+          <a href="terminos.html" target="_blank" rel="noopener">Términos y Condiciones</a>
+          y la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a>.</span>
+      </label>
+      <div class="terms-err" id="termsErr"></div>
+
+      <button class="terms-btn" id="termsGo" disabled>Aceptar y continuar</button>
+      <button class="terms-salir" id="termsOut">Cerrar sesión</button>
+    </div>`;
+  document.body.appendChild(nodo);
+
+  const chk=nodo.querySelector('#termsOk'),
+        btn=nodo.querySelector('#termsGo'),
+        err=nodo.querySelector('#termsErr');
+  chk.addEventListener('change',()=>{btn.disabled=!chk.checked; err.textContent='';});
+
+  nodo.querySelector('#termsOut').addEventListener('click',()=>{
+    if(window.REAuthService&&window.REAuthService.logout)window.REAuthService.logout();
+    else location.href='login.html';
+  });
+
+  btn.addEventListener('click',async()=>{
+    if(!chk.checked)return;
+    btn.disabled=true; const t=btn.textContent; btn.textContent='Guardando…';
+    try{
+      const r=await window.REAuthService.authFetch(apiBase()+'/api/auth/accept-terms',
+        {method:'POST',headers:{'Content-Type':'application/json'}});
+      if(!r.ok)throw new Error('http '+r.status);
+      if(state.user)state.user.terms_accepted=true;
+      nodo.remove();
+    }catch{
+      // No cerrar el modal ante un error: si no quedó registrada la aceptación,
+      // dejarlo entrar sería quedarnos sin la constancia igual que antes.
+      err.textContent='No pudimos registrar tu aceptación. Revisá tu conexión y probá de nuevo.';
+      btn.disabled=false; btn.textContent=t;
+    }
+  });
 }
 
 // ═══ Ayuda → Política y privacidad / Términos de servicio ════════════════
@@ -6476,7 +6546,8 @@ function plnBuildReport(enfoque){
   ${simple?'<h2>Próximos pasos</h2><ul><li>Revisar los puntos detectados con el profesional responsable del proyecto.</li><li>Resolver las definiciones pendientes antes de avanzar a la próxima etapa.</li><li>Actualizar la documentación y volver a analizar la nueva versión.</li></ul>':''}
   <div class="disc"><strong>Limitaciones del análisis IA:</strong> ${PLN_DISCLAIMER} El análisis se basa exclusivamente en la legibilidad del documento provisto; medidas y detalles no legibles pueden no estar contemplados.</div>
   <div class="ft">Generado por RE Expert — re-expert.netlify.app · ${today}</div>
-  </body></html>`;
+    <script src="consent.js"></script>
+</body></html>`;
   const w=window.open('','_blank');
   if(!w){plnToast('Permití las ventanas emergentes para generar el reporte',false);return;}
   w.document.write(html);w.document.close();
@@ -9810,6 +9881,10 @@ async function onUserLoggedIn(user){
   state.user=user;
   userPlan=user?.plan||'free';
   hideAuthModal();
+  // Aceptación de Términos para las cuentas creadas ANTES del checkbox del
+  // registro. Va acá arriba, antes de cargar nada: es un punto de aceptación,
+  // no un cartel informativo.
+  termsCheck(user);
   // Mostrar user footer en sidebar
   const footer=document.getElementById('userFooter');
   footer.style.display='flex';
