@@ -188,9 +188,12 @@
           </div>
           <div style="flex:1; min-height:0; display:flex; position:relative;">
             <div data-demo-panel="chat" style="display:flex; flex:1; min-width:0; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:22px 26px; position:relative;">
-              <!-- Mismo skyline animado que el chat de la app real. Lo dibuja
-                   setupSkyline(), que recorre TODOS los [data-skyline]. -->
-              <canvas data-skyline="" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; opacity:0.55; pointer-events:none;"></canvas>
+              <!-- Skyline del chat: usa el MISMO algoritmo 3D que app.html
+                   (edificios con profundidad, coronas, antenas y reflejo), no el
+                   skyline plano del hero. Lo dibuja el bloque [data-app-skyline]
+                   más abajo; atributo distinto justamente para que setupSkyline()
+                   (el del hero) no lo toque. -->
+              <canvas data-app-skyline="" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; opacity:0.85; pointer-events:none;"></canvas>
               <span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; color:#c2410c; background:#fdf1e7; border:1px solid #f5ddc8; border-radius:999px; padding:4px 12px;"><span style="width:5px; height:5px; border-radius:50%; background:#e8833a;"></span>IA de última generación</span>
               <div style="font-size:34px; font-weight:800; letter-spacing:-1.2px; color:#2a1d12;">RE Expert</div>
               <div style="font-size:12.5px; color:#897b6d; text-align:center; max-width:340px; line-height:1.5; margin-top:-8px;">IA especializada en desarrollo inmobiliario, análisis financiero y gestión de proyectos.</div>
@@ -814,16 +817,9 @@ class Component extends DCLogic {
   }
 
   setupSkyline() {
-    // Recorre TODOS los [data-skyline]: el del hero y el del panel de chat de la
-    // maqueta (que replica el fondo animado del chat real). Cada canvas mantiene
-    // su propio estado; los listeners de window se registran UNA sola vez y
-    // reparten a cada instancia, para no multiplicar handlers.
-    const canvases = Array.from(this.root.querySelectorAll('[data-skyline]'));
-    if (!canvases.length) return;
-    const movers = [], resizers = [], stoppers = [];
-    canvases.forEach(cv => {
+    const cv = this.root.querySelector('[data-skyline]');
+    if (!cv) return;
     const ctx = cv.getContext('2d');
-    if (!ctx) return;
     let W = 0, H = 0, dpr = 1, buildings = [], mx = 0.5, my = 0.5;
     const build = () => {
       buildings = [];
@@ -866,18 +862,12 @@ class Component extends DCLogic {
     let raf;
     const loop = (t) => { draw(t); raf = requestAnimationFrame(loop); };
     const onMove = (e) => { mx = e.clientX / window.innerWidth; my = e.clientY / window.innerHeight; };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('resize', resize);
+    this._skylineMove = onMove; this._skylineResize = resize;
     resize();
     if (this.mode === 'off') draw(0);
-    else { raf = requestAnimationFrame(loop); stoppers.push(() => cancelAnimationFrame(raf)); }
-    movers.push(onMove); resizers.push(resize);
-    });
-    const onMoveAll = (e) => { movers.forEach(f => f(e)); };
-    const onResizeAll = () => { resizers.forEach(f => f()); };
-    window.addEventListener('mousemove', onMoveAll, { passive: true });
-    window.addEventListener('resize', onResizeAll);
-    // Mismos nombres que antes: componentWillUnmount los sigue limpiando igual.
-    this._skylineMove = onMoveAll; this._skylineResize = onResizeAll;
-    this._skylineRaf = () => { stoppers.forEach(f => f()); };
+    else { raf = requestAnimationFrame(loop); this._skylineRaf = () => cancelAnimationFrame(raf); }
   }
 
   setupIntro() {
@@ -951,7 +941,16 @@ class Component extends DCLogic {
     }));
     if (this.mode !== 'off') {
       let i = 0;
-      this._demoInt = setInterval(() => { if (this._demoTouched) return; i = (i + 1) % names.length; activate(names[i]); }, 4200);
+      // La rotación arrancaba al cargar la página, así que para cuando el
+      // visitante scrollea hasta la maqueta (aparece recién al ~70% de la
+      // sección intro) ya había rotado a una solapa cualquiera. Mientras la
+      // maqueta no está a la vista la mantenemos en "Chat Experto"; la rotación
+      // empieza cuando efectivamente aterriza en pantalla.
+      this._demoInt = setInterval(() => {
+        if (this._demoTouched) return;
+        if (parseFloat(getComputedStyle(demo).opacity || '0') < 0.9) { i = 0; activate('chat'); return; }
+        i = (i + 1) % names.length; activate(names[i]);
+      }, 4200);
     }
   }
 
@@ -1273,6 +1272,120 @@ class Component extends DCLogic {
   window.__reLandingHydrate = run; /* re-ejecutable (debug/verificación) */
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
+})();
+</script>
+<script>
+/* Skyline del panel "Chat Experto" de la maqueta.
+   Port del initSkyline de app.html para que la landing muestre EL MISMO fondo
+   que el chat real: cajas 3D con profundidad, coronas, antenas, tanques y
+   reflejo — no el skyline plano del hero.
+   Diferencias a propósito: tema claro fijo (la maqueta es clara) y sin
+   interacción de mouse (el canvas vive dentro de una maqueta escalada, seguir
+   el puntero no aporta). Self-contained: no toca setupSkyline() ni el resto. */
+(function () {
+  var K = { edge:'190,81,3', edgeFar:'209,158,120', fF:'238,231,222',
+            fS:'216,204,189', fT:'247,242,235', win:'190,81,3', ground:'201,150,112' };
+
+  function init(cv) {
+    var ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
+    var _seedB = 0, _raf = 0;
+
+    function genB(maxHf) {
+      var r = Math.random(), type = r < 0.36 ? 'tower' : r < 0.68 ? 'slab' : 'mid';
+      var w, hf, parts = [], crown, spire = 0, tank = false, mast = false, i, n, cw;
+      if (type === 'tower') { w = 26 + Math.random()*20; hf = maxHf*(0.62+Math.random()*0.42); n = 2+Math.floor(Math.random()*2); cw = 1; for (i=0;i<n;i++){parts.push({wf:cw,hf:1/n}); cw *= 0.76+Math.random()*0.12;} crown = Math.random()<0.5?'step':'antenna'; spire = 0.05+Math.random()*0.1; }
+      else if (type === 'slab') { w = 42+Math.random()*30; hf = maxHf*(0.4+Math.random()*0.32); n = 1+Math.floor(Math.random()*2); cw = 1; for (i=0;i<n;i++){parts.push({wf:cw,hf:1/n}); cw *= 0.84+Math.random()*0.1;} crown='flat'; mast = Math.random()<0.55; }
+      else { w = 58+Math.random()*42; hf = maxHf*(0.22+Math.random()*0.2); parts.push({wf:1,hf:1}); crown='flat'; tank = Math.random()<0.65; }
+      var d = Math.max(6, Math.min(w*0.2, 19));
+      return { w:w, hf:hf, parts:parts, crown:crown, spire:spire, tank:tank, mast:mast, d:d, seed:Math.random()*10 };
+    }
+
+    function box3d(L, R, topY, botY, d, dim, detail, opts) {
+      opts = opts || {}; var dx = d, dy = d*0.5, a = Math.max(0.35, dim), ea = 0.5*dim;
+      if (opts.top !== false) { ctx.beginPath(); ctx.moveTo(L,topY); ctx.lineTo(R,topY); ctx.lineTo(R+dx,topY-dy); ctx.lineTo(L+dx,topY-dy); ctx.closePath(); ctx.fillStyle='rgba('+K.fT+','+(0.94*a)+')'; ctx.fill(); }
+      ctx.beginPath(); ctx.moveTo(R,topY); ctx.lineTo(R+dx,topY-dy); ctx.lineTo(R+dx,botY-dy); ctx.lineTo(R,botY); ctx.closePath(); ctx.fillStyle='rgba('+K.fS+','+(0.96*a)+')'; ctx.fill();
+      ctx.fillStyle = 'rgba('+K.fF+','+(0.96*a)+')'; ctx.fillRect(L, topY, R-L, botY-topY);
+      if (detail > 0.3 && opts.face !== false) {
+        ctx.save(); ctx.beginPath(); ctx.rect(L,topY,R-L,botY-topY); ctx.clip();
+        var fw = R-L, fh = botY-topY, cols = Math.max(2, Math.round(fw/15)), c, rI;
+        ctx.strokeStyle = 'rgba('+K.edgeFar+','+(0.10*detail*dim)+')'; ctx.lineWidth = 1;
+        for (c=1;c<cols;c++){ var x0 = L+(fw/cols)*c; ctx.beginPath(); ctx.moveTo(x0,topY+1); ctx.lineTo(x0,botY-1); ctx.stroke(); }
+        var rows = Math.max(2, Math.floor(fh/17)), wW = Math.max(2, fw/cols*0.52), wH = Math.max(2.4, fh/rows*0.42);
+        for (rI=0;rI<rows;rI++) for (c=0;c<cols;c++) {
+          if (!((Math.sin(_seedB+rI*1.7+c*2.9)*0.5+0.5) > 0.82)) continue;
+          ctx.fillStyle = 'rgba('+K.win+','+(0.18*dim)+')';
+          ctx.fillRect(L+(fw/cols)*c+(fw/cols-wW)/2, topY+(fh/rows)*rI+(fh/rows-wH)/2, wW, wH);
+        }
+        ctx.restore();
+      }
+      ctx.strokeStyle = 'rgba('+K.edgeFar+','+ea+')'; ctx.lineWidth = 1.1; ctx.lineJoin = 'round';
+      ctx.strokeRect(L, topY, R-L, botY-topY);
+      if (opts.top !== false) { ctx.beginPath(); ctx.moveTo(L,topY); ctx.lineTo(L+dx,topY-dy); ctx.lineTo(R+dx,topY-dy); ctx.lineTo(R,topY); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(R,botY); ctx.lineTo(R+dx,botY-dy); ctx.lineTo(R+dx,topY-dy); ctx.stroke();
+    }
+
+    function draw3D(cx, ground, b, totalH, dim, detail) {
+      _seedB = b.seed;
+      var d = b.d, y = ground, lL = cx-b.w/2, lR = cx+b.w/2, lTop = ground, i;
+      for (i=0;i<b.parts.length;i++) { var p = b.parts[i], pw = b.w*p.wf, ph = totalH*p.hf, L = cx-pw/2, R = cx+pw/2, top = y-ph; box3d(L,R,top,y,d,dim,detail,{}); lL=L; lR=R; lTop=top; y=top; }
+      var dx = d, dy = d*0.5, cw = lR-lL, ccx = (lL+lR)/2;
+      ctx.strokeStyle = 'rgba('+K.edgeFar+','+(0.55*dim)+')'; ctx.lineWidth = 1.2; ctx.lineJoin = 'round';
+      if (b.crown === 'step') { var sw = cw*0.5, sh = Math.min(16, totalH*0.06); box3d(ccx-sw/2, ccx+sw/2, lTop-sh, lTop, d*0.8, dim, 0, {face:false}); }
+      if (b.tank) { var tw = Math.min(15, cw*0.32); box3d(lL+cw*0.16, lL+cw*0.16+tw, lTop-10, lTop, d*0.7, dim, 0, {face:false}); }
+      if (b.spire) { var sH = totalH*b.spire; ctx.beginPath(); ctx.moveTo(ccx+dx*0.5, lTop-dy*0.5); ctx.lineTo(ccx+dx*0.5, lTop-dy*0.5-sH); ctx.stroke(); ctx.fillStyle='rgba('+K.edge+','+(0.6*dim)+')'; ctx.beginPath(); ctx.arc(ccx+dx*0.5, lTop-dy*0.5-sH, 1.8, 0, 6.28); ctx.fill(); }
+      if (b.mast) { ctx.beginPath(); ctx.moveTo(ccx,lTop); ctx.lineTo(ccx,lTop-16); ctx.stroke(); ctx.fillStyle='rgba('+K.edge+','+(0.6*dim)+')'; ctx.beginPath(); ctx.arc(ccx,lTop-16,1.6,0,6.28); ctx.fill(); }
+      if (b.crown === 'antenna') { ctx.beginPath(); ctx.moveTo(lL+3,lTop); ctx.lineTo(lL+3,lTop-8); ctx.moveTo(lR-3,lTop); ctx.lineTo(lR-3,lTop-8); ctx.stroke(); }
+    }
+
+    function paint(cx, ground, b, totalH) {
+      draw3D(cx, ground, b, totalH, 1, 1);
+      ctx.save(); ctx.translate(0, ground*2); ctx.scale(1,-1);
+      var ga = ctx.globalAlpha || 1; ctx.globalAlpha = ga*0.13;
+      draw3D(cx, ground, b, totalH*0.96, 0.55, 0);
+      ctx.globalAlpha = ga; ctx.restore();
+    }
+
+    var layers = [{sp:0.14,mh:0.30,o:0.5},{sp:0.30,mh:0.46,o:0.78},{sp:0.52,mh:0.64,o:1}];
+    function seed() {
+      var w = cv.clientWidth || 600;
+      layers.forEach(function (L) { L.b = []; var x = -30; while (x < w+160) { var bd = genB(L.mh); bd.x = x; L.b.push(bd); x += bd.w + (14+Math.random()*32); } L.right = x; });
+    }
+    seed();
+
+    function frame(loop) {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+      if (w <= 0 || h <= 0) { if (loop) _raf = requestAnimationFrame(function(){frame(true);}); return; }
+      /* canvas.width/height son ENTEROS: sin redondear, con escalado de pantalla
+         != 100% la comparación nunca coincide y seed() correría en cada frame
+         (el bug que tenía el skyline de la app). */
+      var cw = Math.round(w*dpr), ch = Math.round(h*dpr);
+      if (cv.width !== cw || cv.height !== ch) { cv.width = cw; cv.height = ch; seed(); }
+      ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+      var ground = h*0.95;
+      ctx.strokeStyle = 'rgba('+K.ground+',0.22)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,ground+0.5); ctx.lineTo(w,ground+0.5); ctx.stroke();
+      for (var li=0; li<layers.length; li++) {
+        var L = layers[li], b, k;
+        if (loop) {
+          for (k=0;k<L.b.length;k++) { b = L.b[k]; b.x -= L.sp*1.2; if (b.x < -170) { var nb = genB(L.mh); nb.x = L.right; for (var key in nb) b[key] = nb[key]; L.right = b.x + b.w + (14+Math.random()*32); } }
+          var mr = 0; for (k=0;k<L.b.length;k++) mr = Math.max(mr, L.b[k].x + L.b[k].w);
+          L.right = Math.max(L.right - L.sp, mr + (14+Math.random()*32));
+        }
+        for (k=0;k<L.b.length;k++) { b = L.b[k]; var totalH = b.hf*h; if (totalH < 3) continue; ctx.globalAlpha = L.o; paint(b.x + b.w/2, ground, b, totalH); ctx.globalAlpha = 1; }
+      }
+      if (loop) _raf = requestAnimationFrame(function(){frame(true);});
+    }
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var force = /[?&]motion=on/.test(location.search || '');
+    frame(!(reduce && !force));
+  }
+
+  function boot() {
+    try { Array.prototype.forEach.call(document.querySelectorAll('[data-app-skyline]'), init); }
+    catch (e) { /* decorativo: nunca debe romper la landing */ }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 </script>
   <script src="consent.js"></script>
