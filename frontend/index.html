@@ -690,6 +690,10 @@ class Component extends DCLogic {
     this.setupNav();
     this.setupCursorGlow();
     this.setupSkyline();
+    // Hovers: van también en modo 'off'. Son transiciones disparadas por el
+    // usuario (no movimiento automático) y el modo 'off' solo apaga
+    // `animation`, no `transition`.
+    this.setupHovers();
 
     if (mode === 'off') {
       const s = document.createElement('style');
@@ -915,6 +919,43 @@ class Component extends DCLogic {
       let i = 0;
       this._demoInt = setInterval(() => { if (this._demoTouched) return; i = (i + 1) % names.length; activate(names[i]); }, 4200);
     }
+  }
+
+  // Los 26 atributos style-hover="..." del markup no los leía nadie: quedaban
+  // declarados pero muertos (la landing se sentía estática). Los revivimos
+  // generando reglas CSS :hover reales, NO tocando el style inline.
+  //
+  // ¿Por qué CSS y no JS con mouseenter/mouseleave? Porque 12 de esos
+  // elementos también tienen [data-reveal], y setupReveal() les escribe
+  // style.transform/opacity inline. Si guardáramos y restauráramos el inline
+  // al salir el mouse, podríamos dejar una tarjeta trabada en translateY(26px).
+  // Con :hover el browser revierte solo al valor inline vigente. Va !important
+  // porque el inline (que setea el reveal) le gana a una regla normal.
+  setupHovers() {
+    const root = this.root;
+    const els = Array.from(root.querySelectorAll('[style-hover]'));
+    if (!els.length) return;
+    const byRule = new Map();
+    els.forEach(el => {
+      const raw = (el.getAttribute('style-hover') || '').trim();
+      if (!raw) return;
+      if (!byRule.has(raw)) byRule.set(raw, byRule.size);
+      el.setAttribute('data-hv', String(byRule.get(raw)));
+    });
+    if (!byRule.size) return;
+    let css = '';
+    byRule.forEach((idx, raw) => {
+      const decls = raw.split(';')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(d => /!important\s*$/.test(d) ? d : d + ' !important')
+        .join('; ');
+      css += '#re [data-hv="' + idx + '"]:hover{' + decls + '}\n';
+    });
+    const st = document.createElement('style');
+    st.setAttribute('data-re-hover', '');
+    st.textContent = css;
+    document.head.appendChild(st);
   }
 
   setupCursorGlow() {
