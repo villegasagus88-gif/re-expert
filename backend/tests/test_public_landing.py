@@ -1,7 +1,8 @@
 """Tests del endpoint público de la landing (/api/public/landing).
 
-Contrato: sin auth, shape estable {materials:{items,updated_at}, news:{items}},
-best-effort (fuentes caídas → items vacíos, nunca 500) y sin datos sensibles.
+Contrato: sin auth, shape estable {materials:{items,updated_at}, news:{items},
+market:{dolar,updated_at,stale}}, best-effort (fuentes caídas → items vacíos,
+nunca 500) y sin datos sensibles.
 """
 from unittest.mock import AsyncMock, patch
 
@@ -16,15 +17,22 @@ def _reset_cache():
     pl._cache["data"] = None
 
 
+_MARKET_VACIO = {"dolar": {}, "updated_at": "", "stale": True}
+
+
 def test_landing_publico_sin_auth_200_y_shape():
     """Sin token: 200 con el shape esperado (materiales del CSV real del repo)."""
     _reset_cache()
     client = TestClient(app)
-    with patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})):
+    with (
+        patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})),
+        patch.object(pl, "_market_sample", new=AsyncMock(return_value=_MARKET_VACIO)),
+    ):
         r = client.get("/api/public/landing")
     assert r.status_code == 200
     body = r.json()
-    assert set(body.keys()) == {"materials", "news"}
+    assert set(body.keys()) == {"materials", "news", "market"}
+    assert set(body["market"].keys()) == {"dolar", "updated_at", "stale"}
     mats = body["materials"]
     assert set(mats.keys()) == {"items", "updated_at"}
     assert isinstance(mats["items"], list) and len(mats["items"]) <= 6
@@ -45,6 +53,7 @@ def test_landing_fuentes_caidas_no_rompe():
     with (
         patch.object(pl, "_materials_sample", return_value={"items": [], "updated_at": ""}),
         patch.object(pl, "_news_sample", new=AsyncMock(side_effect=RuntimeError("boom"))),
+        patch.object(pl, "_market_sample", new=AsyncMock(return_value=_MARKET_VACIO)),
     ):
         # _news_sample ya atrapa sus errores internamente; acá simulamos incluso
         # un fallo del helper entero → el endpoint debería explotar solo si no
@@ -60,17 +69,65 @@ def test_landing_fuentes_caidas_no_rompe():
 
     # Camino real: _news_sample nunca lanza aunque fetch_feed explote.
     _reset_cache()
-    with patch("services.news_live.fetch_feed", new=AsyncMock(side_effect=RuntimeError("tavily down"))):
+    with (
+        patch("services.news_live.fetch_feed", new=AsyncMock(side_effect=RuntimeError("tavily down"))),
+        patch.object(pl, "_market_sample", new=AsyncMock(return_value=_MARKET_VACIO)),
+    ):
         r2 = client.get("/api/public/landing")
     assert r2.status_code == 200
     assert r2.json()["news"] == {"items": []}
+
+
+def test_landing_dolar_caido_no_rompe_ni_inventa():
+    """Si la fuente del dólar falla, la landing sigue en 200 y `market` avisa que
+    está viejo con `stale`: nunca una cotización inventada."""
+    _reset_cache()
+    client = TestClient(app)
+    with (
+        patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})),
+        patch("services.dolar_service.get_dolar_rates",
+              new=AsyncMock(side_effect=RuntimeError("dolarapi down"))),
+    ):
+        r = client.get("/api/public/landing")
+    assert r.status_code == 200
+    assert r.json()["market"] == {"dolar": {}, "updated_at": "", "stale": True}
+
+
+def test_landing_dolar_shape_saneado():
+    """Del dólar sale SOLO venta (float) y nombre truncado — nada del proveedor."""
+    _reset_cache()
+    client = TestClient(app)
+    crudo = {
+        "rates": {
+            "blue": {"venta": "1450.5", "compra": 1400, "nombre": "Blue", "secreto": "NO"},
+            "oficial": {"venta": 1010.0, "nombre": "O" * 99},
+            "mep": {"venta": 1300.0, "nombre": "MEP"},   # no lo exponemos
+        },
+        "updated_at": "2026-08-02T05:00:00Z",
+        "stale": False,
+    }
+    with (
+        patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})),
+        patch("services.dolar_service.get_dolar_rates", new=AsyncMock(return_value=crudo)),
+    ):
+        r = client.get("/api/public/landing")
+    assert r.status_code == 200
+    market = r.json()["market"]
+    assert set(market["dolar"].keys()) == {"blue", "oficial"}
+    assert market["dolar"]["blue"] == {"venta": 1450.5, "nombre": "Blue"}
+    assert len(market["dolar"]["oficial"]["nombre"]) <= 40
+    assert market["updated_at"] == "2026-08-02"   # solo la fecha
+    assert market["stale"] is False
 
 
 def test_landing_cache_ttl():
     """Segunda llamada dentro del TTL sale del cache (no re-lee fuentes)."""
     _reset_cache()
     client = TestClient(app)
-    with patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})) as news_mock:
+    with (
+        patch.object(pl, "_news_sample", new=AsyncMock(return_value={"items": []})) as news_mock,
+        patch.object(pl, "_market_sample", new=AsyncMock(return_value=_MARKET_VACIO)),
+    ):
         r1 = client.get("/api/public/landing")
         r2 = client.get("/api/public/landing")
     assert r1.status_code == r2.status_code == 200
@@ -89,7 +146,10 @@ def test_landing_news_shape_saneado():
         "category": "economia", "published": "2026-07-01", "url": "https://x/" + "u" * 700,
         "secreto_interno": "NO debe salir", "image": "https://img",
     }]}
-    with patch("services.news_live.fetch_feed", new=AsyncMock(return_value=fake_feed)):
+    with (
+        patch("services.news_live.fetch_feed", new=AsyncMock(return_value=fake_feed)),
+        patch.object(pl, "_market_sample", new=AsyncMock(return_value=_MARKET_VACIO)),
+    ):
         r = client.get("/api/public/landing")
     assert r.status_code == 200
     items = r.json()["news"]["items"]
