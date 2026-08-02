@@ -7,7 +7,8 @@ landing es pública no puede pegarle a /api/materials ni /api/news (requieren
 auth + plan), así que este endpoint expone una MUESTRA read-only y cacheada:
 
   GET /api/public/landing → { materials: {items[≤6], updated_at},
-                              news: {items[≤6]} }
+                              news: {items[≤6]},
+                              market: {dolar:{blue,oficial}, updated_at, stale} }
 
 Diseño:
   - Sin auth y sin datos de usuario: solo contenido ya público en la app
@@ -66,6 +67,46 @@ def _materials_sample() -> dict:
     return {"items": items, "updated_at": updated}
 
 
+async def _market_sample() -> dict:
+    """Cotización REAL del dólar para el bloque "Señales del mercado".
+
+    Reusa services.dolar_service (el mismo que ya alimenta la calculadora de
+    créditos), que cachea 10 min y sale por el guard anti-SSRF. Solo exponemos
+    el dólar: el resto de las señales de la landing (tasa BCRA, CAC, m² CABA)
+    NO tienen fuente estructurada en el backend y quedan como ilustrativas.
+
+    Best-effort: si falla, dict vacío → la landing conserva su valor estático.
+    """
+    try:
+        from services.dolar_service import get_dolar_rates
+        data = await get_dolar_rates()
+        rates = data.get("rates") or {}
+        dolar: dict = {}
+        for casa in ("blue", "oficial"):
+            row = rates.get(casa) or {}
+            venta = row.get("venta")
+            if venta is None:
+                continue
+            try:
+                dolar[casa] = {
+                    "venta": float(venta),
+                    "nombre": str(row.get("nombre") or casa.capitalize())[:40],
+                }
+            except (TypeError, ValueError):
+                continue
+        if not dolar:
+            return {"dolar": {}, "updated_at": "", "stale": True}
+        return {
+            "dolar": dolar,
+            # solo la fecha (YYYY-MM-DD): la landing muestra "al <fecha>"
+            "updated_at": str(data.get("updated_at") or "")[:10],
+            "stale": bool(data.get("stale")),
+        }
+    except Exception:  # noqa: BLE001 — best-effort: la landing tiene fallback estático
+        logger.exception("public_landing: cotización del dólar no disponible")
+        return {"dolar": {}, "updated_at": "", "stale": True}
+
+
 async def _news_sample() -> dict:
     """Últimos titulares del feed en vivo (cacheado en news_live); solo campos
     públicos de cada nota. Si el feed falla → lista vacía (la landing no rompe)."""
@@ -99,6 +140,7 @@ async def get_landing_data() -> dict:
     data = {
         "materials": _materials_sample(),
         "news": await _news_sample(),
+        "market": await _market_sample(),
     }
     # Cachear solo respuestas con algo de contenido: un arranque en frío con
     # ambas fuentes caídas no debe quedar clavado 10 minutos.
