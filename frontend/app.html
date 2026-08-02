@@ -2255,6 +2255,19 @@ function acctRenderPane(item){
 // —sería exactamente el "al usar la app aceptás" en letra chica que no tiene
 // valor probatorio—. Lo que sí puede hacer quien no quiera aceptar es cerrar
 // sesión, que está a un clic.
+// init() lee el usuario de la sesión guardada (getStoredUser), NO de
+// /api/auth/me. Tras aceptar hay que actualizar esa copia o un F5 —antes del
+// próximo refresh de token— volvía a mostrar el aviso. _storeSession con
+// refreshToken=null conserva el refresh ya guardado y mantiene sincronizada la
+// entrada del multi-cuenta. Va aparte de termsCheck a propósito: su try/catch
+// no debe confundirse con el del alta, que NO puede cerrar el modal ante error.
+async function termsPersistLocal(){
+  try{
+    const A=window.REAuthService, su=A&&A.getStoredUser&&A.getStoredUser();
+    if(su&&A._storeSession){su.terms_accepted=true;A._storeSession(await A.getAccessToken(),null,su);}
+  }catch(e){/* no crítico: la constancia ya quedó registrada en el backend */}
+}
+
 function termsCheck(user){
   if(!user||user.terms_accepted)return;
   if(document.getElementById('termsModal'))return;
@@ -2301,6 +2314,7 @@ function termsCheck(user){
         {method:'POST',headers:{'Content-Type':'application/json'}});
       if(!r.ok)throw new Error('http '+r.status);
       if(state.user)state.user.terms_accepted=true;
+      await termsPersistLocal();
       nodo.remove();
     }catch{
       // No cerrar el modal ante un error: si no quedó registrada la aceptación,

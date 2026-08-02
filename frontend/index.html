@@ -96,6 +96,9 @@
     #re *, #re *::before, #re *::after { animation: none !important; }
   }
   #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
+  /* El canvas del skyline va posicionado y por eso pintaría ENCIMA del contenido
+     estático del panel. Subimos los hermanos (no el canvas) a su propia capa. */
+  #re [data-demo-panel="chat"] > *:not(canvas) { position: relative; z-index: 1; }
   </style>
   <link rel="stylesheet" href="consent.css">
 </head>
@@ -185,6 +188,9 @@
           </div>
           <div style="flex:1; min-height:0; display:flex; position:relative;">
             <div data-demo-panel="chat" style="display:flex; flex:1; min-width:0; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:22px 26px; position:relative;">
+              <!-- Mismo skyline animado que el chat de la app real. Lo dibuja
+                   setupSkyline(), que recorre TODOS los [data-skyline]. -->
+              <canvas data-skyline="" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; opacity:0.55; pointer-events:none;"></canvas>
               <span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; color:#c2410c; background:#fdf1e7; border:1px solid #f5ddc8; border-radius:999px; padding:4px 12px;"><span style="width:5px; height:5px; border-radius:50%; background:#e8833a;"></span>IA de última generación</span>
               <div style="font-size:34px; font-weight:800; letter-spacing:-1.2px; color:#2a1d12;">RE Expert</div>
               <div style="font-size:12.5px; color:#897b6d; text-align:center; max-width:340px; line-height:1.5; margin-top:-8px;">IA especializada en desarrollo inmobiliario, análisis financiero y gestión de proyectos.</div>
@@ -292,12 +298,22 @@
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><span style="font-size:9px; font-weight:800; color:#fff; background:#0d9488; border-radius:6px; padding:3px 9px;">Ciudad</span><div style="font-size:11.5px; font-weight:700; color:#2a1d12; margin-top:8px;">Primera Vivienda CABA</div><div style="font-size:22px; font-weight:800; letter-spacing:-0.8px; color:#2a1d12; margin-top:4px;">7,5%<span style="font-size:10px; color:#a89a8b; font-weight:600;"> UVA TNA</span></div><div style="display:flex; gap:14px; font-size:9.5px; color:#897b6d; margin-top:6px;"><span><b style="color:#2a1d12;">20 años</b> plazo máx.</span><span><b style="color:#2a1d12;">75%</b> financia</span></div><div style="font-size:10.5px; font-weight:700; color:#8f3d02; border:1px solid #f0d9c2; border-radius:8px; padding:6px; text-align:center; margin-top:9px;">Ver detalle</div></div>
               </div>
             </div> <div data-demo-panel="academia" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden;"><div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Academia</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px;">El lugar donde un profesional o estudiante del real estate entra para formarse, actualizarse y encontrar cursos confiables del rubro — curados por RE Expert.</div></div><div style="display:flex; gap:6px; flex-wrap:wrap;"><span style="font-size:10.5px; font-weight:700; color:#fff; background:#BE5103; border-radius:999px; padding:4px 12px;">Desarrollo</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Construcción y arquitectura</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Inmobiliario</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Legal</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Tecnología e IA</span></div><div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;"><div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">DESARROLLO · PRINCIPIANTE</div><div style="font-size:12.5px; font-weight:700; color:#2a1d12; margin-top:6px; line-height:1.35;">Tu Primer Desarrollo Inmobiliario: de la Idea al Proyecto Rentable</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#15803d; background:#e8f6ec; border-radius:999px; padding:2px 8px; margin-top:8px;">GRATIS</span></div><div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">DESARROLLO · PRINCIPIANTE</div><div style="font-size:12.5px; font-weight:700; color:#2a1d12; margin-top:6px; line-height:1.35;">Radiografía del Terreno: Factibilidad Urbanística, Técnica y Comercial</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#8f3d02; background:#fdf1e7; border-radius:999px; padding:2px 8px; margin-top:8px;">$220.000</span></div><div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">CONSTRUCCIÓN · PRINCIPIANTE</div><div style="font-size:12.5px; font-weight:700; color:#2a1d12; margin-top:6px; line-height:1.35;">Cómputos y Presupuestos: dominá los números de tu obra</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#8f3d02; background:#fdf1e7; border-radius:999px; padding:2px 8px; margin-top:8px;">$220.000</span></div></div><div style="font-size:10px; color:#a89a8b;">5 catálogos · 30 cursos · rutas de aprendizaje por catálogo</div></div>
-            <div data-demo-panel="planos" style="display:none; flex:1; min-width:0; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:22px 26px;">
-              <span style="width:52px; height:52px; border-radius:14px; background:#fdf1e7; border:1px solid #f5ddc8; display:flex; align-items:center; justify-content:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#BE5103" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path><path d="m13 14 2 2 3-3"></path></svg></span>
-              <div style="font-size:20px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Análisis de Planos</div>
-              <div style="font-size:12px; color:#897b6d; text-align:center; max-width:380px; line-height:1.55; margin-top:-6px;">Subí un plano en PDF o imagen y la IA detecta superficies, ambientes y observaciones normativas en segundos.</div>
-              <div style="width:min(420px,100%); border:1.5px dashed #dcc9b4; border-radius:12px; padding:22px; text-align:center; background:#fdfaf6;"><div style="font-size:12px; font-weight:700; color:#8f3d02;">Arrastrá tu plano acá</div><div style="font-size:10.5px; color:#a89a8b; margin-top:3px;">PDF, JPG o PNG · hasta 20MB</div></div>
-              <div style="display:flex; gap:7px;"><span style="font-size:10px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 10px; border-radius:999px; font-family:'JetBrains Mono',monospace;">84 m² detectados</span><span style="font-size:10px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 10px; border-radius:999px; font-family:'JetBrains Mono',monospace;">3 ambientes</span><span style="font-size:10px; font-weight:600; color:#8f3d02; background:rgba(190,81,3,0.1); padding:4px 10px; border-radius:999px; font-family:'JetBrains Mono',monospace;">FOT ok</span></div>
+            <div data-demo-panel="planos" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden;">
+              <div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Análisis de Planos</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px; line-height:1.5;">Subí tus planos y obtené una <b style="color:#5c4d40;">revisión inteligente antes de obra</b>: riesgos priorizados, inconsistencias, checklist, tareas y reportes — organizado por proyecto.</div></div>
+              <div style="display:flex; gap:8px;"><span style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; background:#fff; border-radius:9px; padding:6px 12px;">📚 Errores frecuentes</span><span style="display:inline-flex; align-items:center; font-size:11px; font-weight:700; color:#fff; background:#BE5103; border-radius:9px; padding:6px 13px;">+ Nuevo proyecto</span></div>
+              <div style="display:flex; gap:8px;">
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:10px 12px;"><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12;">2</div><div style="font-size:9px; font-weight:700; color:#a89a8b; letter-spacing:0.5px; margin-top:2px;">PROYECTOS</div></div>
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:10px 12px;"><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12;">7</div><div style="font-size:9px; font-weight:700; color:#a89a8b; letter-spacing:0.5px; margin-top:2px;">PLANOS</div></div>
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:10px 12px;"><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#dc2626;">1</div><div style="font-size:9px; font-weight:700; color:#a89a8b; letter-spacing:0.5px; margin-top:2px;">OBS. CRÍTICAS</div></div>
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:10px 12px;"><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#ea580c;">3</div><div style="font-size:9px; font-weight:700; color:#a89a8b; letter-spacing:0.5px; margin-top:2px;">OBS. ALTAS</div></div>
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:10px 12px;"><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12;">5</div><div style="font-size:9px; font-weight:700; color:#a89a8b; letter-spacing:0.5px; margin-top:2px;">TAREAS PENDIENTES</div></div>
+              </div>
+              <div style="display:flex; gap:8px;"><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; color:#5c4d40; border:1px solid #e8ddd0; background:#fff; border-radius:8px; padding:5px 11px;">Todas las etapas ⌄</span><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; color:#5c4d40; border:1px solid #e8ddd0; background:#fff; border-radius:8px; padding:5px 11px;">Todos los tipos ⌄</span></div>
+              <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;">
+                <div style="font-size:13px; font-weight:700; color:#2a1d12;">Torre Aráoz</div>
+                <div style="font-size:10.5px; color:#a89a8b; margin-top:3px;">Vivienda multifamiliar · Anteproyecto · Palermo</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:9px;"><span style="font-size:10.5px; color:#897b6d;">📐 5 planos · última revisión hace 2 días</span><span style="font-size:10.5px; font-weight:700; color:#fff; background:#BE5103; border-radius:8px; padding:5px 12px;">Ingresar →</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -450,17 +466,15 @@
             <span style="font-size:15px; font-weight:700; color:#2a1d12;">Índice de costo de construcción</span>
             <span style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:#22a06b; background:rgba(34,160,107,0.12); padding:3px 9px; border-radius:999px;"><span style="width:6px; height:6px; border-radius:50%; background:#22a06b; "></span>REFERENCIA</span>
           </div>
-          <div style="color:#897b6d; font-size:12.5px; margin-bottom:18px;">Histórico (CAC) + pronóstico IA · variación mensual</div>
-          <svg viewBox="0 0 520 200" preserveAspectRatio="none" style="width:100%; height:190px; display:block;">
+          <div style="color:#897b6d; font-size:12.5px; margin-bottom:18px;">Histórico (CAC) · variación mensual</div>
+          <svg viewBox="0 0 390 200" preserveAspectRatio="none" style="width:100%; height:190px; display:block;">
             <defs><linearGradient id="reArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--acc,#BE5103)"></stop><stop offset="100%" stop-color="transparent"></stop></linearGradient></defs>
             <path data-chart-area="" d="M0,150 L65,138 L130,144 L195,110 L260,120 L325,80 L390,92 L390,200 L0,200 Z" fill="url(#reArea)" style="opacity:0.16;"></path>
             <path data-chart-draw="" d="M0,150 L65,138 L130,144 L195,110 L260,120 L325,80 L390,92" fill="none" stroke="var(--acc,#BE5103)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:900; stroke-dashoffset:0;"></path>
-            <path d="M390,92 L455,66 L520,44" fill="none" stroke="#d97706" stroke-width="2.5" stroke-dasharray="7 7" stroke-linecap="round" stroke-linejoin="round"></path>
-            <circle cx="390" cy="92" r="4" fill="var(--acc,#BE5103)"></circle><circle cx="520" cy="44" r="4" fill="#d97706"></circle>
+            <circle cx="390" cy="92" r="4" fill="var(--acc,#BE5103)"></circle>
           </svg>
           <div style="display:flex; gap:20px; margin-top:14px; font-size:12px; color:#897b6d;">
             <span style="display:inline-flex; align-items:center; gap:7px;"><i style="display:inline-block; width:14px; height:3px; border-radius:2px; background:var(--acc,#BE5103);"></i>Histórico</span>
-            <span style="display:inline-flex; align-items:center; gap:7px;"><i style="display:inline-block; width:14px; height:3px; border-radius:2px; background:#d97706;"></i>Pronóstico IA</span>
           </div>
         </div>
         <div data-reveal="" data-delay="120" style="background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:24px; box-shadow:0 1px 3px rgba(42,29,18,0.03);">
@@ -647,17 +661,18 @@
         </nav>
       </div>
       <div style="height:1px; background:#f0eae2; margin:28px 0 20px;"></div>
-      <!-- Legales. El Botón de Arrepentimiento va destacado y con recuadro
-           porque la Resolución 424/2020 lo exige "en un lugar visible" de la
-           página de inicio: perdido entre los demás links no cumpliría. -->
+      <!-- Legales.
+           NOTA: acá iba el Botón de Arrepentimiento, sacado a pedido del dueño
+           del proyecto. La página arrepentimiento.html sigue publicada y
+           enlazada desde el resto del sitio; sólo se quitó de esta home. La
+           Resolución 424/2020 lo exige "en un lugar visible" de la página de
+           inicio para venta a consumidores, así que si se reactivan los cobros
+           conviene reponerlo. -->
       <nav style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:20px;">
         <a href="terminos.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Términos y Condiciones</a>
         <a href="privacidad.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Política de Privacidad</a>
         <a href="cookies.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Política de Cookies</a>
         <a href="#" onclick="RECookies.abrirPanel();return false;" style="color:#897b6d; font-size:13px; text-decoration:none;">Preferencias de privacidad</a>
-        <a href="arrepentimiento.html" style="display:inline-flex; align-items:center; gap:7px; color:#8f3d02; font-size:13px; font-weight:700; text-decoration:none; border:1px solid #e8ddd0; background:#fff; border-radius:8px; padding:7px 13px;">
-          <span aria-hidden="true">⚖️</span> Botón de Arrepentimiento
-        </a>
       </nav>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
         <div style="color:#b3a799; font-size:13px;">© 2026 RE Expert · Real Estate AI · Hecho en Argentina 🇦🇷</div>
@@ -799,9 +814,16 @@ class Component extends DCLogic {
   }
 
   setupSkyline() {
-    const cv = this.root.querySelector('[data-skyline]');
-    if (!cv) return;
+    // Recorre TODOS los [data-skyline]: el del hero y el del panel de chat de la
+    // maqueta (que replica el fondo animado del chat real). Cada canvas mantiene
+    // su propio estado; los listeners de window se registran UNA sola vez y
+    // reparten a cada instancia, para no multiplicar handlers.
+    const canvases = Array.from(this.root.querySelectorAll('[data-skyline]'));
+    if (!canvases.length) return;
+    const movers = [], resizers = [], stoppers = [];
+    canvases.forEach(cv => {
     const ctx = cv.getContext('2d');
+    if (!ctx) return;
     let W = 0, H = 0, dpr = 1, buildings = [], mx = 0.5, my = 0.5;
     const build = () => {
       buildings = [];
@@ -844,12 +866,18 @@ class Component extends DCLogic {
     let raf;
     const loop = (t) => { draw(t); raf = requestAnimationFrame(loop); };
     const onMove = (e) => { mx = e.clientX / window.innerWidth; my = e.clientY / window.innerHeight; };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    window.addEventListener('resize', resize);
-    this._skylineMove = onMove; this._skylineResize = resize;
     resize();
     if (this.mode === 'off') draw(0);
-    else { raf = requestAnimationFrame(loop); this._skylineRaf = () => cancelAnimationFrame(raf); }
+    else { raf = requestAnimationFrame(loop); stoppers.push(() => cancelAnimationFrame(raf)); }
+    movers.push(onMove); resizers.push(resize);
+    });
+    const onMoveAll = (e) => { movers.forEach(f => f(e)); };
+    const onResizeAll = () => { resizers.forEach(f => f()); };
+    window.addEventListener('mousemove', onMoveAll, { passive: true });
+    window.addEventListener('resize', onResizeAll);
+    // Mismos nombres que antes: componentWillUnmount los sigue limpiando igual.
+    this._skylineMove = onMoveAll; this._skylineResize = onResizeAll;
+    this._skylineRaf = () => { stoppers.forEach(f => f()); };
   }
 
   setupIntro() {

@@ -37,7 +37,13 @@ def _verify_password(password: str, password_hash: str) -> bool:
 
 
 def _user_to_dict(user: User) -> dict:
-    """Convert a User ORM instance to the API response dict."""
+    """Convert a User ORM instance to the API response dict.
+
+    Incluye `terms_accepted` igual que GET /api/auth/me: el frontend guarda ESTE
+    dict en localStorage al loguearse/refrescar y de ahí lo lee para decidir si
+    muestra el aviso de Términos. Sin el campo llegaba `undefined` (falsy) y el
+    modal reaparecía en cada ingreso aunque la aceptación ya estuviera guardada.
+    """
     return {
         "id": str(user.id),
         "email": user.email,
@@ -45,6 +51,7 @@ def _user_to_dict(user: User) -> dict:
         "role": user.role,
         "plan": user.plan,
         "onboarding_completed": user.onboarding_completed,
+        "terms_accepted": user.terms_accepted_at is not None,
     }
 
 
