@@ -46,9 +46,11 @@
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap">
+  <!-- Tipografías de Google: NO se cargan solas. La URL vive acá y
+       consent.js inyecta el <link> sólo si el visitante lo acepta —
+       cargarlas envía su IP a Google. Sin consentimiento se usa la
+       tipografía del sistema, ya declarada como fallback en el CSS. -->
+  <meta name="re-fuentes" content="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap">
 
   <script src="config.js"></script>
   <script src="sentry.js"></script>
@@ -95,6 +97,7 @@
   }
   #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
   </style>
+  <link rel="stylesheet" href="consent.css">
 </head>
 <body>
 <div id="re" style="--acc:#BE5103;--acc2:#8f3d02;--ease:cubic-bezier(0.16,1,0.3,1);position:relative; background:#ffffff; color:#2a1d12; font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; line-height:1.5;">
@@ -163,7 +166,7 @@
           <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden;">
             <button data-demo-tab="chat" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span data-lbl="">Chat Experto</span></button>
             <button data-demo-tab="planos" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg><span data-lbl="">Análisis de Planos</span></button>
-            <button data-demo-tab="materiales" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg><span data-lbl="">Cotización Materiales</span></button>
+            <button data-demo-tab="materiales" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg><span data-lbl="">Materiales &amp; Corralones</span></button>
             <button data-demo-tab="panel" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg><span data-lbl="">Panel de Proyecto</span></button>
             <button data-demo-tab="scanner" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span data-lbl="">Opportunity Scanner</span></button>
             <button data-demo-tab="noticias" style="display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:transparent; color:#b5a898; font-size:11.5px; font-weight:500; font-family:inherit; cursor:pointer; text-align:left;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M4 22V4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16a2 2 0 0 1-2 2z"></path><path d="M16 8h-8"></path><path d="M16 12h-8"></path></svg><span data-lbl="">Noticias</span></button>
@@ -195,9 +198,15 @@
               <div style="font-size:9.5px; color:#c4b8aa;">RE Expert puede cometer errores. Verificá la información importante.</div>
             </div>
             <div data-demo-panel="materiales" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden;">
-              <div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Cotización de Materiales</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px;">Precios de referencia, seguimiento de aumentos y proyecciones.</div></div>
-              <div style="display:flex; gap:16px; border-bottom:1px solid #f0eae2; font-size:11.5px;"><span style="padding:6px 2px; border-bottom:2px solid #BE5103; color:#8f3d02; font-weight:700;">Precios actuales</span><span style="padding:6px 2px; color:#897b6d;">Seguimiento</span><span style="padding:6px 2px; color:#897b6d;">Pronósticos</span></div>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;"><span style="font-size:10.5px; font-weight:700; color:#fff; background:#BE5103; border-radius:999px; padding:4px 12px;">Todos</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Cementos</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Hierros</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Ladrillos</span><span style="font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:4px 12px;">Hormigón</span></div>
+              <div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Materiales &amp; Corralones</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px;">Los corralones cerca de tu obra: dónde comprar cada rubro, sin fletes de más.</div></div>
+              <div style="display:flex; gap:16px; border-bottom:1px solid #f0eae2; font-size:11.5px;"><span style="padding:6px 2px; border-bottom:2px solid #BE5103; color:#8f3d02; font-weight:700;">Corralones</span><span style="padding:6px 2px; color:#897b6d;">Calculadora</span></div>
+              <div style="display:flex; gap:8px; align-items:center;"><span style="display:inline-flex; align-items:center; gap:5px; flex:0 0 auto; font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:5px 11px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>Godoy Cruz, Mendoza</span><span style="flex:1; min-width:0; font-size:11px; color:#b3a799; background:#faf7f3; border:1px solid #ece4db; border-radius:9px; padding:6px 11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">¿Qué material necesitás? (ej: hierro del 8, cemento…)</span></div>
+              <div style="font-size:11px; color:#5c4d40;">Dónde comprar <b style="color:#2a1d12;">hierro del 8</b> · Godoy Cruz, Mendoza</div>
+              <div style="display:flex; gap:10px;">
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:11px 12px;"><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><div style="font-size:12px; font-weight:700; color:#2a1d12; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Corralón El Bajo</div><span style="flex:0 0 auto; font-size:9.5px; font-weight:700; color:#8f3d02; background:#fdf1e7; border-radius:999px; padding:2px 7px;">★ 4,6</span></div><div style="font-size:10px; color:#a89a8b; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Av. San Martín 1450 · Godoy Cruz</div><div style="display:flex; gap:10px; margin-top:5px; font-size:10px; font-weight:600; color:#8f3d02;"><span>261 423-8890</span><span>Ver en Maps</span></div></div>
+                <div style="flex:1; min-width:0; background:#fff; border:1px solid #ece4db; border-radius:11px; padding:11px 12px;"><div style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><div style="font-size:12px; font-weight:700; color:#2a1d12; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Hierros del Oeste</div><span style="flex:0 0 auto; font-size:9.5px; font-weight:700; color:#15803d; background:#e8f6ec; border-radius:999px; padding:2px 7px;">Precios online</span></div><div style="font-size:10px; color:#a89a8b; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Ruta 40 km 12 · Luján de Cuyo</div><div style="display:flex; gap:10px; margin-top:5px; font-size:10px; font-weight:600; color:#8f3d02;"><span>261 498-2210</span><span>Ver en Maps</span></div></div>
+              </div>
+              <div style="font-size:11px; font-weight:700; color:#2a1d12;">Precios publicados — comparación</div>
               <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">CEMENTO PORTLAND CPN40 X 50KG</div><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12; margin-top:4px;">$11.800</div><div style="font-size:10px; color:#a89a8b; margin-top:2px;">bolsa · Loma Negra</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#dc2626; background:#fdeaea; border-radius:999px; padding:2px 8px; margin-top:6px;">+2.5% mensual</span></div>
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">BARRA DE HIERRO Ø12MM X 12M</div><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12; margin-top:4px;">$19.500</div><div style="font-size:10px; color:#a89a8b; margin-top:2px;">barra · Acindar</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#dc2626; background:#fdeaea; border-radius:999px; padding:2px 8px; margin-top:6px;">+2.0% mensual</span></div>
@@ -206,7 +215,7 @@
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">MALLA ELECTROSOLDADA Ø4.2</div><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12; margin-top:4px;">$32.000</div><div style="font-size:10px; color:#a89a8b; margin-top:2px;">hoja · Acindar</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#dc2626; background:#fdeaea; border-radius:999px; padding:2px 8px; margin-top:6px;">+1.5% mensual</span></div>
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:11px; padding:13px 14px;"><div style="font-size:9.5px; font-weight:700; color:#897b6d; letter-spacing:0.4px;">BLOCK DE CEMENTO 20X20X40</div><div style="font-size:20px; font-weight:800; letter-spacing:-0.6px; color:#2a1d12; margin-top:4px;">$360</div><div style="font-size:10px; color:#a89a8b; margin-top:2px;">unidad · Corblock</div><span style="display:inline-block; font-size:9.5px; font-weight:700; color:#dc2626; background:#fdeaea; border-radius:999px; padding:2px 8px; margin-top:6px;">+1.8% mensual</span></div>
               </div>
-              <div style="font-size:10px; color:#b3a799;">Catálogo de referencia · 74 materiales</div>
+              <div style="font-size:10px; color:#b3a799;">Precios reales del mercado · actualizado hoy</div>
             </div>
             <div data-demo-panel="panel" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden;">
               <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Panel de Proyecto</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px;">Vista ejecutiva del estado, costos, cronograma e indicadores.</div></div><span style="font-size:11px; font-weight:600; color:#2a1d12; border:1px solid #e8ddd0; border-radius:8px; padding:6px 12px; display:inline-flex; align-items:center; gap:6px;">Edificio Sarmiento <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg></span></div>
@@ -262,7 +271,7 @@
               <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:9px; width:min(430px,100%);">
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:10px; padding:10px 12px;"><div style="font-size:13px;">💰</div><div style="font-size:11px; font-weight:700; color:#2a1d12; margin-top:4px;">Cargar pago</div><div style="font-size:9.5px; color:#a89a8b;">Pagos realizados o pendientes</div></div>
                 <div style="background:#fff; border:1px solid #ece4db; border-radius:10px; padding:10px 12px;"><div style="font-size:13px;">🏗️</div><div style="font-size:11px; font-weight:700; color:#2a1d12; margin-top:4px;">Avance de obra</div><div style="font-size:9.5px; color:#a89a8b;">Etapas, hitos, tiempos</div></div>
-                <div style="background:#fff; border:1px solid #ece4db; border-radius:10px; padding:10px 12px;"><div style="font-size:13px;">🧱</div><div style="font-size:11px; font-weight:700; color:#2a1d12; margin-top:4px;">Precio material</div><div style="font-size:9.5px; color:#a89a8b;">Cotizaciones y costos</div></div>
+                <div style="background:#fff; border:1px solid #ece4db; border-radius:10px; padding:10px 12px;"><div style="font-size:13px;">🎯</div><div style="font-size:11px; font-weight:700; color:#2a1d12; margin-top:4px;">Resumen ejecutivo</div><div style="font-size:9.5px; color:#a89a8b;">Proyectos, desvíos y pagos</div></div>
               </div>
               <div style="display:flex; align-items:center; gap:9px; width:min(440px,100%); background:#fff; border:1px solid #e8ddd0; border-radius:999px; padding:8px 8px 8px 15px;"><span style="flex:1; font-size:11.5px; color:#b3a799;">Decile a SOL qué dato querés cargar...</span><span style="width:24px; height:24px; border-radius:50%; background:linear-gradient(140deg,#f59e0b,#f97316); display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></div>
             </div>
@@ -388,10 +397,10 @@
         <article data-reveal="" data-delay="80" style="grid-column:span 2; background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:22px; box-shadow:0 1px 3px rgba(42,29,18,0.03); transition:border-color .25s, box-shadow .25s, transform .25s;" style-hover="border-color:var(--acc,#BE5103); box-shadow:0 24px 50px -26px rgba(190,81,3,0.45); transform:translateY(-3px);">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
             <span style="width:42px; height:42px; border-radius:11px; background:rgba(190,81,3,0.1); color:var(--acc2,#8f3d02); display:flex; align-items:center; justify-content:center;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-3-3-4 4"></path></svg></span>
-            <span style="font-size:13px; font-weight:800; color:#d97706; font-family:'JetBrains Mono',monospace;">+4,2%</span>
+            <span style="font-size:10.5px; font-weight:800; color:#22a06b; background:rgba(34,160,107,0.12); padding:3px 9px; border-radius:999px; text-transform:uppercase;">en vivo</span>
           </div>
-          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Precios de materiales <span style="font-size:9.5px; font-weight:800; color:#22a06b; background:rgba(34,160,107,0.12); padding:2px 7px; border-radius:999px; text-transform:uppercase; vertical-align:middle;">referencia</span></h3>
-          <p style="color:#897b6d; font-size:13.5px; line-height:1.55; margin-bottom:8px;">Histórico y pronóstico IA por rubro. Anticipate a las subas.</p>
+          <h3 style="font-size:16px; font-weight:700; letter-spacing:-0.3px; color:#2a1d12; margin-bottom:7px;">Materiales &amp; Corralones</h3>
+          <p style="color:#897b6d; font-size:13.5px; line-height:1.55; margin-bottom:8px;">Dónde comprar cada rubro cerca de tu obra, con precios de referencia actualizados.</p>
           <svg viewBox="0 0 200 40" preserveAspectRatio="none" style="width:100%; height:34px;"><path d="M0,32 L30,28 L60,30 L90,20 L120,23 L150,12 L180,15 L200,8" fill="none" stroke="var(--acc,#BE5103)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
         </article>
 
@@ -457,13 +466,14 @@
         <div data-reveal="" data-delay="120" style="background:#fff; border:1px solid #efe7dd; border-radius:18px; padding:24px; box-shadow:0 1px 3px rgba(42,29,18,0.03);">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
             <span style="font-size:15px; font-weight:700; color:#2a1d12;">Señales del mercado</span>
-            <span style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:var(--acc2,#8f3d02); background:rgba(190,81,3,0.1); padding:3px 9px; border-radius:999px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--acc,#BE5103); animation:re-pulse 1.6s ease-in-out infinite;"></span>BCRA · INDEC</span>
+            <span style="display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; color:var(--acc2,#8f3d02); background:rgba(190,81,3,0.1); padding:3px 9px; border-radius:999px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--acc,#BE5103); animation:re-pulse 1.6s ease-in-out infinite;"></span>Dólar en vivo</span>
           </div>
           <div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Dólar MEP</div><div style="font-size:11.5px; color:#b3a799;">cotización de referencia</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">$1.245</div><div style="font-size:11px; color:#22a06b; font-weight:700;">▲ 0,4%</div></div></div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Tasa BCRA</div><div style="font-size:11.5px; color:#b3a799;">referencia · TNA</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">29%</div><div style="font-size:11px; color:#dc2626; font-weight:700;">▼ 2,0pp</div></div></div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">CAC</div><div style="font-size:11.5px; color:#b3a799;">costo construcción · mensual</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">+4,2%</div><div style="font-size:11px; color:#d97706; font-weight:700;">▲ mensual</div></div></div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">m² CABA</div><div style="font-size:11.5px; color:#b3a799;">usado · promedio USD</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">USD 2.180</div><div style="font-size:11px; color:#22a06b; font-weight:700;">▲ 1,1%</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Dólar blue</div><div data-mkt="dolar-sub" style="font-size:11.5px; color:#b3a799;">venta · cotización del día</div></div><div style="text-align:right;"><div data-mkt="dolar-venta" style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">—</div><div data-mkt="dolar-oficial" style="font-size:11px; color:#897b6d; font-weight:700;">oficial —</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">Tasa BCRA</div><div style="font-size:11.5px; color:#b3a799;">TNA · valor ilustrativo</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">29%</div><div style="font-size:11px; color:#dc2626; font-weight:700;">▼ 2,0pp</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f0eae2;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">CAC</div><div style="font-size:11.5px; color:#b3a799;">costo construcción · valor ilustrativo</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">+4,2%</div><div style="font-size:11px; color:#d97706; font-weight:700;">▲ mensual</div></div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0;"><div><div style="font-size:13.5px; font-weight:600; color:#2a1d12;">m² CABA</div><div style="font-size:11.5px; color:#b3a799;">usado · valor ilustrativo</div></div><div style="text-align:right;"><div style="font-size:16px; font-weight:800; font-family:'JetBrains Mono',monospace; color:#2a1d12;">USD 2.180</div><div style="font-size:11px; color:#22a06b; font-weight:700;">▲ 1,1%</div></div></div>
+            <div style="margin-top:12px; font-size:10.5px; line-height:1.5; color:#b3a799;">El dólar es cotización real y se actualiza sola. Tasa BCRA, CAC y m² CABA son valores ilustrativos.</div>
           </div>
         </div>
       </div>
@@ -593,7 +603,6 @@
             <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Acceso a todos los módulos y secciones</li>
             <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Chat experto + análisis de planos con IA</li>
             <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Créditos, presupuestos y control de obra</li>
-            <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Precios de materiales en vivo + pronósticos</li>
             <li style="display:flex; align-items:flex-start; gap:10px; font-size:14px; color:#5c4d40;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22a06b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto; margin-top:3px;"><path d="M20 6 9 17l-5-5"></path></svg>Reportes en PDF y Excel · soporte en español</li>
           </ul>
           <a href="register.html" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; height:50px; border-radius:13px; background:linear-gradient(140deg, var(--acc,#BE5103), var(--acc2,#8f3d02)); color:#fff; font-size:15px; font-weight:600; text-decoration:none; box-shadow:0 12px 28px -8px rgba(190,81,3,0.6); transition:transform .2s var(--ease,cubic-bezier(.16,1,.3,1)), box-shadow .2s;" style-hover="transform:translateY(-2px); box-shadow:0 18px 40px -10px rgba(190,81,3,0.8);">Empezar 7 días gratis</a>
@@ -645,6 +654,7 @@
         <a href="terminos.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Términos y Condiciones</a>
         <a href="privacidad.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Política de Privacidad</a>
         <a href="cookies.html" style="color:#897b6d; font-size:13px; text-decoration:none;">Política de Cookies</a>
+        <a href="#" onclick="RECookies.abrirPanel();return false;" style="color:#897b6d; font-size:13px; text-decoration:none;">Preferencias de privacidad</a>
         <a href="arrepentimiento.html" style="display:inline-flex; align-items:center; gap:7px; color:#8f3d02; font-size:13px; font-weight:700; text-decoration:none; border:1px solid #e8ddd0; background:#fff; border-radius:8px; padding:7px 13px;">
           <span aria-hidden="true">⚖️</span> Botón de Arrepentimiento
         </a>
@@ -686,6 +696,10 @@ class Component extends DCLogic {
     this.setupNav();
     this.setupCursorGlow();
     this.setupSkyline();
+    // Hovers: van también en modo 'off'. Son transiciones disparadas por el
+    // usuario (no movimiento automático) y el modo 'off' solo apaga
+    // `animation`, no `transition`.
+    this.setupHovers();
 
     if (mode === 'off') {
       const s = document.createElement('style');
@@ -890,7 +904,7 @@ class Component extends DCLogic {
     const title = demo.querySelector('[data-demo-title]');
     if (!tabs.length) return;
     const names = tabs.map(t => t.getAttribute('data-demo-tab'));
-    const titles = { chat: 'Chat Experto', planos: 'Análisis de Planos', materiales: 'Cotización de Materiales', panel: 'Panel de Proyecto', scanner: 'Opportunity Scanner', noticias: 'Noticias & Análisis', sol: 'SOL — Asistente', creditos: 'Créditos', academia: 'Academia' };
+    const titles = { chat: 'Chat Experto', planos: 'Análisis de Planos', materiales: 'Materiales & Corralones', panel: 'Panel de Proyecto', scanner: 'Opportunity Scanner', noticias: 'Noticias & Análisis', sol: 'SOL — Asistente', creditos: 'Créditos', academia: 'Academia' };
     const activate = (name) => {
       tabs.forEach(t => {
         const on = t.getAttribute('data-demo-tab') === name;
@@ -911,6 +925,43 @@ class Component extends DCLogic {
       let i = 0;
       this._demoInt = setInterval(() => { if (this._demoTouched) return; i = (i + 1) % names.length; activate(names[i]); }, 4200);
     }
+  }
+
+  // Los 26 atributos style-hover="..." del markup no los leía nadie: quedaban
+  // declarados pero muertos (la landing se sentía estática). Los revivimos
+  // generando reglas CSS :hover reales, NO tocando el style inline.
+  //
+  // ¿Por qué CSS y no JS con mouseenter/mouseleave? Porque 12 de esos
+  // elementos también tienen [data-reveal], y setupReveal() les escribe
+  // style.transform/opacity inline. Si guardáramos y restauráramos el inline
+  // al salir el mouse, podríamos dejar una tarjeta trabada en translateY(26px).
+  // Con :hover el browser revierte solo al valor inline vigente. Va !important
+  // porque el inline (que setea el reveal) le gana a una regla normal.
+  setupHovers() {
+    const root = this.root;
+    const els = Array.from(root.querySelectorAll('[style-hover]'));
+    if (!els.length) return;
+    const byRule = new Map();
+    els.forEach(el => {
+      const raw = (el.getAttribute('style-hover') || '').trim();
+      if (!raw) return;
+      if (!byRule.has(raw)) byRule.set(raw, byRule.size);
+      el.setAttribute('data-hv', String(byRule.get(raw)));
+    });
+    if (!byRule.size) return;
+    let css = '';
+    byRule.forEach((idx, raw) => {
+      const decls = raw.split(';')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(d => /!important\s*$/.test(d) ? d : d + ' !important')
+        .join('; ');
+      css += '#re [data-hv="' + idx + '"]:hover{' + decls + '}\n';
+    });
+    const st = document.createElement('style');
+    st.setAttribute('data-re-hover', '');
+    st.textContent = css;
+    document.head.appendChild(st);
   }
 
   setupCursorGlow() {
@@ -1164,6 +1215,22 @@ class Component extends DCLogic {
     });
   }
 
+  /* Señales del mercado: SOLO el dólar es dato real (viene de dolar_service,
+     el mismo que usa la calculadora de créditos). Tasa BCRA, CAC y m² CABA no
+     tienen fuente estructurada en el backend y quedan rotulados como valores
+     ilustrativos en el markup. Si el fetch falla, el dólar muestra "—" en vez
+     de un número inventado. */
+  function hydrateMarket(mk){
+    if (!mk || !mk.dolar) return;
+    var blue = mk.dolar.blue || {}, ofi = mk.dolar.oficial || {};
+    var elV = document.querySelector('[data-mkt="dolar-venta"]');
+    var elO = document.querySelector('[data-mkt="dolar-oficial"]');
+    var elS = document.querySelector('[data-mkt="dolar-sub"]');
+    if (elV && blue.venta != null) elV.textContent = fmtARS(blue.venta);
+    if (elO && ofi.venta != null) elO.textContent = 'oficial ' + fmtARS(ofi.venta);
+    if (elS && mk.updated_at) elS.textContent = 'venta · al ' + mk.updated_at + (mk.stale ? ' (última disponible)' : '');
+  }
+
   function run(){
     var base = apiBase(); if (base === null || base === undefined) return;
     fetch(base + '/api/public/landing', { cache: 'no-store' })
@@ -1171,6 +1238,7 @@ class Component extends DCLogic {
       .then(function (d) {
         try { hydrateMateriales(d.materials); } catch (e) {}
         try { hydrateNoticias(d.news); } catch (e) {}
+        try { hydrateMarket(d.market); } catch (e) {}
       })
       .catch(function () { /* estático del diseño queda */ });
   }
@@ -1179,5 +1247,6 @@ class Component extends DCLogic {
   else run();
 })();
 </script>
+  <script src="consent.js"></script>
 </body>
 </html>

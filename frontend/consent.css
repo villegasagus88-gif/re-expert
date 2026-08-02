@@ -1,0 +1,151 @@
+/* Banner y panel de consentimiento.
+   Self-contained y con prefijo `rec-`: se incluye en la landing, en las páginas
+   de auth, en las legales y en la app, que tienen tres hojas de estilo
+   distintas. Nada de acá puede pisar nada de allá.
+
+   Los colores van hardcodeados a propósito, no con las variables de app.css:
+   este archivo se carga en páginas que no las definen. */
+
+#reConsent{position:relative;z-index:2147483000}
+
+/* ── Banner ─────────────────────────────────────────────────────────────── */
+.rec-banner{
+  position:fixed; left:0; right:0; bottom:0; z-index:2147483000;
+  background:#fff; border-top:1px solid #ece4db;
+  box-shadow:0 -8px 32px rgba(42,29,18,.10);
+  animation:recSubir .35s cubic-bezier(.16,1,.3,1);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@keyframes recSubir{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.rec-banner{animation:none}}
+
+.rec-banner-in{
+  max-width:1120px; margin:0 auto; padding:18px 24px;
+  display:flex; align-items:center; gap:28px; flex-wrap:wrap;
+}
+.rec-txt{flex:1 1 420px; min-width:0}
+.rec-t{font-size:15px; font-weight:800; color:#2a1d12; letter-spacing:-.2px}
+.rec-p{margin:6px 0 0; font-size:13px; line-height:1.6; color:#5c4d40; max-width:76ch}
+.rec-p b{color:#2a1d12; font-weight:700}
+
+.rec-btns{display:flex; gap:9px; align-items:center; flex-wrap:wrap; flex-shrink:0}
+.rec-btn{
+  font:inherit; font-size:13.5px; font-weight:700; padding:10px 18px;
+  border-radius:9px; cursor:pointer; border:1px solid transparent;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+  white-space:nowrap;
+}
+.rec-btn-pri{background:#BE5103; color:#fff}
+.rec-btn-pri:hover{background:#8f3d02}
+.rec-btn-sec{background:#fff; color:#2a1d12; border-color:#e8ddd0}
+.rec-btn-sec:hover{background:#fdfbf9; border-color:#d9cbb9}
+.rec-btn-ghost{background:transparent; color:#897b6d; padding:10px 12px}
+.rec-btn-ghost:hover{color:#2a1d12}
+.rec-btn:focus-visible{outline:2px solid #BE5103; outline-offset:2px}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+.rec-overlay{
+  position:fixed; inset:0; background:rgba(42,29,18,.45);
+  backdrop-filter:blur(2px); z-index:2147483000;
+}
+.rec-panel{
+  position:fixed; z-index:2147483001; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:min(620px, calc(100vw - 32px)); max-height:min(86vh, 760px);
+  display:flex; flex-direction:column;
+  background:#fff; border-radius:16px; border:1px solid #ece4db;
+  box-shadow:0 24px 64px rgba(42,29,18,.28);
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  animation:recEntrar .28s cubic-bezier(.16,1,.3,1);
+}
+@keyframes recEntrar{from{opacity:0;transform:translate(-50%,-48%) scale(.98)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){.rec-panel{animation:none}}
+
+.rec-panel-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:20px 22px 14px; border-bottom:1px solid #f0eae2; flex-shrink:0;
+}
+.rec-x{
+  background:transparent; border:0; font-size:15px; color:#897b6d; cursor:pointer;
+  padding:6px 8px; border-radius:8px; line-height:1;
+}
+.rec-x:hover{background:#fdfbf9; color:#2a1d12}
+
+/* minmax(0,1fr) + min-height:0 — sin esto el body no scrollea y el pie queda
+   fuera de la pantalla en notebooks. */
+.rec-panel-body{padding:6px 22px 12px; overflow-y:auto; min-height:0; flex:1 1 auto}
+
+.rec-cat{padding:16px 0; border-bottom:1px solid #f5f0e9}
+.rec-cat:last-of-type{border-bottom:0}
+.rec-cat-head{display:flex; align-items:flex-start; justify-content:space-between; gap:16px}
+.rec-cat-t{font-size:14px; font-weight:700; color:#2a1d12}
+.rec-cat-d{font-size:12.5px; color:#897b6d; margin-top:3px; line-height:1.5}
+.rec-fijo{
+  font-size:11px; font-weight:700; color:#15803d; background:#e8f6ec;
+  border-radius:999px; padding:4px 10px; white-space:nowrap; flex-shrink:0;
+}
+.rec-lista{margin:12px 0 0; padding-left:18px}
+.rec-lista li{font-size:12.5px; line-height:1.75; color:#5c4d40}
+.rec-lista code, .rec-nota code{
+  background:#fdfbf9; border:1px solid #f0eae2; border-radius:4px;
+  padding:1px 5px; font-size:11.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+.rec-nota{margin:10px 0 0; font-size:12.5px; line-height:1.65; color:#5c4d40}
+.rec-nota b{color:#2a1d12}
+.rec-cat-vacia{background:#fdfbf9; border-radius:12px; padding:16px; border:0; margin-top:4px}
+
+/* Switch */
+.rec-sw{display:flex; align-items:center; gap:9px; cursor:pointer; flex-shrink:0}
+.rec-sw input{position:absolute; opacity:0; width:0; height:0}
+.rec-sw-track{
+  width:42px; height:24px; border-radius:999px; background:#ded3c6;
+  position:relative; transition:background .2s ease; flex-shrink:0;
+}
+.rec-sw-track::after{
+  content:''; position:absolute; top:3px; left:3px; width:18px; height:18px;
+  border-radius:50%; background:#fff; transition:transform .2s cubic-bezier(.16,1,.3,1);
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.rec-sw input:checked + .rec-sw-track{background:#BE5103}
+.rec-sw input:checked + .rec-sw-track::after{transform:translateX(18px)}
+.rec-sw input:focus-visible + .rec-sw-track{outline:2px solid #BE5103; outline-offset:2px}
+.rec-sw-lbl{font-size:12px; font-weight:600; color:#897b6d; min-width:66px}
+
+.rec-legal{margin:16px 0 4px; font-size:12.5px; color:#897b6d}
+.rec-legal a{color:#BE5103; text-decoration:none}
+.rec-legal a:hover{text-decoration:underline}
+
+.rec-panel-foot{
+  display:flex; justify-content:flex-end; gap:9px; flex-wrap:wrap;
+  padding:14px 22px 18px; border-top:1px solid #f0eae2; flex-shrink:0;
+}
+
+@media (max-width:640px){
+  .rec-banner-in{padding:16px; gap:14px}
+  .rec-btns{width:100%}
+  .rec-btns .rec-btn{flex:1 1 auto; text-align:center; justify-content:center}
+  .rec-panel-foot .rec-btn{flex:1 1 auto}
+}
+
+/* Modo oscuro: la app arranca con data-theme y las páginas sueltas no. */
+:root[data-theme="dark"] .rec-banner,
+:root[data-theme="dark"] .rec-panel{background:#1a1510; border-color:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .rec-t,
+:root[data-theme="dark"] .rec-cat-t,
+:root[data-theme="dark"] .rec-p b,
+:root[data-theme="dark"] .rec-nota b{color:#f5efe8}
+:root[data-theme="dark"] .rec-p,
+:root[data-theme="dark"] .rec-nota,
+:root[data-theme="dark"] .rec-lista li{color:#c9bdb0}
+:root[data-theme="dark"] .rec-cat-d,
+:root[data-theme="dark"] .rec-sw-lbl,
+:root[data-theme="dark"] .rec-legal{color:#9c8f81}
+:root[data-theme="dark"] .rec-btn-sec{background:transparent; color:#f5efe8; border-color:rgba(255,255,255,.18)}
+:root[data-theme="dark"] .rec-btn-sec:hover{background:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .rec-panel-head,
+:root[data-theme="dark"] .rec-panel-foot{border-color:rgba(255,255,255,.08)}
+:root[data-theme="dark"] .rec-cat{border-color:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .rec-cat-vacia{background:rgba(255,255,255,.04)}
+:root[data-theme="dark"] .rec-lista code,
+:root[data-theme="dark"] .rec-nota code{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .rec-sw-track{background:rgba(255,255,255,.18)}

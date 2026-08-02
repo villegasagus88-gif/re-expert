@@ -1,6 +1,8 @@
 """
 Auth routes: register, login, refresh, and me (protected).
 """
+import logging
+
 from api.schemas.auth import (
     AuthResponse,
     CodeRequest,
@@ -37,6 +39,8 @@ from services.jwt_service import create_token_pair, decode_2fa_challenge
 from services.password_reset_service import confirm_reset, request_reset
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -110,6 +114,7 @@ async def me(current_user: User = Depends(get_current_user)):
         phone=current_user.phone,
         automation_prefs=current_user.automation_prefs,
         is_admin=is_admin(current_user),
+        terms_accepted=current_user.terms_accepted_at is not None,
     )
 
 
@@ -144,7 +149,45 @@ async def update_me(
         onboarding_completed=current_user.onboarding_completed,
         phone=current_user.phone,
         automation_prefs=current_user.automation_prefs,
+        is_admin=is_admin(current_user),
+        terms_accepted=current_user.terms_accepted_at is not None,
     )
+
+
+@router.post(
+    "/accept-terms",
+    response_model=GenericOk,
+    summary="Registrar la aceptación de Términos y Política",
+    responses={401: {"description": "Token invalido o ausente"}},
+)
+async def accept_terms(current_user: User = Depends(get_current_user)):
+    """
+    Deja constancia con fecha de que el usuario aceptó.
+
+    Existe para las cuentas creadas ANTES del checkbox del registro: entran a la
+    app, ven el aviso y aceptan ahí. Sin esto tendríamos usuarios usando el
+    Servicio sin ningún punto de aceptación registrable (riesgo R18).
+
+    Es idempotente y **no re-escribe la fecha original**: si alguien ya aceptó,
+    la primera aceptación es la que vale como prueba, no la última visita.
+    """
+    from datetime import UTC, datetime
+
+    from models.base import get_session_factory
+    from sqlalchemy import update as sa_update
+
+    if current_user.terms_accepted_at is not None:
+        return GenericOk(ok=True, message="Ya estaba registrada.")
+
+    async with get_session_factory()() as db:
+        await db.execute(
+            sa_update(User)
+            .where(User.id == current_user.id, User.terms_accepted_at.is_(None))
+            .values(terms_accepted_at=datetime.now(UTC))
+        )
+        await db.commit()
+    logger.info("Aceptación de Términos registrada para user %s", current_user.id)
+    return GenericOk(ok=True, message="Aceptación registrada.")
 
 
 @router.post(

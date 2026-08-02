@@ -5,12 +5,15 @@
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Botón de Arrepentimiento · RE Expert</title>
-  <meta name="description" content="Revocá tu contratación de RE Expert dentro de los 10 días corridos, sin expresar causa y sin costo (art. 34 Ley 24.240, Res. 424/2020).">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="description" content="Formulario de revocación de contratación — RE Expert (art. 34 Ley 24.240).">
+  <!-- Tipografías de Google: NO se cargan solas. La URL vive acá y
+       consent.js inyecta el <link> sólo si el visitante lo acepta —
+       cargarlas envía su IP a Google. Sin consentimiento se usa la
+       tipografía del sistema, ya declarada como fallback en el CSS. -->
+  <meta name="re-fuentes" content="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23BE5103'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-weight='700' font-size='14' fill='white'>RE</text></svg>">
   <link rel="stylesheet" href="legal.css">
+  <link rel="stylesheet" href="consent.css">
 </head>
 <body>
   <header class="lg-top">
@@ -23,6 +26,7 @@
         <a href="terminos.html">Términos</a>
         <a href="privacidad.html">Privacidad</a>
         <a href="cookies.html">Cookies</a>
+        <a href="#" onclick="RECookies.abrirPanel();return false;">Preferencias</a>
       </nav>
     </div>
   </header>
@@ -32,17 +36,15 @@
       <div class="lg-kicker">Ley 24.240 · Resolución 424/2020</div>
       <h1 class="lg-h1">Botón de Arrepentimiento</h1>
       <p class="lg-lead">
-        Si contrataste a distancia, podés dar marcha atrás dentro de los
-        <b>10 días corridos</b> desde que contrataste, <b>sin explicar por qué</b> y
-        <b>sin que te cueste nada</b>. Es un derecho tuyo y no te lo podemos limitar.
+        Si contrataste a distancia como consumidor, podés revocar la contratación
+        dentro de los 10 (diez) días corridos desde que contrataste, conforme al
+        art. 34 de la Ley 24.240. Pasado ese plazo, la contratación se rige por los
+        <a href="terminos.html">Términos y Condiciones</a>.
       </p>
 
       <div class="lg-card">
         <h2>Completá esto y listo</h2>
-        <p>
-          No hay ningún otro trámite. No hace falta que inicies sesión, ni que nos
-          digas el motivo, ni que llames a nadie. Con tu correo alcanza.
-        </p>
+        <p>Con el correo de la contratación alcanza.</p>
 
         <form id="arrForm" novalidate>
           <div class="lg-field">
@@ -61,11 +63,7 @@
           <div class="lg-field">
             <label class="lg-label" for="arrMotivo">¿Querés contarnos por qué? <span style="font-weight:400;color:#897b6d">(opcional)</span></label>
             <textarea class="lg-textarea" id="arrMotivo" name="motivo" maxlength="2000"
-                      placeholder="Nos sirve para mejorar, pero no hace falta que lo completes."></textarea>
-            <div class="lg-hint">
-              La ley nos prohíbe exigirte una justificación. Si lo dejás vacío, tu
-              solicitud vale exactamente igual.
-            </div>
+                      placeholder="Opcional"></textarea>
           </div>
 
           <button type="submit" class="lg-btn" id="arrBtn">Enviar mi solicitud</button>
@@ -76,30 +74,15 @@
 
       <div class="lg-card">
         <h2>Qué pasa después</h2>
-        <ul>
-          <li>Te llega un correo con el <b>número de tu solicitud</b>, como constancia.</li>
-          <li>Damos de baja la contratación y, si ya se te había cobrado, se te
-              <b>devuelve por el mismo medio de pago</b> que usaste.</li>
-          <li>No te vamos a pedir que hagas nada más ni que expliques nada.</li>
-        </ul>
         <p>
-          Si ya tenés sesión iniciada y sólo querés dejar de pagar de acá en más
-          (sin pedir devolución), también podés hacerlo vos mismo con un clic desde
-          <b>Configuración → Facturación</b>.
+          Recibís un correo con el número de solicitud. Verificamos que la
+          contratación esté dentro del plazo y te respondemos por escrito con el
+          resultado y, si corresponde, la devolución por el mismo medio de pago.
         </p>
-      </div>
-
-      <div class="lg-card">
-        <h2>Marco legal</h2>
         <p>
-          Este botón existe por el <b>artículo 34 de la Ley 24.240</b> de Defensa del
-          Consumidor y el <b>artículo 1110 del Código Civil y Comercial</b>, que te
-          dan 10 días corridos para revocar una contratación hecha a distancia sin
-          expresar causa. La <b>Resolución 424/2020</b> de la Secretaría de Comercio
-          Interior nos obliga a tenerlo visible y a que no te pidamos ningún trámite
-          adicional. Este derecho es <b>irrenunciable</b>.
+          Si lo que querés es sólo dejar de pagar de acá en adelante, la baja está en
+          Configuración → Facturación.
         </p>
-        <p>Podés leer el detalle en nuestros <a href="terminos.html">Términos y Condiciones</a>.</p>
       </div>
     </div>
   </main>
@@ -164,17 +147,18 @@
         if (!r.ok && r.status !== 201) throw new Error('http ' + r.status);
         var d = await r.json();
         form.style.display = 'none';
-        mostrar(d.mensaje || 'Recibimos tu solicitud. No tenés que hacer ningún otro trámite.', true);
+        mostrar(d.mensaje || 'Recibimos tu solicitud.', true);
       } catch (e) {
         // Nunca dejar a alguien que está ejerciendo un derecho sin una salida.
         mostrar('No pudimos registrar tu solicitud por un problema técnico. ' +
                 'Escribinos desde Ayuda → Informar un error dentro de la app, o volvé a ' +
-                'intentar en unos minutos. Tu derecho a revocar no se pierde por esto.', false);
+                'intentar en unos minutos.', false);
         btn.disabled = false;
         btn.textContent = txt;
       }
     });
   })();
   </script>
+  <script src="consent.js"></script>
 </body>
 </html>

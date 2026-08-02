@@ -2092,3 +2092,39 @@ a.cor-meta-item:hover svg{color:var(--accent-brand)}
 .reader-source-link{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--accent-brand);text-decoration:none;border:1px solid var(--accent-brand-border);border-radius:10px;padding:10px 15px;margin-top:6px}
 .reader-source-link:hover{background:var(--accent-brand-light)}
 .reader-parcial{font-size:11.5px;color:var(--text-3);margin-top:12px;font-style:italic}
+
+/* ── Aceptación de Términos al entrar (cuentas anteriores al checkbox) ──── */
+/* Bloqueante a propósito: sin overlay que se pueda cerrar, no hay botón de
+   "después" y la única salida alternativa es cerrar sesión. Un aviso
+   esquivable no es un punto de aceptación. */
+.terms-overlay{position:fixed;inset:0;background:rgba(20,16,9,.72);backdrop-filter:blur(3px);z-index:2147482000}
+.terms-box{
+  position:fixed;z-index:2147482001;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(460px,calc(100vw - 32px));background:var(--bg-1);color:var(--text-1);
+  border:1px solid var(--border-0);border-radius:16px;padding:28px 28px 22px;
+  box-shadow:0 24px 64px rgba(0,0,0,.35);text-align:center;
+}
+.terms-ico{font-size:30px;line-height:1;margin-bottom:12px}
+.terms-t{font-size:19px;font-weight:800;letter-spacing:-.3px;margin:0 0 10px;color:var(--text-0)}
+.terms-p{font-size:13.5px;line-height:1.6;color:var(--text-2);margin:0 0 20px}
+.terms-p b{color:var(--text-0);font-weight:700}
+.terms-check{
+  display:flex;align-items:flex-start;gap:10px;text-align:left;cursor:pointer;
+  background:var(--bg-2);border:1px solid var(--border-0);border-radius:10px;
+  padding:13px 15px;font-size:13px;line-height:1.5;color:var(--text-1);
+}
+.terms-check input{margin-top:2px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--accent-brand);cursor:pointer}
+.terms-check a{color:var(--accent-brand);text-decoration:none}
+.terms-check a:hover{text-decoration:underline}
+.terms-err{font-size:12.5px;color:#dc2626;margin-top:8px;min-height:1px;text-align:left}
+.terms-btn{
+  width:100%;margin-top:16px;padding:12px;font:inherit;font-size:14px;font-weight:700;
+  color:#fff;background:var(--accent-brand);border:0;border-radius:10px;cursor:pointer;
+}
+.terms-btn:hover:not(:disabled){filter:brightness(1.08)}
+.terms-btn:disabled{opacity:.45;cursor:not-allowed}
+.terms-salir{
+  width:100%;margin-top:8px;padding:9px;font:inherit;font-size:12.5px;
+  color:var(--text-3);background:transparent;border:0;cursor:pointer;
+}
+.terms-salir:hover{color:var(--text-1);text-decoration:underline}

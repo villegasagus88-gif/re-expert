@@ -395,35 +395,24 @@ podés borrarla vos limpiando los datos del sitio (ver Política de Cookies).
   al punto 6.3.
 - **Revocar tu consentimiento**, con el efecto previsto en 4.2.
 
-9.2. **Ejercelos vos mismo, sin trámite.** Desde la aplicación podés:
+9.2. **Autogestión.** Desde Configuración → Cuenta podés descargar una copia de tus
+datos, modificar tu nombre, correo y teléfono, cambiar tu contraseña, revisar lo que el
+Asistente registró y solicitar la eliminación de la Cuenta. Las conversaciones y los
+archivos se borran individualmente desde la aplicación.
 
-- **Descargar una copia de tus datos** en un archivo, desde Configuración → Cuenta
-  (`Exportar mis datos`). Incluye los datos de tu cuenta, conversaciones y mensajes,
-  proyectos de obra, pagos, presupuestos, hitos, materiales y listas, proyectos y fichas
-  de planos con sus análisis, observaciones y tareas, espacios de trabajo y memoria del
-  Asistente, contactos, oportunidades, recordatorios, canales de notificación,
-  ubicaciones y sus preferencias, compras de cursos, tus intereses registrados, el
-  consumo de modelos de IA y tus reportes de error. **No incluye** el archivo binario de
-  los planos —que se descarga de a uno desde Configuración → Almacenamiento— ni tus
-  credenciales (contraseña, secreto y códigos del doble factor), porque exportarlas
-  sería crear una vía de fuga.
-- **Modificar** tu nombre, correo electrónico y teléfono, y cambiar tu contraseña.
-- **Borrar** conversaciones y archivos individualmente. Para purgar el historial de
-  ubicaciones, escribinos a {{email}} y lo hacemos en los plazos del
-  punto 9.3.
-- **Ver y corregir** lo que el Asistente recordó sobre vos.
-- **Solicitar la eliminación** de tu cuenta.
+La exportación no incluye las credenciales de acceso (contraseña y factores de
+autenticación), cuya entrega crearía un riesgo de seguridad, ni el archivo binario de
+los planos, que se descarga individualmente desde Configuración → Almacenamiento.
 
-> **Si tenés un período pago vigente**, la aplicación no acepta el pedido de baja hasta
-> que ese período venza o lo canceles. Es un recaudo para que no quede un cobro sin
-> cuenta asociada, **no una limitación de tu derecho de supresión**: si querés ejercerlo
-> igual, escribinos a {{email}} y lo tramitamos nosotros dentro de los
-> plazos del punto 9.3.
+Con un período pago vigente, la eliminación de la Cuenta se procesa al vencimiento de
+ese período o tras su cancelación, a fin de mantener la trazabilidad de la operación
+comercial. Los pedidos que no puedan resolverse por autogestión se atienden por el
+canal del punto 9.3.
 
-9.3. **Si preferís escribirnos**, hacelo a {{email}} desde el correo
-registrado. **Responderemos dentro de los 10 días corridos** para pedidos de acceso y de
-los 5 días hábiles para rectificación o supresión, conforme a los arts. 14 y 16 de la
-Ley 25.326.
+9.3. **Canal de contacto.** Los pedidos vinculados a estos derechos se reciben en
+{{email}}, desde el correo registrado, y se responden dentro de los
+10 días corridos para acceso y de los 5 días hábiles para rectificación o supresión,
+conforme a los arts. 14 y 16 de la Ley 25.326.
 
 9.4. **Autoridad de control.** La **Agencia de Acceso a la Información Pública** es el
 órgano de control de la Ley 25.326 y tiene atribuciones para atender denuncias respecto

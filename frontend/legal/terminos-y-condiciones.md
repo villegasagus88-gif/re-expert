@@ -163,13 +163,8 @@ acceso completo. Finalizado ese período, el acceso se contrata mediante una
 **suscripción que se renueva automáticamente cada 30 (treinta) días corridos** y se
 cobra al medio de pago que tengas registrado, hasta que la canceles.
 
-**Qué implica, en criollo:** guardás una tarjeta y se te cobra solo cada 30 días. No
-hace falta que hagas nada para seguir usando el Servicio, y **podés cancelar cuando
-quieras** desde Configuración → Facturación, sin llamar ni escribir a nadie.
-
-5.1.1. **Aviso previo a cada cobro.** Te avisamos al correo registrado **con al menos
-3 (tres) días de anticipación** a cada renovación, informando el importe y la fecha, para
-que puedas cancelar antes si no querés continuar.
+5.1.1. **Aviso previo a cada cobro.** Se notifica al correo registrado con al menos
+3 (tres) días de anticipación a cada renovación, informando el importe y la fecha.
 
 5.1.2. **Medios de pago.** Podés tener hasta **2 tarjetas guardadas**: una con la que se
 cobra y otra de respaldo. Podés agregar o quitar tarjetas en cualquier momento y cambiar
@@ -178,10 +173,9 @@ confirmes con el código de seguridad de la tarjeta elegida, y se aplica sobre t
 suscripción recién cuando el procesador lo acepta. **Los datos de tu tarjeta no pasan
 por nuestros sistemas** (ver 5.4).
 
-5.1.3. **Si un cobro falla.** No te cortamos el acceso de inmediato: se abre un período
-de **5 (cinco) días corridos de gracia** durante el cual conservás el Servicio, te
-avisamos el motivo **por correo electrónico y dentro de la aplicación**, y podés
-reintentar con tu tarjeta de respaldo. Por exigencia del
+5.1.3. **Si un cobro falla.** Se abre un período de 5 (cinco) días corridos de gracia
+durante el cual se mantiene el Servicio y se notifica el motivo al correo registrado y
+dentro de la aplicación, para que puedas reintentar con otra tarjeta. Por exigencia del
 procesador de pago, el reintento requiere que ingreses el código de seguridad de la
 tarjeta — no podemos hacerlo automáticamente. Si al vencer la gracia el pago sigue sin
 acreditarse, la suscripción se suspende y perdés el acceso a las funciones pagas, **sin
@@ -194,8 +188,7 @@ $69.900 ARS por período de 30 (treinta) días
 5.3. **Modificación de precios.** Podemos modificar el precio de la suscripción. Todo
 cambio te será notificado con una antelación mínima de **30 (treinta) días corridos** al
 correo registrado y regirá para las renovaciones posteriores a esa notificación.
-**Nunca se aplica retroactivamente a un período ya abonado.** Si no estás de acuerdo,
-podés cancelar antes de que entre en vigencia y no se te cobra la renovación.
+El nuevo precio no se aplica retroactivamente a un período ya abonado.
 
 5.4. **Procesamiento de pagos.** Los pagos se procesan a través de proveedores externos
 (Mercado Pago y/o Stripe). **El Titular no recibe, almacena ni procesa los datos
@@ -222,27 +215,24 @@ corregiremos y devolveremos lo cobrado de más.**
 
 ### 6.1. Derecho de revocación — Usuarios Consumidores
 
-6.1.1. Si sos Usuario Consumidor y contrataste el Servicio a distancia, **tenés
-derecho a revocar la contratación dentro de los 10 (diez) días corridos** contados
-desde la celebración del contrato, **sin expresión de causa y sin costo alguno**
-(arts. 34 de la Ley 24.240 y 1110 del Código Civil y Comercial).
+6.1.1. El Usuario Consumidor que haya contratado a distancia puede revocar la
+contratación dentro de los 10 (diez) días corridos contados desde la celebración del
+contrato, sin expresión de causa y sin costo, conforme a los arts. 34 de la Ley 24.240
+y 1110 del Código Civil y Comercial. **Vencido ese plazo rige lo previsto en el punto
+6.2.3.**
 
-6.1.2. Este derecho es **irrenunciable** y no puede ser limitado por estos Términos.
-
-6.1.3. Para ejercerlo podés utilizar el **[Botón de Arrepentimiento](../arrepentimiento.html)**,
-disponible de forma permanente y visible en la página de inicio del Sitio, o
-comunicarlo a {{email}}. **No se te exigirá ningún otro trámite ni justificación**:
-no necesitás iniciar sesión ni explicar el motivo. El reembolso se realizará por el
-mismo medio de pago utilizado, dentro de los plazos que fije la normativa aplicable.
+6.1.2. Para ejercerlo está disponible el
+[Botón de Arrepentimiento](../arrepentimiento.html) en la página de inicio del Sitio, o
+puede comunicarse a {{email}}. La devolución se realiza por el mismo
+medio de pago utilizado, dentro de los plazos que fije la normativa aplicable.
 
 ### 6.2. Cancelación de la suscripción y reembolsos
 
-6.2.1. **Podés cancelar cuando quieras**, desde Configuración → Facturación, con un
-clic y sin ningún otro trámite. La cancelación **detiene los cobros futuros de forma
-inmediata**: no se te vuelve a cobrar.
+6.2.1. **Cancelación.** La suscripción se cancela desde Configuración → Facturación.
+La cancelación detiene los cobros futuros.
 
 6.2.2. **Efecto sobre el acceso.** Al cancelar, el acceso a las funciones pagas se
-interrumpe. **Tus datos se conservan** y podés volver a suscribirte cuando quieras.
+interrumpe. Los datos de la Cuenta se conservan conforme a la Política de Privacidad.
 
 6.2.3. **Fuera del plazo de revocación del punto 6.1, el período abonado no es
 reembolsable**, salvo que:
@@ -254,9 +244,8 @@ b) exista un **error de facturación**, en los términos del punto 5.6; o
 
 c) la normativa de consumo disponga lo contrario.
 
-6.2.4. **Cómo reclamar.** Si considerás que se da alguno de esos supuestos, escribinos a
-{{email}} con el detalle de la operación. Analizaremos el caso y te
-responderemos por escrito.
+6.2.4. **Reclamos.** Los reclamos vinculados a facturación se reciben en
+{{email}}, con el detalle de la operación, y se responden por escrito.
 
 ---
 
