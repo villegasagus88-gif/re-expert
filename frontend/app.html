@@ -9330,7 +9330,7 @@ function renderDigest(d,it){
   const body=$('#newsReaderBody');if(!body)return;
   const puntos=Array.isArray(d.puntos_clave)?d.puntos_clave:[];
   body.innerHTML=`
-    ${d.image_url?`<div class="reader-hero" style="background-image:url('${esc(d.image_url)}')"></div>`:''}
+    ${(it.image||d.image_url)?`<div class="reader-hero" style="background-image:url('${esc(it.image||d.image_url)}')"></div>`:''}
     <div class="reader-content">
       <div class="reader-meta"><span class="news-cat-badge ${esc(it.category)}">${esc(_NEWS_CAT_LABEL[it.category]||it.category)}</span><span class="news-card-source">${esc(d.source||it.source)}</span>${it.published_date?`<span class="news-card-date">· ${esc(_newsAgo(it.published_date))}</span>`:''}</div>
       <h2 class="reader-title">${esc(d.title||it.title)}</h2>

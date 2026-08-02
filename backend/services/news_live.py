@@ -672,7 +672,10 @@ async def make_digest(url: str, title: str = "", snippet: str = "",
 
     payload = {
         "title": title, "url": url, "source": source or _domain(url), "category": category,
-        "image_url": og_image or (image or None),
+        # La imagen de la CARD manda: es la que el usuario vio y le interesó
+        # (ej: un gráfico del RSS). El og:image queda solo de fallback — abrir
+        # la nota jamás debe cambiarle la imagen que lo atrajo.
+        "image_url": (image or None) or og_image,
         "lead": digest.get("lead", ""),
         "puntos_clave": digest.get("puntos_clave", []) or [],
         "impacto_real_estate": digest.get("impacto_real_estate", ""),
