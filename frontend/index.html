@@ -1396,13 +1396,20 @@ class Component extends DCLogic {
    Port del efecto 10 ("Fondos Corralones v2", Claude Design): suben los 4
    hierros nervados de cada columna con sus separadores, cruza la viga de 4
    hierros arriba y despues los ladrillos suben y tapan lo que hay detras.
-   Ciclo de 23 s. Solo usa los datos b2/cols2 del build original.
+   Solo usa los datos b2/cols2 del build original.
    Es decorativo: si algo falla NO debe romper la landing. */
 (function () {
   'use strict';
   var INK = '42,29,18', WARM = '120,102,84', ACC = '190,81,3';
   var INT = 0.65;   /* "intensidad" por defecto del diseno */
-  var CYC = 23000;
+  /* El original cicla en 23 s porque es un fondo de pagina permanente. Aca la
+     maqueta le da a la solapa Materiales exactamente 4200 ms por vuelta
+     (setInterval de setupDemo) y con 23 s no llegaba ni a la viga (4600 ms) ni
+     a los ladrillos (6509 ms): se veia subir los hierros y nada mas. Comprimido
+     a 6.5 s la obra entera termina a los ~3.5 s y entra completa en la ventana,
+     con medio segundo de pared terminada antes de que rote. Las proporciones
+     entre fases son las del diseno; lo unico que cambia es la duracion total. */
+  var CYC = 6500;
 
   function init(cv) {
     var ctx = cv.getContext && cv.getContext('2d');
@@ -1597,13 +1604,27 @@ class Component extends DCLogic {
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var force = /[?&]motion=on/.test(location.search || '');
     var animate = !(reduce && !force);
-    var entry = 0, prevT = 0, painted = false, dead = false;
+    var entry = 0, prevT = 0, painted = false, dead = false, t0 = 0, oculto = true;
+
+    /* si la maqueta no está en pantalla tampoco corremos el ciclo */
+    var enPantalla = true;
+    if (window.IntersectionObserver) {
+      try {
+        new IntersectionObserver(function (es) { enPantalla = es[0].isIntersecting; },
+                                 { threshold: 0.15 }).observe(cv);
+      } catch (e) { /* si no se puede observar, seguimos como antes */ }
+    }
 
     function frame(raw) {
       if (dead) return;
       requestAnimationFrame(frame);
       var w = cv.clientWidth, h = cv.clientHeight;
-      if (w <= 0 || h <= 0) return;   /* solapa oculta: no dibujamos nada */
+      if (w <= 0 || h <= 0 || !enPantalla) { oculto = true; return; }   /* solapa oculta: no dibujamos */
+      /* Cada vez que la solapa vuelve a aparecer el ciclo arranca de cero.
+         Con el reloj libre el visitante caia casi siempre en la pausa con la
+         pared ya terminada y parecia que no pasaba nada. Reiniciando, siempre
+         ve la obra desde el principio: hierros, viga y pared. */
+      if (oculto) { oculto = false; t0 = raw; entry = 0; prevT = 0; painted = false; }
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
       /* canvas.width/height son ENTEROS: sin redondear, con escalado de pantalla
          != 100% la comparacion nunca coincide y build() correria en cada frame. */
@@ -1616,7 +1637,10 @@ class Component extends DCLogic {
       painted = true;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      var t = animate ? raw : 16000;   /* estatico: el muro ya terminado */
+      /* con reduced-motion: un solo frame fijo, con la pared ya terminada
+         (0.7 del ciclo cae dentro de la pausa, despues de que sube el ultimo
+         ladrillo en 0.543 y antes del fundido de 0.978) */
+      var t = animate ? (raw - t0) : CYC * 0.7;
       var dt = Math.min(64, t - prevT || 16); prevT = t;
       if (entry < 1) entry = Math.min(1, entry + dt / 950);
       var ease = 1 - Math.pow(1 - entry, 3);
