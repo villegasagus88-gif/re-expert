@@ -48,7 +48,13 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--text-3);border-radius:10px}
 
 /* Sidebar */
-.sidebar{width:var(--sidebar-w);background:var(--bg-sidebar);display:flex;flex-direction:column;height:100dvh;flex-shrink:0;transition:transform .3s var(--ease),width .3s var(--ease);z-index:100;border-right:1px solid var(--border-sidebar);overflow:hidden}
+/* overflow-y:auto (antes `overflow:hidden`): en pantallas bajas el contenido no
+   entra en 100dvh y quedaba recortado sin forma de llegar a él — medido: a 420px
+   de alto el footer quedaba fuera de pantalla e inalcanzable. Con `auto` la
+   barra sólo aparece cuando hace falta; con espacio de sobra no cambia nada.
+   El eje X sigue oculto para que el sidebar colapsado (width:0) no genere una
+   barra horizontal. */
+.sidebar{width:var(--sidebar-w);background:var(--bg-sidebar);display:flex;flex-direction:column;height:100dvh;flex-shrink:0;transition:transform .3s var(--ease),width .3s var(--ease);z-index:100;border-right:1px solid var(--border-sidebar);overflow-x:hidden;overflow-y:auto}
 /* `border-right-width:0` no es cosmético: con `box-sizing:border-box`, el
    `width:0` NO puede achicar el elemento por debajo del 1px del borde, así que
    el sidebar colapsado seguía ocupando 1px de layout. El `translateX(-100%)`
@@ -100,7 +106,11 @@ body{font-family:var(--font);background:var(--bg-0);color:var(--text-0);display:
 .sidebar-nav-item svg{flex-shrink:0;opacity:.6}
 .sidebar-nav-item.active svg{opacity:1}
 
-.sidebar-section{padding:4px 10px;flex:1;overflow-y:auto;min-height:0}
+/* min-height:140px (antes 0): siendo el único hijo con flex:1, esta sección se
+   comía TODO el achique cuando faltaba alto — medido: 9px a 500px de viewport,
+   o sea la lista de proyectos quedaba inservible. Con un piso, el sobrante pasa
+   a scrollear en el sidebar (regla de arriba) en vez de aplastar Proyectos. */
+.sidebar-section{padding:4px 10px;flex:1;overflow-y:auto;min-height:140px}
 .sidebar-section:last-of-type{flex:none;padding-bottom:4px}
 .sidebar-label{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-sidebar-muted);padding:10px 6px 4px}
 .chat-history{display:flex;flex-direction:column;gap:1px}
