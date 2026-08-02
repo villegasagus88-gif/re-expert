@@ -10606,7 +10606,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     var layers=[{sp:0.14,mh:0.30,o:0.5},{sp:0.30,mh:0.46,o:0.78},{sp:0.52,mh:0.64,o:1}];
     function seed(){var w=cv.clientWidth||1200;layers.forEach(function(L){L.b=[];var x=-30;while(x<w+160){var bd=genB(L.mh);bd.x=x;L.b.push(bd);x+=bd.w+(14+Math.random()*32);}L.right=x;});}
     seed();
-    function draw(){if(!_running)return;var dpr=Math.min(window.devicePixelRatio||1,2);var w=cv.clientWidth,h=cv.clientHeight;if(w<=0||h<=0){_raf=requestAnimationFrame(draw);return;}if(cv.width!==w*dpr||cv.height!==h*dpr){cv.width=w*dpr;cv.height=h*dpr;seed();}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    function draw(){if(!_running)return;var dpr=Math.min(window.devicePixelRatio||1,2);var w=cv.clientWidth,h=cv.clientHeight;if(w<=0||h<=0){_raf=requestAnimationFrame(draw);return;}/* canvas.width/height son ENTEROS: si w*dpr da fraccionario (Windows al 125/150/175%)
+   el valor se trunca al asignarlo y la comparación nunca vuelve a coincidir → seed()
+   regeneraba todos los edificios en CADA frame (el skyline "enloquecido"). Redondeamos
+   para comparar y asignar el mismo entero: seed() solo corre en un resize real. */
+var cw=Math.round(w*dpr),ch=Math.round(h*dpr);if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;seed();}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
       var F=focusP(curFoc());var mxs=CFG.interaction?mouse.x:-999;_mx+=((mxs>0?mxs/w:0.5)-_mx)*0.05;_sx+=((mxs>0?mxs:_sx)-_sx)*0.12;
       var ground=h*(0.95+F.gShift);ctx.strokeStyle='rgba('+K.ground+','+(0.22*F.dim)+')';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ground+0.5);ctx.lineTo(w,ground+0.5);ctx.stroke();
       for(var li=0;li<layers.length;li++){var L=layers[li];var px=(_mx-0.5)*L.sp*-110*(0.4+F.wave*0.6);var b,k;
