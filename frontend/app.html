@@ -216,7 +216,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <div class="model-badge"><span class="model-dot"></span> IA de última generación</div>
+      <div class="model-badge"><span class="model-dot"></span> Tecnología de última generación</div>
       <!-- Cuenta (estilo ChatGPT): el nombre abre el menú; el menú tiene Perfil,
            Configuración ▸, Ayuda ▸ y Cerrar sesión. -->
       <div id="userFooter" style="display:none">
@@ -304,9 +304,9 @@
       <!-- CHAT VIEW -->
       <div class="view active" id="viewChat">
         <div class="welcome" id="welcomeScreen">
-          <div class="welcome-badge"><span class="welcome-badge-dot"></span> IA de última generación</div>
+          <div class="welcome-badge"><span class="welcome-badge-dot"></span> Tecnología de última generación</div>
           <h1 class="welcome-title">RE Expert</h1>
-          <p class="welcome-subtitle">IA especializada en desarrollo inmobiliario, analisis financiero y gestion de proyectos.</p>
+          <p class="welcome-subtitle" id="welcomePhrase">¿En qué avanzamos hoy?</p>
           <div class="welcome-cards">
             <div class="welcome-card" data-prompt="Quiero evaluar la rentabilidad de un proyecto inmobiliario. Que datos necesitas?"><div class="wcard-icon">📈</div><div class="wcard-title">Evaluar rentabilidad</div><div class="wcard-desc">ROI, TIR, VAN y metricas</div></div>
             <div class="welcome-card" data-prompt="Necesito crear un documento profesional de presentacion de proyecto para inversores"><div class="wcard-icon">📋</div><div class="wcard-title">Crear documentos</div><div class="wcard-desc">Contratos y reportes</div></div>
@@ -5238,6 +5238,26 @@ window.addEventListener('re:chat-done',e=>{
 // el asesor también lo usa al hablarle. Acá: saludo al entrar + pregunta
 // única la primera vez (sin chocar con el tour de bienvenida). Todo aditivo.
 const nickState={apodo:null};
+// Frases del welcome (espíritu "asesor que te recibe", no descripción de
+// producto): rotan UNA por día, determinístico — cambia a medianoche.
+const WELCOME_FRASES=[
+  '¿En qué avanzamos hoy?',
+  'Contame en qué estás y lo resolvemos.',
+  '¿Qué proyecto movemos hoy?',
+  '¿Qué hay que destrabar hoy?',
+  'Pensemos juntos tu próximo paso.',
+  '¿Números, planos o una decisión difícil?',
+  'Tu proyecto no espera. ¿Arrancamos?',
+  '¿Qué analizamos hoy?',
+  'El mercado ya se movió. ¿Por dónde empezamos?',
+  'Decime el objetivo y armamos el camino.',
+];
+function initWelcomePhrase(){
+  const el=document.getElementById('welcomePhrase');
+  if(!el)return;
+  const dia=Math.floor(Date.now()/86400000);   // días desde epoch
+  el.textContent=WELCOME_FRASES[dia%WELCOME_FRASES.length];
+}
 function nickGreetingWord(){
   const h=new Date().getHours();
   return h<6?'Buenas noches':h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
@@ -10344,7 +10364,7 @@ function init(){
   $$('.sidebar-nav-item').forEach(b=>{if(b.dataset.view)b.addEventListener('click',()=>{if(state.activeWorkspace)exitWorkspace();switchView(b.dataset.view)})});
   renderHistory();
   initHistoryScroll();
-  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();initVoice();initApodo();
+  initPlanos();initMaterialesTabs();initPagosTabs();initProyectoTabs();initScanner();initNoticiasTabs();initAcademiaTabs();initCreditos();initSol();initSectionActions();initOnboarding();initVoice();initApodo();initWelcomePhrase();
   document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();newConversation()}});
 
   // Swipe-derecha-vuelve-atrás (gesto tipo iOS desde el borde izquierdo).
