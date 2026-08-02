@@ -701,6 +701,10 @@ body:has(.sidebar.collapsed) .acct-switcher{left:calc(62px + var(--sidebar-w) + 
 .message-text p{margin-bottom:10px} .message-text p:last-child{margin-bottom:0}
 .message-text ul,.message-text ol{margin:6px 0;padding-left:18px}
 .message-text li{margin-bottom:3px}
+/* Links en las respuestas: color del texto con línea sutil (nada de azul
+   de link viejo) — mismo lenguaje visual que los sitios nombrados. */
+.message-assistant .message-text a{color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--accent-brand) 55%,transparent);font-weight:600;transition:color .15s,text-decoration-color .15s}
+.message-assistant .message-text a:hover{color:var(--accent-brand);text-decoration-color:var(--accent-brand)}
 .message-text strong{font-weight:600;color:var(--text-0)}
 .message-text code{background:var(--bg-code);padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border-0)}
 .message-text pre{background:var(--bg-code);border:1px solid var(--border-0);border-radius:var(--radius-md);padding:14px 16px;margin:10px 0;overflow-x:auto}
