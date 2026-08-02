@@ -60,6 +60,16 @@ RSS_FEEDS = [
     {"url": "https://www.plataformaarquitectura.cl/cl/rss/", "source": "plataformaarquitectura.cl",
      "mode": "section", "cat": "arquitectura", "intl": True},
     {"url": "https://www.clarin.com/rss/arq/", "source": "clarin.com", "mode": "section", "cat": "arquitectura"},
+    # Medios ESPECIALIZADOS del rubro (pedido de Agustín): monotemáticos, entra
+    # todo el feed con su categoría fija. Solo feeds VALIDADOS (HTTP 200 +
+    # pubDate reciente) — regla de la sección: jamás una noticia que no pasó,
+    # y estos son RSS reales con fecha del propio medio.
+    {"url": "https://ladrillo.info/feed/", "source": "ladrillo.info",
+     "mode": "section", "cat": "inmobiliario"},
+    {"url": "https://elconstructor.com/feed/", "source": "elconstructor.com",
+     "mode": "section", "cat": "construccion"},
+    {"url": "https://construar.com.ar/feed/", "source": "construar.com.ar",
+     "mode": "section", "cat": "construccion"},
     {"url": "https://www.lanacion.com.ar/arc/outboundfeeds/rss/category/politica/?outputType=xml",
      "source": "lanacion.com.ar", "mode": "strict", "cat": "politica"},
     {"url": "https://www.infobae.com/arc/outboundfeeds/rss/category/politica/?outputType=xml",
