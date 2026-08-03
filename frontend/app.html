@@ -1376,6 +1376,11 @@ function switchView(v){
   if(typeof updateWsActiveBar==='function')updateWsActiveBar();
   if(window.innerWidth<=768)els.sidebar.classList.add('collapsed');
   if(v==='materiales'){loadMateriales();corOpen();}
+  // Planos: cargar SIEMPRE al entrar a la sección, venga por donde venga
+  // (sidebar, rail, programático). Antes dependía de un único listener en el
+  // primer [data-view="planos"] del DOM → entrar por la otra vía dejaba la
+  // sección vacía hasta recargar la página.
+  if(v==='planos')plnLoadDashboard();
   if(v==='pagos')loadPagos();
   if(v==='proyecto')loadProyecto();
   if(v==='scanner')loadScanner();
@@ -5473,12 +5478,17 @@ function plnToast(msg,ok=true){
 // ── Dashboard multi-proyecto ──
 async function plnLoadDashboard(force=false){
   if(plnState.loaded&&!force){plnRenderDashboard();return;}
+  if(plnState.dashLoading)return;   // ya hay un fetch en vuelo (doble vía de entrada)
+  plnState.dashLoading=true;
   $('#plnProjectsGrid').innerHTML='<div class="pln-loading">Cargando proyectos…</div>';
   try{
     const d=await plnApi('/projects');
     plnState.projects=d.projects||[];plnState.loaded=true;
     plnRenderDashboard();
-  }catch(e){$('#plnProjectsGrid').innerHTML=`<div class="empty-state" style="padding:30px"><div class="empty-title">No pudimos cargar los proyectos</div><div class="empty-desc">${esc(e.message)}</div></div>`;}
+  }catch(e){
+    // loaded queda en false: el próximo ingreso a la sección reintenta solo
+    $('#plnProjectsGrid').innerHTML=`<div class="empty-state" style="padding:30px"><div class="empty-title">No pudimos cargar los proyectos</div><div class="empty-desc">${esc(e.message)}</div><button class="btn-primary" style="margin-top:12px" onclick="plnLoadDashboard(true)">Reintentar</button></div>`;
+  }finally{plnState.dashLoading=false;}
 }
 function plnRenderDashboard(){
   const ps=plnState.projects;
