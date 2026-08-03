@@ -95,10 +95,18 @@
     html { scroll-behavior: auto; }
     #re *, #re *::before, #re *::after { animation: none !important; }
   }
-  #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
+  /* El !important es para ganarle al `animation:none` que inyecta el modo 'off',
+     pero fuera de un @media también le ganaba al bloque de arriba: el marquee
+     seguía girando con prefers-reduced-motion, que es exactamente lo que ese
+     bloque intenta evitar. Encerrado en no-preference, sólo se aplica cuando el
+     sistema permite movimiento. */
+  @media (prefers-reduced-motion: no-preference) {
+    #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
+  }
   /* El canvas del skyline va posicionado y por eso pintaría ENCIMA del contenido
      estático del panel. Subimos los hermanos (no el canvas) a su propia capa. */
   #re [data-demo-panel="chat"] > *:not(canvas) { position: relative; z-index: 1; }
+  #re [data-demo-panel="materiales"] > *:not(canvas) { position: relative; z-index: 1; }
   </style>
   <link rel="stylesheet" href="consent.css">
 </head>
@@ -206,7 +214,9 @@
               <div style="display:flex; align-items:center; gap:9px; width:min(520px,100%); background:#fff; border:1px solid #e8ddd0; border-radius:999px; padding:9px 9px 9px 16px; box-shadow:0 8px 24px -14px rgba(42,29,18,0.25);"><span style="flex:1; font-size:12px; color:#b3a799;">Consulta sobre tu proyecto inmobiliario...</span><span style="width:26px; height:26px; border-radius:50%; background:linear-gradient(140deg,#e8833a,#BE5103); display:flex; align-items:center; justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span></div>
               <div style="font-size:9.5px; color:#c4b8aa;">RE Expert puede cometer errores. Verificá la información importante.</div>
             </div>
-            <div data-demo-panel="materiales" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden;">
+            <div data-demo-panel="materiales" style="display:none; flex:1; min-width:0; flex-direction:column; gap:11px; padding:20px 24px; overflow:hidden; position:relative;">
+              <!-- fondo de obra: lo dibuja el bloque [data-app-corralones] del final -->
+              <canvas data-app-corralones="" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; pointer-events:none;"></canvas>
               <div><div style="font-size:19px; font-weight:800; letter-spacing:-0.5px; color:#2a1d12;">Materiales &amp; Corralones</div><div style="font-size:11.5px; color:#897b6d; margin-top:3px;">Los corralones cerca de tu obra: dónde comprar cada rubro, sin fletes de más.</div></div>
               <div style="display:flex; gap:16px; border-bottom:1px solid #f0eae2; font-size:11.5px;"><span style="padding:6px 2px; border-bottom:2px solid #BE5103; color:#8f3d02; font-weight:700;">Corralones</span><span style="padding:6px 2px; color:#897b6d;">Calculadora</span></div>
               <div style="display:flex; gap:8px; align-items:center;"><span style="display:inline-flex; align-items:center; gap:5px; flex:0 0 auto; font-size:10.5px; font-weight:600; color:#5c4d40; border:1px solid #e8ddd0; border-radius:999px; padding:5px 11px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>Godoy Cruz, Mendoza</span><span style="flex:1; min-width:0; font-size:11px; color:#b3a799; background:#faf7f3; border:1px solid #ece4db; border-radius:9px; padding:6px 11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">¿Qué material necesitás? (ej: hierro del 8, cemento…)</span></div>
@@ -712,7 +722,10 @@ class Component extends DCLogic {
     this.mode = mode;
 
     this.setupNav();
-    this.setupCursorGlow();
+    // El glow que sigue al cursor es movimiento automático: con reduced-motion
+    // no va. Antes se montaba acá arriba, antes del early-return del modo
+    // 'off', así que seguía activo igual.
+    if (mode !== 'off') this.setupCursorGlow();
     this.setupSkyline();
     // Hovers: van también en modo 'off'. Son transiciones disparadas por el
     // usuario (no movimiento automático) y el modo 'off' solo apaga
@@ -859,15 +872,33 @@ class Component extends DCLogic {
         }
       }
     };
-    let raf;
-    const loop = (t) => { draw(t); raf = requestAnimationFrame(loop); };
+    /* El skyline es del HERO: cuando dejás de verlo, el loop se apaga del todo.
+       Antes seguía rasterizando edificios y ventanas a 60fps con el hero tres
+       pantallas arriba — batería quemada por algo que nadie está mirando. */
+    let raf = 0, enPantalla = true;
+    const loop = (t) => { if (!enPantalla) { raf = 0; return; } draw(t); raf = requestAnimationFrame(loop); };
+    const arrancar = () => { if (!raf) raf = requestAnimationFrame(loop); };
     const onMove = (e) => { mx = e.clientX / window.innerWidth; my = e.clientY / window.innerHeight; };
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('resize', resize);
     this._skylineMove = onMove; this._skylineResize = resize;
     resize();
     if (this.mode === 'off') draw(0);
-    else { raf = requestAnimationFrame(loop); this._skylineRaf = () => cancelAnimationFrame(raf); }
+    else {
+      if (window.IntersectionObserver) {
+        try {
+          const io = new IntersectionObserver((es) => {
+            enPantalla = es.some(e => e.isIntersecting);
+            if (enPantalla) arrancar();
+          }, { rootMargin: '150px' });
+          io.observe(cv);
+          this._skylineIO = io;
+        } catch (e) { /* sin observer seguimos como antes: mejor animar de más que no animar */ }
+      }
+      arrancar();
+      this._skylineRaf = () => { enPantalla = false; if (raf) cancelAnimationFrame(raf); raf = 0;
+                                 if (this._skylineIO) { this._skylineIO.disconnect(); this._skylineIO = null; } };
+    }
   }
 
   setupIntro() {
@@ -1079,7 +1110,35 @@ class Component extends DCLogic {
 
   setupScrollFX(mode) {
     const root = this.root;
-    const parItems = Array.from(root.querySelectorAll('[data-parallax]')).map(el => ({ el, s: parseFloat(el.getAttribute('data-parallax')) || 0 }));
+    /* Parallax RELATIVO a cada elemento, no al scroll absoluto de la página.
+       Antes era `translateY(scrollY * s)`: con s=0.04 y la página 5000px abajo
+       el elemento se iba 200px de donde tiene que estar, o sea el efecto dejaba
+       de pertenecer a su sección y se acumulaba con toda la altura del sitio.
+       Ahora el origen es el propio elemento y el recorrido está CLAMPEADO al
+       tramo en que se lo ve: `alcance = alto de pantalla/2 + alto del elemento/2`
+       es exactamente la distancia a la que deja de asomar. Medido sobre la
+       landing real (10238px de alto): con el scroll absoluto los desplazamientos
+       llegaban a 467px; sólo cambiando el origen todavía daban 371px mientras el
+       elemento estaba fuera de pantalla; con el clamp quedan en ±19px y ±41px,
+       que es el parallax sutil que se buscaba. */
+    const parItems = Array.from(root.querySelectorAll('[data-parallax]')).map(el => ({
+      el, s: parseFloat(el.getAttribute('data-parallax')) || 0, centro: 0, alcance: 1,
+    }));
+    const medirCentros = () => {
+      parItems.forEach(p => {
+        // sin el transform puesto, si no medimos la posición ya desplazada
+        const prev = p.el.style.transform;
+        p.el.style.transform = '';
+        const r = p.el.getBoundingClientRect();
+        p.centro = r.top + window.scrollY + r.height / 2;
+        p.alcance = Math.max(1, window.innerHeight / 2 + r.height / 2);
+        p.el.style.transform = prev;
+      });
+    };
+    medirCentros();
+    window.addEventListener('resize', medirCentros);
+    // Las imágenes cambian el layout al cargar: hay una con data-parallax.
+    window.addEventListener('load', medirCentros);
     const skewItems = (mode === 'full') ? Array.from(root.querySelectorAll('[data-skew]')) : [];
     const bar = root.querySelector('[data-progress]');
     let last = window.scrollY, vel = 0, curSkew = 0, idle = 0, running = false;
@@ -1087,7 +1146,12 @@ class Component extends DCLogic {
       const y = window.scrollY;
       const dy = y - last; last = y;
       vel += (dy - vel) * 0.18;
-      parItems.forEach(({ el, s }) => { el.style.transform = 'translate3d(0,' + (y * s).toFixed(1) + 'px,0)'; });
+      const centroPantalla = y + window.innerHeight / 2;
+      parItems.forEach(p => {
+        // 0 con el elemento centrado; ±alcance cuando ya no asoma por ningún borde
+        const d = Math.max(-p.alcance, Math.min(p.alcance, centroPantalla - p.centro));
+        p.el.style.transform = 'translate3d(0,' + (d * p.s).toFixed(1) + 'px,0)';
+      });
       if (skewItems.length) {
         const target = Math.max(-2, Math.min(2, vel * 0.16));
         curSkew += (target - curSkew) * 0.14;
@@ -1289,6 +1353,17 @@ class Component extends DCLogic {
   function init(cv) {
     var ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
     var _seedB = 0, _raf = 0;
+    /* Mismo criterio que el fondo de obra de la solapa Materiales: el skyline es
+       de ESTA maqueta, así que con la maqueta fuera de pantalla el loop no
+       dibuja. El guard de w<=0 sólo cubre el caso "solapa oculta"; con la
+       sección entera scrolleada fuera seguía rasterizando edificios. */
+    var enPantalla = true;
+    if (window.IntersectionObserver) {
+      try {
+        new IntersectionObserver(function (es) { enPantalla = es[0].isIntersecting; },
+                                 { threshold: 0.05 }).observe(cv);
+      } catch (e) { /* sin observer seguimos como antes */ }
+    }
 
     function genB(maxHf) {
       var r = Math.random(), type = r < 0.36 ? 'tower' : r < 0.68 ? 'slab' : 'mid';
@@ -1354,7 +1429,7 @@ class Component extends DCLogic {
 
     function frame(loop) {
       var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
-      if (w <= 0 || h <= 0) { if (loop) _raf = requestAnimationFrame(function(){frame(true);}); return; }
+      if (w <= 0 || h <= 0 || !enPantalla) { if (loop) _raf = requestAnimationFrame(function(){frame(true);}); return; }
       /* canvas.width/height son ENTEROS: sin redondear, con escalado de pantalla
          != 100% la comparación nunca coincide y seed() correría en cada frame
          (el bug que tenía el skyline de la app). */
@@ -1383,6 +1458,275 @@ class Component extends DCLogic {
 
   function boot() {
     try { Array.prototype.forEach.call(document.querySelectorAll('[data-app-skyline]'), init); }
+    catch (e) { /* decorativo: nunca debe romper la landing */ }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+  <script>
+/* Fondo de obra del panel "Materiales & Corralones".
+   Port del efecto 10 ("Fondos Corralones v2", Claude Design): suben los 4
+   hierros nervados de cada columna con sus separadores, cruza la viga de 4
+   hierros arriba y despues los ladrillos suben y tapan lo que hay detras.
+   Solo usa los datos b2/cols2 del build original.
+   Es decorativo: si algo falla NO debe romper la landing. */
+(function () {
+  'use strict';
+  var INK = '42,29,18', WARM = '120,102,84', ACC = '190,81,3';
+  var INT = 0.65;   /* "intensidad" por defecto del diseno */
+  /* El original cicla en 23 s porque es un fondo de pagina permanente. Aca la
+     maqueta le da a la solapa Materiales exactamente 4200 ms por vuelta
+     (setInterval de setupDemo) y con 23 s no llegaba ni a la viga (4600 ms) ni
+     a los ladrillos (6509 ms): se veia subir los hierros y nada mas. Comprimido
+     a 6.5 s la obra entera termina a los ~3.5 s y entra completa en la ventana,
+     con medio segundo de pared terminada antes de que rote. Las proporciones
+     entre fases son las del diseno; lo unico que cambia es la duracion total. */
+  var CYC = 6500;
+
+  function init(cv) {
+    var ctx = cv.getContext && cv.getContext('2d');
+    if (!ctx) return;
+    var W = 0, H = 0, small = false, D = null, sd = 11;
+    function rnd() { return (sd = (sd * 16807) % 2147483647) / 2147483647; }
+    function a(rgb, al) { return 'rgba(' + rgb + ',' + al + ')'; }
+    function ln(x1, y1, x2, y2) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+    function cl2(v) { return Math.max(0, Math.min(1, v)); }
+
+    function build() {
+      sd = 11; small = W < 660; D = {};
+      var w2b = small ? 104 : 86, h2b = small ? 38 : 33, g2 = 5, r, c, k, i;
+      D.b2 = { bw: w2b, bh: h2b, gap: g2 };
+      D.b2.rows = Math.ceil(H / (h2b + g2)) + 2;
+      D.b2.cols = Math.ceil(W / w2b) + 2;
+      D.b2.cell = [];
+      for (r = 0; r < D.b2.rows; r++) {
+        var row = [];
+        for (c = 0; c < D.b2.cols; c++) {
+          var sp = [];
+          for (k = 0; k < 7; k++) sp.push([rnd(), rnd(), 0.6 + rnd() * 1.5, 0.05 + rnd() * 0.12]);
+          row.push({
+            tone: 0.62 + rnd() * 0.38,
+            ix: (rnd() - 0.5) * 2.4, iy: (rnd() - 0.5) * 1.6,
+            iw: (rnd() - 0.5) * 3, ih: (rnd() - 0.5) * 1.6,
+            chip: rnd() < 0.16, chipC: rnd() < 0.5 ? 0 : 1, chipS: 2.5 + rnd() * 3,
+            proud: (rnd() - 0.5) * 1.1, sp: sp
+          });
+        }
+        D.b2.cell.push(row);
+      }
+      D.cols2 = [];
+      var ncol = small ? 2 : 3;
+      for (i = 0; i < ncol; i++) D.cols2.push({ x: W * ((i + 0.5) / ncol) + (rnd() - 0.5) * 40, w: small ? 40 : 46 });
+
+      /* textura estatica del muro: un solo offscreen reutilizado */
+      var texH = Math.max(2, Math.round(D.b2.rows * (h2b + g2) + 4));
+      var texW = Math.max(2, Math.round(W));
+      var tex = cv._wallTex || (cv._wallTex = document.createElement('canvas'));
+      if (tex.width !== texW || tex.height !== texH) { tex.width = texW; tex.height = texH; }
+      var tc = tex.getContext('2d');
+      tc.clearRect(0, 0, texW, texH);
+      D.b2.texH = texH;
+      for (r = 0; r < D.b2.rows; r++) {
+        var y = texH - (r + 1) * (h2b + g2) + g2, off = (r % 2) ? -w2b / 2 : 0;
+        for (c = 0; c < D.b2.cols; c++) {
+          var cd = D.b2.cell[r][c];
+          var x = off + c * w2b + cd.ix, by = y + cd.iy;
+          var w3 = w2b - g2 + cd.iw, h3 = h2b - g2 + cd.ih;
+          tc.fillStyle = 'rgba(42,29,18,' + ((0.062 + cd.tone * 0.052) + cd.proud * 0.004).toFixed(3) + ')';
+          tc.fillRect(x, by, w3, h3);
+          for (k = 0; k < cd.sp.length; k++) {
+            var s2 = cd.sp[k];
+            tc.fillStyle = 'rgba(42,29,18,' + Math.min(0.14, s2[3] * 1.1).toFixed(3) + ')';
+            tc.fillRect(x + s2[0] * w3, by + s2[1] * h3, s2[2], s2[2]);
+          }
+          if (cd.chip) {
+            var s3 = cd.chipS;
+            tc.fillStyle = 'rgba(120,102,84,.08)';
+            tc.beginPath();
+            if (cd.chipC) { tc.moveTo(x + w3 - s3, by); tc.lineTo(x + w3, by); tc.lineTo(x + w3, by + s3); }
+            else { tc.moveTo(x, by + h3 - s3); tc.lineTo(x + s3, by + h3); tc.lineTo(x, by + h3); }
+            tc.closePath(); tc.fill();
+          }
+        }
+      }
+      D.b2.tex = tex;
+    }
+
+    function draw(t) {
+      var K = 0.5 + INT;
+      var B = D.b2, bw = B.bw, bh = B.bh, gp = B.gap;
+      var u = (t % CYC) / CYC;
+      var barsP = cl2(u / 0.13);
+      var stirP = cl2((u - 0.113) / 0.104);
+      var beamP = cl2((u - 0.20) / 0.104);
+      var lay = cl2((u - 0.283) / 0.26);
+      var fade = u > 0.978 ? 1 - (u - 0.978) / 0.022 : 1;
+
+      /* sin mouse en la landing: la luz queda centrada */
+      var lx = small ? W * 0.32 : W * 0.5;
+      var ly = small ? H * 0.28 : H * 0.42;
+      var maxD = Math.hypot(W, H) * 0.72;
+      var frameTop = Math.min(0, H - B.rows * (bh + gp));
+      var vh = small ? 34 : 42, beamY = 12;
+
+      ctx.fillStyle = a(WARM, (0.05 * K * fade).toFixed(3));
+      ctx.fillRect(0, 0, W, H);
+
+      function rebV(x, y0, y1, ap) {
+        var hh = y1 - y0; if (hh <= 1) return;
+        ctx.fillStyle = a(INK, (0.27 * K * ap).toFixed(3));
+        ctx.fillRect(x - 2.7, y0, 5.4, hh);
+        ctx.fillStyle = a('255,255,255', (0.42 * ap).toFixed(3));
+        ctx.fillRect(x - 1.5, y0, 1.6, hh);
+        ctx.strokeStyle = a(INK, (0.15 * K * ap).toFixed(3)); ctx.lineWidth = 1;
+        for (var yy = y0 + 7; yy < y1; yy += 9) ln(x - 3.6, yy, x + 3.6, yy - 2.3);
+      }
+      function rebH(y, x0, x1, ap) {
+        var ww = x1 - x0; if (ww <= 1) return;
+        ctx.fillStyle = a(INK, (0.27 * K * ap).toFixed(3));
+        ctx.fillRect(x0, y - 2.7, ww, 5.4);
+        ctx.fillStyle = a('255,255,255', (0.42 * ap).toFixed(3));
+        ctx.fillRect(x0, y - 1.5, ww, 1.6);
+        ctx.strokeStyle = a(INK, (0.15 * K * ap).toFixed(3)); ctx.lineWidth = 1;
+        for (var xx = x0 + 7; xx < x1; xx += 9) ln(xx, y - 3.6, xx - 2.3, y + 3.6);
+      }
+
+      /* 1. columnas: 4 hierros y sus separadores al piso */
+      D.cols2.forEach(function (cl, i) {
+        var p = cl2(barsP * (D.cols2.length + 0.6) - i);
+        if (p <= 0) return;
+        var yTop = H - (H - frameTop) * p;
+        var xs = [cl.x - cl.w * 0.34, cl.x - cl.w * 0.12, cl.x + cl.w * 0.12, cl.x + cl.w * 0.34];
+        xs.forEach(function (bx, k) { rebV(bx, yTop, H, fade * (k === 1 || k === 2 ? 0.62 : 1)); });
+        var sp = cl2(stirP * (D.cols2.length + 0.6) - i);
+        if (sp > 0) {
+          ctx.fillStyle = a(INK, (0.18 * K * fade * sp).toFixed(3));
+          ctx.fillRect(cl.x - cl.w * 0.5, H - 7, cl.w, 7);
+          [-0.34, 0.34].forEach(function (f2) {
+            ctx.strokeStyle = a(INK, (0.22 * K * fade * sp).toFixed(3)); ctx.lineWidth = 1.6;
+            ln(cl.x + cl.w * f2, H - 7, cl.x + cl.w * f2, H - 18);
+          });
+        }
+      });
+
+      /* 2. viga de 4 hierros, arriba */
+      if (beamP > 0) {
+        var vw = W * beamP;
+        [beamY + vh * 0.16, beamY + vh * 0.38, beamY + vh * 0.62, beamY + vh * 0.84]
+          .forEach(function (by2, k) { rebH(by2, 0, vw, fade * (k === 1 || k === 2 ? 0.62 : 1)); });
+      }
+
+      /* 3. ladrillos: suben y borran lo que hay detras */
+      var rowsUp = B.rows * lay, r, c2, prog, y, off;
+      if (lay > 0 && B.tex && B.texH) {
+        for (r = 0; r < B.rows; r++) {
+          prog = cl2(rowsUp - r);
+          if (prog <= 0) break;
+          y = H - (r + 1) * (bh + gp) + gp;
+          var sy = B.texH - (r + 1) * (bh + gp) + gp;
+          if (sy < 0 || sy + bh > B.texH) continue;
+          var wSeen = Math.max(1, Math.min(W, W * prog + bh));
+          /* el diseno pinta el papel opaco para tapar los hierros; aca el canvas
+             es transparente sobre el panel, asi que limpiar hace lo mismo */
+          ctx.clearRect(0, y - 2, wSeen, bh + 2);
+          ctx.globalAlpha = fade * Math.min(1, K);
+          ctx.drawImage(B.tex, 0, sy - 2, wSeen, bh + 2, 0, y - 2, wSeen, bh + 2);
+          ctx.globalAlpha = 1;
+        }
+        for (r = 0; r < B.rows; r++) {
+          prog = cl2(rowsUp - r);
+          if (prog <= 0) break;
+          y = H - (r + 1) * (bh + gp) + gp;
+          off = (r % 2) ? -bw / 2 : 0;
+          var shown = B.cols * prog;
+          for (c2 = 0; c2 < B.cols; c2++) {
+            if (c2 > shown) break;
+            var cd = B.cell[r][c2];
+            var ap = Math.min(1, shown - c2) * fade;
+            var x = off + c2 * bw + cd.ix, by = y + cd.iy;
+            if (x > W || x + bw < 0) continue;
+            var w3 = bw - gp + cd.iw, h3 = bh - gp + cd.ih;
+            var dx = x + w3 / 2 - lx, dy = by + h3 / 2 - ly, dd = Math.hypot(dx, dy) || 1;
+            var litF = Math.max(0, 1 - dd / maxD);
+            ctx.fillStyle = a('255,255,255', ((0.16 + litF * 0.52) * ap).toFixed(3));
+            if (dy > 0) ctx.fillRect(x, by, w3, 1.8); else ctx.fillRect(x, by + h3 - 1.8, w3, 1.8);
+            ctx.fillStyle = a(INK, ((0.055 + litF * 0.10) * K * ap).toFixed(3));
+            if (dy > 0) ctx.fillRect(x, by + h3 - 2.2, w3, 2.2); else ctx.fillRect(x, by, w3, 2.2);
+            if (dx > 0) ctx.fillRect(x + w3 - 2, by, 2, h3); else ctx.fillRect(x, by, 2, h3);
+          }
+        }
+      }
+
+      if (!small) {
+        var gl = ctx.createRadialGradient(lx, ly, 8, lx, ly, Math.min(W, H) * 0.46);
+        gl.addColorStop(0, a(ACC, (0.09 * fade).toFixed(3)));
+        gl.addColorStop(1, a(ACC, 0));
+        ctx.fillStyle = gl; ctx.fillRect(0, 0, W, H);
+      }
+
+      /* velo: deja legible la parte de arriba del panel */
+      var vg = ctx.createLinearGradient(0, 0, 0, H);
+      vg.addColorStop(0, 'rgba(253,251,248,.93)');
+      vg.addColorStop(0.26, 'rgba(253,251,248,.74)');
+      vg.addColorStop(0.46, 'rgba(253,251,248,.10)');
+      vg.addColorStop(1, 'rgba(253,251,248,.02)');
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    }
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var force = /[?&]motion=on/.test(location.search || '');
+    var animate = !(reduce && !force);
+    var entry = 0, prevT = 0, painted = false, dead = false, t0 = 0, oculto = true;
+
+    /* si la maqueta no está en pantalla tampoco corremos el ciclo */
+    var enPantalla = true;
+    if (window.IntersectionObserver) {
+      try {
+        new IntersectionObserver(function (es) { enPantalla = es[0].isIntersecting; },
+                                 { threshold: 0.15 }).observe(cv);
+      } catch (e) { /* si no se puede observar, seguimos como antes */ }
+    }
+
+    function frame(raw) {
+      if (dead) return;
+      requestAnimationFrame(frame);
+      var w = cv.clientWidth, h = cv.clientHeight;
+      if (w <= 0 || h <= 0 || !enPantalla) { oculto = true; return; }   /* solapa oculta: no dibujamos */
+      /* Cada vez que la solapa vuelve a aparecer el ciclo arranca de cero.
+         Con el reloj libre el visitante caia casi siempre en la pausa con la
+         pared ya terminada y parecia que no pasaba nada. Reiniciando, siempre
+         ve la obra desde el principio: hierros, viga y pared. */
+      if (oculto) { oculto = false; t0 = raw; entry = 0; prevT = 0; painted = false; }
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      /* canvas.width/height son ENTEROS: sin redondear, con escalado de pantalla
+         != 100% la comparacion nunca coincide y build() correria en cada frame. */
+      var cw = Math.round(w * dpr), ch = Math.round(h * dpr);
+      if (cv.width !== cw || cv.height !== ch || !D || W !== w || H !== h) {
+        cv.width = cw; cv.height = ch; W = w; H = h; painted = false;
+        try { build(); } catch (e) { dead = true; return; }
+      }
+      if (!animate) { if (painted) return; entry = 1; }
+      painted = true;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      /* con reduced-motion: un solo frame fijo, con la pared ya terminada
+         (0.7 del ciclo cae dentro de la pausa, despues de que sube el ultimo
+         ladrillo en 0.543 y antes del fundido de 0.978) */
+      var t = animate ? (raw - t0) : CYC * 0.7;
+      var dt = Math.min(64, t - prevT || 16); prevT = t;
+      if (entry < 1) entry = Math.min(1, entry + dt / 950);
+      var ease = 1 - Math.pow(1 - entry, 3);
+      ctx.save();
+      ctx.globalAlpha = ease;
+      ctx.translate(0, (1 - ease) * 16);
+      try { draw(t); } catch (e) { dead = true; }
+      ctx.restore();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function boot() {
+    try { Array.prototype.forEach.call(document.querySelectorAll('[data-app-corralones]'), init); }
     catch (e) { /* decorativo: nunca debe romper la landing */ }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
