@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<!-- data-vista arranca en "chat" porque #viewChat es la vista activa del markup.
+     Lo mantiene switchView(). El CSS lo usa para no mostrar el skyline fuera del
+     chat; si arrancara vacío, el skyline no se vería hasta el primer cambio de
+     sección. -->
+<html lang="es" data-vista="chat">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
@@ -368,7 +372,9 @@
 
       <!-- PLANOS VIEW — Panel inteligente de planos por proyecto -->
       <div class="view" id="viewPlanos">
-        <canvas id="planosBgCanvas" class="planos-iso-bg" aria-hidden="true"></canvas>
+        <!-- El wrapper es el que se estira sobre la sección y recorta; el canvas
+             va sticky adentro. Ver "Fondos de SECCIÓN" en app.css. -->
+        <div class="planos-iso-bg" aria-hidden="true"><canvas id="planosBgCanvas"></canvas></div>
         <div class="section-view pln-section">
 
           <!-- Pantalla 1: Dashboard multi-proyecto -->
@@ -447,7 +453,9 @@
 
       <!-- MATERIALES VIEW -->
       <div class="view" id="viewMateriales">
-        <canvas id="corralonesBgCanvas" class="corralones-bg" aria-hidden="true"></canvas>
+        <!-- El wrapper es el que se estira sobre la sección y recorta; el canvas
+             va sticky adentro. Ver "Fondos de SECCIÓN" en app.css. -->
+        <div class="corralones-bg" aria-hidden="true"><canvas id="corralonesBgCanvas"></canvas></div>
         <div class="section-view">
           <div class="section-header">
             <h2>Materiales &amp; Corralones</h2>
@@ -1383,6 +1391,14 @@ function switchView(v){
   if(v==='academia')loadAcademia();
   if(v==='creditos')loadCreditos();
   if(v==='noticias')loadNewsLive();
+  /* Los fondos animados de cada sección escuchan esto para arrancar cuando su
+     sección entra y APAGARSE cuando sale. El atributo es para el CSS (el
+     skyline se oculta fuera del chat). Va al final y envuelto: es puramente
+     decorativo y no puede hacer fallar un cambio de vista. */
+  try{
+    document.documentElement.setAttribute('data-vista',v);
+    document.dispatchEvent(new CustomEvent('re:view',{detail:{view:v}}));
+  }catch(e){}
 }
 
 // Vuelve a la vista anterior (gesto swipe-right o navegación programática).
@@ -6815,6 +6831,19 @@ async function corOpen(){
   corGeolocate();  // primera vez: la ubicación del usuario define la zona
 }
 
+/* ── Lista de compra de materiales: APAGADA a nivel visual ────────────────
+   Decisión de producto: hoy no vendemos materiales, y un pill flotante con
+   ícono de carrito y un total en pesos se lee como un carrito de compras.
+   Mientras esto sea false no se muestra NADA de la lista: ni el FAB, ni el
+   botón "agregar todo a la lista" de la calculadora. Los dos son la única
+   superficie visible que tiene la feature, así que no quedan botones
+   huérfanos apretando algo que no produce efecto.
+
+   La lógica queda entera a propósito (guardado, valorización, compartir por
+   WhatsApp/mail, sync con el backend): poner esto en true la devuelve completa,
+   y las listas que el usuario ya tenga guardadas siguen intactas. */
+const MAT_LISTA_VISIBLE = false;
+
 function matLista(){try{return JSON.parse(localStorage.getItem('re_mat_lista')||'{}');}catch(e){return {};}}
 function matListaSave(l){localStorage.setItem('re_mat_lista',JSON.stringify(l));matListaFabRender();matListaPush();}
 // Sync con el backend (antes la lista vivía solo en localStorage y se perdía al
@@ -6861,6 +6890,7 @@ function matListaAdd(name,qty=1){
 }
 function matListaFabRender(){
   const fab=$('#matListaFab');if(!fab)return;
+  if(!MAT_LISTA_VISIBLE){fab.style.display='none';return;}
   const n=matListaCount();
   if(!n){fab.style.display='none';return;}
   fab.style.display='';
@@ -7074,10 +7104,10 @@ function matCalcCompute(){
   out.innerHTML=`<div class="mat-calc-result">
     ${rowsHtml}
     <div class="mat-calc-total"><span>Costo estimado del rubro${hasMissing?' (parcial)':''}</span><strong>${formatARS(total)}</strong></div>
-    <div class="mat-calc-actions"><button class="btn-primary" id="matCalcToLista">🛒 Agregar todo a la lista de compra</button></div>
+    ${MAT_LISTA_VISIBLE?`<div class="mat-calc-actions"><button class="btn-primary" id="matCalcToLista">🛒 Agregar todo a la lista de compra</button></div>`:''}
     ${res.notes.length?`<div class="mat-calc-notes">${res.notes.map(n=>'· '+esc(n)).join('<br>')}</div>`:''}
   </div>`;
-  $('#matCalcToLista').addEventListener('click',()=>{
+  $('#matCalcToLista')?.addEventListener('click',()=>{
     const l=matLista();let added=0;
     res.rows.forEach(row=>{
       if(!materialesState.items.find(i=>i.material===row.match))return;
@@ -10663,6 +10693,17 @@ var cw=Math.round(w*dpr),ch=Math.round(h*dpr);if(cv.width!==cw||cv.height!==ch){
   function curTheme(){return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';}
   function animsOn(){var v=document.documentElement.getAttribute('data-animations');if(v==='off')return false;if(v==='on')return true;return !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
   function boot(){try{if(stop){stop();stop=null;}if(!animsOn())return;stop=initSkyline('bgCanvas',{interaction:true,theme:curTheme(),isFocused:function(){var i=document.getElementById('messageInput');return !!i&&document.activeElement===i;}});}catch(e){/* el skyline es decorativo: nunca debe romper la app */}}
+  /* El skyline es el fondo del CHAT, pero su canvas vive en .main (fuera de las
+     vistas), así que ningún display:none de .view lo apagaba y fuera del chat
+     seguía rasterizando tres capas de edificios con reflejos. Eso lo arregla el
+     CSS (`html:not([data-vista="chat"]) .skyline-bg{display:none}`): con el
+     canvas oculto mide 0 y el guard de draw() no dibuja nada.
+     A propósito NO enganchamos boot()/stop() al cambio de vista: boot() crea una
+     instancia nueva y seed() vuelve a sortear todos los edificios con
+     Math.random(), o sea que el skyline te cambiaba de forma cada vez que
+     volvías al chat. Lo que queda corriendo es un rAF que sólo lee dos
+     propiedades y se re-encola: al lado de re-sortear el skyline en cada
+     navegación, es gratis. */
   if(document.readyState!=='loading')boot();else document.addEventListener('DOMContentLoaded',boot);
   document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(boot,40);});
   document.addEventListener('re:anim',boot); // re-evaluar el skyline cuando cambia el toggle de animaciones
@@ -11487,11 +11528,25 @@ function initPlanosIso(canvasEl, opts){
     };
     fit(); window.addEventListener('resize', fit); resizers.push(fit);
     const sc = { raf: 0 };
+    let ultimoFit = -1e9, fitPendiente = false;
     const tick = (tt) => {
       if (!alive) return;
       sc.raf = requestAnimationFrame(tick);
       if (!cv.clientWidth) return; // view oculta (display:none): no dibujar
-      if (cv.clientWidth !== W) fit(); // el viewport cambió mientras estaba oculta
+      /* Antes esto era `if (cv.clientWidth !== W) fit();`, sin límite y mirando
+         sólo el ANCHO. Con el canvas ya no atado a la pantalla sino a la caja de
+         contenido, plegar el sidebar le mueve el ancho ~186px repartidos en los
+         300ms de la transición: eso disparaba fit() —que reasigna el buffer y
+         corre build() entero— unas 18 veces seguidas, con el plano re-escalando
+         frame a frame. Y el ALTO no se miraba nunca, así que cuando aparece el
+         banner de trial o la barra de proyecto activo el canvas quedaba con la
+         geometría vieja hasta el próximo resize de ventana.
+         Ahora: se miran las dos dimensiones y se reconstruye como mucho cada
+         200ms, igual que el fondo de Materiales. El `pendiente` vive AFUERA del
+         if a propósito: si el rebuild se saltea por el throttle, al frame
+         siguiente el tamaño ya coincide y no volvería a entrar nunca. */
+      if (cv.clientWidth !== W || cv.clientHeight !== H) fitPendiente = true;
+      if (fitPendiente && tt - ultimoFit > 200) { ultimoFit = tt; fitPendiente = false; fit(); }
       try {
         if (!W || !H || !M) fit();
         if (M) draw(tt * speed);
@@ -11514,9 +11569,16 @@ function initPlanosIso(canvasEl, opts){
   function curTheme(){return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';}
   function animsOn(){var v=document.documentElement.getAttribute('data-animations');if(v==='off')return false;if(v==='on')return true;return !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
   function boot(){try{if(stop){stop();stop=null;}if(!animsOn())return;stop=initPlanosIso('planosBgCanvas',{theme:curTheme(),velocidad:1.5});}catch(e){/* decorativo: nunca debe romper la app */}}
-  if(document.readyState!=='loading')boot();else document.addEventListener('DOMContentLoaded',boot);
-  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(boot,40);});
-  document.addEventListener('re:anim',boot); // toggle de animaciones
+  /* La animación es de ESTA sección: fuera de Planos el loop se apaga del todo.
+     Antes quedaba vivo para siempre —un requestAnimationFrame por frame contra
+     un canvas de 0px— gastando batería en el celular por una animación que no
+     se está viendo. */
+  function activa(){var v=document.getElementById('viewPlanos');return !!v&&v.classList.contains('active');}
+  function sync(){if(activa())boot();else if(stop){stop();stop=null;}}
+  if(document.readyState!=='loading')sync();else document.addEventListener('DOMContentLoaded',sync);
+  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(sync,40);});
+  document.addEventListener('re:anim',sync);  // toggle de animaciones
+  document.addEventListener('re:view',sync);  // cambio de sección
 })();
 </script>
 
@@ -11553,12 +11615,18 @@ function initCorralones(canvasId, opts){
 
   function build(){
     sd = 11; small = W < 660; D = {};
-    /* El canvas es fixed contra la PANTALLA, pero arriba está el topbar (48px,
-       opaco, z-index 10) y a veces el banner de trial. La viga del diseño va a
-       y=12 y quedaba tapada siempre. Medimos dónde empieza realmente el área de
-       contenido para dibujarla por debajo. */
-    var pc = document.querySelector('.page-container');
-    D.topInset = pc ? Math.max(0, Math.round(pc.getBoundingClientRect().top)) : 0;
+    /* La viga del diseño va a y=12. Cuando el canvas era fixed contra la
+       pantalla arrancaba en y=0 y el topbar (opaco, z-index 10) se la comía
+       siempre, así que había que bajarla midiendo dónde empezaba el contenido.
+       Ahora el canvas es sticky dentro de su sección: su borde superior YA es el
+       borde del área de contenido, así que el inset correcto es 0 y la viga
+       vuelve a su y=12 de diseño.
+       Deliberadamente NO se mide `pageContainer.top - canvas.top`: eso depende
+       del scroll (al final de la sección el sticky se despega y la diferencia da
+       ~12px), y build() corre en cualquier posición de scroll — la viga
+       terminaría a distinta altura según dónde estuviera parado el usuario
+       cuando tocó reconstruir. */
+    D.topInset = 0;
     var w2b = small ? 104 : 86, h2b = small ? 38 : 33, g2 = 5, r, c, k, i;
     D.b2 = { bw:w2b, bh:h2b, gap:g2 };
     D.b2.rows = Math.ceil(H / (h2b + g2)) + 2;
@@ -11794,9 +11862,45 @@ function initCorralones(canvasId, opts){
   function curTheme(){return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';}
   function animsOn(){var v=document.documentElement.getAttribute('data-animations');if(v==='off')return false;if(v==='on')return true;return !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);}
   function boot(){try{if(stop){stop();stop=null;}if(!animsOn())return;stop=initCorralones('corralonesBgCanvas',{theme:curTheme()});}catch(e){/* decorativo: nunca debe romper la app */}}
-  if(document.readyState!=='loading')boot();else document.addEventListener('DOMContentLoaded',boot);
-  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(boot,40);});
-  document.addEventListener('re:anim',boot); // toggle de animaciones
+  /* Igual que en Planos: fuera de Materiales el loop se apaga (ver el comentario
+     de allá). Además así la obra arranca desde el principio cada vez que entrás
+     a la sección, que es como está pensada. */
+  function activa(){var v=document.getElementById('viewMateriales');return !!v&&v.classList.contains('active');}
+  function sync(){if(activa())boot();else if(stop){stop();stop=null;}}
+  if(document.readyState!=='loading')sync();else document.addEventListener('DOMContentLoaded',sync);
+  document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('#themeToggle');if(t)setTimeout(sync,40);});
+  document.addEventListener('re:anim',sync);  // toggle de animaciones
+  document.addEventListener('re:view',sync);  // cambio de sección
+})();
+</script>
+
+<!-- Alto real del área de contenido (#pageContainer) publicado como --scrollport-h.
+     Lo consumen los fondos de sección de Planos y Materiales para saber cuánto
+     mide el canvas sticky. No se puede calcular en CSS: .main es una columna flex
+     y arriba de #pageContainer pueden vivir el topbar, la barra de proyecto activo
+     y el banner de trial (que se inserta después del primer render y no dispara
+     resize). Es decorativo: si algo falla queda el calc() del CSS. -->
+<script>
+(function(){
+  var ro=null;   // hay que retener el observer: sin referencia lo junta el GC
+  function medir(pc){
+    var h=pc.clientHeight;
+    if(h>0)document.documentElement.style.setProperty('--scrollport-h',h+'px');
+  }
+  function init(){
+    var pc=document.getElementById('pageContainer');
+    if(!pc)return;
+    var m=function(){medir(pc);};
+    m();
+    if(window.ResizeObserver){try{ro=new ResizeObserver(m);ro.observe(pc);}catch(e){ro=null;}}
+    window.addEventListener('resize',m);   // fallback y red de contención
+    /* El cambio de vista también le mueve el alto: el composer del chat es
+       hermano de #pageContainer y switchView lo muestra/oculta. El ResizeObserver
+       lo agarra, pero recién en el frame siguiente; medir acá evita el frame con
+       el canvas del alto viejo. */
+    document.addEventListener('re:view',m);
+  }
+  if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
 

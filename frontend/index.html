@@ -95,7 +95,14 @@
     html { scroll-behavior: auto; }
     #re *, #re *::before, #re *::after { animation: none !important; }
   }
-  #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
+  /* El !important es para ganarle al `animation:none` que inyecta el modo 'off',
+     pero fuera de un @media también le ganaba al bloque de arriba: el marquee
+     seguía girando con prefers-reduced-motion, que es exactamente lo que ese
+     bloque intenta evitar. Encerrado en no-preference, sólo se aplica cuando el
+     sistema permite movimiento. */
+  @media (prefers-reduced-motion: no-preference) {
+    #re [data-marquee] { animation: re-marquee 34s linear infinite !important; }
+  }
   /* El canvas del skyline va posicionado y por eso pintaría ENCIMA del contenido
      estático del panel. Subimos los hermanos (no el canvas) a su propia capa. */
   #re [data-demo-panel="chat"] > *:not(canvas) { position: relative; z-index: 1; }
@@ -715,7 +722,10 @@ class Component extends DCLogic {
     this.mode = mode;
 
     this.setupNav();
-    this.setupCursorGlow();
+    // El glow que sigue al cursor es movimiento automático: con reduced-motion
+    // no va. Antes se montaba acá arriba, antes del early-return del modo
+    // 'off', así que seguía activo igual.
+    if (mode !== 'off') this.setupCursorGlow();
     this.setupSkyline();
     // Hovers: van también en modo 'off'. Son transiciones disparadas por el
     // usuario (no movimiento automático) y el modo 'off' solo apaga
@@ -862,15 +872,33 @@ class Component extends DCLogic {
         }
       }
     };
-    let raf;
-    const loop = (t) => { draw(t); raf = requestAnimationFrame(loop); };
+    /* El skyline es del HERO: cuando dejás de verlo, el loop se apaga del todo.
+       Antes seguía rasterizando edificios y ventanas a 60fps con el hero tres
+       pantallas arriba — batería quemada por algo que nadie está mirando. */
+    let raf = 0, enPantalla = true;
+    const loop = (t) => { if (!enPantalla) { raf = 0; return; } draw(t); raf = requestAnimationFrame(loop); };
+    const arrancar = () => { if (!raf) raf = requestAnimationFrame(loop); };
     const onMove = (e) => { mx = e.clientX / window.innerWidth; my = e.clientY / window.innerHeight; };
     window.addEventListener('mousemove', onMove, { passive: true });
     window.addEventListener('resize', resize);
     this._skylineMove = onMove; this._skylineResize = resize;
     resize();
     if (this.mode === 'off') draw(0);
-    else { raf = requestAnimationFrame(loop); this._skylineRaf = () => cancelAnimationFrame(raf); }
+    else {
+      if (window.IntersectionObserver) {
+        try {
+          const io = new IntersectionObserver((es) => {
+            enPantalla = es.some(e => e.isIntersecting);
+            if (enPantalla) arrancar();
+          }, { rootMargin: '150px' });
+          io.observe(cv);
+          this._skylineIO = io;
+        } catch (e) { /* sin observer seguimos como antes: mejor animar de más que no animar */ }
+      }
+      arrancar();
+      this._skylineRaf = () => { enPantalla = false; if (raf) cancelAnimationFrame(raf); raf = 0;
+                                 if (this._skylineIO) { this._skylineIO.disconnect(); this._skylineIO = null; } };
+    }
   }
 
   setupIntro() {
@@ -1082,7 +1110,35 @@ class Component extends DCLogic {
 
   setupScrollFX(mode) {
     const root = this.root;
-    const parItems = Array.from(root.querySelectorAll('[data-parallax]')).map(el => ({ el, s: parseFloat(el.getAttribute('data-parallax')) || 0 }));
+    /* Parallax RELATIVO a cada elemento, no al scroll absoluto de la página.
+       Antes era `translateY(scrollY * s)`: con s=0.04 y la página 5000px abajo
+       el elemento se iba 200px de donde tiene que estar, o sea el efecto dejaba
+       de pertenecer a su sección y se acumulaba con toda la altura del sitio.
+       Ahora el origen es el propio elemento y el recorrido está CLAMPEADO al
+       tramo en que se lo ve: `alcance = alto de pantalla/2 + alto del elemento/2`
+       es exactamente la distancia a la que deja de asomar. Medido sobre la
+       landing real (10238px de alto): con el scroll absoluto los desplazamientos
+       llegaban a 467px; sólo cambiando el origen todavía daban 371px mientras el
+       elemento estaba fuera de pantalla; con el clamp quedan en ±19px y ±41px,
+       que es el parallax sutil que se buscaba. */
+    const parItems = Array.from(root.querySelectorAll('[data-parallax]')).map(el => ({
+      el, s: parseFloat(el.getAttribute('data-parallax')) || 0, centro: 0, alcance: 1,
+    }));
+    const medirCentros = () => {
+      parItems.forEach(p => {
+        // sin el transform puesto, si no medimos la posición ya desplazada
+        const prev = p.el.style.transform;
+        p.el.style.transform = '';
+        const r = p.el.getBoundingClientRect();
+        p.centro = r.top + window.scrollY + r.height / 2;
+        p.alcance = Math.max(1, window.innerHeight / 2 + r.height / 2);
+        p.el.style.transform = prev;
+      });
+    };
+    medirCentros();
+    window.addEventListener('resize', medirCentros);
+    // Las imágenes cambian el layout al cargar: hay una con data-parallax.
+    window.addEventListener('load', medirCentros);
     const skewItems = (mode === 'full') ? Array.from(root.querySelectorAll('[data-skew]')) : [];
     const bar = root.querySelector('[data-progress]');
     let last = window.scrollY, vel = 0, curSkew = 0, idle = 0, running = false;
@@ -1090,7 +1146,12 @@ class Component extends DCLogic {
       const y = window.scrollY;
       const dy = y - last; last = y;
       vel += (dy - vel) * 0.18;
-      parItems.forEach(({ el, s }) => { el.style.transform = 'translate3d(0,' + (y * s).toFixed(1) + 'px,0)'; });
+      const centroPantalla = y + window.innerHeight / 2;
+      parItems.forEach(p => {
+        // 0 con el elemento centrado; ±alcance cuando ya no asoma por ningún borde
+        const d = Math.max(-p.alcance, Math.min(p.alcance, centroPantalla - p.centro));
+        p.el.style.transform = 'translate3d(0,' + (d * p.s).toFixed(1) + 'px,0)';
+      });
       if (skewItems.length) {
         const target = Math.max(-2, Math.min(2, vel * 0.16));
         curSkew += (target - curSkew) * 0.14;
@@ -1292,6 +1353,17 @@ class Component extends DCLogic {
   function init(cv) {
     var ctx = cv.getContext && cv.getContext('2d'); if (!ctx) return;
     var _seedB = 0, _raf = 0;
+    /* Mismo criterio que el fondo de obra de la solapa Materiales: el skyline es
+       de ESTA maqueta, así que con la maqueta fuera de pantalla el loop no
+       dibuja. El guard de w<=0 sólo cubre el caso "solapa oculta"; con la
+       sección entera scrolleada fuera seguía rasterizando edificios. */
+    var enPantalla = true;
+    if (window.IntersectionObserver) {
+      try {
+        new IntersectionObserver(function (es) { enPantalla = es[0].isIntersecting; },
+                                 { threshold: 0.05 }).observe(cv);
+      } catch (e) { /* sin observer seguimos como antes */ }
+    }
 
     function genB(maxHf) {
       var r = Math.random(), type = r < 0.36 ? 'tower' : r < 0.68 ? 'slab' : 'mid';
@@ -1357,7 +1429,7 @@ class Component extends DCLogic {
 
     function frame(loop) {
       var dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
-      if (w <= 0 || h <= 0) { if (loop) _raf = requestAnimationFrame(function(){frame(true);}); return; }
+      if (w <= 0 || h <= 0 || !enPantalla) { if (loop) _raf = requestAnimationFrame(function(){frame(true);}); return; }
       /* canvas.width/height son ENTEROS: sin redondear, con escalado de pantalla
          != 100% la comparación nunca coincide y seed() correría en cada frame
          (el bug que tenía el skyline de la app). */
