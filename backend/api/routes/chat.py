@@ -27,6 +27,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -44,12 +45,14 @@ from models.plan_analysis import PlanAlert, PlanAnalysis, PlanFile, PlanProject,
 from models.project import Project, ProjectMilestone
 from models.user import User
 from models.workspace import UserProfileGlobal, Workspace, WorkspaceMemory
+from services import location_service
 from services.anthropic_service import build_system_prompt, stream_chat
 from services.calculator_tools import (
     CALCULATOR_TOOL_IMPLS,
     CALCULATOR_TOOL_SCHEMAS,
     run_calculator_tool,
 )
+from services.corralones import reverse_geocode
 from services.financial_artifact import DOCUMENT_TOOL_SCHEMA, generar_documento
 from services.model_selector import pick_model
 from services.rate_limit_service import check_user_rate_limit
@@ -147,6 +150,28 @@ async def _get_or_create_conversation(
             detail="Conversación no encontrada",
         )
     return conv
+
+
+# Ubicación del usuario → "Ciudad, Provincia" para el system prompt.
+# Caché 6 h por usuario: el reverse-geocode externo no se paga por mensaje.
+_LOC_LABEL_CACHE: dict[UUID, tuple[str, float]] = {}
+_LOC_LABEL_TTL = 6 * 3600
+
+
+async def _get_user_location_label(db: AsyncSession, user_id: UUID) -> str:
+    hit = _LOC_LABEL_CACHE.get(user_id)
+    if hit and time.time() - hit[1] < _LOC_LABEL_TTL:
+        return hit[0]
+    label = ""
+    try:
+        fix = await location_service.get_latest(db, user_id)
+        if fix is not None:
+            geo = await reverse_geocode(fix.lat, fix.lon)
+            label = geo.get("zona") or ""
+    except Exception:  # noqa: BLE001 — sin ubicación no se rompe el chat
+        label = ""
+    _LOC_LABEL_CACHE[user_id] = (label, time.time())
+    return label
 
 
 async def _load_profile_items(
@@ -728,6 +753,7 @@ async def chat(
     workspace_memory: list[tuple[str, str]] = []
     workspace_name: str | None = None
     known_projects: list[str] = []
+    user_location = ""
     try:
         profile_items = await _load_profile_items(db, current_user.id)
         known_projects = await _load_known_projects(db, current_user.id)
@@ -737,6 +763,7 @@ async def chat(
                 nom = (v.split(",")[0] or "").strip()[:80]
                 if nom and nom.lower() not in {n.lower() for n in known_projects}:
                     known_projects.append(nom)
+        user_location = await _get_user_location_label(db, current_user.id)
         if conv.workspace_id is not None:
             workspace_memory = await _load_workspace_memory(db, conv.workspace_id)
             ws_obj = await db.get(Workspace, conv.workspace_id)
@@ -753,6 +780,7 @@ async def chat(
         workspace_memory=workspace_memory,
         workspace_name=workspace_name,
         known_projects=known_projects,
+        user_location=user_location,
     )
 
     conv_id_str = str(conv.id)

@@ -120,6 +120,14 @@ impuestos), no alcanza con tirar el resultado. Aplicá SIEMPRE:
      norma vigente (es OBLIGATORIO buscar, no opcional).
    - "TIR / VAN / repago / flujo / cuánta plata necesito / cierra / factibilidad /
      cuánto pago por el terreno / cuánto vale" → la calculadora correspondiente.
+   - "cuántas escrituras/operaciones/compraventas hubo / estadística del rubro /
+     último dato publicado (mes/trimestre)" → `search_web` OBLIGATORIO: buscá la
+     última cifra PUBLICADA y respondé con el NÚMERO + período + fuente, POR
+     JURISDICCIÓN. Responder solo "dónde consultarlo" es respuesta INCOMPLETA y
+     está PROHIBIDO cuando el dato existe publicado: primero las cifras, después
+     los links de respaldo. Si conocés la ubicación del usuario, SUMÁ su
+     provincia/jurisdicción con su dato sin que lo pida. Solo si tras buscar no
+     hay cifra pública, decilo explícitamente y ahí sí indicá dónde se consigue.
    **PROHIBIDO responder un impuesto desde tu entrenamiento.** Tu conocimiento fiscal
    está VIEJO. Datos muertos que NO podés escribir como impuesto a pagar hoy:
    ❌ "ITI 1,5%" (derogado, Ley 27.743) — ❌ "cedular 15%" para un particular
@@ -710,6 +718,7 @@ async def build_system_prompt(
     workspace_memory: list[tuple[str, str]] | None = None,
     workspace_name: str | None = None,
     known_projects: list[str] | None = None,
+    user_location: str | None = None,
 ) -> str:
     """
     Arma el system prompt para el request actual.
@@ -790,8 +799,19 @@ async def build_system_prompt(
             "proyecto ya no existe o cambió de nombre, creele a él."
         )
 
+    location_block = ""
+    if user_location:
+        location_block = (
+            "## Ubicación actual del usuario\n"
+            f"Está en **{user_location}** (dato de la plataforma, con su permiso). "
+            "Usala cuando sume: jurisdicción para impuestos/estadísticas/normativa "
+            "(\"en tu provincia…\"), corralones u oportunidades cerca. No le "
+            "preguntes dónde está. Si la consulta nombra OTRA jurisdicción "
+            "explícita, esa manda."
+        )
+
     memory_section = "\n\n".join(
-        b for b in (profile_block, projects_block, workspace_block) if b
+        b for b in (profile_block, location_block, projects_block, workspace_block) if b
     )
 
     if context_type == "sol":
