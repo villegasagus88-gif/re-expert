@@ -478,3 +478,101 @@ def test_chat_context_allowed_for_user_with_access():
     with _chat_client(user=_make_user(plan="pro")) as (client, _, _mock_log):
         resp = client.post("/api/chat", json={"message": "hola"})
     assert resp.status_code == 200
+
+
+# ─────────────────────────────────────────────────────────────
+# Caché de la etiqueta de ubicación que va al system prompt
+# (_get_user_location_label / _loc_cache_set en api.routes.chat)
+# ─────────────────────────────────────────────────────────────
+
+def _limpiar_cache_loc():
+    import api.routes.chat as chat_mod
+    chat_mod._LOC_LABEL_CACHE.clear()
+    return chat_mod
+
+
+def test_cache_de_ubicacion_no_crece_sin_techo():
+    """Es un dict in-process: sin tope, una entrada por usuario que chatee y
+    nunca sale. Con el tope, pasarse no lo deja crecer."""
+    chat_mod = _limpiar_cache_loc()
+    for _ in range(chat_mod._LOC_LABEL_MAX + 250):
+        chat_mod._loc_cache_set(uuid4(), "Godoy Cruz, Mendoza", chat_mod._LOC_LABEL_TTL)
+    assert len(chat_mod._LOC_LABEL_CACHE) <= chat_mod._LOC_LABEL_MAX
+    _limpiar_cache_loc()
+
+
+def test_cache_de_ubicacion_barre_las_vencidas_antes_de_desalojar():
+    """Al pasarse del tope se tiran primero las vencidas, no las vigentes."""
+    chat_mod = _limpiar_cache_loc()
+    vencidos = [uuid4() for _ in range(30)]
+    for uid in vencidos:
+        chat_mod._loc_cache_set(uid, "vieja", -1)      # ya nacen vencidas
+    vigentes = [uuid4() for _ in range(10)]
+    for uid in vigentes:
+        chat_mod._loc_cache_set(uid, "vigente", chat_mod._LOC_LABEL_TTL)
+    # forzar la purga llevando el dict por encima del tope
+    original = chat_mod._LOC_LABEL_MAX
+    try:
+        chat_mod._LOC_LABEL_MAX = 20
+        chat_mod._loc_cache_set(uuid4(), "gatillo", chat_mod._LOC_LABEL_TTL)
+        assert len(chat_mod._LOC_LABEL_CACHE) <= 20
+        # ninguna vencida sobrevivió; las vigentes sí
+        assert not any(u in chat_mod._LOC_LABEL_CACHE for u in vencidos)
+        assert all(u in chat_mod._LOC_LABEL_CACHE for u in vigentes)
+    finally:
+        chat_mod._LOC_LABEL_MAX = original
+        _limpiar_cache_loc()
+
+
+@pytest.mark.asyncio
+async def test_fallo_del_geocoder_se_reintenta_pronto_y_no_en_6_horas():
+    """Un error de red de un segundo no puede dejar al usuario sin jurisdicción
+    media jornada: el fallo se cachea con el TTL corto."""
+    chat_mod = _limpiar_cache_loc()
+    uid = uuid4()
+    fix = MagicMock(lat=-32.9, lon=-68.8)
+    with (
+        patch.object(chat_mod.location_service, "get_latest", new=AsyncMock(return_value=fix)),
+        patch.object(chat_mod, "reverse_geocode", new=AsyncMock(side_effect=RuntimeError("nominatim caido"))),
+    ):
+        label = await chat_mod._get_user_location_label(MagicMock(), uid)
+    assert label == ""
+    _, expira = chat_mod._LOC_LABEL_CACHE[uid]
+    faltan = expira - __import__("time").time()
+    assert faltan <= chat_mod._LOC_LABEL_TTL_FALLO + 1
+    assert faltan < chat_mod._LOC_LABEL_TTL      # lo que importa: NO son 6 h
+    _limpiar_cache_loc()
+
+
+@pytest.mark.asyncio
+async def test_usuario_sin_ubicacion_compartida_usa_el_ttl_largo():
+    """'No compartió ubicación' sale de nuestra base y es barato de sostener:
+    no tiene por qué reintentarse cada 5 minutos."""
+    chat_mod = _limpiar_cache_loc()
+    uid = uuid4()
+    with patch.object(chat_mod.location_service, "get_latest", new=AsyncMock(return_value=None)):
+        label = await chat_mod._get_user_location_label(MagicMock(), uid)
+    assert label == ""
+    _, expira = chat_mod._LOC_LABEL_CACHE[uid]
+    faltan = expira - __import__("time").time()
+    assert faltan > chat_mod._LOC_LABEL_TTL_FALLO
+    _limpiar_cache_loc()
+
+
+@pytest.mark.asyncio
+async def test_ubicacion_resuelta_se_cachea_y_no_repega_al_geocoder():
+    """Segunda llamada dentro del TTL: sale del caché, sin tocar el servicio
+    externo (que se paga y tiene rate limit)."""
+    chat_mod = _limpiar_cache_loc()
+    uid = uuid4()
+    fix = MagicMock(lat=-32.9, lon=-68.8)
+    geo = AsyncMock(return_value={"zona": "Godoy Cruz, Mendoza"})
+    with (
+        patch.object(chat_mod.location_service, "get_latest", new=AsyncMock(return_value=fix)),
+        patch.object(chat_mod, "reverse_geocode", new=geo),
+    ):
+        primera = await chat_mod._get_user_location_label(MagicMock(), uid)
+        segunda = await chat_mod._get_user_location_label(MagicMock(), uid)
+    assert primera == segunda == "Godoy Cruz, Mendoza"
+    assert geo.await_count == 1
+    _limpiar_cache_loc()

@@ -1,7 +1,7 @@
 # Política de Privacidad — RE Expert
 
 
-**Versión:** 1.3
+**Versión:** 1.4
 **Fecha de última actualización:** {{vigenciaDesde}}
 **Marco normativo:** Ley 25.326 de Protección de los Datos Personales, su Decreto
 Reglamentario 1558/2001 y las resoluciones de la Agencia de Acceso a la Información
@@ -70,13 +70,18 @@ Pública (AAIP).
 | Fecha del último acceso, estado y vigencia de tu acceso al Servicio | Operación del servicio y control de acceso |
 | **Registro de consumo de modelos de IA** (modelo usado, cantidad de tokens y costo por consulta) | Control de costos y de límites de uso |
 | **Eventos de interés en cursos y materiales, asociados a tu cuenta** | Mejora del producto y de la oferta (ver 5.4) |
-| **Ubicación geográfica**, si la autorizás en el navegador: latitud y longitud tal como las informa tu dispositivo | Resolver el nombre de tu zona para buscar corralones y precios de materiales |
+| **Ubicación geográfica**, si la autorizás en el navegador: latitud y longitud tal como las informa tu dispositivo | Resolver el nombre de tu zona para buscar corralones y precios de materiales, y para que el Asistente responda con la jurisdicción que te corresponde (impuestos, estadísticas y normativa provincial) |
 | Datos técnicos de conexión (dirección IP, navegador) | Seguridad, prevención de abuso y funcionamiento |
 
 > **Cómo se trata tu ubicación.** Hoy la coordenada se usa en el momento y **no se
 > almacena**: tu navegador se la envía a nuestro servidor, que la **redondea a unos 110
 > metros antes** de consultar al servicio de mapas que devuelve el nombre de tu localidad
-> (punto 7.3). La Plataforma incluye además una función de **historial de ubicaciones**
+> (punto 7.3). Ese **nombre de localidad** —no la coordenada— se conserva **hasta seis
+> horas en la memoria del servidor** para no repetir la consulta al servicio de mapas en
+> cada mensaje, y **se incluye en la ficha de contexto que se envía al proveedor de
+> inteligencia artificial** en los intercambios con el Asistente (punto 7.1.2), de modo
+> que pueda responderte con la jurisdicción que te corresponde. La Plataforma incluye
+> además una función de **historial de ubicaciones**
 > —hasta 500 posiciones de los últimos 90 días, guardadas con la precisión que informe tu
 > dispositivo— que **requiere tu consentimiento específico y todavía no está habilitada
 > en la interfaz**. Si la habilitamos te lo vamos a informar, y vas a poder elegir entre
@@ -255,7 +260,7 @@ valoraciones** desde la aplicación o escribiéndonos.
 
 | Proveedor | Qué recibe | País |
 |---|---|---|
-| **Anthropic** (modelos Claude) | **El contenido íntegro de tus consultas y de los últimos mensajes de la conversación; tu memoria de perfil y de proyecto; los planos e imágenes que cargues; y los datos de proyecto necesarios para responderte** | Estados Unidos |
+| **Anthropic** (modelos Claude) | **El contenido íntegro de tus consultas y de los últimos mensajes de la conversación; tu memoria de perfil y de proyecto; los planos e imágenes que cargues; los datos de proyecto necesarios para responderte; y, si autorizaste la geolocalización, el nombre de tu localidad y provincia** | Estados Unidos |
 | **Google** (modelos Gemini) *(activo sólo si ese proveedor está configurado)* | Lo mismo que el anterior, cuando el Asistente opera con este proveedor | Estados Unidos |
 | **OpenAI** *(activo sólo si ese proveedor está configurado)* | **El audio de tu micrófono** para transcripción y el texto de las respuestas para generar voz. En el modo de conversación por voz en tiempo real recibe además: **(a)** tu dirección IP, porque la conexión se establece directamente desde tu navegador; **(b)** la **transcripción completa de la conversación**; y **(c)** la memoria que el asistente de voz guardó sobre vos y **los datos de tus proyectos que consulta para responderte**, que pueden incluir nombres de clientes o inversores y montos, conforme al punto 3.2 | Estados Unidos |
 
@@ -268,7 +273,8 @@ le enviamos automáticamente al proveedor de inteligencia artificial una ficha c
 si tenés Telegram vinculado, la cantidad de contactos que cargaste, y un resumen de tus
 **proyectos** (nombre, avance, presupuesto y costo real), tus **pagos pendientes**
 (concepto, monto y fecha), tus **recordatorios** próximos y tus **oportunidades** con su
-puntaje.
+puntaje. Si autorizaste la geolocalización, incluye también el **nombre de tu localidad y
+provincia** (no la coordenada), para que las respuestas usen tu jurisdicción.
 
 **Esta ficha se envía en todos los intercambios con el Asistente, aunque tu consulta no
 tenga relación con esos datos**, para que pueda responderte con tu contexto. Si además le

@@ -153,24 +153,54 @@ async def _get_or_create_conversation(
 
 
 # Ubicación del usuario → "Ciudad, Provincia" para el system prompt.
-# Caché 6 h por usuario: el reverse-geocode externo no se paga por mensaje.
+# Caché por usuario: el reverse-geocode externo no se paga por mensaje.
+#
+# El dict es in-process y ACOTADO: sin techo crecía una entrada por usuario que
+# haya chateado y no salía nunca (ni al vencer el TTL), así que en un proceso
+# de larga vida es una fuga lenta. Al insertar se barren las vencidas y, si aun
+# así se pasa del tope, se tira la más vieja. `_LOC_LABEL_MAX` está holgado
+# para el tráfico real: es un techo, no un tamaño de trabajo.
 _LOC_LABEL_CACHE: dict[UUID, tuple[str, float]] = {}
+_LOC_LABEL_MAX = 5000
 _LOC_LABEL_TTL = 6 * 3600
+# Un fallo del geocoder (o de la consulta) NO se cachea 6 h: eso le apagaba la
+# jurisdicción al usuario por media jornada por un error de red de un segundo.
+# Se reintenta a los pocos minutos, que igual alcanza para no golpear el
+# servicio externo en cada mensaje.
+_LOC_LABEL_TTL_FALLO = 300
+
+
+def _loc_cache_set(user_id: UUID, label: str, ttl: float) -> None:
+    ahora = time.time()
+    _LOC_LABEL_CACHE[user_id] = (label, ahora + ttl)
+    if len(_LOC_LABEL_CACHE) <= _LOC_LABEL_MAX:
+        return
+    for uid in [u for u, (_, exp) in _LOC_LABEL_CACHE.items() if exp <= ahora]:
+        _LOC_LABEL_CACHE.pop(uid, None)
+    # dict conserva el orden de inserción → el primero es el más viejo
+    while len(_LOC_LABEL_CACHE) > _LOC_LABEL_MAX:
+        _LOC_LABEL_CACHE.pop(next(iter(_LOC_LABEL_CACHE)), None)
 
 
 async def _get_user_location_label(db: AsyncSession, user_id: UUID) -> str:
     hit = _LOC_LABEL_CACHE.get(user_id)
-    if hit and time.time() - hit[1] < _LOC_LABEL_TTL:
+    if hit and time.time() < hit[1]:
         return hit[0]
     label = ""
+    fallo = False
     try:
         fix = await location_service.get_latest(db, user_id)
         if fix is not None:
             geo = await reverse_geocode(fix.lat, fix.lon)
             label = geo.get("zona") or ""
+            # el usuario tiene coordenada pero el geocoder no devolvió zona
+            fallo = not label
     except Exception:  # noqa: BLE001 — sin ubicación no se rompe el chat
         label = ""
-    _LOC_LABEL_CACHE[user_id] = (label, time.time())
+        fallo = True
+    # "el usuario no compartió ubicación" es una respuesta buena y barata (sale
+    # de nuestra base): se cachea el TTL largo. Sólo el fallo va al TTL corto.
+    _loc_cache_set(user_id, label, _LOC_LABEL_TTL_FALLO if fallo else _LOC_LABEL_TTL)
     return label
 
 
